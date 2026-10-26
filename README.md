@@ -41,6 +41,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Speeding up:** the further you fly, the faster it gets. A *Speed up!* call every 300 m; the climb is steep in the first minute and keeps creeping up until a top speed.
 - **Second chance:** after a good run (250+ points and at least 40% of your best) the game-over screen offers one revive per run. You continue from where you crashed with a shield and a 3-2-1 countdown. Free on the web version, a rewarded ad on the portal build.
 - **Simit wallet:** every simit you catch is banked (a golden one counts as 5). Spend them on outfits in the *Kostümler* panel on the title screen: fez, sunglasses, scarf, captain hat, golden crown, moustache, and pink, night or golden feathers. Head, eyes, neck, face and feathers each take one item.
+- **Weekly leaderboard:** about 1.2 million players (offline: bots seeded by the week, so everyone sees the same table) with names and flags from 20 countries. Bot scores grow through the week, so holding your rank means flying again. Your weekly best sets your rank; the game-over screen shows it and how far you climbed. When the week ends you get simits by your final rank (top 100: 2,000, top 1,000: 1,000, top 10,000: 500, top 100,000: 200, top 50%: 80, otherwise 30). The panel tells you how many points the next tier needs.
 - **Missions:** three at a time ("catch 30 simits in one flight", "5 close calls", "fly 5 times"...). A finished mission pays simits on the spot and is replaced at the start of the next flight. Progress shows on the game-over screen.
 - **Settings:** music and sound effects volume sliders (also in the pause menu), vibration, and language (Turkish or English, the browser language by default).
 - First launch shows a 3-second swipe tutorial; best score, settings, wallet, outfits and missions are kept in `localStorage`.
@@ -107,6 +108,7 @@ docs/
   js/models.js          seagull, outfits, simit, passengers, ferry, kite, power-ups
   js/fx.js              particles, sparkles, smoke, speed lines, floating texts
   js/audio.js           synthesized music and sound effects
+  js/board.js           weekly leaderboard: seeded bot players, flags, rank from score, end-of-week rewards
   js/util.js            helpers, mesh merging, safe localStorage
   sw.js                 service worker (bump VERSION on every release)
   manifest.webmanifest  PWA manifest

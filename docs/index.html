@@ -106,6 +106,7 @@
     <button class="side-btn" id="wardrobeBtn"><span class="side-ico"><svg><use href="#i-hanger"/></svg></span><span>Kostümler</span></button>
     <button class="side-btn" id="missionsBtn"><span class="side-ico"><svg><use href="#i-list"/></svg></span><span>Görevler</span><i class="badge hidden" id="misBadge"></i></button>
     <button class="side-btn" id="dailyBtn"><span class="side-ico"><svg><use href="#i-gift"/></svg></span><span>Günlük ödül</span><i class="badge dot hidden" id="dailyDot"></i></button>
+    <button class="side-btn" id="boardBtn"><span class="side-ico"><svg><use href="#i-trophy"/></svg></span><span>Sıralama</span></button>
     <button class="side-btn" id="upsBtn"><span class="side-ico"><svg><use href="#i-bolt"/></svg></span><span>Güçlendir</span></button>
   </nav>
   <div class="title-bottom">
@@ -133,6 +134,25 @@
     <div class="ups" id="ups"></div>
     <p class="fine" id="upNote"></p>
     <button class="btn primary" id="closeUps">Tamam</button>
+  </div>
+</section>
+
+<section id="boardPanel" class="screen modal hidden">
+  <div class="card board-card">
+    <h2>Haftalık sıralama</h2>
+    <p class="fine" id="boardInfo"></p>
+    <ol class="board" id="boardList"></ol>
+    <div class="board-tier" id="boardTier"></div>
+    <button class="btn primary" id="closeBoard">Tamam</button>
+  </div>
+</section>
+
+<section id="leaguePanel" class="screen modal hidden">
+  <div class="card">
+    <h2>Haftalık ödül</h2>
+    <p class="fine" id="leagueNote"></p>
+    <div class="big" id="leagueReward"></div>
+    <button class="btn primary" id="leagueClaim">Al</button>
   </div>
 </section>
 
@@ -198,6 +218,7 @@
       <div><b id="stCombo">0</b><span>en iyi seri</span></div>
     </div>
     <p class="best-line" id="overBest"></p>
+    <p class="rank-line" id="overRank"></p>
     <div class="over-extra">
       <p class="earn" id="overEarn"></p>
       <div class="missions" id="overMis"></div>

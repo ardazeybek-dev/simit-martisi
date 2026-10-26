@@ -5,6 +5,7 @@ import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
+import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -516,7 +517,7 @@ function showTitle() {
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelector('.menu-side').classList.toggle('hidden', tutorialPending);
   renderMissions($('titleMis')); renderMenuBadges();
-  show('missionsPanel', false); show('dailyPanel', false); show('upPanel', false);
+  show('missionsPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false);
   $('titleWallet').textContent = fmt(wallet);
@@ -524,6 +525,7 @@ function showTitle() {
   $('titleBest').textContent = best ? `${tr('Rekor')} ${fmt(best)}` : tr('İlk uçuşun!');
   audio.music(true);
   if (!tutorialPending && dailyState().ready) setTimeout(() => state === 'title' && !dressing && !menuModal() && openDaily(), 700); // günün ilk açılışında ödül kendiliğinden gelir
+  else if (!tutorialPending) setTimeout(() => state === 'title' && !dressing && !menuModal() && offerLeague(), 700); // biten haftanın sıralama ödülü
 }
 function startGame() {
   audio.unlock();
@@ -572,6 +574,10 @@ function showOver() {
   ui.powers.textContent = '';
   $('overBest').textContent = isBest ? tr('Önceki rekoru geçtin') : `${tr('Rekor')} ${fmt(best)}`;
   $('newRecord').classList.toggle('hidden', !isBest);
+  { // haftalık sıra: bu uçuş sıranı yükselttiyse eski sırayı da göster
+    const wk = recordRun(final), now = rankOf(wk.best), was = wk.before > 0 ? rankOf(wk.before) : 0;
+    $('overRank').textContent = tr('Haftalık sıran: {r}').replace('{r}', '#' + fmt(now)) + (was && now < was ? `  ▲ ${fmt(was - now)}` : '');
+  }
   if (!revived) countMission('runs');
   checkMissions(); store.set(KEY_MIS, missions); bank();
   renderMissions($('overMis'));
@@ -594,6 +600,53 @@ function showOver() {
   requestAnimationFrame(step);
   audio.duck(false);
 }
+// ---------------- haftalık sıralama (board.js) ----------------
+const tierName = (lim, total) => (lim < 1 ? tr('ilk %50') : `${tr('ilk')} ${fmt(lim)}`);
+function renderBoard() {
+  const w = week(), total = totalPlayers(w), mb = myBest(), me = mb > 0 ? rankOf(mb, w) : 0;
+  const d = Math.floor(w.left / 864e5), h = Math.floor(w.left / 36e5) % 24;
+  $('boardInfo').textContent = tr('{n} oyuncu · bitmesine {d}g {h}s').replace('{n}', fmt(total)).replace('{d}', d).replace('{h}', h);
+  // ilk beş + oyuncunun üstündeki ve altındaki üçer kişi; oyuncu kendi sırasına girer, alttakiler bir aşağı kayar
+  const ranks = [1, 2, 3, 4, 5];
+  if (me) for (let r = Math.max(1, me - 3); r <= Math.min(total, me + 3); r++) if (!ranks.includes(r)) ranks.push(r);
+  if (me && !ranks.includes(me)) ranks.push(me);
+  ranks.sort((a, b) => a - b);
+  const li = (r, img, name, score, cls = '') => `<li class="${cls}"><b>#${fmt(r)}</b><img src="${img}" alt=""><span>${name}</span><em>${fmt(score)}</em></li>`;
+  const meCC = window.I18N.lang === 'tr' ? 'TR' : 'GB';
+  let html = '', prev = 0;
+  for (const r of ranks) {
+    if (r > prev + 1) html += '<li class="gap">⋮</li>';
+    if (me && r === me) html += li(r, flag(meCC), tr('Sen'), mb, 'me');
+    else { const b = bot(me && r > me ? r - 1 : r, w); html += li(r, flag(b.cc), b.name, b.score, r <= 3 ? 'top' : ''); }
+    prev = r;
+  }
+  if (!me) html += `<li class="gap">⋮</li><li class="me"><b>—</b><img src="${flag(meCC)}" alt=""><span>${tr('Sen')}</span><em>${tr('Henüz uçmadın')}</em></li>`;
+  const list = $('boardList'); list.innerHTML = html;
+  const meEl = list.querySelector('.me'); if (meEl) setTimeout(() => meEl.scrollIntoView({ block: 'nearest' }), 0);
+  // ödül: şu anki basamak ve bir üstüne kaç puan kaldığı
+  const cur = tierOf(me || total, total), i = TIERS.findIndex(([l]) => l === cur.lim), up = i < 0 ? TIERS[TIERS.length - 1] : TIERS[i - 1];
+  let t = tr('Hafta sonu ödülün: {r} simit').replace('{r}', fmt(cur.reward));
+  if (up) {
+    const lim = up[0] < 1 ? Math.floor(total * up[0]) : up[0], need = Math.max(1, scoreAt(lim, w) - mb + 1);
+    t += `<small>${tr('{p} puan daha → {t}: {r} simit').replace('{p}', fmt(need)).replace('{t}', tierName(up[0], total)).replace('{r}', fmt(up[1]))}</small>`;
+  }
+  $('boardTier').innerHTML = t;
+}
+let leagueKey = '';
+function offerLeague() { // geçen haftanın ödülü bekliyorsa ana menüde bir kez sorulur
+  const p = pendingReward();
+  if (!p || !$('dailyPanel').classList.contains('hidden')) return;
+  leagueKey = p.key;
+  $('leagueNote').textContent = tr('Geçen haftayı {r}. sırada bitirdin!').replace('{r}', fmt(p.rank)) + ` (${tierName(p.lim, p.total)})`;
+  $('leagueReward').textContent = `+${fmt(p.reward)}`;
+  show('leaguePanel');
+}
+function claimLeague() {
+  const p = pendingReward();
+  if (p && p.key === leagueKey) { wallet += p.reward; store.set(KEY_WALLET, wallet); markPaid(p.key); sfx.gold(); vibrate([20, 30, 20]); $('titleWallet').textContent = fmt(wallet); }
+  show('leaguePanel', false);
+}
+
 // ---------------- cüzdan ve kostümler ----------------
 function bank() {
   const earned = Math.floor(simitCount + goldCount * 4), gain = earned - banked;
@@ -860,7 +913,7 @@ function steerFromX(clientX) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
-const menuModal = () => !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden');
+const menuModal = () => !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('leaguePanel').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -892,6 +945,9 @@ onBtn('closeMissions', () => show('missionsPanel', false));
 onBtn('upsBtn', () => { $('upNote').textContent = tr('Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.'); renderUps(); show('upPanel'); });
 onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
 onBtn('dailyBtn', () => openDaily());
+onBtn('boardBtn', () => { renderBoard(); show('boardPanel'); });
+onBtn('closeBoard', () => show('boardPanel', false));
+onBtn('leagueClaim', () => claimLeague());
 onBtn('claimBtn', () => claimDaily());
 onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('pauseBtn', () => pause());
