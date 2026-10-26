@@ -316,12 +316,25 @@ function spawnFerry() {
     g.add(p.mesh); p.wz = zc + lz; people.push(p); mine.push(p);
     return p;
   };
-  for (let i = 0, nb = 1 + ((Math.random() * 3) | 0); i < nb; i++) {
+  for (let i = 0, nb = 2 + ((Math.random() * 3) | 0); i < nb; i++) {
     const s = pick([-1, 1]), lz = rand(-L / 2 + 12, L / 2 - 6);
     if (blocked.some(b => Math.hypot(b.x - s * 3.2, b.z - lz) < b.r + 1)) continue;
     const bench = new THREE.Mesh(BENCH, vcMat); bench.position.set(s * 3.2, DECK, lz); bench.rotation.y = s > 0 ? 0 : Math.PI; bench.castShadow = true; g.add(bench);
     blocked.push({ x: s * 3.2, z: lz, r: 1.5 });
     for (const dz of [-0.55, 0.55]) if (Math.random() < 0.75) { const p = seat(s * 3.2, lz + dz, 'sit', false); p.mesh.position.y = DECK + 0.05; p.mesh.scale.setScalar(1); }
+  }
+  // ortada sırt sırta banklar (vapurdaki gibi): yolcular iki yana dönüp denize bakarak oturur, çoğunun elinde çay
+  if (Math.random() < 0.85) {
+    const n = 2 + ((Math.random() * 3) | 0), zb = rand(-L / 2 + 13, L / 2 - 6 - n * 2.2);
+    for (let i = 0; i < n; i++) {
+      const lz = zb + i * 2.2;
+      if (blocked.some(b => Math.hypot(b.x, b.z - lz) < b.r + 1.2)) continue;
+      for (const s of [-1, 1]) {
+        const bench = new THREE.Mesh(BENCH, vcMat); bench.position.set(s * 0.3, DECK, lz); bench.rotation.y = s > 0 ? 0 : Math.PI; bench.castShadow = true; g.add(bench);
+        for (const dz of [-0.55, 0.55]) if (Math.random() < 0.8) seat(s * 0.3, lz + dz, 'sit', false).mesh.scale.setScalar(1);
+      }
+      blocked.push({ x: 0, z: lz, r: 1.7 });
+    }
   }
   // güverte eşyaları: çöp kutusu (martı gelince kapağı fırlar, içinden simit kırığı zıplar), kasalar (bazen üstünde kedi), halat kangalı
   const free = (x, lz, r) => !blocked.some(b => Math.hypot(b.x - x, b.z - lz) < b.r + r);

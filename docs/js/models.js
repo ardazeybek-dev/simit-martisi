@@ -238,7 +238,7 @@ const LOOKS = Array.from({ length: 40 }, (_, id) => {
     id, kind, shirt: SHIRTS[(id * 7) % SHIRTS.length], pants: pick(PANTS), skin: pick(SKINS), skirt: false,
     hair: (r() * 3) | 0, long: false, hat: '', hatCol: pick(HAT_COLS), scarf: false, scarfCol: pick([0xd8352e, 0x2f7fd0, 0xf2b81c, 0xf2efe6, 0x2bb3a3]),
     jacket: 0, glasses: false, glassFrame: pick([0xf2efe6, 0xe3b23c, 0xd8352e, 0x1b1c22]),
-    bag: 0, tea: r() < 0.6, pose: pick(['down', 'down', 'hip', 'phone', 'wave']),
+    bag: 0, tea: r() < 0.8, pose: pick(['down', 'down', 'hip', 'phone', 'wave']),
   };
   const bag = () => pick([0xd8352e, 0xf2b81c, 0x2bb3a3, 0x8a5a32, 0x7d5ba6]);
   if (kind === 'amca') {
