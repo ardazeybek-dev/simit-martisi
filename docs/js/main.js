@@ -1383,7 +1383,7 @@ showTitle();
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat));
+  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
