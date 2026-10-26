@@ -124,70 +124,101 @@ const HAIRS = [0x2e211a, 0x5a3b26, 0x1a1a1a, 0xc9c3b8, 0xb5652e, 0xe0c27a];
 const HATS = ['', 'kasket', 'bere', 'hasir', 'esarp', 'fes', 'kep'];
 const HAT_COLS = [0x3b3b3b, 0xc8352e, 0x3a6ea5, 0xe8d8a8, 0x7d5ba6, 0x4f9d69, 0xe89bb0];
 const personCache = new Map();
-function personGeo(L, hold, angry) {
-  const key = L.id + '|' + hold + '|' + angry;
+// mode: '' ayakta · 'sit' bankta oturur, denize bakar (elinde çay ya da boş) · 'feed' küpeşteye yaslanmış, simidi martıya uzatır
+function personGeo(L, hold, angry, mode = '') {
+  const key = L.id + '|' + hold + '|' + angry + '|' + mode;
   if (personCache.has(key)) return personCache.get(key);
-  const k = new Kit();
+  const k = new Kit(), sit = mode === 'sit', dy = sit ? -0.32 : 0;
   const head = angry ? 0xe2584e : L.skin;
-  const cyl = (rt, rb, h, c, x, y, z, rz = 0, rx = 0) => k.add(new THREE.CylinderGeometry(rt, rb, h, 6), c, x, y, z, rx, 0, rz);
-  if (L.skirt) {
-    k.add(new THREE.CylinderGeometry(0.24, 0.4, 0.62, 8), L.pants, 0, 0.62, 0);
-    for (const x of [-0.1, 0.1]) cyl(0.06, 0.06, 0.4, L.skin, x, 0.2, 0);
-  } else for (const x of [-0.12, 0.12]) cyl(0.11, 0.12, 0.8, L.pants, x, 0.4, 0);
-  for (const x of [-0.12, 0.12]) k.add(new THREE.BoxGeometry(0.2, 0.08, 0.3), 0x2a221c, x, 0.04, 0.04); // ayakkabı (yüzler +z'ye, gelen martıya bakar)
-  k.add(new THREE.CylinderGeometry(0.25, 0.32, 0.95, 8), L.shirt, 0, 1.25, 0);
-  if (L.jacket) for (const x of [-0.17, 0.17]) k.add(new THREE.BoxGeometry(0.16, 0.9, 0.05), L.jacket, x, 1.27, 0.28);
-  k.add(new THREE.SphereGeometry(0.23, 9, 7), head, 0, 1.95, 0);
-  if (L.hair >= 0 && L.hat !== 'esarp') {
-    k.add(new THREE.SphereGeometry(0.245, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2.2), HAIRS[L.hair], 0, 1.99, -0.02);
-    if (L.long) k.add(new THREE.BoxGeometry(0.42, 0.42, 0.14), HAIRS[L.hair], 0, 1.82, -0.17);
+  const up = (geo, c, x, y, z, rx = 0, ry = 0, rz = 0, sx, sy, sz) => k.add(geo, c, x, y + dy, z, rx, ry, rz, sx, sy, sz); // gövdeden yukarısı oturunca alçalır
+  const cyl = (rt, rb, h, c, x, y, z, rz = 0, rx = 0) => up(new THREE.CylinderGeometry(rt, rb, h, 6), c, x, y, z, rx, 0, rz);
+  if (sit) { // uyluk öne, baldır aşağı
+    for (const x of [-0.12, 0.12]) {
+      k.add(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 6), L.pants, x, 0.5, 0.2, Math.PI / 2);
+      k.add(new THREE.CylinderGeometry(L.skirt ? 0.06 : 0.1, L.skirt ? 0.06 : 0.1, 0.46, 6), L.skirt ? L.skin : L.pants, x, 0.25, 0.44);
+      k.add(new THREE.BoxGeometry(0.2, 0.08, 0.3), 0x2a221c, x, 0.04, 0.52);
+    }
+  } else {
+    if (L.skirt) {
+      k.add(new THREE.CylinderGeometry(0.24, 0.4, 0.62, 8), L.pants, 0, 0.62, 0);
+      for (const x of [-0.1, 0.1]) cyl(0.06, 0.06, 0.4, L.skin, x, 0.2, 0);
+    } else for (const x of [-0.12, 0.12]) cyl(0.11, 0.12, 0.8, L.pants, x, 0.4, 0);
+    for (const x of [-0.12, 0.12]) k.add(new THREE.BoxGeometry(0.2, 0.08, 0.3), 0x2a221c, x, 0.04, 0.04); // ayakkabı (yüzler +z'ye, gelen martıya bakar)
   }
+  up(new THREE.CylinderGeometry(0.25, 0.32, 0.95, 8), L.shirt, 0, 1.25, 0);
+  if (L.jacket) for (const x of [-0.17, 0.17]) up(new THREE.BoxGeometry(0.16, 0.9, 0.05), L.jacket, x, 1.27, 0.28);
+  up(new THREE.SphereGeometry(0.23, 9, 7), head, 0, 1.95, 0);
+  if (L.hair >= 0 && L.hat !== 'esarp') {
+    up(new THREE.SphereGeometry(0.245, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2.2), HAIRS[L.hair], 0, 1.99, -0.02);
+    if (L.long) up(new THREE.BoxGeometry(0.42, 0.42, 0.14), HAIRS[L.hair], 0, 1.82, -0.17);
+  }
+  // şapka ve aksesuarlar uzaktan, telefonda da seçilsin diye bir boy büyük ve doygun renkli
   const hc = L.hatCol;
-  if (L.hat === 'kasket') { k.add(new THREE.CylinderGeometry(0.25, 0.25, 0.1, 10), hc, 0, 2.13, 0.01); k.add(new THREE.BoxGeometry(0.3, 0.03, 0.17), hc, 0, 2.09, 0.27); }
-  else if (L.hat === 'bere') { k.add(new THREE.SphereGeometry(0.26, 9, 6, 0, Math.PI * 2, 0, Math.PI / 2), hc, 0, 2.0, 0); k.add(new THREE.SphereGeometry(0.07, 5, 4), 0xf2efe6, 0, 2.27, 0); }
-  else if (L.hat === 'hasir') { k.add(new THREE.CylinderGeometry(0.42, 0.42, 0.03, 12), 0xe8d8a8, 0, 2.12, 0); k.add(new THREE.CylinderGeometry(0.19, 0.22, 0.17, 10), 0xe8d8a8, 0, 2.21, 0); k.add(new THREE.CylinderGeometry(0.225, 0.225, 0.05, 10), hc, 0, 2.16, 0); }
-  else if (L.hat === 'esarp') { k.add(new THREE.SphereGeometry(0.265, 9, 7, 0, Math.PI * 2, 0, Math.PI * 0.62), hc, 0, 1.95, -0.03); k.add(new THREE.ConeGeometry(0.2, 0.32, 8), hc, 0, 1.62, -0.12); }
-  else if (L.hat === 'fes') { k.add(new THREE.CylinderGeometry(0.15, 0.19, 0.24, 10), 0xc62a33, 0, 2.2, 0); }
-  else if (L.hat === 'kep') { k.add(new THREE.SphereGeometry(0.25, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2), hc, 0, 2.0, 0); k.add(new THREE.BoxGeometry(0.26, 0.03, 0.2), hc, 0, 2.02, 0.3); }
-  if (L.scarf) k.add(new THREE.CylinderGeometry(0.2, 0.24, 0.12, 8), L.scarfCol, 0, 1.72, 0);
-  if (L.glasses) k.add(new THREE.BoxGeometry(0.34, 0.07, 0.04), 0x14161c, 0, 1.98, 0.22);
-  if (L.bag) k.add(new THREE.BoxGeometry(0.12, 0.42, 0.34), L.bag, 0.36, 1.02, -0.05);
+  if (L.hat === 'kasket') { up(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 10), hc, 0, 2.14, 0.01); up(new THREE.BoxGeometry(0.34, 0.04, 0.22), hc, 0, 2.09, 0.3); }
+  else if (L.hat === 'bere') { up(new THREE.SphereGeometry(0.28, 9, 6, 0, Math.PI * 2, 0, Math.PI / 2), hc, 0, 2.0, 0); up(new THREE.SphereGeometry(0.1, 5, 4), 0xf2efe6, 0, 2.3, 0); }
+  else if (L.hat === 'hasir') { up(new THREE.CylinderGeometry(0.5, 0.5, 0.04, 12), 0xf0dc9c, 0, 2.12, 0); up(new THREE.CylinderGeometry(0.2, 0.23, 0.2, 10), 0xf0dc9c, 0, 2.22, 0); up(new THREE.CylinderGeometry(0.235, 0.235, 0.07, 10), hc, 0, 2.17, 0); }
+  else if (L.hat === 'esarp') { up(new THREE.SphereGeometry(0.27, 9, 7, 0, Math.PI * 2, 0, Math.PI * 0.62), hc, 0, 1.95, -0.03); up(new THREE.ConeGeometry(0.2, 0.32, 8), hc, 0, 1.62, -0.12); }
+  else if (L.hat === 'fes') { up(new THREE.CylinderGeometry(0.17, 0.21, 0.3, 10), 0xd42a33, 0, 2.22, 0); up(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 4), 0x1a1a1a, 0.12, 2.26, 0, 0, 0, 0.6); }
+  else if (L.hat === 'kep') { up(new THREE.SphereGeometry(0.26, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2), hc, 0, 2.0, 0); up(new THREE.BoxGeometry(0.3, 0.04, 0.26), hc, 0, 2.02, 0.32); }
+  if (L.scarf) { up(new THREE.CylinderGeometry(0.22, 0.27, 0.17, 8), L.scarfCol, 0, 1.72, 0); up(new THREE.BoxGeometry(0.13, 0.42, 0.05), L.scarfCol, 0.1, 1.48, 0.28); }
+  if (L.glasses) { // iki koyu cam, açık renk çerçeve: ten renginden ayrılsın
+    up(new THREE.BoxGeometry(0.46, 0.05, 0.04), L.glassFrame, 0, 2.01, 0.22);
+    for (const x of [-0.1, 0.1]) up(new THREE.BoxGeometry(0.17, 0.13, 0.05), 0x101218, x, 1.97, 0.23);
+  }
+  if (L.bag) { up(new THREE.BoxGeometry(0.16, 0.5, 0.44), L.bag, 0.38, 1.0, -0.05); up(new THREE.BoxGeometry(0.04, 0.6, 0.04), L.bag, 0.24, 1.55, 0.05, 0, 0, -0.5); }
   // kollar: sol duruşa göre (aşağı / belde / telefon), sağ simit tutuyorsa ya da kızgınsa havada
   const arm = L.shirt;
-  if (L.pose === 'hip') { cyl(0.06, 0.06, 0.42, arm, -0.42, 1.36, 0, -0.9); cyl(0.06, 0.06, 0.4, arm, -0.38, 1.02, 0, 0.9); }
-  else if (L.pose === 'phone') { cyl(0.06, 0.06, 0.42, arm, -0.33, 1.4, 0.08, 0.2); cyl(0.06, 0.06, 0.4, arm, -0.27, 1.62, 0.2, 0, -1.3); k.add(new THREE.BoxGeometry(0.1, 0.18, 0.03), 0x1b1c22, -0.22, 1.82, 0.36); }
-  else cyl(0.06, 0.06, 0.78, arm, -0.34, 1.22, 0, 0.18);
-  if (hold || angry) cyl(0.06, 0.06, 0.78, arm, 0.3, 2.0, 0, -0.12);
-  else if (L.pose === 'wave') cyl(0.06, 0.06, 0.78, arm, 0.42, 1.95, 0, -0.55);
-  else cyl(0.06, 0.06, 0.78, arm, 0.34, 1.22, 0, -0.18);
+  if (sit) { // iki el kucakta; çaycı ise kucakta ince belli çay bardağı
+    for (const x of [-0.27, 0.27]) cyl(0.06, 0.06, 0.62, arm, x, 1.12, 0.18, 0, 0.75);
+    if (L.tea) { up(new THREE.CylinderGeometry(0.13, 0.13, 0.025, 10), 0xf6f3ea, 0, 0.92, 0.42); up(new THREE.CylinderGeometry(0.075, 0.055, 0.2, 8), 0xb8401c, 0, 1.03, 0.42); }
+  } else if (mode === 'feed') { // küpeşteye yaslanmış: sol el küpeştede, sağ kol simitle öne ve yukarı
+    cyl(0.06, 0.06, 0.7, arm, -0.3, 1.25, 0.25, 0, 0.6);
+    cyl(0.06, 0.06, 0.78, arm, 0.3, 1.93, 0.33, 0, 0.75);
+  } else {
+    if (L.pose === 'hip') { cyl(0.06, 0.06, 0.42, arm, -0.42, 1.36, 0, -0.9); cyl(0.06, 0.06, 0.4, arm, -0.38, 1.02, 0, 0.9); }
+    else if (L.pose === 'phone') { cyl(0.06, 0.06, 0.42, arm, -0.33, 1.4, 0.08, 0.2); cyl(0.06, 0.06, 0.4, arm, -0.27, 1.62, 0.2, 0, -1.3); up(new THREE.BoxGeometry(0.12, 0.2, 0.03), 0x1b1c22, -0.22, 1.82, 0.36); }
+    else cyl(0.06, 0.06, 0.78, arm, -0.34, 1.22, 0, 0.18);
+    if (hold || angry) cyl(0.06, 0.06, 0.78, arm, 0.3, 2.0, 0, -0.12);
+    else if (L.pose === 'wave') cyl(0.06, 0.06, 0.78, arm, 0.42, 1.95, 0, -0.55);
+    else cyl(0.06, 0.06, 0.78, arm, 0.34, 1.22, 0, -0.18);
+  }
   const g = k.build();
   personCache.set(key, g);
   return g;
 }
-// sınırlı sayıda görünüm: önbellek en fazla 36 × 3 geometride doyar
+// sınırlı sayıda görünüm: önbellek en fazla 36 × birkaç geometride doyar
 const LOOKS = Array.from({ length: 36 }, (_, id) => {
-  const skirt = Math.random() < 0.25, hat = Math.random() < 0.45 ? pick(HATS.slice(1)) : '';
+  const skirt = Math.random() < 0.25, hat = Math.random() < 0.5 ? pick(HATS.slice(1)) : '';
   return {
     id, shirt: SHIRTS[id % SHIRTS.length], pants: pick(PANTS), skin: pick(SKINS), skirt,
     hair: Math.random() < 0.85 ? (Math.random() * HAIRS.length) | 0 : -1, long: skirt ? Math.random() < 0.7 : Math.random() < 0.1,
-    hat, hatCol: pick(HAT_COLS), scarf: Math.random() < 0.18, scarfCol: pick([0xc8352e, 0x3a6ea5, 0xe3b23c, 0xf2efe6]),
-    jacket: Math.random() < 0.25 ? pick([0x2f3b4c, 0x5a4636, 0x6b7a5a]) : 0, glasses: Math.random() < 0.15,
-    bag: Math.random() < 0.15 ? pick([0x8a5a32, 0xc8352e, 0x2f3b4c]) : 0,
+    hat, hatCol: pick(HAT_COLS), scarf: Math.random() < 0.25, scarfCol: pick([0xd8352e, 0x2f7fd0, 0xf2b81c, 0xf2efe6, 0x2bb3a3]),
+    jacket: Math.random() < 0.25 ? pick([0x2f3b4c, 0x5a4636, 0x6b7a5a]) : 0, glasses: Math.random() < 0.28, glassFrame: pick([0xf2efe6, 0xe3b23c, 0xd8352e]),
+    bag: Math.random() < 0.22 ? pick([0xd8352e, 0xf2b81c, 0x2bb3a3, 0x8a5a32]) : 0, tea: Math.random() < 0.6,
     pose: pick(['down', 'down', 'hip', 'phone', 'wave']),
   };
 });
 const SIMITCI_LOOK = { id: 'simitci', shirt: 0xf2efe6, pants: 0x262c3a, skin: 0xd49b74, hair: 1, hat: 'kasket', hatCol: 0x3b3b3b, scarf: true, scarfCol: 0xc8352e, pose: 'down' };
-export function makePerson(hold, look = pick(LOOKS)) {
-  const mesh = new THREE.Mesh(personGeo(look, hold, false), vcMat);
+// simidin elde durduğu yer (yolcunun yerel ekseninde)
+const SIMIT_AT = { '': [0.34, 2.56, 0], feed: [0.3, 2.3, 0.66] };
+export function makePerson(hold, look = pick(LOOKS), mode = '') {
+  const mesh = new THREE.Mesh(personGeo(look, hold, false, mode), vcMat);
   mesh.castShadow = true;
   mesh.rotation.y = rand(-0.6, 0.6);
   // simit tutanların boyu sabit (elindeki simidin yeri main.js'te hesaplanır); ötekiler biraz uzun/kısa, arada çocuk
   if (!hold) mesh.scale.setScalar(Math.random() < 0.08 ? 0.68 : rand(0.92, 1.08));
   let simit = null;
-  if (hold) { simit = makeSimit(); simit.position.set(0.34, 2.56, 0); mesh.add(simit); }
-  const angryGeo = () => personGeo(look, false, true);
-  return { mesh, simit, angryGeo, calmGeo: mesh.geometry, angry: 0, ph: Math.random() * 6 };
+  if (hold) { simit = makeSimit(); simit.position.set(...SIMIT_AT[mode] || SIMIT_AT['']); mesh.add(simit); }
+  const angryGeo = () => personGeo(look, false, true, mode === 'sit' ? 'sit' : '');
+  return { mesh, simit, sy: simit ? simit.position.y : 0, angryGeo, calmGeo: mesh.geometry, angry: 0, ph: Math.random() * 6, feeder: mode === 'feed', sit: mode === 'sit' };
 }
+// güverte bankı: küpeşte boyunca, sırtı içe dönük; oturanlar denize bakar
+export const BENCH = new Kit()
+  .add(new THREE.BoxGeometry(0.5, 0.07, 2.1), 0xa8743e, 0, 0.47, 0)
+  .add(new THREE.BoxGeometry(0.06, 0.4, 2.1), 0xa8743e, -0.27, 0.78, 0, 0, 0, 0.12)
+  .add(new THREE.BoxGeometry(0.42, 0.45, 0.06), 0x2b3a4c, 0, 0.22, -0.9)
+  .add(new THREE.BoxGeometry(0.42, 0.45, 0.06), 0x2b3a4c, 0, 0.22, 0.9)
+  .build();
 
 // ---------------- simitçi kayığı ----------------
 // Kenarda sallanan sandal; simitçi tepsiden alıp martıya simit fırlatır. Tepsideki yığın atıldıkça azalır.

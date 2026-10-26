@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading, applyWeather } from './scene.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
@@ -241,20 +241,42 @@ function spawnFerry() {
     chims.push({ x: x0 + cx, z: zc + cz, dark, t: Math.random() });
     if (dark) smokes.push({ x: x0 + cx, z0: zc + cz + 1.3, z1: zc + cz + 7.5, hw: 1.6, hit: false });
   }
+  // banklar küpeşte boyunca: oturanlar denize bakar, çoğunun elinde çay, simit yok (yem değil, manzara)
+  const mine = [];
+  const seat = (px, lz, mode, hold) => {
+    const p = makePerson(hold, undefined, mode); p.mesh.position.set(px, DECK + 0.05, lz);
+    if (mode) p.mesh.rotation.y = (px > 0 ? 1 : -1) * Math.PI / 2 + rand(-0.15, 0.15);
+    g.add(p.mesh); p.wz = zc + lz; people.push(p); mine.push(p);
+    return p;
+  };
+  for (let i = 0, nb = 1 + ((Math.random() * 3) | 0); i < nb; i++) {
+    const s = pick([-1, 1]), lz = rand(-L / 2 + 12, L / 2 - 6);
+    if (blocked.some(b => Math.hypot(b.x - s * 3.2, b.z - lz) < b.r + 1)) continue;
+    const bench = new THREE.Mesh(BENCH, vcMat); bench.position.set(s * 3.2, DECK, lz); bench.rotation.y = s > 0 ? 0 : Math.PI; bench.castShadow = true; g.add(bench);
+    blocked.push({ x: s * 3.2, z: lz, r: 1.5 });
+    for (const dz of [-0.55, 0.55]) if (Math.random() < 0.75) { const p = seat(s * 3.2, lz + dz, 'sit', false); p.mesh.position.y = DECK + 0.05; p.mesh.scale.setScalar(1); }
+  }
+  // simit ikram eden yolcu: küpeşteden simidi martıya uzatır; ondan almak serbest, kızmaz, sevinir (bonus)
+  if (d > 0.2 && Math.random() < 0.55) {
+    const s = pick([-1, 1]), lz = rand(-L / 2 + 12, L / 2 - 6);
+    if (!blocked.some(b => Math.hypot(b.x - s * 3.35, b.z - lz) < b.r)) { seat(s * 3.35, lz, 'feed', true); blocked.push({ x: s * 3.35, z: lz, r: 1.2 }); }
+  }
   for (let lz = -L / 2 + 10; lz < L / 2 - 3; lz += rand(2.2, 3)) {
     for (const lx of [-2.9, -1.2, 0.5, 2.2]) {
       if (Math.random() < 0.45) continue;
       const px = lx + rand(-0.4, 0.4);
       if (blocked.some(b => Math.hypot(b.x - px, b.z - lz) < b.r)) continue;
-      const hold = Math.random() < 0.42 + d * 0.03;
-      const p = makePerson(hold); p.mesh.position.set(px, DECK + 0.05, lz); g.add(p.mesh);
-      p.wz = zc + lz; people.push(p);
-      if (p.simit) {
-        const gold = Math.random() < 0.02;
-        if (gold) p.simit.material = makeSimit(true).material;
-        simits.push({ mesh: p.simit, x: x0 + px + 0.34 * Math.cos(p.mesh.rotation.y), y: DECK + 0.05 + 2.56, z: zc + lz - 0.34 * Math.sin(p.mesh.rotation.y), person: p, gold });
-      }
+      // bir kısmı simitsiz: eli boş, telefonda, el sallıyor
+      seat(px, lz, '', Math.random() < 0.38 + d * 0.03);
     }
+  }
+  g.updateMatrixWorld(true);
+  for (const p of mine) {
+    if (!p.simit) continue;
+    const gold = Math.random() < 0.02;
+    if (gold) p.simit.material = makeSimit(true).material;
+    p.simit.getWorldPosition(tmp);
+    simits.push({ mesh: p.simit, x: tmp.x, y: tmp.y, z: tmp.z, person: p, gold });
   }
   ferries.push({ group: g, x: x0, zFront, zBack, ph: Math.random() * 6, chims, flag });
   genZ = zFront - 2;
@@ -966,7 +988,7 @@ function frame() {
       p.angry -= dt;
       p.mesh.position.y = DECK + 0.05 + Math.abs(Math.sin(p.angry * 12)) * 0.35;
       if (p.angry <= 0) { p.mesh.position.y = DECK + 0.05; p.mesh.geometry = p.calmGeo; }
-    } else if (p.simit && p.simit.visible) p.simit.position.y = 2.56 + Math.sin(t * 3 + p.ph) * 0.06;
+    } else if (p.simit && p.simit.visible) p.simit.position.y = p.sy + Math.sin(t * 3 + p.ph) * 0.06;
   }
   for (const f of ferries) {
     if (f.zFront > g.z + 40 || f.zBack < g.z - 200) continue;
@@ -1074,8 +1096,10 @@ function frame() {
 
 function angry(p) {
   if (!p) return;
-  p.angry = 1.6; p.mesh.geometry = p.angryGeo();
+  p.angry = 1.6;
+  if (!p.feeder) p.mesh.geometry = p.angryGeo(); // ikramcı kızmaz, sevinçten zıplar
 }
+const cheers = ['Afiyet olsun!', 'Al bakalım!', 'Hadi gel!'];
 const shouts = ['Simidim!', 'Hoop!', 'Yaa!', 'Martıya bak!', 'Bırak onu!', 'Ah simidim…', 'Oha!', 'Kaçtı!', 'Hayırdır?'];
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
@@ -1099,7 +1123,8 @@ function takeSimit(s) {
   popText(`+${gain}`, tmp.set(s.x, s.y + 0.8, s.z), s.gold ? 'gold big' : m > 1 ? 'gold' : '');
   bump(ui.score);
   flapBurst = Math.max(flapBurst, 0.4);
-  if (s.person) { angry(s.person); if (Math.random() < 0.5) popText(tr(pick(shouts)), tmp.set(s.x, s.y + 1.4, s.z), 'shout'); }
+  if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; popText(`${tr(pick(cheers))} +${15 * m}`, tmp.set(s.x, s.y + 1.4, s.z), 'gold'); }
+  else if (s.person) { angry(s.person); if (Math.random() < 0.5) popText(tr(pick(shouts)), tmp.set(s.x, s.y + 1.4, s.z), 'shout'); }
 }
 // viraj çıkışı: çizgideki simitlerin çoğu alındıysa bonus ve sapan gibi fırlama
 function judgeTurn(u) {
@@ -1194,7 +1219,8 @@ window.__game = {
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
-  get weather() { return weather; },
+  get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
+  get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
