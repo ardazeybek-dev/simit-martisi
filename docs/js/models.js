@@ -258,6 +258,82 @@ export function makeFishingBoat(side) {
   return g;
 }
 
+// ---------------- yelkenli ve küçük yat ----------------
+// Yelken üçgeni direğin arkasına doğru uzanır; pruva -z. Renkler pastel, yelkenler kırık beyaz ya da çizgili.
+const SAIL_COLS = [[0xf3efe6, 0x3a6ea5, 0xfdf7ec], [0x2b3a4c, 0xe07a5f, 0xf6e7c8], [0xf3efe6, 0x4f9d69, 0xfdf7ec], [0xf6e7c8, 0xc8352e, 0xf3efe6]];
+const sailCache = [];
+function sailTri(w, h) {
+  const s = new THREE.Shape(); s.moveTo(0, 0); s.lineTo(w, 0); s.lineTo(0, h); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: false }); g.rotateY(Math.PI / 2); // yelken y-z düzleminde, +z'ye uzanır
+  return g;
+}
+export function sailboatGeo(ci) {
+  if (sailCache[ci]) return sailCache[ci];
+  const [hullC, band, sail] = SAIL_COLS[ci];
+  const k = hullBands(new Kit(), [[0.35, 0x2b3a4c], [0.45, hullC], [0.16, band]], -0.3, 1.25, 1.35)
+    .add(new THREE.BoxGeometry(2.1, 0.07, 5.4), 0xb98a5a, 0, 0.62, 0)
+    .add(new THREE.BoxGeometry(1.3, 0.55, 1.6), 0xf3efe6, 0, 0.9, 0.6)
+    .add(new THREE.CylinderGeometry(0.07, 0.09, 8, 5), 0xf3efe6, 0, 4.6, -0.6)
+    .add(new THREE.CylinderGeometry(0.05, 0.05, 3.6, 4), 0xf3efe6, 0, 1.55, 1.2, Math.PI / 2)
+    .add(sailTri(3.5, 7), (f, y) => (ci % 2 && y > 3 && y < 4.4 ? band : sail), 0, 1.25, -0.5)   // ana yelken
+    .add(sailTri(2.4, 6.2), sail, 0, 1.0, -0.75, 0, Math.PI, 0)                                   // flok
+    .add(new THREE.BoxGeometry(0.05, 0.4, 0.7), band, 0, 8.7, -0.3);                               // flama
+  return (sailCache[ci] = k.build());
+}
+export function makeSailboat(ci = (Math.random() * SAIL_COLS.length) | 0) {
+  const g = new THREE.Group();
+  const h = new THREE.Mesh(sailboatGeo(ci), vcMat); h.castShadow = true; g.add(h);
+  return g;
+}
+const YACHT = hullBands(new Kit(), [[0.35, 0x2b3a4c], [0.55, 0xfdf7ec], [0.12, 0x5fa8d3]], -0.3, 1.5, 1.6)
+  .add(new THREE.BoxGeometry(2.6, 0.07, 6.6), 0xb98a5a, 0, 0.72, 0)
+  .add(new THREE.BoxGeometry(2.1, 0.9, 3.2), 0xfdf7ec, 0, 1.2, 0.6)
+  .add(new THREE.BoxGeometry(2.14, 0.32, 3.24), 0x2b3a4c, 0, 1.3, 0.6)
+  .add(new THREE.BoxGeometry(1.6, 0.7, 1.8), 0xfdf7ec, 0, 2, 0.9)
+  .add(new THREE.BoxGeometry(1.64, 0.26, 1.84), 0x2b3a4c, 0, 2.05, 0.9)
+  .add(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 4), 0xfdf7ec, 0, 3, 1.2)
+  .add(new THREE.BoxGeometry(0.04, 0.3, 0.5), 0xe30a17, 0, 3.5, 1.4)
+  .build();
+export function makeYacht() { const g = new THREE.Group(), h = new THREE.Mesh(YACHT, vcMat); h.castShadow = true; g.add(h); return g; }
+
+// ---------------- dev yolcu gemisi (uzakta, sağ kıyıda) ----------------
+// Beyaz gövde, kat kat pencere bantları, balkon sıraları, iki kalın baca. Pruva -z.
+// Uzakta olduğu için sis yarı güçte: yoksa ufkun rengine gömülüp şekilsiz bir bloğa döner.
+export const cruiseMat = vcMat.clone();
+cruiseMat.onBeforeCompile = function (sh) {
+  THREE.Material.prototype.onBeforeCompile.call(this, sh);
+  sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', `#ifdef USE_FOG
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(fogNear, fogFar, vFogDepth) * 0.5);
+#endif`);
+};
+cruiseMat.customProgramCacheKey = () => 'cruise';
+export const CRUISE = (() => {
+  const k = new Kit(), L = 96;
+  const hull = new THREE.Shape(); hull.moveTo(-7, -L / 2 + 6); hull.quadraticCurveTo(-7, -L / 2 - 2, 0, -L / 2 - 6); hull.quadraticCurveTo(7, -L / 2 - 2, 7, -L / 2 + 6);
+  hull.lineTo(7, L / 2 - 2); hull.quadraticCurveTo(7, L / 2, 5, L / 2); hull.lineTo(-5, L / 2); hull.quadraticCurveTo(-7, L / 2, -7, L / 2 - 2); hull.closePath();
+  const band = (h) => { const g = new THREE.ExtrudeGeometry(hull, { depth: h, bevelEnabled: false, curveSegments: 4 }); g.rotateX(Math.PI / 2); g.translate(0, h, 0); return g; };
+  let y = -1.5;
+  for (const [h, c] of [[2.2, 0x22324a], [0.5, 0xc8352e], [4.2, 0xfdf9f2], [0.9, 0x2f5f8f], [1.3, 0xfdf9f2]]) { k.add(band(h), c, 0, y, 0); y += h; }
+  // üst katlar: geriye doğru kısalan bloklar, her katta koyu cam şeridi
+  for (let i = 0; i < 5; i++) {
+    const w = 13 - i * 0.6, len = L - 22 - i * 8, z = 6 + i * 2.5, base = y + i * 2.2;
+    k.add(new THREE.BoxGeometry(w, 2.2, len), 0xfdf9f2, 0, base + 1.1, z);
+    k.add(new THREE.BoxGeometry(w + 0.08, 0.7, len - 2), i === 4 ? 0x5fa8d3 : 0x3b5578, 0, base + 1.25, z);
+  }
+  const top = y + 11;
+  k.add(new THREE.BoxGeometry(9, 1.4, 12), 0xfdf9f2, 0, top + 0.7, -14);          // köprü üstü
+  k.add(new THREE.BoxGeometry(9.1, 0.6, 12.1), 0x22324a, 0, top + 0.8, -14);
+  for (const zf of [16, 28]) {
+    k.add(new THREE.CylinderGeometry(1.9, 2.3, 6, 10), 0xfdf9f2, 0, top + 3, zf, 0, 0, 0, 1, 1, 1.5);
+    k.add(new THREE.CylinderGeometry(1.95, 1.95, 1.4, 10), 0xc8352e, 0, top + 5, zf, 0, 0, 0, 1, 1, 1.5);
+    k.add(new THREE.CylinderGeometry(1.85, 1.85, 0.5, 10), 0x22324a, 0, top + 6.1, zf, 0, 0, 0, 1, 1, 1.5);
+  }
+  // havuz güvertesi: mavi dikdörtgen ve şemsiyeler
+  k.add(new THREE.BoxGeometry(5, 0.12, 8), 0x6fd3e8, 0, top + 0.06, 2);
+  for (let i = 0; i < 4; i++) k.add(new THREE.ConeGeometry(0.9, 0.5, 6), i % 2 ? 0xffc23a : 0xe07a5f, (i % 2 ? 1 : -1) * 3.2, top + 1.6, -4 + i * 3);
+  return k.build();
+})();
+
 // ---------------- Kız Kulesi (yakın, kıyıdan geçerken) ----------------
 export const MAIDEN = (() => {
   const k = new Kit();

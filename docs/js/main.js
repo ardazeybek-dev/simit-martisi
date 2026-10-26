@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading, applyWeather } from './scene.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, MAIDEN, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
@@ -28,8 +28,8 @@ const blob = new THREE.Mesh(GEO.blob, new THREE.MeshBasicMaterial({ color: 0x0a1
 blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
 // ---------------- dünya ----------------
-let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [];
-let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, land = [];
+let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [];
+let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, land = [];
 const difficulty = () => clamp(-genZ / 650, 0, 5);
 
 // ---------------- virajlar ----------------
@@ -167,6 +167,13 @@ function spawnGap(first, fixLen) {
         kites.push({ g: k, bx, z, ph: Math.random() * 6, sw: rand(1.5, 3) });
       }
     }
+    // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
+    if (d > 0.35 && len > 34 && Math.random() < 0.28 + d * 0.07) {
+      const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-3.6, 3.6), k = rand(0.2, 0.32);
+      const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b);
+      const o = { x: xa + side * 60 * k, z, hw: 1.9, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false };
+      obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
+    }
     if (segCount > 2 && Math.random() < 0.42) {
       const kind = pick(d > 1.5 ? ['shield', 'shield', 'magnet', 'double'] : ['magnet', 'double', 'shield']);
       const z = z0 - len * 0.5, x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -4.5, 4.5);
@@ -256,11 +263,18 @@ function spawnFerry() {
 // ---------------- kıyı dekoru: koridorun dışında balıkçı tekneleri, arada bir yakından geçen Kız Kulesi ----------------
 function spawnScenery(limit) {
   while (sceneryZ > limit) {
-    sceneryZ -= rand(35, 80);
-    if (Math.random() < 0.7) {
-      const side = pick([-1, 1]), b = makeFishingBoat(side);
-      b.position.set(side * rand(16, 30), 0, sceneryZ); b.rotation.y = rand(-0.5, 0.5);
+    sceneryZ -= rand(22, 52);
+    if (Math.random() < 0.85) {
+      const side = pick([-1, 1]), r = Math.random();
+      const b = r < 0.5 ? makeFishingBoat(side) : r < 0.78 ? makeSailboat() : makeYacht();
+      b.position.set(side * rand(15, r < 0.5 ? 30 : 40), 0, sceneryZ); b.rotation.y = rand(-0.5, 0.5) + (r >= 0.5 && Math.random() < 0.5 ? Math.PI : 0);
       scene.add(b); decor.push({ mesh: b, z: sceneryZ, ph: Math.random() * 6 });
+    }
+    if (sceneryZ < cruiseZ) {
+      cruiseZ = sceneryZ - rand(380, 700);
+      const c = new THREE.Mesh(CRUISE, cruiseMat);
+      c.position.set(rand(62, 88), 0, sceneryZ - 40); c.scale.setScalar(rand(1.4, 1.7)); c.rotation.y = rand(-0.25, 0.25) + (Math.random() < 0.5 ? Math.PI : 0);
+      scene.add(c); land.push({ mesh: c, z: sceneryZ - 40 });
     }
     if (sceneryZ < maidenZ) {
       maidenZ = sceneryZ - rand(1100, 1700);
@@ -277,7 +291,8 @@ function clearWorld() {
   for (const f of ferries) scene.remove(f.group);
   for (const s of simits) { if (s.free) scene.remove(s.mesh); dropThrown(s); }
   for (const a of [...rivals.map(r => r.mesh), ...kites.map(k => k.g), ...powerups.map(p => p.g), ...decor.map(d => d.mesh)]) scene.remove(a);
-  ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = [];
+  for (const c of crossers) scene.remove(c.mesh);
+  ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = []; crossers = [];
   clearFx();
 }
 function generate(limit) {
@@ -296,6 +311,7 @@ function cleanup(z) {
   smokes = smokes.filter(s => s.z0 < behind);
   simits = simits.filter(s => (s.z > behind ? (s.free && scene.remove(s.mesh), dropThrown(s), false) : true));
   boats = boats.filter(b => b.z < behind);
+  crossers = crossers.filter(c => (c.z > behind ? (scene.remove(c.mesh), false) : true));
   rivals = rivals.filter(r => (r.mesh.position.z > behind ? (scene.remove(r.mesh), false) : true));
   kites = kites.filter(k => (k.z > behind ? (scene.remove(k.g), false) : true));
   powerups = powerups.filter(p => (p.z > behind ? (scene.remove(p.g), false) : true));
@@ -330,7 +346,7 @@ const GUST = 8, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemeden 
 const run = { near: 0, power: 0, steal: 0, turn: 0 }; // görevler için uçuş sayaçları
 
 function resetWorld(newWeather = true) {
-  clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = rand(-500, -300);
+  clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = rand(-500, -300); cruiseZ = rand(-120, -40);
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
@@ -408,7 +424,7 @@ function showOver() {
   const final = total();
   const isBest = final > best, prevBest = best;
   if (isBest) { best = final; store.set(KEY_BEST, best); }
-  const msg = { 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!' };
+  const msg = { 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!' };
   $('overTitle').textContent = msg[cause] || 'Pat!';
   $('stSimit').textContent = fmt(simitCount) + (goldCount ? ` (+${goldCount} altın)` : '');
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
@@ -961,6 +977,10 @@ function frame() {
     }
   }
   for (const d of decor) { d.mesh.position.y = waveAt(d.mesh.position.x, d.z, t) - 0.1; d.mesh.rotation.z = Math.sin(t * 1.7 + d.ph) * 0.12; }
+  for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar
+    c.o.x = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k;
+    c.mesh.position.set(c.o.x, waveAt(c.o.x, c.z, t) - 0.1, c.z); c.mesh.rotation.x = Math.sin(t * 1.3 + c.ph) * 0.06;
+  }
   for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
   updateFx(dt);
 
@@ -1171,6 +1191,7 @@ window.__game = {
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get weather() { return weather; },
+  get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
   pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
