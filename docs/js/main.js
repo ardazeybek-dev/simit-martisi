@@ -374,6 +374,7 @@ function startGame() {
   sfx.click();
   refillMissions();
   resetWorld(state !== 'title'); state = 'play';
+  qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
   ui.combo.classList.remove('on');
@@ -732,13 +733,16 @@ addEventListener('pagehide', () => pause());
 
 // ---------------- kalite: zayıf cihazda kendini kısar ----------------
 const DPR = Math.min(2, devicePixelRatio || 1);
-let quality = 2, qFrames = 0, qTime = 0, fpsSmooth = 60;
+// Ölçüm yalnızca uçuşta ve kalkıştan 4 sn sonra: yükleme ve ilk gölgelendirici derlemesi telefonu yavaş sanmasın.
+// Kalite düşerse, uzun süre akıcı kalınca geri çıkar; geri çıktıktan sonra yine düşerse orada kilitlenir.
+let quality = 2, qFrames = 0, qTime = 0, fpsSmooth = 60, qWarm = 4, qGood = 0, qMax = 2;
 // ?q=0|1|2 kaliteyi sabitler (otomatik ayar kapanır) — ölçüm ve test için
 const qLock = /^[012]$/.test(new URLSearchParams(location.search).get('q') || '') ? +new URLSearchParams(location.search).get('q') : -1;
 function setQuality(q) {
   quality = q;
-  renderer.setPixelRatio(q === 2 ? DPR : q === 1 ? Math.min(DPR, 1.4) : 1);
-  const sh = q === 2;
+  renderer.setPixelRatio(q === 2 ? DPR : q === 1 ? Math.min(DPR, 1.5) : Math.min(DPR, 1.15));
+  const sh = q > 0, size = q === 2 ? 1024 : 512; // orta kalitede de gölge var, sadece daha kaba
+  if (sunLight.shadow.mapSize.x !== size) { sunLight.shadow.mapSize.set(size, size); sunLight.shadow.map?.dispose(); sunLight.shadow.map = null; }
   if (renderer.shadowMap.enabled !== sh) {
     renderer.shadowMap.enabled = sh; sunLight.castShadow = sh;
     scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => (m.needsUpdate = true)); });
@@ -756,14 +760,17 @@ function frame() {
   const realDt = Math.min(0.05, clock.getDelta());
   // FPS ölçümü + otomatik kalite
   fpsSmooth = fpsSmooth * 0.95 + (1 / Math.max(realDt, 1e-3)) * 0.05;
-  if (state !== 'paused') {
+  if (state === 'play' && (qWarm -= realDt) < 0) {
     qFrames++; qTime += realDt;
     if (qTime > 2.5) {
       const f = qFrames / qTime;
-      if (f < 42 && quality > 0 && qLock < 0) setQuality(quality - 1);
+      if (qLock >= 0) {}
+      else if (f < 42 && quality > 0) { if (qGood < 0) qMax = quality - 1; setQuality(quality - 1); qGood = 0; }
+      else if (f > 56 && quality < qMax && ++qGood >= 4) { setQuality(quality + 1); qGood = -1; } // -1: yeni çıkıldı
+      else if (f <= 56 && qGood > 0) qGood = 0;
       qFrames = 0; qTime = 0;
     }
-  }
+  } else if (state !== 'play') { qFrames = 0; qTime = 0; }
   if (state === 'paused') { renderer.render(scene, camera); return; }
 
   // hit-stop: simülasyon donar, kamera sarsıntısı ve arayüz sürer
@@ -1139,7 +1146,7 @@ function resize() {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
-setQuality(qLock >= 0 ? qLock : DPR > 1.5 && Math.min(screen.width, screen.height) < 500 ? 1 : 2);
+setQuality(qLock >= 0 ? qLock : 2);
 
 showTitle();
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
