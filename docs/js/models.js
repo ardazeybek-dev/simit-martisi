@@ -465,6 +465,41 @@ export const DOLPHIN = (() => {
   return k.build();
 })();
 
+// ---------------- güverte eşyaları ----------------
+// çöp kutusu: gövde ve kapak ayrı (kapak fırlar, içinden simit kırığı zıplar); kasalar, halat kangalı, kasanın üstünde kedi
+export const BIN = new Kit()
+  .add(new THREE.CylinderGeometry(0.3, 0.25, 0.8, 10), 0x2f7d4a, 0, 0.4, 0)
+  .add(new THREE.CylinderGeometry(0.305, 0.3, 0.12, 10), 0xf2efe6, 0, 0.55, 0)
+  .add(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 10), 0x1f5a35, 0, 0.79, 0)
+  .build();
+export const BIN_LID = new Kit()
+  .add(new THREE.CylinderGeometry(0.3, 0.33, 0.1, 10), 0x2f7d4a, 0, 0.05, 0)
+  .add(new THREE.BoxGeometry(0.2, 0.06, 0.06), 0xf2efe6, 0, 0.13, 0)
+  .build();
+export const CRATES = (() => {
+  const k = new Kit(), wood = 0xb98a52, dark = 0x8a6236;
+  const crate = (x, y, z, ry) => {
+    k.add(new THREE.BoxGeometry(0.7, 0.5, 0.55), (f, cy) => (Math.abs(cy - y - 0.25) < 0.08 ? dark : wood), x, y + 0.25, z, 0, ry);
+    for (let i = 0; i < 3; i++) k.add(new THREE.TorusGeometry(0.12, 0.05, 5, 10), 0xc9762e, x - 0.2 + i * 0.2, y + 0.53, z, Math.PI / 2, 0, 0); // üstte simitler
+  };
+  crate(0, 0, 0, 0.1); crate(0.05, 0.5, 0.02, -0.15); crate(0.72, 0, 0.05, -0.05);
+  return k.build();
+})();
+export const ROPE = (() => {
+  const k = new Kit();
+  for (let i = 0; i < 4; i++) k.add(new THREE.TorusGeometry(0.42 - i * 0.07, 0.07, 5, 14), i % 2 ? 0xd9c08a : 0xc9ad74, 0, 0.07 + i * 0.1, 0, Math.PI / 2);
+  return k.build();
+})();
+export const CAT = (() => {
+  const k = new Kit(), c = 0xe08a3a, w = 0xfff1de;
+  k.add(new THREE.SphereGeometry(0.2, 8, 6), (f, y) => (y < 0.12 ? w : c), 0, 0.2, 0, 0, 0, 0, 1, 1, 1.35);
+  k.add(new THREE.SphereGeometry(0.15, 8, 6), c, 0, 0.42, 0.22);
+  for (const s of [-1, 1]) k.add(new THREE.ConeGeometry(0.06, 0.12, 4), c, s * 0.08, 0.56, 0.22);
+  for (const s of [-1, 1]) k.add(new THREE.SphereGeometry(0.03, 4, 3), 0x2a4d1a, s * 0.06, 0.45, 0.35);
+  k.add(new THREE.CylinderGeometry(0.035, 0.03, 0.5, 5), c, 0, 0.3, -0.36, -0.9);
+  return k.build();
+})();
+
 // ---------------- Galata Köprüsü ----------------
 // Koridoru boydan boya keser; tabliye kameranın üstünde (yakın kamera altından geçer). Ayaklar ve alt kattaki lokantalar şeridin dışında.
 // Küpeşteden balıkçıların oltaları suya sarkar: ipler engel (main.js), her balıkçı + oltası tek geometri.

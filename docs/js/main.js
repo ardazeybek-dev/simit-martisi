@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading, applyWeather } from './scene.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
@@ -29,7 +29,7 @@ const blob = new THREE.Mesh(GEO.blob, new THREE.MeshBasicMaterial({ color: 0x0a1
 blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
 // ---------------- dünya ----------------
-let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], bridges = [];
+let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], bridges = [], bins = [], cats = [];
 let bridgeZ = 0;
 let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, land = [];
 const difficulty = () => clamp(-genZ / 650, 0, 5);
@@ -322,6 +322,33 @@ function spawnFerry() {
     blocked.push({ x: s * 3.2, z: lz, r: 1.5 });
     for (const dz of [-0.55, 0.55]) if (Math.random() < 0.75) { const p = seat(s * 3.2, lz + dz, 'sit', false); p.mesh.position.y = DECK + 0.05; p.mesh.scale.setScalar(1); }
   }
+  // güverte eşyaları: çöp kutusu (martı gelince kapağı fırlar, içinden simit kırığı zıplar), kasalar (bazen üstünde kedi), halat kangalı
+  const free = (x, lz, r) => !blocked.some(b => Math.hypot(b.x - x, b.z - lz) < b.r + r);
+  for (let i = 0, nb = Math.random() < 0.65 ? 1 + (Math.random() < 0.35 ? 1 : 0) : 0; i < nb; i++) {
+    const s = pick([-1, 1]), x = s * 3.3, lz = rand(-L / 2 + 12, L / 2 - 6);
+    if (!free(x, lz, 0.8)) continue;
+    const bin = new THREE.Mesh(BIN, vcMat); bin.position.set(x, DECK, lz); bin.scale.setScalar(1.35); bin.castShadow = true; g.add(bin);
+    const lid = new THREE.Mesh(BIN_LID, vcMat); lid.position.set(x, DECK + 1.08, lz); lid.scale.setScalar(1.35); g.add(lid);
+    blocked.push({ x, z: lz, r: 1 });
+    addSimit(x0 + x, DECK + 0.8, zc + lz, false, true);
+    const sm = simits[simits.length - 1]; sm.mesh.visible = false; sm.bin = { u: -1, y0: DECK + 0.8 };
+    bins.push({ lid, s: sm, z: zc + lz, ly: DECK + 1.08 });
+  }
+  if (Math.random() < 0.6) {
+    const s = pick([-1, 1]), x = s * 3.0, lz = rand(-L / 2 + 12, L / 2 - 6);
+    if (free(x, lz, 1)) {
+      const c = new THREE.Mesh(CRATES, vcMat); c.position.set(x, DECK, lz); c.rotation.y = s > 0 ? Math.PI : 0; c.castShadow = true; g.add(c);
+      blocked.push({ x, z: lz, r: 1.4 });
+      if (Math.random() < 0.55) {
+        const cat = new THREE.Mesh(CAT, vcMat); cat.position.set(x, DECK + 1.06, lz); cat.rotation.y = rand(-0.5, 0.5); cat.castShadow = true; g.add(cat);
+        cats.push({ mesh: cat, x: x0 + x, z: zc + lz, done: false, jump: 0 });
+      }
+    }
+  }
+  if (Math.random() < 0.7) {
+    const x = rand(-1.5, 1.5), lz = L / 2 - rand(3, 5);
+    if (free(x, lz, 0.6)) { const r = new THREE.Mesh(ROPE, vcMat); r.position.set(x, DECK, lz); g.add(r); blocked.push({ x, z: lz, r: 0.8 }); }
+  }
   // simit ikram eden yolcu: küpeşteden simidi martıya uzatır; ondan almak serbest, kızmaz, sevinir (bonus)
   if (d > 0.2 && Math.random() < 0.55) {
     const s = pick([-1, 1]), lz = rand(-L / 2 + 12, L / 2 - 6);
@@ -382,7 +409,7 @@ function clearWorld() {
   for (const c of crossers) scene.remove(c.mesh);
   for (const f of dolphins) scene.remove(f.mesh);
   for (const b of bridges) scene.remove(b.g);
-  ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = []; crossers = []; dolphins = []; bridges = [];
+  ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = []; crossers = []; dolphins = []; bridges = []; bins = []; cats = [];
   clearFx();
 }
 function generate(limit) {
@@ -404,6 +431,7 @@ function cleanup(z) {
   crossers = crossers.filter(c => (c.z > behind ? (scene.remove(c.mesh), false) : true));
   dolphins = dolphins.filter(f => (f.z > behind ? (scene.remove(f.mesh), false) : true));
   bridges = bridges.filter(b => (b.z > behind + 10 ? (scene.remove(b.g), false) : true));
+  bins = bins.filter(b => b.z < behind); cats = cats.filter(c => c.z < behind);
   rivals = rivals.filter(r => (r.mesh.position.z > behind ? (scene.remove(r.mesh), false) : true));
   kites = kites.filter(k => (k.z > behind ? (scene.remove(k.g), false) : true));
   powerups = powerups.filter(p => (p.z > behind ? (scene.remove(p.g), false) : true));
@@ -1004,7 +1032,7 @@ function frame() {
   if (state === 'play' || state === 'title') {
     const magnet = pw.magnet > 0 && state === 'play';
     for (const s of simits) {
-      if (s.taken || (s.th && s.th.u < 0)) continue; // henüz atılmamış simit tepside
+      if (s.taken || (s.th && s.th.u < 0) || (s.bin && s.bin.u < 0)) continue; // henüz atılmamış simit tepside / kapalı çöp kutusunda
       const dzs = g.z - s.z;
       if (magnet && dzs > -2 && dzs < 16 && Math.abs(s.x - g.x) < 7) {
         if (!s.free) { // yolcunun elinden kopar
@@ -1131,6 +1159,21 @@ function frame() {
   for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar
     c.o.x = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k;
     c.mesh.position.set(c.o.x, waveAt(c.o.x, c.z, t) - 0.1, c.z); c.mesh.rotation.x = Math.sin(t * 1.3 + c.ph) * 0.06;
+  }
+  for (const b of bins) { // martı yaklaşınca kapak fırlar, kırık simit tam önüne zıplar
+    const s = b.s, bn = s.bin;
+    if (bn.u < 0) { if (g.z - b.z < speed * 0.55 && (state === 'play' || state === 'title')) { bn.u = 0; s.mesh.visible = true; sfx.click(); sparkle(tmp2.set(s.x, s.y + 0.3, s.z), 10, 0xffe7a8, 3, 0.5); } continue; }
+    if (bn.u > 1.6) continue;
+    bn.u += dt / 0.5;
+    const k = Math.min(1, bn.u);
+    b.lid.position.y = b.ly + Math.sin(Math.min(1, bn.u * 1.4) * Math.PI) * 1.2; b.lid.rotation.x = Math.min(1, bn.u) * 2.2;
+    if (!s.taken && !s.pulled) { s.y = bn.y0 + (FLY_Y - bn.y0) * (1 - (1 - k) * (1 - k)); s.mesh.position.y = s.y; s.mesh.rotation.x += dt * 9; }
+  }
+  for (const c of cats) { // kasadaki kedi: martı yakından geçerse tıslar, sıçrar
+    if (c.jump > 0) { c.jump -= dt; c.mesh.position.y = DECK + 1.06 + Math.sin((1 - c.jump / 0.5) * Math.PI) * 0.5; }
+    if (c.done || state !== 'play' || Math.abs(g.z - c.z) > 2.5 || Math.abs(g.x - c.x) > 3) continue;
+    c.done = true; c.jump = 0.5;
+    popText(tr(pick(['Miyav!', 'Pıısss!', 'Mrrr…'])), tmp2.set(c.x, DECK + 2.2, c.z), 'shout by');
   }
   for (const b of bridges) {
     for (const l of b.lines) {
@@ -1429,6 +1472,8 @@ window.__game = {
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0) => addRival(gull.position.z - ahead, x, 2, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
   get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },
+  get bins() { return bins.map(b => ({ x: +b.s.x.toFixed(1), ahead: +(gull.position.z - b.z).toFixed(1), u: +b.s.bin.u.toFixed(2), taken: !!b.s.taken })); },
+  get cats() { return cats.map(c => ({ ahead: +(gull.position.z - c.z).toFixed(1), done: c.done })); },
   get bridges() { return bridges.map(b => ({ ahead: +(gull.position.z - b.z).toFixed(1), done: b.done, op: +bridgeMat.opacity.toFixed(2), path: b.path, gx: +gull.position.x.toFixed(2) })); },
   get dolphins() { return dolphins.map(f => ({ ax: +f.ax.toFixed(1), x: +f.mesh.position.x.toFixed(1), y: +f.mesh.position.y.toFixed(1), u: +f.u.toFixed(2), got: f.got, ahead: +(gull.position.z - f.z).toFixed(1) })); },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },

@@ -30,8 +30,9 @@ The game pauses itself when the tab or app goes to the background and resumes wi
   Upgrade them with simits in the *Güçlendir* panel: five levels each, every level adds a quarter of the base time.
 - **Hazards:** funnels, flag masts, kites, rival gulls. Dark funnel smoke does not kill you but breaks your combo.
   - Rival colour tells you how it flies: *grey* glides side to side, *red* dives straight at you from further out, *blue* zigzags at random.
-- **Passengers:** most stand holding a simit (snatch it, they get angry); some sit on benches along the rails looking out to sea with a glass of tea and no simit. A *feeder* at the rail holds a simit out for you: take it and they cheer and pay a bonus.
+- **Passengers:** uncles, grandpas, aunties, young women and lads, each with their own outfit and their own shouts when you snatch their simit (a neighbour sometimes chimes in). Most stand holding a simit (snatch it, they get angry); some sit on benches along the rails looking out to sea with a glass of tea and no simit. A *feeder* at the rail holds a simit out for you: take it and they cheer and pay a bonus.
 - **Galata Bridge:** every 1-1.5 km the lane passes under the bridge. Anglers on both rails dangle their lines down to the water at uneven gaps (a red float marks each one); thread between them, front row then back row, following the simits. Touch a line and you are hooked. Clear both rows for an *Under the bridge!* bonus. With the far or bird's eye camera the deck turns see-through while you pass.
+- **Deck props:** when you come near a green rubbish bin its lid pops and a simit piece jumps up to your height; crates with a cat that hisses as you pass; rope coils.
 - **Glass salon ferries:** further on, some ferries carry a closed two-storey glass salon. Fly through the open passage in the middle and collect the simits inside; the glass on either side is solid.
 - **Weather follows the real calendar** (picked again every flight): snow in winter, mostly rain in autumn, now and then fog, mostly clear in spring and summer.
   - *Rain:* lightning, and gusts of wind (*Gust!* with an arrow) shove the gull sideways; steer against them.
