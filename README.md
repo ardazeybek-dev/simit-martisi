@@ -74,7 +74,7 @@ docs/
 
 ## Pitfalls
 
-- `Object.assign(mesh, { position })` throws in three.js because `position` is read-only → use `mesh.position.set(...)`.
+- `renderer.info.memory.geometries` keeps climbing during long runs when spawns build new geometry/materials (removing from the scene does not free GPU buffers) → cache them per variant (ferry length, gull type, passenger look) and reuse.
 - `<link rel="modulepreload">` placed before the import map makes Firefox ignore the map ("bare specifier" error) → keep the import map first.
 - Colouring merged geometry per triangle by height gives zebra stripes on tall faces → build each colour band as its own extrusion.
 - Headless browsers render WebGL with SwiftShader at a low frame rate, so quality drops to the lowest level and gameplay runs in slow motion; Playwright WebKit on Windows also stops showing the canvas after any canvas resize → test WebKit with `?q=1`.

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight } from './scene.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
@@ -85,7 +85,7 @@ function spawnGap(first) {
 
 function spawnFerry() {
   const d = difficulty();
-  const L = rand(44, 58), x0 = rand(-1.2, 1.2), zc = genZ - L / 2 - 2;
+  const L = pick(FERRY_LENGTHS), x0 = rand(-1.2, 1.2), zc = genZ - L / 2 - 2;
   const g = new THREE.Group(); g.position.set(x0, 0, zc); scene.add(g);
   const hull = new THREE.Mesh(ferryGeo(L), vcMat); hull.castShadow = hull.receiveShadow = true; g.add(hull);
   const wake = new THREE.Mesh(WAKE, wakeMat); wake.rotation.x = -Math.PI / 2; wake.position.set(0, 0.5, L / 2 + 13); g.add(wake);
@@ -706,5 +706,6 @@ window.__game = {
   get state() { return state; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, get powers() { return { ...pw }; },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
+  get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
   pause, resume, power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
 };

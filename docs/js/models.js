@@ -19,11 +19,13 @@ function featherTip(len, chord) {
   return g;
 }
 
-export function makeGull(rival = false) {
+// geometriler türe göre bir kez üretilir; her yeni martı aynı tamponları paylaşır (bellek sızmasın)
+const gullGeoCache = {};
+function gullGeos(rival) {
+  if (gullGeoCache[rival]) return gullGeoCache[rival];
   const C = rival
     ? { body: 0x6f7682, head: 0x5d6470, wing: 0x474d58, tip: 0x15161a, beak: 0xd9862a, eye: 0xff4a3a }
     : { body: 0xfbfaf6, head: 0xffffff, wing: 0xaab4c0, tip: 0x1b1c22, beak: 0xf4b52a, eye: 0x111111 };
-  const g = new THREE.Group();
   const k = new Kit();
   // gövde: ileri (−z) doğru incelen damla
   k.add(new THREE.SphereGeometry(0.42, 9, 7), C.body, 0, 0, 0, 0, 0, 0, 0.95, 0.82, 1.85);
@@ -38,15 +40,20 @@ export function makeGull(rival = false) {
   k.add(new THREE.BoxGeometry(0.6, 0.05, 0.1), C.tip, 0, 0.06, 1.33);
   // toplanmış ayaklar
   for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.06, 0.06, 0.3), 0xf08a3a, s * 0.12, -0.3, 0.45);
-  const body = new THREE.Mesh(k.build(), vcMat);
-  body.castShadow = true;
-  g.add(body);
-
+  const bodyGeo = k.build();
   const armGeo = new Kit().add(wingShape(0.72, 0.62, 1.15, 0.08), C.wing).build();
   const handKit = new Kit().add(wingShape(0.62, 0.3, 0.95, 0.22), C.wing).add(featherTip(0.7, 0.32), C.tip, 0.82, 0, 0.18);
   // uçtaki beyaz benekler
   handKit.add(new THREE.SphereGeometry(0.05, 4, 3), 0xffffff, 1.25, 0.03, 0.42, 0, 0, 0, 1, 0.4, 1);
   const handGeo = handKit.build();
+  return (gullGeoCache[rival] = { bodyGeo, armGeo, handGeo });
+}
+export function makeGull(rival = false) {
+  const { bodyGeo, armGeo, handGeo } = gullGeos(rival);
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(bodyGeo, vcMat);
+  body.castShadow = true;
+  g.add(body);
   const wings = [];
   for (const s of [-1, 1]) {
     const arm = new THREE.Group(); arm.position.set(s * 0.28, 0.14, -0.1); arm.scale.x = s; g.add(arm);
@@ -116,8 +123,10 @@ function personGeo(shirt, skin, hair, hold, angry, scarf) {
   personCache.set(key, g);
   return g;
 }
+// sınırlı sayıda görünüm: önbellek en fazla 24 × 3 geometride doyar
+const LOOKS = Array.from({ length: 24 }, (_, i) => ({ shirt: SHIRTS[i % SHIRTS.length], skin: pick(SKINS), hair: Math.random() < 0.8 ? (Math.random() * HAIRS.length) | 0 : -1, scarf: Math.random() < 0.15 }));
 export function makePerson(hold) {
-  const look = { shirt: pick(SHIRTS), skin: pick(SKINS), hair: Math.random() < 0.8 ? (Math.random() * HAIRS.length) | 0 : -1, scarf: Math.random() < 0.15 };
+  const look = pick(LOOKS);
   const mesh = new THREE.Mesh(personGeo(look.shirt, look.skin, look.hair, hold, false, look.scarf), vcMat);
   mesh.castShadow = true;
   mesh.rotation.y = rand(-0.6, 0.6);
@@ -129,7 +138,10 @@ export function makePerson(hold) {
 
 // ---------------- vapur ----------------
 export const DECK = 2.6;
+export const FERRY_LENGTHS = [44, 49, 54, 58];
+const ferryCache = new Map();
 export function ferryGeo(L) {
+  if (ferryCache.has(L)) return ferryCache.get(L);
   const k = new Kit();
   const sh = new THREE.Shape();
   sh.moveTo(-4, -L / 2 + 3); sh.quadraticCurveTo(-4, -L / 2, -1.5, -L / 2 - 1.2); sh.lineTo(1.5, -L / 2 - 1.2); sh.quadraticCurveTo(4, -L / 2, 4, -L / 2 + 3);
@@ -159,7 +171,9 @@ export function ferryGeo(L) {
   k.add(new THREE.BoxGeometry(3.8, 1.5, 3.2), 0xf3efe6, 0, DECK + 0.75, bz);
   k.add(new THREE.BoxGeometry(3.84, 0.5, 3.24), 0x2b4560, 0, DECK + 1.05, bz);
   k.add(new THREE.BoxGeometry(4.2, 0.12, 3.6), 0xc8352e, 0, DECK + 1.56, bz);
-  return k.build();
+  const geo = k.build();
+  ferryCache.set(L, geo);
+  return geo;
 }
 export function chimneyGeo() {
   return new Kit()
@@ -184,8 +198,13 @@ export const FLAG = new THREE.PlaneGeometry(1.5, 1, 6, 1);
 
 // ---------------- uçurtma ----------------
 const KITE_COLS = [[0xe5484d, 0xffd166], [0x2bb3a3, 0xfff4e2], [0x7d5ba6, 0xffb057], [0x3a6ea5, 0xff7b6b]];
-export function makeKite() {
-  const [a, b] = pick(KITE_COLS);
+const kiteCache = [];
+const KITE_BOW = new THREE.PlaneGeometry(0.34, 0.16);
+const KITE_LINE = new THREE.CylinderGeometry(0.015, 0.015, 7, 3);
+const kiteLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+function kiteAssets(ci) {
+  if (kiteCache[ci]) return kiteCache[ci];
+  const [a, b] = KITE_COLS[ci];
   const k = new Kit();
   const half = (sign, col) => {
     const s = new THREE.Shape(); s.moveTo(0, 1.05); s.lineTo(sign * 0.75, 0.2); s.lineTo(0, -1.2); s.closePath();
@@ -194,18 +213,24 @@ export function makeKite() {
   half(1, a); half(-1, b);
   k.add(new THREE.BoxGeometry(0.05, 2.25, 0.05), 0x5a3b26, 0, -0.07, 0.02);
   k.add(new THREE.BoxGeometry(1.5, 0.05, 0.05), 0x5a3b26, 0, 0.2, 0.02);
-  const geo = k.build();
+  return (kiteCache[ci] = {
+    geo: k.build(),
+    mat: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, roughness: 0.7 }),
+    bows: [a, b].map(c => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide })),
+  });
+}
+export function makeKite() {
+  const A = kiteAssets((Math.random() * KITE_COLS.length) | 0);
   const g = new THREE.Group();
-  const body = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, roughness: 0.7 }));
-  g.add(body);
+  g.add(new THREE.Mesh(A.geo, A.mat));
   // kuyruk fiyonkları
   const tail = [];
   for (let i = 0; i < 5; i++) {
-    const bow = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.16), new THREE.MeshBasicMaterial({ color: i % 2 ? a : b, side: THREE.DoubleSide }));
+    const bow = new THREE.Mesh(KITE_BOW, A.bows[i % 2 ? 0 : 1]);
     bow.position.set(0, -1.4 - i * 0.42, 0); g.add(bow); tail.push(bow);
   }
   // ip: aşağıya, denize
-  const line = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 7, 3), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
+  const line = new THREE.Mesh(KITE_LINE, kiteLineMat);
   line.position.set(0, -4.2, 1.4); line.rotation.x = 0.35; g.add(line);
   g.userData.tail = tail;
   return g;
@@ -242,11 +267,12 @@ function iconTexture(kind) {
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ICON_SVG[kind].replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" style="color:${POWER[kind].color}" `).replaceAll('currentColor', POWER[kind].color));
   return tex;
 }
-const iconMats = {};
+const iconMats = {}, bubbleMats = {};
 export function makePowerUp(kind) {
   const g = new THREE.Group();
   const col = new THREE.Color(POWER[kind].color);
-  const bubble = new THREE.Mesh(GEO.bubble, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.35, transparent: true, opacity: 0.32, roughness: 0.15, metalness: 0.1, flatShading: true, depthWrite: false }));
+  bubbleMats[kind] ||= new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.35, transparent: true, opacity: 0.32, roughness: 0.15, metalness: 0.1, flatShading: true, depthWrite: false });
+  const bubble = new THREE.Mesh(GEO.bubble, bubbleMats[kind]);
   g.add(bubble);
   iconMats[kind] ||= new THREE.SpriteMaterial({ map: iconTexture(kind), depthWrite: false });
   const icon = new THREE.Sprite(iconMats[kind]); icon.scale.setScalar(1.15); g.add(icon);
