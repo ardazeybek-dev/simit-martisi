@@ -4,3 +4,9 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# portal build output (rebuilt by platform/build.py)
+platform/crazygames/
+platform/covers/
+*.zip
+__pycache__/

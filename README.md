@@ -54,6 +54,27 @@ Append `?q=0`, `?q=1` or `?q=2` to the URL to lock the quality level (low / medi
 
 No environment variables are needed.
 
+## Portal build (CrazyGames)
+
+`platform/build.py` writes a portal copy to `platform/crazygames/` without touching `docs/`:
+
+```
+python platform/build.py                 # platform/crazygames/
+python platform/build.py --zip <out_dir> # also simit-seagull-crazygames.zip, index.html at the zip root
+python platform/covers.py <out_dir>      # 1920x1080, 800x1200 and 800x800 covers (needs Playwright)
+```
+
+The portal copy:
+- loads three.js and the Baloo 2 font from `platform/vendor/` (portals reject absolute URLs),
+- drops the service worker, manifest, social meta tags and the share button,
+- opens in English unless the browser language is Turkish,
+- calls the CrazyGames SDK v3: loading and gameplay events, `happytime` on a new best, a midgame ad between runs after 60 s of play, audio muted during ads and when the portal asks for it.
+
+Without the SDK (ad blocker, local run) every portal call is a no-op and the game plays normally.
+`?pf_minplay=0` shows the ad break on the first restart, for testing.
+
+The build patches `docs/` source by exact string match and stops with `patch '<name>': expected 1 match` when the game code changed. Update the matching line in `build.py` then.
+
 ## Project structure
 
 ```
@@ -70,12 +91,17 @@ docs/
   manifest.webmanifest  PWA manifest
   icons/                app icons (SVG source + rendered PNGs)
   og.png, preview.png   social preview and README image
+platform/
+  build.py              portal copy of docs/ (see above)
+  covers.py             cover images rendered from the title scene
+  src/platform.js       portal adapter: SDK calls, ad breaks, English texts
+  vendor/               three.module.min.js r160, Baloo 2 woff2 + OFL licence
 ```
 
 ## Pitfalls
 
 - `renderer.info.memory.geometries` keeps climbing during long runs when spawns build new geometry/materials (removing from the scene does not free GPU buffers) → cache them per variant (ferry length, gull type, passenger look) and reuse.
-- `<link rel="modulepreload">` placed before the import map makes Firefox ignore the map ("bare specifier" error) → keep the import map first.
+- Script order breaks loading: a `<link rel="modulepreload">` before the import map makes Firefox ignore the map ("bare specifier" error), and the CrazyGames SDK initialised from `<head>` throws `Cannot read properties of null (reading 'appendChild')` → import map first, SDK and adapter at the end of `<body>`.
 - Colouring merged geometry per triangle by height gives zebra stripes on tall faces → build each colour band as its own extrusion.
 - Headless browsers render WebGL with SwiftShader at a low frame rate, so quality drops to the lowest level and gameplay runs in slow motion; Playwright WebKit on Windows also stops showing the canvas after any canvas resize → test WebKit with `?q=1`.
 - Paths must stay relative (`./`, `sw.js`, `icons/...`): the site is served from `/simit-martisi/`, a leading `/` works on localhost but breaks on Pages.
