@@ -85,7 +85,7 @@ def patch_main(js):
 
 def patch_audio(js):
     # a forced mute (ad playing / portal setting) that the in-game toggles cannot override
-    js = sub1(js, "const opts = { sfx: true, music: true };\n", "const opts = { sfx: true, music: true };\nlet forced = false;\n", "forced var")
+    js = sub1(js, "const opts = { sfx: true, music: true, sfxVol: 1, musicVol: 0.8 };\n", "const opts = { sfx: true, music: true, sfxVol: 1, musicVol: 0.8 };\nlet forced = false;\n", "forced var")
     js = sub1(js, "master = AC.createGain(); master.gain.value = 0.8;", "master = AC.createGain(); master.gain.value = forced ? 0 : 0.8;", "init gain")
     js = sub1(js, "  suspend() {",
               "  setForced(v) { forced = !!v; if (master) master.gain.setTargetAtTime(forced ? 0 : 0.8, AC.currentTime, 0.02); },\n  suspend() {",
