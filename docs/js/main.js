@@ -317,7 +317,7 @@ function spawnFerry() {
     g.add(p.mesh); p.wz = zc + lz; people.push(p); mine.push(p);
     return p;
   };
-  for (let i = 0, nb = 2 + ((Math.random() * 3) | 0); i < nb; i++) {
+  for (let i = 0, nb = 1 + (Math.random() < 0.4 ? 1 : 0); i < nb; i++) {
     const s = pick([-1, 1]), lz = rand(-L / 2 + 12, L / 2 - 6);
     if (blocked.some(b => Math.hypot(b.x - s * 3.2, b.z - lz) < b.r + 1)) continue;
     const bench = new THREE.Mesh(BENCH, vcMat); bench.position.set(s * 3.2, DECK, lz); bench.rotation.y = s > 0 ? 0 : Math.PI; bench.castShadow = true; g.add(bench);
@@ -325,8 +325,8 @@ function spawnFerry() {
     for (const dz of [-0.55, 0.55]) if (Math.random() < 0.75) { const p = seat(s * 3.2, lz + dz, 'sit', false); p.mesh.position.y = DECK + 0.05; p.mesh.scale.setScalar(1); }
   }
   // ortada sırt sırta banklar (vapurdaki gibi): yolcular iki yana dönüp denize bakarak oturur, çoğunun elinde çay
-  if (Math.random() < 0.85) {
-    const n = 2 + ((Math.random() * 3) | 0), zb = rand(-L / 2 + 13, L / 2 - 6 - n * 2.2);
+  if (Math.random() < 0.3) {
+    const n = 1 + (Math.random() < 0.5 ? 1 : 0), zb = rand(-L / 2 + 13, L / 2 - 6 - n * 2.2);
     for (let i = 0; i < n; i++) {
       const lz = zb + i * 2.2;
       if (blocked.some(b => Math.hypot(b.x, b.z - lz) < b.r + 1.2)) continue;
@@ -349,7 +349,7 @@ function spawnFerry() {
     const sm = simits[simits.length - 1]; sm.mesh.visible = false; sm.bin = { u: -1, y0: DECK + 0.8 };
     bins.push({ lid, s: sm, z: zc + lz, ly: DECK + 1.08 });
   }
-  if (Math.random() < 0.6) {
+  if (Math.random() < 0.4) {
     const s = pick([-1, 1]), x = s * 3.0, lz = rand(-L / 2 + 12, L / 2 - 6);
     if (free(x, lz, 1)) {
       const c = new THREE.Mesh(CRATES, vcMat); c.position.set(x, DECK, lz); c.rotation.y = s > 0 ? Math.PI : 0; c.castShadow = true; g.add(c);
@@ -360,7 +360,7 @@ function spawnFerry() {
       }
     }
   }
-  if (Math.random() < 0.7) {
+  if (Math.random() < 0.3) {
     const x = rand(-1.5, 1.5), lz = L / 2 - rand(3, 5);
     if (free(x, lz, 0.6)) { const r = new THREE.Mesh(ROPE, vcMat); r.position.set(x, DECK, lz); g.add(r); blocked.push({ x, z: lz, r: 0.8 }); }
   }
@@ -369,13 +369,14 @@ function spawnFerry() {
     const s = pick([-1, 1]), lz = rand(-L / 2 + 12, L / 2 - 6);
     if (!blocked.some(b => Math.hypot(b.x - s * 3.35, b.z - lz) < b.r)) { seat(s * 3.35, lz, 'feed', true); blocked.push({ x: s * 3.35, z: lz, r: 1.2 }); }
   }
-  for (let lz = -L / 2 + 10; lz < L / 2 - 3; lz += rand(2.2, 3)) {
+  // ayakta duranlar seyrek: çoğunun elinde simit var (kalabalık değil, hedef)
+  for (let lz = -L / 2 + 10; lz < L / 2 - 3; lz += rand(3.4, 4.6)) {
     for (const lx of [-2.9, -1.2, 0.5, 2.2]) {
-      if (Math.random() < 0.45) continue;
+      if (Math.random() < 0.62) continue;
       const px = lx + rand(-0.4, 0.4);
       if (blocked.some(b => Math.hypot(b.x - px, b.z - lz) < b.r)) continue;
-      // bir kısmı simitsiz: eli boş, telefonda, el sallıyor
-      seat(px, lz, '', Math.random() < 0.38 + d * 0.03);
+      // birkaçı simitsiz: eli boş, telefonda, el sallıyor
+      seat(px, lz, '', Math.random() < 0.7 + d * 0.03);
     }
   }
   g.updateMatrixWorld(true);
