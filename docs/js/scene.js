@@ -123,10 +123,20 @@ const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
     const sh = new THREE.Shape(); sh.moveTo(-700, -10);
     for (let x = -700; x <= 700; x += 20) sh.lineTo(x, y0 + Math.sin(x * 0.011 + seed) * amp + Math.sin(x * 0.031 + seed * 2) * amp * 0.4);
     sh.lineTo(700, -10);
-    add(new THREE.ShapeGeometry(sh), m, 0, 0, z);
+    return new THREE.ShapeGeometry(sh);
   };
-  ridge(-470, 18, 9, mFarHill, 1.3);
-  ridge(-430, 8, 6, mHill, 4.1);
+  // tepeler ve kıyı şehri ufku üç yandan sarar: virajda bakış dönünce silüet bitip çıplak deniz gökyüzüne yükselmesin
+  for (const [ry, seed] of [[0, 0], [Math.PI / 2, 2.7], [-Math.PI / 2, 5.1]]) {
+    const pivot = new THREE.Group(); pivot.rotation.y = ry; far.add(pivot);
+    add(ridge(-470, 18, 9, mFarHill, 1.3 + seed), mFarHill, 0, 0, -470, pivot);
+    add(ridge(-430, 8, 6, mHill, 4.1 + seed), mHill, 0, 0, -430, pivot);
+    if (ry) { // yanlarda alçak, seyrek kıyı evleri
+      const sc = new THREE.Shape(); sc.moveTo(-650, -5);
+      for (let x = -650; x < 650;) { const w = rand(6, 14), h = Math.random() < 0.3 ? 0 : rand(3, 9); sc.lineTo(x, h); sc.lineTo(x + w, h); x += w; }
+      sc.lineTo(650, -5);
+      add(new THREE.ShapeGeometry(sc), mCityFar, 0, 0, -400, pivot);
+    }
+  }
 
   // tarihi yarımada silüeti: tek ShapeGeometry'de binalar
   const city = new THREE.Shape(); city.moveTo(-600, -5);

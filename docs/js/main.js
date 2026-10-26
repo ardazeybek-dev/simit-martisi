@@ -1059,7 +1059,6 @@ function frame() {
         hitStop = 0.05; trauma = Math.min(1, trauma + 0.2);
         sparkle(tmp.set(p.x, p.y, p.z), 40, new THREE.Color(POWER[p.kind].color).getHex(), 7, 0.8, 0.5);
         sfx.power(); vibrate(25);
-        popText(tr(POWER[p.kind].name), tmp.set(p.x, p.y + 1, p.z), 'power');
       }
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x), dzo = Math.abs(g.z - o.z);
@@ -1173,7 +1172,7 @@ function frame() {
     if (c.jump > 0) { c.jump -= dt; c.mesh.position.y = DECK + 1.06 + Math.sin((1 - c.jump / 0.5) * Math.PI) * 0.5; }
     if (c.done || state !== 'play' || Math.abs(g.z - c.z) > 2.5 || Math.abs(g.x - c.x) > 3) continue;
     c.done = true; c.jump = 0.5;
-    popText(tr(pick(['Miyav!', 'Pıısss!', 'Mrrr…'])), tmp2.set(c.x, DECK + 2.2, c.z), 'shout by');
+    sfx.click();
   }
   for (const b of bridges) {
     for (const l of b.lines) {
@@ -1185,7 +1184,7 @@ function frame() {
       b.done = true;
       const gain = 30 * mult(); points += gain;
       sfx.power(); vibrate(20);
-      popText(`${tr('Köprü altı!')} +${gain}`, tmp2.set(g.x, g.y + 2, g.z), 'power');
+      sparkle(tmp2.set(g.x, g.y + 0.5, g.z), 16, 0xffe7a8, 4, 0.6);
     }
   }
   { // kamera tabliyenin üstündeyse (uzak, kuş bakışı) köprü altında martı görünsün diye tabliye saydamlaşır
@@ -1313,32 +1312,20 @@ function angry(p) {
   if (!p.feeder) p.mesh.geometry = p.angryGeo(); // ikramcı kızmaz, sevinçten zıplar
 }
 const cheers = ['Afiyet olsun!', 'Al bakalım!', 'Hadi gel!'];
-// simidi kapılan yolcu tipine göre bağırır (amca, dede, teyze...); bazen yanındaki biri de laf atar (çocuklar sevinir)
+// simidi kapılan yolcu tipine göre kısa bir laf eder (amca, dede, teyze...)
 const SHOUTS = {
-  amca: ['Oha ulen!', 'Ulennn!', 'Hoop hemşerim!', 'Bırak onu ulen!', 'Simidim gitti ya!', 'Martıya bak martıya!', 'Yuh artık!', 'Allah Allah!', 'Çayın yanına neyle yicem?', 'Ulen martı!', 'Bu martı sabıkalı!'],
-  dede: ['Ahhh simidim…', 'Evlat, o benim!', 'Hey gidi günler…', 'Bizim zamanımızda martılar böyle değildi!', 'Gözlüğüm nerde?', 'Vay terbiyesiz!', 'Bastonla kovarım ha!', 'Hayırsız martı!'],
-  teyze: ['Ay simidim!', 'Aaa! Martıya bak!', 'Ay kalbim!', 'Vay hınzır!', 'Ayol!', 'Torunumun simidiydi o!', 'Kış kış!', 'Ay yüreğim ağzıma geldi!'],
-  abla: ['Yaaa!', 'Videoya çekecektim!', 'Bu ne hız?', 'Aşk olsun!', 'İnanamıyorum!', 'Hikâyeye atıyorum bunu!'],
-  genc: ['Kanka simidim!', 'Oha!', 'Efsane martı!', 'Hoop!', 'Bro?!', 'Çakal martı!'],
-};
-const BYSTAND = {
-  amca: ['Ahahah gördün mü?', 'Hah, oh olsun!', 'Bizimkini de alma ha!'],
-  dede: ['Tövbe tövbe…', 'Martılar azdı!'],
-  teyze: ['Aman simidini sakla!', 'Ay gördün mü?'],
-  abla: ['Çektin mi onu?', 'Ahaha!'],
-  genc: ['Ahahaha!', 'Efsane!'],
-  cocuk: ['Annee martı!', 'Bir daha yap!', 'Martı abi bana da!', 'Yaşasın martı!'],
+  amca: ['Oha ulen!', 'Ulennn!', 'Hoop!', 'Bırak onu!', 'Yuh artık!', 'Allah Allah!', 'Ulen martı!'],
+  dede: ['Ahhh simidim…', 'Evlat!', 'Vay terbiyesiz!', 'Hayırsız martı!', 'Gözlüğüm!'],
+  teyze: ['Ay simidim!', 'Ayol!', 'Ay kalbim!', 'Vay hınzır!', 'Kış kış!'],
+  abla: ['Yaaa!', 'Aşk olsun!', 'Ciddi mi?'],
+  genc: ['Kanka!', 'Oha!', 'Efsane!', 'Çakal martı!'],
 };
 let shoutT = 0;
 function shout(p, x, y, z) {
   const now = performance.now();
-  if (now - shoutT < 380) return; // balonlar üst üste binmesin
+  if (now - shoutT < 600) return; // balonlar üst üste binmesin
   shoutT = now;
   popText(tr(pick(SHOUTS[p.kind] || SHOUTS.amca)), tmp2.set(x, y + 1.3, z), 'shout');
-  if (Math.random() < 0.35) { // yakındaki biri de laf atar
-    const by = people.find(o => o !== p && !o.feeder && Math.abs(o.wz - p.wz) < 3.5 && BYSTAND[o.kind] && o.mesh.parent);
-    if (by) { const at = by.mesh.getWorldPosition(new THREE.Vector3()); at.y += 2.6; setTimeout(() => state === 'play' && popText(tr(pick(BYSTAND[by.kind])), at, 'shout by'), 420); }
-  }
 }
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
@@ -1363,7 +1350,7 @@ function takeSimit(s) {
   bump(ui.score);
   flapBurst = Math.max(flapBurst, 0.4);
   if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; popText(`${tr(pick(cheers))} +${15 * m}`, tmp.set(s.x, s.y + 1.4, s.z), 'gold'); }
-  else if (s.person) { angry(s.person); if (Math.random() < 0.8) shout(s.person, s.x, s.y, s.z); }
+  else if (s.person) { angry(s.person); if (Math.random() < 0.5) shout(s.person, s.x, s.y, s.z); }
 }
 // viraj çıkışı: çizgideki simitlerin çoğu alındıysa bonus ve sapan gibi fırlama
 function judgeTurn(u) {
@@ -1373,10 +1360,10 @@ function judgeTurn(u) {
     const gain = 40 * mult() * (pw.double > 0 ? 2 : 1);
     points += gain; run.turn++; sling = 1.5;
     sfx.sling(); vibrate([15, 30, 25]); trauma = Math.min(1, trauma + 0.3); flapBurst = 1;
-    popText(`${tr('Kusursuz viraj!')} +${gain}`, tmp2.set(gull.position.x, gull.position.y + 2, gull.position.z), 'gold big');
+    popText(`${tr('Kusursuz viraj!')} +${gain}`, tmp2.set(gull.position.x, gull.position.y + 2, gull.position.z), 'gold');
     sparkle(gull.position, 30, 0xffe7a8, 6, 0.7, 0.3);
   } else if (r >= 0.5) {
-    points += 10; popText(`${tr('Güzel viraj')} +10`, tmp2.set(gull.position.x, gull.position.y + 1.8, gull.position.z), 'near');
+    points += 10;
   }
 }
 function weatherTick(dt) {
@@ -1410,7 +1397,6 @@ function weatherTick(dt) {
 }
 function gearUp() {
   sfx.power(); trauma = Math.min(1, trauma + 0.15); flapBurst = 1;
-  popText(`${tr('Hızlanıyor!')} ${gear + 1}`, tmp2.set(gull.position.x, gull.position.y + 2.2, gull.position.z), 'power');
 }
 function splash(x, z, n) {
   chunks.emit(tmp2.set(x, waveAt(x, z, t) + 0.1, z), n, { speed: 3, up: 2.2, life: 0.7, size: 0.1, color: [0xffffff, 0xcfe9f2], gravity: 12, spin: 0.3 });
@@ -1421,14 +1407,12 @@ function dolphinBonus(f) {
   points += gain; run.dolphin++;
   if (combo > 0) comboT = COMBO_T;
   sfx.near(); vibrate(15);
-  popText(`${tr('Yunus!')} +${gain}`, tmp2.set(gull.position.x, gull.position.y + 1.6, gull.position.z), 'near');
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y + 0.5, f.z), 12, 0xcff0ff, 3.5, 0.5);
 }
 function nearMiss(x) {
   const gain = 5 * mult();
   points += gain; run.near++;
   sfx.near(); trauma = Math.min(1, trauma + 0.12);
-  popText(`${tr('Kıl payı!')} +${gain}`, tmp2.set(gull.position.x, gull.position.y + 1.6, gull.position.z), 'near');
   sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0xffffff, 3, 0.35);
 }
 
