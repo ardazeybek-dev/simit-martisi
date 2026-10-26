@@ -29,7 +29,9 @@
     'Bacaya çarptın!': 'Hit a funnel!', 'Direğe çarptın!': 'Hit a mast!', 'Öhö öhö!': 'Cough cough!', 'Kıl payı!': 'Close call!',
     'Mıknatıs': 'Magnet', 'Kalkan': 'Shield', '2x Puan': '2x Points',
     'Simidim!': 'My simit!', 'Hoop!': 'Hey!', 'Yaa!': 'Aww!', 'Martıya bak!': 'Look at that gull!', 'Bırak onu!': 'Drop it!',
-    'Ah simidim…': 'Oh, my simit…', 'Oha!': 'Whoa!', 'Kaçtı!': 'It got away!', 'Hayırdır?': 'Excuse me?'
+    'Ah simidim…': 'Oh, my simit…', 'Oha!': 'Whoa!', 'Kaçtı!': 'It got away!', 'Hayırdır?': 'Excuse me?',
+    'İkinci şans': 'Second chance', 'İkinci şans!': 'Second chance!', 'Reklam izle, devam et': 'Watch an ad to continue',
+    'Reklam şu an yok, sonra tekrar dene': 'No ad available right now, try again later'
   };
   var lang = 'en';
   try { var l = (navigator.languages && navigator.languages[0]) || navigator.language || ''; if (/^tr\b/i.test(l)) lang = 'tr'; } catch (e) {}
@@ -37,6 +39,7 @@
 
   function translateDom() {
     document.documentElement.lang = lang;
+    document.documentElement.classList.add('pf-ads');   // shows the video icon on the rewarded button
     if (lang !== 'en') { document.title = 'Simit Martısı'; return; }
     document.title = 'Simit Seagull';
     var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
@@ -48,6 +51,7 @@
   var game = null;           // { mute(bool), pauseInput(bool) } set by main.js
   var sdkMuted = false, inAd = false, playing = false, playSeconds = 0, playFrom = 0;
   var cg = null, adDone = null, adTimer = 0;
+  var rwDone = null, rwOk = false, offered = false;   // rewarded ad state, kept apart from the midgame break
 
   function setAdMute(on) { inAd = on; if (game) game.mute(on || sdkMuted); }
 
@@ -75,7 +79,9 @@
   }
   function adBreak(then) {
     then = then || function () {};
-    if (adDone) return;                                   // already waiting for one
+    if (adDone || rwDone) return;                         // already waiting for one
+    // a rewarded "continue" was offered on this game-over screen: no midgame ad on top of it
+    if (offered) { offered = false; then(); return; }
     if (playSeconds < MIN_PLAY_BEFORE_AD) { then(); return; }
     if (TARGET === 'crazygames' && cg && cg.environment !== 'disabled') {
       adDone = then; if (game) game.pauseInput(true);
@@ -90,6 +96,32 @@
       return;
     }
     then();
+  }
+
+  // ---------------------------------------------------------------- rewarded ad
+  // The reward is granted only when the ad was watched to the end (adFinished).
+  // Errors, no fill and timeouts give nothing.
+  function canReward() { return TARGET === 'crazygames' && !!(cg && cg.environment !== 'disabled'); }
+  function finishReward() {
+    clearTimeout(adTimer);
+    if (game) game.pauseInput(false);
+    setAdMute(false);
+    var cb = rwDone, ok = rwOk; rwDone = null; rwOk = false;
+    if (cb) cb(ok);
+  }
+  function rewarded(cb) {
+    offered = false;
+    if (rwDone || adDone) return;
+    if (!canReward()) { cb(false); return; }
+    rwDone = cb; rwOk = false; if (game) game.pauseInput(true);
+    adTimer = setTimeout(finishReward, AD_TIMEOUT);
+    try {
+      cg.ad.requestAd('rewarded', {
+        adStarted: function () { clearTimeout(adTimer); setAdMute(true); },
+        adFinished: function () { rwOk = true; finishReward(); },
+        adError: function () { finishReward(); }
+      });
+    } catch (e) { finishReward(); }
   }
 
   // ---------------------------------------------------------------- gameplay events
@@ -112,6 +144,7 @@
     bind: function (g) { game = g; if (sdkMuted) g.mute(true); },
     loaded: function () { ready.then(function () { try { if (cg) cg.game.loadingStop(); } catch (e) {} }); },
     gameplayStart: gameplayStart, gameplayStop: gameplayStop, adBreak: adBreak, happy: happy,
+    canReward: canReward, rewarded: rewarded, offerReward: function () { offered = true; },
     translateDom: translateDom
   };
 })();

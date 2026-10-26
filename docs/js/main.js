@@ -6,6 +6,8 @@ import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clea
 import { audio, sfx } from './audio.js';
 
 const $ = id => document.getElementById(id);
+// portal kopyasında çeviri ve reklam köprüsü (window.PF); GitHub Pages'te yoktur
+const tr = s => (window.PF && window.PF.t ? window.PF.t(s) : s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7;
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
 
@@ -161,7 +163,7 @@ function deckUnder(x, z) {
 let state = 'loading';
 let speed = 15, playT = 0, points = 0, simitCount = 0, goldCount = 0, combo = 0, bestCombo = 0, comboT = 0, dist = 0;
 let crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flapPh = 0, flapPow = 0.5, flapBurst = 0;
-let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false;
+let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revived = false;
 const pw = { magnet: 0, shield: 0, double: 0 };
 let best = +store.get(KEY_BEST, 0) || 0;
 let tutorialPending = !store.get(KEY_TUT, false);
@@ -171,7 +173,7 @@ function resetWorld() {
   clearWorld(); genZ = -8; segCount = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
-  crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false;
+  crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
   generate(-280);
   camera.position.set(0, FLY_Y + 5.4, 13.5);
@@ -229,7 +231,7 @@ function crash(why) {
 function showOver() {
   state = 'over'; overLock = 0.8;
   const final = total();
-  const isBest = final > best;
+  const isBest = final > best, prevBest = best;
   if (isBest) { best = final; store.set(KEY_BEST, best); }
   const msg = { 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!' };
   $('overTitle').textContent = msg[cause] || 'Pat!';
@@ -240,6 +242,12 @@ function showOver() {
   $('overBest').textContent = isBest ? 'Önceki rekoru geçtin' : `Rekor ${fmt(best)}`;
   $('newRecord').classList.toggle('hidden', !isBest);
   show('over'); show('hud', false); hideTutorial();
+  // ikinci şans: iyi bir uçuşta, uçuş başına bir kez (portalda ödüllü reklamla)
+  const canRevive = !revived && final >= 250 && final >= prevBest * 0.4 && rewardReady();
+  $('reviveLbl').textContent = tr(window.PF ? 'Reklam izle, devam et' : 'İkinci şans');
+  $('reviveBtn').disabled = false;
+  show('reviveBtn', canRevive); show('reviveNote', false);
+  if (canRevive && window.PF && window.PF.offerReward) window.PF.offerReward();
   const el = $('overScore'), t0 = performance.now(), dur = Math.min(1400, 500 + final * 2);
   const step = (now) => {
     const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
@@ -250,6 +258,31 @@ function showOver() {
   el.textContent = '0';
   requestAnimationFrame(step);
   audio.duck(false);
+}
+function rewardReady() { return !window.PF || !window.PF.canReward || window.PF.canReward(); }
+function askRevive() {
+  if (state !== 'over' || revived || overLock > 0) return;
+  $('reviveBtn').disabled = true;
+  const done = ok => {
+    if (state !== 'over') return;
+    if (ok) { revive(); return; }
+    show('reviveBtn', false); $('reviveNote').textContent = tr('Reklam şu an yok, sonra tekrar dene'); show('reviveNote');
+  };
+  if (window.PF && window.PF.rewarded) window.PF.rewarded(done); else done(true);
+}
+// çarptığı yerden kalkanla devam: dünya aynı kalır, 3-2-1 sayımıyla başlar
+function revive() {
+  revived = true;
+  gull.position.y = FLY_Y; gull.rotation.set(0, 0, 0); gull.visible = true;
+  tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
+  combo = 0; comboT = 0;
+  pw.shield = POWER.shield.dur; invuln = 2.2; // çarptığı bacanın içinden çıkarken kalkan harcanmasın
+  show('over', false); show('hud'); hideTutorial();
+  shownScore = shownSimit = shownDist = -1; shownMult = 0;
+  ui.combo.classList.remove('on'); renderPowers(); updateHud();
+  sfx.power(); audio.music(true); audio.duck(false);
+  popText(tr('İkinci şans!'), tmp.set(gull.position.x, gull.position.y + 1.6, gull.position.z), 'blue');
+  state = 'countdown'; countdown = 3; cdShown = 0; show('countdown');
 }
 function confetti() {
   const box = $('confetti'); box.textContent = '';
@@ -341,6 +374,7 @@ addEventListener('keyup', e => (keys[e.code] = false));
 const onBtn = (id, fn) => $(id).addEventListener('click', e => { e.stopPropagation(); sfx.click(); fn(e); });
 onBtn('againBtn', () => { if (overLock <= 0) startGame(); });
 onBtn('homeBtn', () => showTitle());
+onBtn('reviveBtn', () => askRevive());
 onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
 onBtn('quitBtn', () => { audio.resume(); showTitle(); });
@@ -705,7 +739,8 @@ requestAnimationFrame(frame);
 window.__game = {
   get state() { return state; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, get powers() { return { ...pw }; },
+  get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
-  pause, resume, power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
+  pause, resume, addPoints: n => (points += n), power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
 };

@@ -171,6 +171,14 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .stats span { font-size: 12.5px; opacity: .65; font-weight: 600; }
 .best-line { margin: 8px 0 14px; font-weight: 700; opacity: .75; }
 .actions { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; }
+#reviveBtn { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+#reviveBtn:disabled { opacity: .6; }
+#reviveBtn svg { width: 22px; height: 22px; flex: none; fill: #2a1503; }
+.ad-ico { display: none; }
+.pf-ads .ad-ico { display: block; }
+.pf-ads .sh-ico { display: none; }
+.pf-ads .actions { grid-template-columns: 1fr; } /* portalda paylaş yok: devam ve tekrar aynı boyda */
+.revive-note { grid-column: 1 / -1; margin: -2px 0 0; font-size: 14px; font-weight: 700; color: #ffb3a8; }
 #confetti { position: absolute; inset: 0; pointer-events: none; }
 #confetti i { position: absolute; top: -12px; width: 8px; height: 13px; border-radius: 2px; animation: fall linear forwards; }
 @keyframes fall { to { transform: translate(var(--dx), 520px) rotate(var(--r)); opacity: .2; } }

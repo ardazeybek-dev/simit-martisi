@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.0.1">
+<meta name="app-version" content="2.1.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -143,6 +143,8 @@
     </div>
     <p class="best-line" id="overBest"></p>
     <div class="actions">
+      <button class="btn primary hidden" id="reviveBtn"><svg class="ad-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="3"/><path d="M17.5 10.2l4-2.4v8.4l-4-2.4z"/></svg><svg class="sh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z"/></svg><span id="reviveLbl">İkinci şans</span></button>
+      <p class="revive-note hidden" id="reviveNote"></p>
       <button class="btn primary" id="againBtn">Tekrar uç</button>
       <button class="btn ghost" id="shareBtn">Paylaş</button>
     </div>
