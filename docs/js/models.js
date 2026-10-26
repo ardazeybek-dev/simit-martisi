@@ -21,11 +21,20 @@ function featherTip(len, chord) {
 
 // geometriler türe göre bir kez üretilir; her yeni martı aynı tamponları paylaşır (bellek sızmasın)
 const gullGeoCache = {};
-function gullGeos(rival) {
-  if (gullGeoCache[rival]) return gullGeoCache[rival];
-  const C = rival
-    ? { body: 0x6f7682, head: 0x5d6470, wing: 0x474d58, tip: 0x15161a, beak: 0xd9862a, eye: 0xff4a3a }
-    : { body: 0xfbfaf6, head: 0xffffff, wing: 0xaab4c0, tip: 0x1b1c22, beak: 0xf4b52a, eye: 0x111111 };
+// tür = renk: player beyaz martı; grey/red/blue rakipler (renk davranışı söyler: gri süzülür, kırmızı dalar, mavi zikzak çizer);
+// pink/night/golden oyuncunun kostüm dolabındaki tüy renkleri
+const GULL_PAL = {
+  player: { body: 0xfbfaf6, head: 0xffffff, wing: 0xaab4c0, tip: 0x1b1c22, beak: 0xf4b52a, eye: 0x111111 },
+  grey: { body: 0x6f7682, head: 0x5d6470, wing: 0x474d58, tip: 0x15161a, beak: 0xd9862a, eye: 0xff4a3a },
+  red: { body: 0xd9544f, head: 0xc8453f, wing: 0x9c2f2b, tip: 0x2a1010, beak: 0xffc23a, eye: 0xfff2b0 },
+  blue: { body: 0x5fa8d3, head: 0x4f93c0, wing: 0x2f6f9f, tip: 0x10202e, beak: 0xffc23a, eye: 0xfff2b0 },
+  pink: { body: 0xffd6e2, head: 0xffe4ec, wing: 0xf08fb0, tip: 0x7a2b4a, beak: 0xf4b52a, eye: 0x111111 },
+  night: { body: 0x3a3f4c, head: 0x2c303a, wing: 0x1e2129, tip: 0x0a0a0c, beak: 0xffc23a, eye: 0xffe07a },
+  golden: { body: 0xffd77a, head: 0xffe39c, wing: 0xe0a53a, tip: 0x8a5a12, beak: 0xff8a3a, eye: 0x111111 },
+};
+function gullGeos(type) {
+  if (gullGeoCache[type]) return gullGeoCache[type];
+  const C = GULL_PAL[type] || GULL_PAL.player;
   const k = new Kit();
   // gövde: ileri (−z) doğru incelen damla
   k.add(new THREE.SphereGeometry(0.42, 9, 7), C.body, 0, 0, 0, 0, 0, 0, 0.95, 0.82, 1.85);
@@ -46,10 +55,11 @@ function gullGeos(rival) {
   // uçtaki beyaz benekler
   handKit.add(new THREE.SphereGeometry(0.05, 4, 3), 0xffffff, 1.25, 0.03, 0.42, 0, 0, 0, 1, 0.4, 1);
   const handGeo = handKit.build();
-  return (gullGeoCache[rival] = { bodyGeo, armGeo, handGeo });
+  return (gullGeoCache[type] = { bodyGeo, armGeo, handGeo });
 }
-export function makeGull(rival = false) {
-  const { bodyGeo, armGeo, handGeo } = gullGeos(rival);
+export function makeGull(type = 'player') {
+  if (type === true) type = 'grey';
+  const { bodyGeo, armGeo, handGeo } = gullGeos(type);
   const g = new THREE.Group();
   const body = new THREE.Mesh(bodyGeo, vcMat);
   body.castShadow = true;
@@ -65,6 +75,12 @@ export function makeGull(rival = false) {
   g.userData.wings = wings;
   g.userData.body = body;
   return g;
+}
+// tüy rengini değiştirir: aynı ağ, önbellekteki başka geometri
+export function paintGull(g, type) {
+  const { bodyGeo, armGeo, handGeo } = gullGeos(type);
+  g.userData.body.geometry = bodyGeo;
+  for (const w of g.userData.wings) { w.arm.children[0].geometry = armGeo; w.hand.children[0].geometry = handGeo; }
 }
 // phase: çırpış açısı; power 0 = süzülme, 1 = tam çırpış
 export function flapGull(g, phase, power, glide = 0.12) {
@@ -564,6 +580,10 @@ export const COSTUMES = [
   { id: 'scarf', name: 'Atkı', slot: 'neck', price: 200 },
   { id: 'captain', name: 'Kaptan şapkası', slot: 'head', price: 350 },
   { id: 'crown', name: 'Altın taç', slot: 'head', price: 900 },
+  { id: 'mustache', name: 'Bıyık', slot: 'face', price: 90 },
+  { id: 'pink', name: 'Pembe tüy', slot: 'body', price: 250 },
+  { id: 'night', name: 'Gece martısı', slot: 'body', price: 450 },
+  { id: 'golden', name: 'Altın martı', slot: 'body', price: 1500 },
 ];
 // baş merkezi (0, 0.2, −0.72), yarıçap 0.3; gaga −z yönünde
 function costumeGeo(id) {
@@ -594,6 +614,11 @@ function costumeGeo(id) {
       k.add(new THREE.BoxGeometry(0.025, 0.025, 0.28), 0x14161c, s * 0.29, 0.31, -0.74);
     }
     k.add(new THREE.BoxGeometry(0.16, 0.03, 0.03), 0x14161c, 0, 0.33, -1.0);
+  } else if (id === 'mustache') { // gaganın üstünde, iki yana kıvrık pala bıyık
+    for (const s of [-1, 1]) {
+      k.add(new THREE.CapsuleGeometry(0.05, 0.2, 3, 6), 0x2a1a12, s * 0.13, 0.19, -1.0, 0, 0, -s * 1.3);
+      k.add(new THREE.SphereGeometry(0.055, 6, 4), 0x2a1a12, s * 0.26, 0.26, -0.97);
+    }
   } else if (id === 'scarf') {
     const ring = new THREE.TorusGeometry(0.3, 0.075, 6, 16);
     k.add(ring, (f) => (f % 8 < 4 ? 0xd23a33 : 0xf6f0e4), 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
@@ -606,6 +631,7 @@ function costumeGeo(id) {
 export function dressGull(gull) {
   const out = {};
   for (const c of COSTUMES) {
+    if (c.slot === 'body') continue; // tüy rengi ayrı (paintGull)
     const m = new THREE.Mesh(costumeGeo(c.id), vcMat);
     m.castShadow = true; m.visible = false;
     gull.add(m); out[c.id] = m;
@@ -613,6 +639,10 @@ export function dressGull(gull) {
   return out;
 }
 export const COSTUME_SVG = {
+  mustache: '<svg viewBox="0 0 48 48"><path d="M24 22q-6-4-12 0-5 4-9 1 2 8 10 7 7-1 11-6 4 5 11 6 8 1 10-7-4 3-9-1-6-4-12 0z" fill="#2a1a12"/></svg>',
+  pink: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#f08fb0"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#ffd6e2"/><circle cx="24" cy="21" r="5" fill="#ffd6e2"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
+  night: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#1e2129"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#3a3f4c"/><circle cx="24" cy="21" r="5" fill="#3a3f4c"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
+  golden: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#e0a53a"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#ffd77a"/><circle cx="24" cy="21" r="5" fill="#ffd77a"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
   fes: '<svg viewBox="0 0 48 48"><path d="M14 40l4-26h12l4 26z" fill="#c62a33"/><path d="M18 14h12l.6 4H17.4z" fill="#9e1b24"/><path d="M24 14q8-2 9 10" stroke="#1a1a1a" stroke-width="2" fill="none"/><path d="M31 23l4 9h-6z" fill="#1a1a1a"/><rect x="11" y="38" width="26" height="4" rx="2" fill="#7a141b"/></svg>',
   glasses: '<svg viewBox="0 0 48 48"><path d="M4 18h40" stroke="#14161c" stroke-width="3"/><rect x="5" y="17" width="16" height="13" rx="5" fill="#14161c"/><rect x="27" y="17" width="16" height="13" rx="5" fill="#14161c"/><path d="M8 20l5 0M30 20l5 0" stroke="#5d6b86" stroke-width="2" stroke-linecap="round"/></svg>',
   scarf: '<svg viewBox="0 0 48 48"><path d="M8 14q16 8 32 0v8q-16 8-32 0z" fill="#d23a33"/><path d="M15 18.5v8M24 20v8M33 18.5v8" stroke="#f6f0e4" stroke-width="3"/><path d="M28 24l6 18h-8l-3-16z" fill="#d23a33"/><path d="M26.6 31h6.4M27.8 36h6.6" stroke="#f6f0e4" stroke-width="3"/></svg>',

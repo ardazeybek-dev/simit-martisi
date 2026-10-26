@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading, applyWeather } from './scene.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
@@ -154,12 +154,7 @@ function spawnGap(first, fixLen) {
   }
   if (!first) {
     const n = d < 0.35 ? 0 : Math.min(4, 1 + Math.floor(d * 0.9));
-    for (let i = 0; i < n; i++) {
-      const r = makeGull(true); r.scale.setScalar(0.8); r.rotation.y = Math.PI;
-      const z = z0 - rand(10, len - 6), bx = rand(-4, 4);
-      r.position.set(bx, FLY_Y, z); scene.add(r);
-      rivals.push({ mesh: r, bx, z, ph: Math.random() * 6, sw: rand(1.2, 3.2), hit: false, spin: 0 });
-    }
+    for (let i = 0; i < n; i++) addRival(z0 - rand(10, len - 6), rand(-4, 4), rand(1.2, 3.2));
     if (d > 0.7 && Math.random() < 0.35 + d * 0.08) {
       const nk = d > 2.5 && Math.random() < 0.5 ? 2 : 1;
       for (let i = 0; i < nk; i++) {
@@ -189,6 +184,16 @@ function spawnGap(first, fixLen) {
   genZ -= len;
 }
 
+// rakip martı: rengi davranışını söyler. Gri süzülür; kırmızı hızla üstüne dalar (erken görünür, düz gelir);
+// mavi düzensiz zikzak çizer (her an yön değiştirebilir). Zorluk arttıkça renkliler çoğalır.
+function addRival(z, bx, sw, kind) {
+  const d = difficulty();
+  kind = kind || (d > 1 && Math.random() < 0.28 ? 'red' : d > 0.6 && Math.random() < 0.35 ? 'blue' : 'grey');
+  if (kind === 'red') z -= 18; // hızlı gelir: daha uzaktan başlar
+  const r = makeGull(kind); r.scale.setScalar(0.8); r.rotation.y = Math.PI;
+  r.position.set(bx, FLY_Y, z); scene.add(r);
+  rivals.push({ mesh: r, kind, bx, z, ph: Math.random() * 6, sw, hit: false, spin: 0, tx: bx, zt: 0 });
+}
 // viraj: açık deniz; simitler dıştan girip içe kıvrılan yarış çizgisinde, tepede altın simit; dış kenarda ok tabelaları
 function spawnTurn(tn) {
   const z0 = genZ, end = tn.z1 - 6, len = tn.z0 - tn.z1;
@@ -206,10 +211,8 @@ function spawnTurn(tn) {
   }
   const d = difficulty();
   if (d > 1.2 && Math.random() < 0.3 + d * 0.1) { // zorlaştıkça viraj içinde de bir rakip
-    const r = makeGull(true); r.scale.setScalar(0.8); r.rotation.y = Math.PI;
-    const z = tn.z0 - len * rand(0.25, 0.75), bx = lineX(z) - tn.dir * 2.5;
-    r.position.set(bx, FLY_Y, z); scene.add(r);
-    rivals.push({ mesh: r, bx, z, ph: Math.random() * 6, sw: rand(1, 2), hit: false, spin: 0 });
+    const z = tn.z0 - len * rand(0.25, 0.75);
+    addRival(z, lineX(z) - tn.dir * 2.5, rand(1, 2), 'grey');
   }
   tn.built = true; genZ = end;
 }
@@ -487,7 +490,10 @@ function bank() {
   const earned = simitCount + goldCount * 4, gain = earned - banked;
   if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
 }
-function applyLook() { for (const c of COSTUMES) outfit[c.id].visible = look.on.includes(c.id); }
+function applyLook() {
+  for (const c of COSTUMES) if (outfit[c.id]) outfit[c.id].visible = look.on.includes(c.id);
+  paintGull(gull, COSTUMES.find(c => c.slot === 'body' && look.on.includes(c.id))?.id || 'player');
+}
 applyLook();
 let dressing = false, showcase = 0;
 function openWardrobe() {
@@ -1004,10 +1010,22 @@ function frame() {
   for (const r of rivals) {
     const p = r.mesh.position;
     if (r.hit) { p.x += r.spin * 14 * dt; p.y += 6 * dt; r.mesh.rotation.z += r.spin * 12 * dt; continue; }
-    p.z += 5 * dt; p.x = r.bx + Math.sin(t * 1.4 + r.ph) * r.sw;
+    if (r.kind === 'red') { // dalış: hızlı ve düz, hafif kayar
+      p.z += 15 * dt;
+      p.x = r.bx + Math.sin(t * 0.9 + r.ph) * 0.5; r.mesh.rotation.z = Math.cos(t * 0.9 + r.ph) * 0.15; r.mesh.rotation.x = 0.18;
+      flapGull(r.mesh, t * 16 + r.ph, 1);
+    } else if (r.kind === 'blue') { // zikzak: rastgele aralıklarla yeni hedef, sabit hızla keskin dönüş
+      p.z += 5 * dt;
+      if ((r.zt -= dt) <= 0) { r.zt = rand(0.3, 0.95); r.tx = clamp(r.bx + rand(-3.6, 3.6), -LANE, LANE); }
+      const dx = r.tx - p.x, step = Math.min(Math.abs(dx), 7.5 * dt) * Math.sign(dx);
+      p.x += step; r.mesh.rotation.z = damp(r.mesh.rotation.z, -Math.sign(dx) * (Math.abs(dx) > 0.1 ? 0.55 : 0), 10, dt);
+      flapGull(r.mesh, t * 13 + r.ph, 1);
+    } else {
+      p.z += 5 * dt; p.x = r.bx + Math.sin(t * 1.4 + r.ph) * r.sw;
+      r.mesh.rotation.z = Math.cos(t * 1.4 + r.ph) * 0.35;
+      flapGull(r.mesh, t * 11 + r.ph, 0.9);
+    }
     p.y = FLY_Y + Math.sin(t * 3 + r.ph) * 0.15;
-    r.mesh.rotation.z = Math.cos(t * 1.4 + r.ph) * 0.35;
-    flapGull(r.mesh, t * 11 + r.ph, 0.9);
   }
   for (const k of kites) {
     const kp = k.g.position;
@@ -1248,7 +1266,7 @@ showTitle();
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true));
+  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
@@ -1266,7 +1284,7 @@ window.__game = {
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
-  get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
+  get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0) => addRival(gull.position.z - ahead, x, 2, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
   get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },

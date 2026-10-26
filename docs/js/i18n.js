@@ -27,7 +27,7 @@
     'Reklam şu an yok, sonra tekrar dene': 'No ad available right now, try again later',
     'Kostümler': 'Outfits', 'Cüzdan': 'Wallet', 'Giy': 'Wear', 'Giyili': 'Wearing', 'Yeterli simit yok': 'Not enough simits',
     'Simitler cüzdanına girer; onlarla martına kostüm al.': 'Every simit you catch goes into your wallet. Spend them on outfits.',
-    'Fes': 'Fez', 'Güneş gözlüğü': 'Sunglasses', 'Atkı': 'Scarf', 'Kaptan şapkası': 'Captain hat', 'Altın taç': 'Golden crown',
+    'Fes': 'Fez', 'Güneş gözlüğü': 'Sunglasses', 'Atkı': 'Scarf', 'Kaptan şapkası': 'Captain hat', 'Altın taç': 'Golden crown', 'Bıyık': 'Moustache', 'Pembe tüy': 'Pink feathers', 'Gece martısı': 'Night gull', 'Altın martı': 'Golden gull',
     'Görevler': 'Missions', 'Görev tamam!': 'Mission complete!', 'Oyna': 'Play', 'Yelkene takıldın!': 'Caught in a sail!', 'ya da ekrana dokun': 'or tap the screen',
     'Günlük ödül': 'Daily reward', 'Gün': 'Day', 'Al': 'Claim', 'Görevi bitirince simitler hemen cüzdanına girer.': 'Finish a mission and the simits go straight to your wallet.',
     'Her gün uğra, ödül büyüsün. Bir gün kaçırırsan baştan başlar.': 'Come back every day and the reward grows. Miss a day and it starts over.',
