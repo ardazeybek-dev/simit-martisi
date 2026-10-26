@@ -1,43 +1,81 @@
-# Simit Martısı 🐦🥯
+# Simit Martısı
 
-A 3D endless flyer that runs in the browser, on desktop and on phones.
+A one-finger 3D endless flyer for phones and desktop browsers.
 You are an Istanbul seagull gliding over ferries at sunset, snatching *simit* from passengers' hands
-while dodging funnels, flag masts and rival gulls.
+while dodging funnels, flag masts, kites and rival gulls.
 
-**Play:** https://ardazeybek-dev.github.io/simit-martisi/
+**Play:** https://ardazeybek-dev.github.io/simit-martisi/ (installable, works offline after the first visit)
+
+![Title, gameplay and game-over screens](docs/preview.png)
 
 ## Controls
 
-| Device | Steer |
-|---|---|
-| Phone | Slide your finger left / right |
-| Desktop | Move the mouse, or ← → / A D |
+| Device | Steer | Other |
+|---|---|---|
+| Phone | Slide your finger left / right (the middle 80% of the screen covers the whole lane) | Pause button top right |
+| Desktop | Move the mouse, or ← → / A D | `P` / `Esc` pause, `M` sound on/off, `Space` start |
 
-`M` mutes the sound. Catching simits in a row builds a combo (up to x5).
-The score card can be shared straight to WhatsApp or other apps from the game-over screen.
+The game pauses itself when the tab or app goes to the background and resumes with a 3-2-1 countdown.
+
+## Gameplay
+
+- **Score** = simit points + 1 point per 10 m flown.
+- **Combo:** catch simits in a row to raise the multiplier (x2 at 4, up to x5). The ring in the HUD shows how long the chain stays alive.
+- **Golden simit:** rare, worth 5x a normal one.
+- **Near miss:** brushing past a funnel or mast gives a small bonus.
+- **Power-ups** (floating bubbles): Magnet pulls simits (even out of passengers' hands), Shield absorbs one hit, 2x doubles all points.
+- **Hazards:** funnels, flag masts, rival gulls, kites. Dark funnel smoke does not kill you but breaks your combo.
+- Speed and hazard density ramp up smoothly over the first couple of minutes.
+- First launch shows a 3-second swipe tutorial; best score and settings (sound, music, vibration) are kept in `localStorage`.
 
 ## Tech
 
-- Single file: [`docs/index.html`](docs/index.html), no build step
-- [three.js](https://threejs.org/) 0.160 loaded from jsDelivr via an import map
-- Low-poly scene built entirely in code: animated sea, ferries, passengers, Istanbul skyline with the bridge
-- All sound effects (seagull cry, ferry horn, crunch) are synthesized with the Web Audio API, no audio files
-- Best score is kept in `localStorage`
+- Plain ES modules under `docs/`, no build step; [three.js](https://threejs.org/) 0.160 from jsDelivr via an import map
+- All models are generated in code and merged into vertex-coloured meshes (one draw call per ferry / passenger)
+- Custom GPU wave shader with fresnel and sun glitter, gradient sky dome, Istanbul skyline (Galata Tower, mosques, Bosphorus Bridge, Maiden's Tower)
+- Pooled instanced particles, smoke sprites, speed lines, camera shake, hit-stop
+- Music loop and all sound effects are synthesized with the Web Audio API, no audio files
+- Adaptive quality: pixel ratio and real-time shadows step down automatically on slow devices
+- PWA: web app manifest + service worker (network-first for game files, cache-first for the pinned three.js build)
 
 ## Run locally
 
-Open `docs/index.html` in a browser. An internet connection is needed the first time to load three.js.
+Serve the `docs/` folder over HTTP (ES modules do not load from `file://`):
+
+```
+cd docs
+python -m http.server 8000
+```
+
+Then open http://localhost:8000. An internet connection is needed the first time to load three.js and the font.
+The service worker only registers on https, so local runs are never cached.
+
+Append `?q=0`, `?q=1` or `?q=2` to the URL to lock the quality level (low / medium / high) and turn off automatic adjustment.
 
 No environment variables are needed.
 
 ## Project structure
 
 ```
-docs/index.html   the whole game (served by GitHub Pages from /docs)
-README.md
+docs/
+  index.html            markup, meta tags, import map
+  style.css             UI (HUD, screens, animations)
+  js/main.js            game state, input, spawning, collisions, main loop
+  js/scene.js           renderer, camera, lights, sky, skyline, water shader
+  js/models.js          seagull, simit, passengers, ferry, kite, power-ups
+  js/fx.js              particles, sparkles, smoke, speed lines, floating texts
+  js/audio.js           synthesized music and sound effects
+  js/util.js            helpers, mesh merging, safe localStorage
+  sw.js                 service worker (bump VERSION on every release)
+  manifest.webmanifest  PWA manifest
+  icons/                app icons (SVG source + rendered PNGs)
+  og.png, preview.png   social preview and README image
 ```
 
 ## Pitfalls
 
 - `Object.assign(mesh, { position })` throws in three.js because `position` is read-only → use `mesh.position.set(...)`.
-- Headless browsers render WebGL with SwiftShader at a low frame rate; since `dt` is capped, gameplay runs in slow motion there, not a bug.
+- `<link rel="modulepreload">` placed before the import map makes Firefox ignore the map ("bare specifier" error) → keep the import map first.
+- Colouring merged geometry per triangle by height gives zebra stripes on tall faces → build each colour band as its own extrusion.
+- Headless browsers render WebGL with SwiftShader at a low frame rate, so quality drops to the lowest level and gameplay runs in slow motion; Playwright WebKit on Windows also stops showing the canvas after any canvas resize → test WebKit with `?q=1`.
+- Paths must stay relative (`./`, `sw.js`, `icons/...`): the site is served from `/simit-martisi/`, a leading `/` works on localhost but breaks on Pages.
