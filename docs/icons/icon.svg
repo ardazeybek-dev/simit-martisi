@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2f6b"/><stop offset=".45" stop-color="#8a3f7f"/><stop offset=".78" stop-color="#f07a6a"/><stop offset="1" stop-color="#ffc98a"/>
+    </linearGradient>
+    <radialGradient id="sun" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff4d0"/><stop offset=".7" stop-color="#ffd48a"/><stop offset="1" stop-color="#ffb070" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c7b8f"/><stop offset="1" stop-color="#0d3550"/></linearGradient>
+    <clipPath id="c"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="512" height="512" fill="url(#bg)"/>
+    <circle cx="256" cy="330" r="150" fill="url(#sun)"/>
+    <circle cx="256" cy="330" r="92" fill="#fff0c4"/>
+    <path d="M0 352h512v160H0z" fill="url(#sea)"/>
+    <path d="M60 384h120M300 404h150M120 436h90M330 456h80" stroke="#f4b58e" stroke-width="10" stroke-linecap="round" opacity=".75"/>
+    <!-- simit -->
+    <g transform="translate(256 300)">
+      <circle r="62" fill="none" stroke="#9c4f1f" stroke-width="44"/>
+      <circle r="62" fill="none" stroke="#d1813a" stroke-width="34"/>
+      <circle r="62" fill="none" stroke="#e7a257" stroke-width="12" transform="translate(-4 -6)" opacity=".8"/>
+      <g fill="#fbe7bd">
+        <ellipse cx="-50" cy="-38" rx="6" ry="3.6" transform="rotate(-30 -50 -38)"/><ellipse cx="-12" cy="-64" rx="6" ry="3.6"/>
+        <ellipse cx="34" cy="-56" rx="6" ry="3.6" transform="rotate(30 34 -56)"/><ellipse cx="64" cy="-12" rx="6" ry="3.6" transform="rotate(80 64 -12)"/>
+        <ellipse cx="52" cy="38" rx="6" ry="3.6" transform="rotate(-40 52 38)"/><ellipse cx="4" cy="64" rx="6" ry="3.6"/>
+        <ellipse cx="-46" cy="46" rx="6" ry="3.6" transform="rotate(40 -46 46)"/><ellipse cx="-66" cy="4" rx="6" ry="3.6" transform="rotate(90 -66 4)"/>
+        <ellipse cx="-30" cy="-60" rx="5" ry="3"/><ellipse cx="60" cy="16" rx="5" ry="3" transform="rotate(70 60 16)"/>
+      </g>
+    </g>
+    <!-- martı -->
+    <g transform="translate(256 168)">
+      <path d="M-200 18C-150-40-80-58-30-8l30 22 30-22C80-58 150-40 200 18 140-8 84 0 30 42L0 66-30 42C-84 0-140-8-200 18z" fill="#ffffff"/>
+      <path d="M-200 18c22-24 46-38 72-44-22 18-30 32-30 32-16 2-30 6-42 12zM200 18c-22-24-46-38-72-44 22 18 30 32 30 32 16 2 30 6 42 12z" fill="#1b1c22"/>
+      <path d="M-26 34c0-24 12-40 26-40s26 16 26 40c0 14-12 26-26 26S-26 48-26 34z" fill="#fbfaf6"/>
+      <path d="M-8 52 0 88l8-36z" fill="#f4b52a"/>
+      <circle cx="-10" cy="22" r="5" fill="#1b1838"/><circle cx="10" cy="22" r="5" fill="#1b1838"/>
+    </g>
+  </g>
+</svg>
