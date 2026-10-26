@@ -10,11 +10,12 @@ const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
+const CAMS = ['near', 'far', 'top', 'eye'];
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
 const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily';
 
 // ---------------- ayarlar ----------------
-const settings = Object.assign({ sfx: true, music: true, vibe: true }, store.get(KEY_SET, {}));
+const settings = Object.assign({ sfx: true, music: true, vibe: true, cam: 'near' }, store.get(KEY_SET, {}));
 audio.set({ sfx: settings.sfx, music: settings.music });
 const vibrate = ms => { if (settings.vibe && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} };
 
@@ -759,6 +760,9 @@ onBtn('shareBtn', async () => {
 for (const el of document.querySelectorAll('[data-toggle]')) {
   el.addEventListener('click', e => { e.stopPropagation(); const k = el.dataset.toggle; settings[k] = !settings[k]; saveSettings(); sfx.click(); if (k === 'vibe') vibrate(30); });
 }
+for (const el of document.querySelectorAll('[data-cam]')) {
+  el.addEventListener('click', e => { e.stopPropagation(); settings.cam = el.dataset.cam; saveSettings(); sfx.click(); });
+}
 for (const el of document.querySelectorAll('[data-lang]')) {
   el.addEventListener('click', e => { e.stopPropagation(); if (el.dataset.lang === window.I18N.lang) return; settings.lang = el.dataset.lang; store.set(KEY_SET, settings); sfx.click(); location.reload(); });
 }
@@ -766,6 +770,7 @@ function saveSettings() { store.set(KEY_SET, settings); audio.set({ sfx: setting
 function syncToggles() {
   for (const el of document.querySelectorAll('[data-toggle]')) el.setAttribute('aria-pressed', settings[el.dataset.toggle] ? 'true' : 'false');
   $('soundUse').setAttribute('href', settings.sfx || settings.music ? '#i-sound' : '#i-mute');
+  for (const el of document.querySelectorAll('[data-cam]')) el.setAttribute('aria-pressed', el.dataset.cam === settings.cam ? 'true' : 'false');
   for (const el of document.querySelectorAll('[data-lang]')) el.setAttribute('aria-pressed', el.dataset.lang === window.I18N.lang ? 'true' : 'false');
 }
 syncToggles();
@@ -1011,7 +1016,7 @@ function frame() {
   updateFx(dt);
 
   // ---- kalkan / sis ----
-  shieldOrb.visible = pw.shield > 0 || (invuln > 0 && Math.sin(t * 40) > 0);
+  shieldOrb.visible = (pw.shield > 0 || (invuln > 0 && Math.sin(t * 40) > 0)) && !(settings.cam === 'eye' && showcase < 0.02 && !dressing); // gözden bakarken kalkan içten görünmesin
   if (shieldOrb.visible) { shieldOrb.rotation.y = t * 1.5; shieldOrb.scale.setScalar(1 + Math.sin(t * 8) * 0.04); }
   gull.visible = !(invuln > 0 && pw.shield <= 0 && Math.sin(t * 50) < -0.3);
   ui.vignette.style.opacity = smokeT > 0 ? Math.min(1, smokeT) : 0;
@@ -1026,8 +1031,11 @@ function frame() {
 
   // ---- kamera: yumuşak takip + sarsıntı ----
   const land = camera.aspect > 1;
-  const followZ = state === 'dead' || state === 'over' ? camera.position.z - (land ? 11 : 13.5) : g.z;
-  let cx = g.x * 0.85 - lean * 1.3, cy = FLY_Y + (land ? 4.2 : 5.4), cz = followZ + (land ? 11 : 13.5);
+  // kamera seçimi (Ayarlar): near = varsayılan; [arkada, yukarıda] uzaklıkları
+  const cam = CAMS.includes(settings.cam) ? settings.cam : 'near';
+  const [back, up] = cam === 'far' ? [land ? 16 : 19, land ? 7.5 : 9.5] : cam === 'top' ? [land ? 5 : 6, land ? 15 : 18] : cam === 'eye' ? [-1, 0.42] : [land ? 11 : 13.5, land ? 4.2 : 5.4];
+  const followZ = state === 'dead' || state === 'over' ? camera.position.z - back : g.z;
+  let cx = cam === 'eye' ? g.x : g.x * 0.85 - lean * 1.3, cy = (cam === 'eye' && state !== 'dead' && state !== 'over' ? g.y : FLY_Y) + up, cz = followZ + back;
   showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' ? 4 : 1.6, realDt);
   if (dressing) { cx = g.x + (land ? 1.2 : 1.6); cy = FLY_Y + 1.5; cz = g.z - 5.2; } // kostüm paneli: önden yakın çekim
   else if (showcase > 0.001) {
@@ -1040,11 +1048,16 @@ function frame() {
   camera.position.x = damp(camera.position.x, cx, 5, realDt);
   camera.position.y = damp(camera.position.y, cy, 5, realDt);
   camera.position.z = damp(camera.position.z, cz, showcase > 0.001 ? 8 : 12, realDt);
+  const eye = cam === 'eye' && !dressing && showcase < 0.02;
+  if (eye) camera.position.set(cx, cy, cz); // martının gözü: gecikme olursa kamera gövdenin içine düşer
   if (dressing) camera.lookAt(g.x - (land ? 2.2 : 0), g.y - (land ? 0.2 : 1.6), g.z); // yatayda martı solda, panel sağda
   else if (showcase > 0.001) {
     const k = showcase * showcase * (3 - 2 * showcase);
     camera.lookAt(g.x * 0.92 + lean * 2.6 + (g.x - g.x * 0.92 - lean * 2.6) * k, FLY_Y - (land ? 0.2 : 0.6) + (g.y + (land ? 0.3 : 0.2) - FLY_Y + (land ? 0.2 : 0.6)) * k, followZ - 12 + (g.z + 12 - followZ) * k);
   }
+  else if (cam === 'top') camera.lookAt(g.x * 0.9 + lean * 2, FLY_Y - 1.5, followZ - 9);
+  else if (eye) camera.lookAt(g.x + lean * 3 + vx * 0.08, cy - 0.9, followZ - 20);
+  else if (cam === 'far') camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - 0.6, followZ - 16);
   else camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - (land ? 0.2 : 0.6), followZ - 12); // virajın içine bak
   camera.rotation.z += gull.rotation.z * 0.06 - lean * 0.13;
   trauma = Math.max(0, trauma - realDt * 1.6);
