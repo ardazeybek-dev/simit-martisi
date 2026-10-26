@@ -23,6 +23,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Combo:** catch simits in a row to raise the multiplier (x2 at 4, up to x5). The ring in the HUD shows how long the chain stays alive.
 - **Simit boats:** on open water, simit sellers in rowboats on both banks break their simits and toss the pieces to you. Each piece arcs over and comes down where a ripple ring marks the water, right as you get there; miss it and it splashes into the sea.
 - **Golden simit:** rare, worth 5x a normal one.
+- **Dolphins:** on open water a pod shows its fins, then leaps across the lane one after another as you arrive. Fly right over the top of a leap for a *Dolphin!* bonus that also refreshes your combo timer. They never hurt you.
 - **Near miss:** brushing past a funnel or mast gives a small bonus.
 - **Turns:** the Bosphorus bends every 15-25 seconds, sometimes in an S. Red chevron boards and a *VİRAJ* sign warn you first. Inside a turn the wind pushes the gull outward, so lean toward the inside: the simits trace the racing line with a golden one at the apex. Catch most of the line for a *Perfect turn* bonus and a slingshot burst of speed.
 - **Power-ups** (floating bubbles): Magnet pulls simits (even out of passengers' hands), Shield absorbs one hit, 2x doubles all points.

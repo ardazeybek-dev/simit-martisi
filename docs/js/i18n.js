@@ -19,7 +19,7 @@
     // main.js, models.js
     'Rekor': 'Best', 'İlk uçuşun!': 'Your first flight!', 'Önceki rekoru geçtin': 'You beat your best', 'altın': 'gold',
     'Kalkan!': 'Shield!', 'Martı kavgası!': 'Gull fight!', 'Uçurtmaya dolandın!': 'Tangled in a kite!',
-    'Bacaya çarptın!': 'Hit a funnel!', 'Direğe çarptın!': 'Hit a mast!', 'Öhö öhö!': 'Cough cough!', 'Kıl payı!': 'Close call!',
+    'Bacaya çarptın!': 'Hit a funnel!', 'Direğe çarptın!': 'Hit a mast!', 'Öhö öhö!': 'Cough cough!', 'Kıl payı!': 'Close call!', 'Yunus!': 'Dolphin!', 'Bir uçuşta {n} yunusun üstünden geç': 'Fly over {n} dolphins in one flight',
     'Mıknatıs': 'Magnet', 'Kalkan': 'Shield', '2x Puan': '2x Points',
     'Simidim!': 'My simit!', 'Hoop!': 'Hey!', 'Yaa!': 'Aww!', 'Martıya bak!': 'Look at that gull!', 'Bırak onu!': 'Drop it!',
     'Ah simidim…': 'Oh, my simit…', 'Oha!': 'Whoa!', 'Kaçtı!': 'It got away!', 'Hayırdır?': 'Excuse me?', 'Afiyet olsun!': 'Enjoy!', 'Al bakalım!': 'Here you go!', 'Hadi gel!': 'Come on, take it!',

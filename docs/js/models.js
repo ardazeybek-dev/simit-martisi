@@ -415,6 +415,25 @@ export const MAIDEN = (() => {
   return k.build();
 })();
 
+// ---------------- yunus ----------------
+// Boğaz yunusu: burun +x yönünde; sırtı koyu gri-mavi, karnı açık. Tek geometri, bütün yunuslar paylaşır.
+export const DOLPHIN = (() => {
+  const k = new Kit(), back = 0x7a97ae, flank = 0xa9bfcf, belly = 0xf1f4f5;
+  k.add(new THREE.SphereGeometry(0.5, 12, 8), (f, y) => (y < -0.1 ? belly : y < 0.08 ? flank : back), 0, 0, 0, 0, 0, 0, 1.8, 0.7, 0.64);
+  k.add(new THREE.ConeGeometry(0.14, 0.36, 7), (f, y) => (y < -0.04 ? belly : back), 0.98, -0.06, 0, 0, 0, -Math.PI / 2); // gaga
+  k.add(new THREE.SphereGeometry(0.035, 5, 4), 0x111418, 0.72, 0.06, 0.24);
+  k.add(new THREE.SphereGeometry(0.035, 5, 4), 0x111418, 0.72, 0.06, -0.24);
+  const fin = new THREE.Shape(); fin.moveTo(-0.3, 0); fin.lineTo(0.12, 0); fin.quadraticCurveTo(-0.05, 0.25, -0.32, 0.46); fin.quadraticCurveTo(-0.22, 0.2, -0.3, 0);
+  const finG = new THREE.ExtrudeGeometry(fin, { depth: 0.06, bevelEnabled: false }); finG.translate(0, 0, -0.03);
+  k.add(finG, back, 0.0, 0.27, 0); // sırt yüzgeci
+  for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.34, 0.04, 0.16), back, 0.35, -0.2, s * 0.3, s * 0.5, 0.5 * s, -0.3); // yan yüzgeçler
+  k.add(new THREE.ConeGeometry(0.2, 0.7, 7), back, -1.15, 0.02, 0, 0, 0, Math.PI / 2, 1, 1, 0.75); // kuyruk sapı
+  const fl = new THREE.Shape(); fl.moveTo(0, 0); fl.lineTo(-0.28, 0.42); fl.lineTo(-0.12, 0); fl.lineTo(-0.28, -0.42); fl.closePath();
+  const flG = new THREE.ExtrudeGeometry(fl, { depth: 0.05, bevelEnabled: false }); flG.rotateX(Math.PI / 2);
+  k.add(flG, back, -1.45, 0.05, 0); // kuyruk yüzgeci (yatay)
+  return k.build();
+})();
+
 // ---------------- vapur ----------------
 export const DECK = 2.6;
 // camlı salon: güvertede iki katlı kapalı salon, ortasından boydan boya geçit (martı içinden uçar).
