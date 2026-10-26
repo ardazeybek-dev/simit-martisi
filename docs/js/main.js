@@ -371,6 +371,8 @@ addEventListener('pagehide', () => pause());
 // ---------------- kalite: zayıf cihazda kendini kısar ----------------
 const DPR = Math.min(2, devicePixelRatio || 1);
 let quality = 2, qFrames = 0, qTime = 0, fpsSmooth = 60;
+// ?q=0|1|2 kaliteyi sabitler (otomatik ayar kapanır) — ölçüm ve test için
+const qLock = /^[012]$/.test(new URLSearchParams(location.search).get('q') || '') ? +new URLSearchParams(location.search).get('q') : -1;
 function setQuality(q) {
   quality = q;
   renderer.setPixelRatio(q === 2 ? DPR : q === 1 ? Math.min(DPR, 1.4) : 1);
@@ -397,7 +399,7 @@ function frame() {
     qFrames++; qTime += realDt;
     if (qTime > 2.5) {
       const f = qFrames / qTime;
-      if (f < 42 && quality > 0) setQuality(quality - 1);
+      if (f < 42 && quality > 0 && qLock < 0) setQuality(quality - 1);
       qFrames = 0; qTime = 0;
     }
   }
@@ -683,9 +685,21 @@ function resize() {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
-setQuality(DPR > 1.5 && Math.min(screen.width, screen.height) < 500 ? 1 : 2);
+setQuality(qLock >= 0 ? qLock : DPR > 1.5 && Math.min(screen.width, screen.height) < 500 ? 1 : 2);
 
 showTitle();
+// shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
+{
+  const warm = new THREE.Group();
+  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true));
+  warm.position.set(0, FLY_Y, -20); scene.add(warm);
+  puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
+  chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
+  flats.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
+  updateFx(0);
+  try { renderer.compile(scene, camera); } catch (e) {}
+  scene.remove(warm);
+}
 requestAnimationFrame(frame);
 
 window.__game = {
