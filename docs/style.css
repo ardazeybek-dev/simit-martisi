@@ -70,6 +70,12 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .sub { margin-top: 4px; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 5px; opacity: .95; font-variant-numeric: tabular-nums; }
 .sub .ico { width: 20px; height: 20px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .3)); }
 .sub small { font-size: 13px; opacity: .8; margin-left: -2px; }
+.route { margin-top: 6px; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.route.hidden { display: none; }
+.route .ico { width: 15px; height: 15px; color: var(--gold); flex: none; }
+.route .rbar { width: 74px; height: 6px; border-radius: 3px; background: rgba(27, 24, 56, .45); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15); overflow: hidden; }
+.route .rbar i { display: block; height: 100%; background: var(--gold); transform-origin: left; transform: scaleX(0); transition: transform .3s; }
+.route small { font-size: 11px; opacity: .8; margin-left: -3px; }
 .sep { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .5; margin: 0 4px; }
 .combo { position: relative; width: 74px; height: 74px; display: grid; place-items: center; opacity: 0; transform: scale(.6);
   transition: opacity .2s, transform .25s cubic-bezier(.3, 1.6, .5, 1); }
@@ -87,6 +93,14 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .icon-btn:active { transform: scale(.92); }
 .icon-btn svg { width: 22px; height: 22px; }
 /* viraj uyarısı: oklar dönüş yönüne akar */
+.arrive { position: fixed; z-index: 6; pointer-events: none; left: 50%; top: 24%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center;
+  padding: 10px 26px 12px; border-radius: 16px; background: #1d3c78; border: 3px solid var(--cream); color: var(--cream); opacity: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35); text-shadow: none; white-space: nowrap; }
+.arrive small { font-size: 14px; font-weight: 700; opacity: .85; letter-spacing: .04em; }
+.arrive b { font-size: 34px; font-weight: 800; letter-spacing: .06em; line-height: 1.1; }
+.arrive span { font-size: 18px; font-weight: 800; color: var(--gold); }
+.arrive.on { animation: arrive 2.6s cubic-bezier(.3, 1.5, .5, 1) forwards; }
+@keyframes arrive { 0% { opacity: 0; transform: translateX(-50%) scale(.5); } 12% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; transform: translateX(-50%) scale(1); } 100% { opacity: 0; transform: translateX(-50%) scale(.9) translateY(-14px); } }
 .turn-sign { position: fixed; z-index: 5; pointer-events: none; left: 50%; top: calc(104px + var(--sat)); display: flex; align-items: center; gap: 10px;
   padding: 6px 12px 6px 16px; border-radius: 999px; background: rgba(226, 70, 59, .88); color: var(--cream); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
   opacity: 0; transform: translateX(-50%) scale(.7); transition: opacity .2s, transform .25s cubic-bezier(.3, 1.6, .5, 1); }
@@ -99,7 +113,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .turn-sign.left.on svg { animation-name: chevl; }
 @keyframes chev { 50% { transform: translateX(5px); opacity: .7; } }
 @keyframes chevl { 0%, 100% { transform: scaleX(-1); } 50% { transform: scaleX(-1) translateX(5px); opacity: .7; } }
-#powers { position: fixed; z-index: 5; pointer-events: none; left: calc(16px + var(--sal)); top: calc(92px + var(--sat)); display: flex; flex-direction: column; gap: 8px; }
+#powers { position: fixed; z-index: 5; pointer-events: none; left: calc(16px + var(--sal)); top: calc(120px + var(--sat)); display: flex; flex-direction: column; gap: 8px; }
 .pw { display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; border-radius: 999px; background: var(--glass);
   border: 1px solid var(--line); animation: pwin .3s cubic-bezier(.3, 1.6, .5, 1); color: var(--c); }
 .pw .ico { width: 24px; height: 24px; display: grid; }
@@ -204,6 +218,18 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .wardrobe-chip b { margin-left: 2px; padding: 0 8px; border-radius: 99px; background: var(--simit); color: #2a1503; font-size: 14px; font-variant-numeric: tabular-nums; }
 .tap { font-size: 17px; font-weight: 700; letter-spacing: .3px; opacity: .85; text-shadow: 0 3px 0 rgba(27, 24, 56, .5), 0 6px 18px rgba(0, 0, 0, .4); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.07); opacity: .75; } }
+.route-map { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; text-shadow: 0 2px 0 rgba(27, 24, 56, .5); }
+.route-map p { margin: 0; }
+.route-map b { color: var(--gold); }
+.route-map .dots { display: flex; align-items: center; width: min(280px, 72vw); justify-content: space-between; position: relative; }
+.route-map .dots::before { content: ''; position: absolute; left: 6px; right: 6px; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 2px; background: rgba(255, 244, 226, .35); }
+.route-map i { position: relative; width: 12px; height: 12px; border-radius: 50%; background: #2a2552; border: 2px solid rgba(255, 244, 226, .6); }
+.route-map i.got { background: var(--gold); border-color: var(--cream); }
+.route-map i.goal { border-color: var(--gold); animation: goal 1.2s ease-in-out infinite; }
+@keyframes goal { 50% { transform: scale(1.35); box-shadow: 0 0 0 4px rgba(255, 194, 58, .3); } }
+.route-line { font-size: 15px; font-weight: 700; margin: 4px 0 0; color: var(--cream-2); }
+.route-line.new { color: var(--gold); }
+.route-line .ico, .arrive .ico { width: 18px; height: 18px; vertical-align: -3px; }
 .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 14px; font-weight: 600; opacity: .85; max-width: 340px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
@@ -364,7 +390,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   .big { font-size: 56px; }
   .toggle { flex-direction: column; gap: 6px; font-size: 15px; }
   .score { font-size: 34px; }
-  #powers { top: calc(74px + var(--sat)); }
+  #powers { top: calc(98px + var(--sat)); }
   #tutorial { bottom: calc(8vh + var(--sab)); }
 }
 @media (prefers-reduced-motion: reduce) {

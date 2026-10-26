@@ -446,6 +446,62 @@ export const MAIDEN = (() => {
   return k.build();
 })();
 
+// ---------------- hat iskeleleri ----------------
+// İskele binası: krem duvar, kiremit çatı, saat kulesi, suya uzanan ahşap iskele. Ön yüz -x'e (koridora) bakar; sol kıyıda Math.PI döndürülür.
+export const PIER = (() => {
+  const k = new Kit(), cream = 0xf3e6cc, tile = 0xc0533a, wood = 0x8a6242, glassC = 0x5f7fa8;
+  k.add(new THREE.BoxGeometry(6, 0.35, 12), wood, -6.2, 1.1, 0); // iskele tahtası
+  for (let z = -5; z <= 5; z += 2.5) for (const x of [-8.8, -3.8]) k.add(new THREE.CylinderGeometry(0.22, 0.22, 2.4, 6), 0x5b4130, x, 0, z);
+  k.add(new THREE.BoxGeometry(5.2, 0.18, 11), tile, -6, 4.3, 0, 0, 0, 0.08); // iskele saçağı
+  for (const z of [-5, 0, 5]) k.add(new THREE.CylinderGeometry(0.1, 0.1, 3.1, 6), 0xe8e2d6, -8.4, 2.75, z);
+  k.add(new THREE.BoxGeometry(7, 5, 15), cream, 0, 3.5, 0); // bina
+  k.add(new THREE.BoxGeometry(7.3, 0.35, 15.3), 0xd9c7a5, 0, 3.6, 0); // kat silmesi
+  for (let z = -6; z <= 6; z += 2) { k.add(new THREE.BoxGeometry(0.1, 1.3, 0.9), glassC, -3.52, 5, z); if (Math.abs(z) > 1) k.add(new THREE.BoxGeometry(0.1, 1.4, 0.9), glassC, -3.52, 2.3, z); }
+  k.add(new THREE.BoxGeometry(0.1, 2, 2), 0x6b4a33, -3.52, 2.1, 0); // kapı
+  k.add(new THREE.ConeGeometry(5.6, 2.6, 4), tile, 0, 7.3, 0, 0, Math.PI / 4, 0, 0.9, 1, 1.95); // kırma çatı
+  k.add(new THREE.BoxGeometry(2.4, 4.2, 2.4), cream, -1.2, 9.4, 0); // saat kulesi
+  k.add(new THREE.CylinderGeometry(0.75, 0.75, 0.12, 16), 0xfdfaf2, -2.45, 10.3, 0, 0, 0, Math.PI / 2);
+  k.add(new THREE.BoxGeometry(0.06, 0.55, 0.08), 0x222222, -2.53, 10.45, 0);
+  k.add(new THREE.ConeGeometry(2, 1.8, 4), tile, -1.2, 12.4, 0, 0, Math.PI / 4);
+  k.add(new THREE.CylinderGeometry(0.05, 0.05, 1.4, 4), 0xd9b24a, -1.2, 13.9, 0);
+  k.add(new THREE.BoxGeometry(0.05, 0.5, 0.75), 0xe30a17, -1.2, 14.3, 0.4); // bayrak
+  return k.build();
+})();
+// Karadeniz ağzı: iskele yerine fener
+export const LIGHTHOUSE = (() => {
+  const k = new Kit();
+  k.add(new THREE.DodecahedronGeometry(5, 0), (f, y) => (y > 0.3 ? 0x9d927f : 0x6f6a60), 0, -1.5, 0, 0, 0, 0, 1.3, 0.5, 1.2);
+  k.add(new THREE.CylinderGeometry(1.5, 2, 11, 12), (f, y) => (Math.floor((y + 5.5) / 2.75) % 2 ? 0xd8423a : 0xfaf6ee), 0, 6.5, 0);
+  k.add(new THREE.CylinderGeometry(2, 2, 0.3, 12), 0x333a44, 0, 12.1, 0);
+  k.add(new THREE.CylinderGeometry(1.1, 1.1, 1.6, 10), 0xfff0a8, 0, 13, 0);
+  k.add(new THREE.ConeGeometry(1.4, 1.4, 10), 0x333a44, 0, 14.5, 0);
+  return k.build();
+})();
+// durak kapısı: koridorun iki yanında lacivert-beyaz direkler, tepede Şehir Hatları tabelası (kameranın üstünde, engel değil)
+export const GATE_Y = 13;
+export const GATE_POSTS = (() => {
+  const k = new Kit();
+  for (const s of [-1, 1]) {
+    k.add(new THREE.CylinderGeometry(0.32, 0.38, GATE_Y + 1.6, 8), (f, y) => (Math.floor((y + 8) / 1.6) % 2 ? 0x1d3c78 : 0xf6f3ea), s * 8.6, (GATE_Y + 1.6) / 2, 0);
+    k.add(new THREE.SphereGeometry(0.45, 8, 6), 0xffc23a, s * 8.6, GATE_Y + 1.8, 0);
+  }
+  return k.build();
+})();
+const BOARD = new THREE.PlaneGeometry(16.4, 2.6);
+const gateMats = new Map(); // durak başına bir kez: tekrar varışta aynı doku
+export function makeStopGate(name) {
+  if (!gateMats.has(name)) gateMats.set(name, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, map: canvasTex(512, 82, (g, w, h) => {
+    g.fillStyle = '#1d3c78'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#f6f3ea'; g.lineWidth = 5; g.strokeRect(7, 7, w - 14, h - 14);
+    g.fillStyle = '#f6f3ea'; g.font = '800 46px "Baloo 2", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(name.toLocaleUpperCase('tr'), w / 2, h / 2 + 3, w - 50);
+  }) }));
+  const g = new THREE.Group();
+  const posts = new THREE.Mesh(GATE_POSTS, vcMat); posts.castShadow = true; g.add(posts);
+  const b = new THREE.Mesh(BOARD, gateMats.get(name)); b.position.y = GATE_Y + 0.6; g.add(b);
+  return g;
+}
+
 // ---------------- yunus ----------------
 // Boğaz yunusu: burun +x yönünde; sırtı koyu gri-mavi, karnı açık. Tek geometri, bütün yunuslar paylaşır.
 export const DOLPHIN = (() => {

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading, applyWeather } from './scene.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
@@ -12,7 +12,7 @@ const $ = id => document.getElementById(id);
 const tr = s => window.I18N.t(s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.15, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
-const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_ROUTE = 'simit-martisi-route';
 
 // ---------------- ayarlar ----------------
 // sfx / music: sessize alma (M tuşu, ses düğmesi); sfxVol / musicVol: Ayarlar'daki kaydırıcılar (0-1)
@@ -31,10 +31,20 @@ const blob = new THREE.Mesh(GEO.blob, new THREE.MeshBasicMaterial({ color: 0x0a1
 blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
 // ---------------- dünya ----------------
-let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], bridges = [], bins = [], cats = [];
+let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], bridges = [], bins = [], cats = [], piers = [];
 let bridgeZ = 0;
 let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, land = [];
 const difficulty = () => clamp(-genZ / 650, 0, 5);
+// ---------------- hat: Kadıköy'den Karadeniz'e iskeleler (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
+const STOP_K = new URLSearchParams(location.search).has('stop') ? 0.15 : 1; // ?stop → duraklar çok yakın (deneme için)
+// to: yönelme hâli ("Karaköy'e 120 m kaldı"), gift: o iskeleye ilk kez varınca cüzdana giren simit
+const STOPS = [['Kadıköy', 0, "Kadıköy'e", 0], ['Karaköy', 400, "Karaköy'e", 50], ['Beşiktaş', 1000, "Beşiktaş'a", 100], ['Ortaköy', 1700, "Ortaköy'e", 150],
+  ['Bebek', 2500, "Bebek'e", 250], ['Rumeli Hisarı', 3400, "Rumeli Hisarı'na", 350], ['Emirgan', 4400, "Emirgan'a", 500], ['Sarıyer', 5500, "Sarıyer'e", 700], ['Karadeniz', 6800, "Karadeniz'e", 1500]]
+  .map(([name, m, to, gift]) => ({ name, m: Math.round(m * STOP_K), to, gift }));
+let farStop = clamp(+store.get(KEY_ROUTE, 0) || 0, 0, STOPS.length - 1); // şimdiye dek varılan en uzak iskele
+let newStop = 0; // bu uçuşta ilk kez varılan en uzak iskele (oyun sonu için)
+let stopI = 1, pierI = 1, stopM = STOPS.map(s => s.m); // stopI: sıradaki varış, pierI: sıradaki kurulacak iskele, stopM: bu uçuşta kapıların gerçek metresi
+const PIER_HALF = 36; // iskele kesiti: kapıdan önce ve sonra bu kadar boş su
 
 // ---------------- virajlar ----------------
 // Mantık düz koridorda kalır, viraj yalnızca çizimde yay olur (scene.js). Virajda martı dışa savrulur;
@@ -48,7 +58,9 @@ function planTurns(limit) {
   while (turnZ > limit) {
     // ilk viraj kalkıştan ~5 sn sonra; S-viraj: hemen ters yöne
     const last = turns[turns.length - 1], ess = !!last && !last.ess && Math.random() < S_CHANCE;
-    const z0 = turnZ - (ess ? rand(14, 22) : last ? rand(...TURN_GAP) : rand(150, 190)), len = rand(...TURN_LEN), ang = rand(...TURN_ANG);
+    let z0 = turnZ - (ess ? rand(14, 22) : last ? rand(...TURN_GAP) : rand(150, 190));
+    const len = rand(...TURN_LEN), ang = rand(...TURN_ANG);
+    for (const s of STOPS) { const sz = -2 * s.m; if (s.m && z0 + PIER_HALF + 20 > sz && z0 - len - PIER_HALF - 20 < sz) z0 = sz - PIER_HALF - 25; } // virajı iskelenin ötesine at
     const dir = ess ? -last.dir : Math.abs(planYaw) > 0.5 ? -Math.sign(planYaw) : pick([-1, 1]);
     planYaw += dir * ang;
     turns.push({ z0, z1: z0 - len, dir, k: (dir * ang) / len, ess, total: 0, got: 0, built: false, entered: false, done: false });
@@ -395,7 +407,7 @@ function spawnFerry() {
 function spawnScenery(limit) {
   while (sceneryZ > limit) {
     sceneryZ -= rand(22, 52);
-    if (Math.random() < 0.85) {
+    if (Math.random() < 0.85 && !piers.some(p => Math.abs(p.z - sceneryZ) < 34)) {
       const side = pick([-1, 1]), r = Math.random();
       const b = r < 0.5 ? makeFishingBoat(side) : r < 0.78 ? makeSailboat() : makeYacht();
       b.position.set(side * rand(15, r < 0.5 ? 30 : 40), 0, sceneryZ); b.rotation.y = rand(-0.5, 0.5) + (r >= 0.5 && Math.random() < 0.5 ? Math.PI : 0);
@@ -416,6 +428,26 @@ function spawnScenery(limit) {
   }
 }
 
+// iskele kesiti: açık su, kıyıda iskele binası (son durakta fener), koridorun üstünde isim tabelalı kapı.
+// Kapıya giden simit dizisi tabelanın tam altındaki altın simitte biter; kapıdan geçince varış.
+function spawnPier() {
+  const i = pierI++, z0 = genZ, gz = z0 - PIER_HALF, side = pick([-1, 1]), last = i === STOPS.length - 1;
+  stopM[i] = -gz / 2;
+  decor = decor.filter(d => (Math.abs(d.z - gz) < 34 && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true));
+  land = land.filter(l => (Math.abs(l.z - gz) < 60 ? (scene.remove(l.mesh), false) : true));
+  const g = new THREE.Group(); g.position.z = gz; scene.add(g);
+  g.add(makeStopGate(STOPS[i].name));
+  const b = new THREE.Mesh(last ? LIGHTHOUSE : PIER, vcMat); b.castShadow = true;
+  b.position.x = side * (last ? 16 : 17); b.rotation.y = side > 0 ? 0 : Math.PI; g.add(b);
+  if (!last) for (let k = 0, n = 3 + ((Math.random() * 3) | 0); k < n; k++) { // iskelede martıyı bekleyenler
+    const p = makePerson(false); p.mesh.position.set(side * (17 - rand(5.2, 8.4)), 1.28, rand(-4.5, 4.5)); p.mesh.rotation.y = -side * Math.PI / 2 + rand(-0.4, 0.4); g.add(p.mesh);
+  }
+  const gx = rand(-3, 3);
+  for (let k = 5; k >= 1; k--) addSimit(gx + k * rand(-0.5, 0.5), FLY_Y, gz + k * 3.4, false);
+  addSimit(gx, FLY_Y, gz, true);
+  piers.push({ g, z: gz, i, side });
+  genZ = z0 - PIER_HALF * 2;
+}
 function clearWorld() {
   for (const l of land) scene.remove(l.mesh);
   land = [];
@@ -425,12 +457,17 @@ function clearWorld() {
   for (const c of crossers) scene.remove(c.mesh);
   for (const f of dolphins) scene.remove(f.mesh);
   for (const b of bridges) scene.remove(b.g);
-  ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = []; crossers = []; dolphins = []; bridges = []; bins = []; cats = [];
+  for (const p of piers) scene.remove(p.g);
+  ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = []; crossers = []; dolphins = []; bridges = []; bins = []; cats = []; piers = [];
   clearFx();
 }
 function generate(limit) {
   planTurns(limit - 200); spawnScenery(limit);
   while (genZ > limit) {
+    if (pierI < STOPS.length) { // sıradaki iskele yaklaştıysa önünü düz suyla tam kapıya denk gelecek şekilde doldur
+      const pz = -2 * STOPS[pierI].m + PIER_HALF;
+      if (genZ - pz < 130) { if (genZ - pz > 30) spawnGap(segCount === 0, genZ - pz); else spawnPier(); continue; }
+    }
     const tn = turns.find(u => !u.built && u.z0 > genZ - 75); // yaklaşan virajın öncesini düz suyla doldur
     if (!tn) { segCount % 2 === 0 ? (genZ < bridgeZ ? spawnBridge() : spawnGap(segCount === 0)) : spawnFerry(); segCount++; }
     else if (genZ - tn.z0 > 30) spawnGap(segCount === 0, genZ - tn.z0);
@@ -447,6 +484,7 @@ function cleanup(z) {
   crossers = crossers.filter(c => (c.z > behind ? (scene.remove(c.mesh), false) : true));
   dolphins = dolphins.filter(f => (f.z > behind ? (scene.remove(f.mesh), false) : true));
   bridges = bridges.filter(b => (b.z > behind + 10 ? (scene.remove(b.g), false) : true));
+  piers = piers.filter(p => (p.z > behind + 30 ? (scene.remove(p.g), false) : true));
   bins = bins.filter(b => b.z < behind); cats = cats.filter(c => c.z < behind);
   rivals = rivals.filter(r => (r.mesh.position.z > behind ? (scene.remove(r.mesh), false) : true));
   kites = kites.filter(k => (k.z > behind ? (scene.remove(k.g), false) : true));
@@ -494,7 +532,7 @@ function resetWorld(newWeather = true) {
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
-  run.near = run.power = run.steal = run.turn = run.dolphin = 0; gear = 0; gearAt = GEAR_M;
+  run.near = run.power = run.steal = run.turn = run.dolphin = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0;
   if (newWeather) { weather = pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
@@ -507,17 +545,31 @@ const ui = {
   score: $('score'), simits: $('simits'), dist: $('dist'), combo: $('combo'), mult: $('mult'), comboRing: $('comboRing'),
   hud: $('hud'), powers: $('powers'), vignette: $('vignette'), flash: $('flash'),
 };
-let shownScore = -1, shownSimit = -1, shownDist = -1, shownMult = 0;
+let shownScore = -1, shownSimit = -1, shownDist = -1, shownMult = 0, shownStop = -1, shownLeft = -1;
 function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
 function bump(el, cls = 'bump') { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 const total = () => points + Math.floor(dist / 10);
 const fmt = n => n.toLocaleString(window.I18N.lang === 'tr' ? 'tr-TR' : 'en-US');
 
+// hat: oyun sonunda tek satır, ana menüde nokta nokta harita + hedef cümlesi
+const toStop = (i, n) => tr('{to} {n} m kaldı').replace('{to}', STOPS[i].to).replace('{s}', STOPS[i].name).replace('{n}', fmt(n));
+function renderRouteLine() {
+  const el = $('overRoute');
+  el.classList.toggle('new', newStop > 0);
+  if (newStop) el.innerHTML = `${tr('Yeni iskele')}: <b>${STOPS[newStop].name}</b> +${fmt(STOPS[newStop].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
+  else if (stopI < STOPS.length) el.textContent = toStop(stopI, Math.max(1, Math.ceil(stopM[stopI] - dist)));
+  else el.textContent = tr('Boğazı baştan sona uçtun!');
+}
+function renderRouteMap() {
+  const goal = Math.min(farStop + 1, STOPS.length - 1), done = farStop === STOPS.length - 1;
+  $('routeMap').innerHTML = STOPS.map((s, i) => `<i class="${i <= farStop ? 'got' : i === goal ? 'goal' : ''}" title="${s.name}"></i>`).join('');
+  $('routeGoal').innerHTML = done ? tr('Boğazı baştan sona uçtun!') : `${tr('Hedef')}: <b>${STOPS[goal].name}</b> · ${fmt(STOPS[goal].m)} m`;
+}
 function showTitle() {
   state = 'title'; bank(); resetWorld(); refillMissions();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelector('.menu-side').classList.toggle('hidden', tutorialPending);
-  renderMissions($('titleMis')); renderMenuBadges();
+  renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap();
   show('missionsPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false);
@@ -573,6 +625,7 @@ function showOver() {
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
   $('stCombo').textContent = `${bestCombo}`;
   ui.powers.textContent = '';
+  renderRouteLine();
   $('overBest').textContent = isBest ? tr('Önceki rekoru geçtin') : `${tr('Rekor')} ${fmt(best)}`;
   $('newRecord').classList.toggle('hidden', !isBest);
   { // haftalık sıra: bu uçuş sıranı yükselttiyse eski sırayı da göster
@@ -739,13 +792,14 @@ const MISSIONS = [
   { k: 'score', text: 'Bir uçuşta {n} puan yap', n: [800, 1500, 3000], r: [20, 35, 60] },
   { k: 'turn', text: 'Bir uçuşta {n} kusursuz viraj al', n: [2, 3, 5], r: [20, 30, 45] },
   { k: 'dolphin', text: 'Bir uçuşta {n} yunusun üstünden geç', n: [3, 6], r: [20, 35] },
+  { k: 'stop', text: 'Bir uçuşta {n} iskeleye var', n: [1, 2, 3], r: [20, 40, 70] },
   { k: 'runs', text: '{n} kez uç', n: [3, 5], r: [15, 25], total: true },
   { k: 'simitTotal', text: 'Toplam {n} simit topla', n: [100, 200], r: [30, 50], total: true },
 ];
 const misDef = k => MISSIONS.find(d => d.k === k);
 let missions = (store.get(KEY_MIS, []) || []).filter(m => m && misDef(m.k) && m.n > 0 && m.r > 0).slice(0, 3);
 function runVal(k) {
-  return { simit: Math.floor(simitCount), gold: Math.floor(goldCount), dist: Math.floor(dist), combo: bestCombo, score: total(), near: run.near, power: run.power, steal: run.steal, turn: run.turn, dolphin: run.dolphin }[k] || 0;
+  return { simit: Math.floor(simitCount), gold: Math.floor(goldCount), dist: Math.floor(dist), combo: bestCombo, score: total(), near: run.near, stop: stopI - 1, power: run.power, steal: run.steal, turn: run.turn, dolphin: run.dolphin }[k] || 0;
 }
 const misProgress = m => Math.floor(misDef(m.k).total ? m.p || 0 : runVal(m.k));
 const misText = m => tr(misDef(m.k).text).replace('{n}', fmt(m.n));
@@ -860,6 +914,15 @@ function updateHud() {
   if (Math.floor(simitCount) !== shownSimit) { shownSimit = Math.floor(simitCount); ui.simits.textContent = fmt(shownSimit); }
   const dm = Math.floor(dist);
   if (dm !== shownDist) { ui.dist.textContent = fmt(dm); shownDist = dm; }
+  // hat çubuğu: sıradaki iskele, kalan metre, aradaki yolun ne kadarı uçuldu
+  if (stopI !== shownStop) {
+    shownStop = stopI; shownLeft = -1; show('route', stopI < STOPS.length);
+    if (stopI < STOPS.length) $('routeTo').textContent = STOPS[stopI].name;
+  }
+  if (stopI < STOPS.length) {
+    const a = stopM[stopI - 1], b = stopM[stopI], left = Math.max(0, Math.ceil(b - dist));
+    if (left !== shownLeft) { shownLeft = left; $('routeLeft').textContent = fmt(left); $('routeFill').style.transform = `scaleX(${clamp((dist - a) / (b - a), 0, 1)})`; }
+  }
 }
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
 const mult = () => Math.min(5, 1 + Math.floor(Math.sqrt(combo / 3)));
@@ -1058,6 +1121,7 @@ function frame() {
       // ilerledikçe hızlanır: önce hızlı tırmanır, sonra tavana (SPEED_MAX) kadar yavaşça artmayı sürdürür
       speed = Math.min(SPEED_MAX, 15 + 17 * (1 - Math.exp(-playT / 60)) + playT * 0.04) + slingV;
       if (dist >= gearAt) { gearAt += GEAR_M; gear++; gearUp(); }
+      if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();
     } else { speed = 15; autopilot(); }
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)
     const cur = turns.find(u => g.z < u.z0 && g.z > u.z1);
@@ -1461,6 +1525,28 @@ function weatherTick(dt) {
     }
   }
 }
+// iskeleye varış (kapının altından geçiş): uçuş sürer, çubuk sıradaki durağa geçer
+const welcome = ['Hoş geldin martı!', 'Geldi bizimki!', 'Vapur gecikti, martı gelmedi!', 'Simit burada!'];
+function arrive() {
+  const i = stopI++, gain = 25 * i * mult();
+  points += gain; if (combo > 0) comboT = COMBO_T;
+  const el = $('arrive');
+  $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase(window.I18N.lang === 'tr' ? 'tr' : 'en');
+  $('arriveSub').textContent = tr(i === STOPS.length - 1 ? 'Boğazı baştan sona uçtun!' : 'İskeleye vardın');
+  $('arriveGain').textContent = `+${fmt(gain)}`;
+  if (i > farStop) { // ilk kez: iskele haritada açılır, cüzdana hediye
+    farStop = newStop = i; store.set(KEY_ROUTE, i);
+    wallet += STOPS[i].gift; store.set(KEY_WALLET, wallet);
+    $('arriveSub').textContent = tr(i === STOPS.length - 1 ? 'Boğazı baştan sona uçtun!' : 'Yeni iskele!');
+    $('arriveGain').innerHTML = `+${fmt(gain)} · +${fmt(STOPS[i].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
+    setTimeout(() => sfx.record(), 350);
+  }
+  bump(el, 'on');
+  sfx.horn(); sfx.power(); vibrate([20, 30, 20]); confetti();
+  sparkle(tmp2.set(gull.position.x, gull.position.y + 0.5, gull.position.z), 30, 0xffe7a8, 6, 0.8);
+  const p = piers.find(q => q.i === i);
+  if (p && i < STOPS.length - 1) popText(tr(pick(welcome)), tmp2.set(p.side * 7, 3.5, gull.position.z - 14), 'shout');
+}
 function gearUp() {
   sfx.power(); trauma = Math.min(1, trauma + 0.15); flapBurst = 1;
 }
@@ -1521,6 +1607,9 @@ window.__game = {
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0) => addRival(gull.position.z - ahead, x, 2, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
+  get farStop() { return farStop; },
+  get route() { return { next: STOPS[stopI] ? STOPS[stopI].name : null, at: stopM[stopI] ?? null, dist, z: gull.position.z, piers: piers.map(p => ({ i: p.i, ahead: +(gull.position.z - p.z).toFixed(1) })) }; },
+  warp: m => { dist = m; gull.position.z = -2 * m; }, // deneme: uçuşu ileri sar
   get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },
   get salons() { return ferries.filter(f => f.salon).map(f => ({ x: +f.salon.x.toFixed(2), ahead: +(gull.position.z - f.salon.z).toFixed(1) })); },
   get bins() { return bins.map(b => ({ x: +b.s.x.toFixed(1), ahead: +(gull.position.z - b.z).toFixed(1), u: +b.s.bin.u.toFixed(2), taken: !!b.s.taken })); },

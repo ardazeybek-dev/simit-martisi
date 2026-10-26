@@ -19,6 +19,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 
 ## Gameplay
 
+- **Goal: fly the Bosphorus line.** Every flight leaves Kadıköy and heads up the strait: Karaköy (400 m), Beşiktaş, Ortaköy, Bebek, Rumeli Hisarı, Emirgan, Sarıyer and the Black Sea (6,800 m). The HUD shows the next pier and the metres left; a pier is a gate with its name board, the terminal on the bank and a simit line ending in a golden simit right under the sign. Arriving pays bonus points and the flight goes on to the next pier. The first time you reach a pier it pays simits (50 up to 1,500) and lights up on the title-screen route map; the game-over screen tells you how far the next pier was.
 - **Score** = simit points + 1 point per 10 m flown.
 - **Combo:** catch simits in a row to raise the multiplier; it climbs slowly (x2 at 3, x3 at 12, x4 at 27, x5 at 48) and the chain dies quickly if you miss. The ring in the HUD shows how long it stays alive.
 - **Simit boats:** on open water, simit sellers in rowboats on both banks break their simits and toss the pieces to you. Each piece is a quarter simit (a quarter of the points and of the wallet value); it arcs over and comes down where a ripple ring marks the water, right as you get there; miss it and it splashes into the sea.
@@ -69,7 +70,7 @@ python -m http.server 8000
 Then open http://localhost:8000. An internet connection is needed the first time to load three.js and the font.
 The service worker only registers on https, so local runs are never cached.
 
-Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the old floating simits instead of thrown ones, or `?pal=old` for the earlier deep sunset colours, `?weather=rain|snow|fog|clear` to force the weather, `?bridge` to meet the Galata Bridge right away, `?salon` to give every ferry a glass salon (handy for comparing).
+Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the old floating simits instead of thrown ones, or `?pal=old` for the earlier deep sunset colours, `?weather=rain|snow|fog|clear` to force the weather, `?bridge` to meet the Galata Bridge right away, `?salon` to give every ferry a glass salon, `?stop` to put the piers very close together (handy for comparing).
 
 Append `?q=0`, `?q=1` or `?q=2` to the URL to lock the quality level (low / medium / high) and turn off automatic adjustment.
 

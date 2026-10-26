@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.14.0">
+<meta name="app-version" content="2.15.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -49,6 +49,7 @@
     <symbol id="i-sound" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.6 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
     <symbol id="i-mute" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
     <symbol id="i-hanger" viewBox="0 0 24 24"><path d="M12 7.2a2.2 2.2 0 1 1 2.2-2.2c0 1.3-2.2 1.6-2.2 3.1v.6l8.6 5.6c1.2.8.7 2.7-.8 2.7H4.2c-1.5 0-2-1.9-.8-2.7L12 8.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></symbol>
     <symbol id="i-trophy" viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h10v2h3.5v2.5A4.5 4.5 0 0 1 16.6 12 5.5 5.5 0 0 1 13 14.8V17h3v3H8v-3h3v-2.2A5.5 5.5 0 0 1 7.4 12 4.5 4.5 0 0 1 3.5 7.5V5H7zm0 4H5.5v.5A2.5 2.5 0 0 0 7.1 9.8 7 7 0 0 1 7 8.6zm10 0v1.6a7 7 0 0 1-.1 1.2 2.5 2.5 0 0 0 1.6-2.3V7z"/></symbol>
     <symbol id="i-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l1.6 1.6L8.5 5M4 12.5l1.6 1.6 2.9-3.1M4 18.5l1.6 1.6 2.9-3.1"/><path d="M12 7h8M12 13h8M12 19h6"/></g></symbol>
     <symbol id="i-gift" viewBox="0 0 24 24"><path fill="currentColor" d="M4 11h7.2v10H5.5A1.5 1.5 0 0 1 4 19.5zm8.8 0H20v8.5a1.5 1.5 0 0 1-1.5 1.5h-5.7zM3 7h8.2v2.6H3zm9.8 0H21v2.6h-8.2zM12 6.6c-1.3-2.9-3.4-4.3-5-3.6-1.7.7-1.1 3.4 1.6 3.6zm0 0c1.3-2.9 3.4-4.3 5-3.6 1.7.7 1.1 3.4-1.6 3.6z"/></symbol>
@@ -74,6 +75,7 @@
   <div class="hud-l">
     <div id="score" class="score">0</div>
     <div class="sub"><svg class="ico"><use href="#i-simit"/></svg><b id="simits">0</b><span class="sep"></span><b id="dist">0</b><small>m</small></div>
+    <div id="route" class="route"><svg class="ico"><use href="#i-pin"/></svg><span id="routeTo">Karaköy</span><span class="rbar"><i id="routeFill"></i></span><b id="routeLeft">0</b><small>m</small></div>
   </div>
   <div id="combo" class="combo">
     <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="track"/><circle id="comboRing" cx="20" cy="20" r="16" class="ring" pathLength="100"/></svg>
@@ -83,6 +85,7 @@
 </header>
 <div id="powers"></div>
 <div id="warm" class="pw hidden" aria-hidden="true"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 4l3 2.5L15 4M9 20l3-2.5 3 2.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span><span class="bar"><i></i></span></div>
+<div id="arrive" class="arrive" aria-hidden="true"><small id="arriveSub">İskeleye vardın</small><b id="arriveName"></b><span id="arriveGain"></span></div>
 <div id="turnSign" class="turn-sign" aria-hidden="true"><b>VİRAJ</b><svg viewBox="0 0 60 24"><path d="M2 2h9l10 10-10 10H2l10-10zM21 2h9l10 10-10 10h-9l10-10zM40 2h9l10 10-10 10h-9l10-10z"/></svg></div>
 
 <div id="tutorial" class="hidden">
@@ -110,6 +113,7 @@
     <button class="side-btn" id="upsBtn"><span class="side-ico"><svg><use href="#i-bolt"/></svg></span><span>Güçlendir</span></button>
   </nav>
   <div class="title-bottom">
+    <div class="route-map no-steer"><div id="routeMap" class="dots"></div><p id="routeGoal"></p></div>
     <button class="play-btn" id="playBtn"><svg><use href="#i-play"/></svg><span>Oyna</span></button>
     <div class="tap">ya da ekrana dokun</div>
     <div class="legend">
@@ -218,6 +222,7 @@
       <div><b id="stCombo">0</b><span>en iyi seri</span></div>
     </div>
     <p class="best-line" id="overBest"></p>
+    <p class="route-line" id="overRoute"></p>
     <p class="rank-line" id="overRank"></p>
     <div class="over-extra">
       <p class="earn" id="overEarn"></p>

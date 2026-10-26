@@ -38,6 +38,9 @@
     '{n} simitlik seri yap': 'Make a {n} simit streak', 'Bir uçuşta {n} güçlendirme topla': 'Pick up {n} power-ups in one flight',
     'Bir uçuşta yolcuların elinden {n} simit kap': 'Snatch {n} simits from passengers in one flight',
     'Bir uçuşta {n} puan yap': 'Score {n} points in one flight', '{n} kez uç': 'Fly {n} times', 'Toplam {n} simit topla': 'Collect {n} simits in total',
+    'İskeleye vardın': 'You made it to the pier', 'Yeni iskele!': 'New pier!', 'Yeni iskele': 'New pier', 'Boğazı baştan sona uçtun!': 'You flew the whole Bosphorus!', 'Hedef': 'Next stop',
+    '{to} {n} m kaldı': '{n} m to {s}', 'Bir uçuşta {n} iskeleye var': 'Reach {n} piers in one flight',
+    'Hoş geldin martı!': 'Welcome, gull!', 'Geldi bizimki!': 'Here comes our gull!', 'Vapur gecikti, martı gelmedi!': 'The ferry is late, the gull is not!', 'Simit burada!': 'Simit over here!',
     'VİRAJ': 'TURN', 'Kusursuz viraj!': 'Perfect turn!', 'Güzel viraj': 'Nice turn', 'Hızlanıyor!': 'Speed up!', 'Rüzgâr!': 'Gust!', 'Dondun!': 'Frozen!', 'Üşüyorsun!': 'Freezing!', 'Bir uçuşta {n} kusursuz viraj al': 'Take {n} perfect turns in one flight',
     'Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?': 'I scored {s} points and snatched {n} simits in Simit Seagull! Can you beat it?'
   };
