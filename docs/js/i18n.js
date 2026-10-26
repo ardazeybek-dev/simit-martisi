@@ -10,7 +10,7 @@
     'kombo': 'combo', 'Parmağını sağa sola kaydır': 'Slide your finger left and right',
     'Martı parmağını takip eder': 'The seagull follows your finger',
     'Duraklatıldı': 'Paused', 'Devam et': 'Resume', 'Ses efektleri': 'Sound effects', 'Müzik': 'Music',
-    'Titreşim': 'Vibration', 'Ana menü': 'Main menu', 'Ayarlar': 'Settings', 'Tamam': 'OK', 'Dil': 'Language', 'Kamera': 'Camera', 'Yakın': 'Close', 'Uzak': 'Far', 'Kuş bakışı': 'Bird\'s eye', 'Martı gözü': 'Gull\'s eye',
+    'Titreşim': 'Vibration', 'Ana menü': 'Main menu', 'Ayarlar': 'Settings', 'Tamam': 'OK', 'Dil': 'Language', 'Güçlendir': 'Power-ups', 'sn': 's', 'Tam': 'Max', 'Güçlendirmeler daha uzun sürer.': 'Your power-ups now last longer.', 'Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.': 'Upgrade power-ups with simits: every level makes them last longer.', 'Kamera': 'Camera', 'Yakın': 'Close', 'Uzak': 'Far', 'Kuş bakışı': 'Bird\'s eye', 'Martı gözü': 'Gull\'s eye',
     'Bilgisayarda: fare ya da ← → ile yönlendir, P duraklat, M sesi kapat.': 'On desktop: steer with the mouse or ← →, P to pause, M to mute.',
     'Pat!': 'Bonk!', 'Puan': 'Score', 'Yeni rekor!': 'New best!', 'simit': 'simits', 'mesafe': 'distance',
     'en iyi seri': 'best streak', 'Tekrar uç': 'Fly again', 'Duraklat': 'Pause', 'Sesi aç/kapat': 'Sound on/off',

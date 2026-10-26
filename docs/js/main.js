@@ -12,7 +12,7 @@ const tr = s => window.I18N.t(s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 const CAMS = ['near', 'far', 'top', 'eye'];
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
-const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades';
 
 // ---------------- ayarlar ----------------
 const settings = Object.assign({ sfx: true, music: true, vibe: true, cam: 'near' }, store.get(KEY_SET, {}));
@@ -354,6 +354,11 @@ let speed = 15, playT = 0, points = 0, simitCount = 0, goldCount = 0, combo = 0,
 let crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flapPh = 0, flapPow = 0.5, flapBurst = 0;
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revived = false;
 const pw = { magnet: 0, shield: 0, double: 0 };
+// güçlendirme yükseltmeleri: simitle alınır, her seviye süreyi tabanın %25'i kadar uzatır (Subway Surfers usulü)
+const UP_COST = [80, 160, 300, 500, 800];
+const ups = { magnet: 0, shield: 0, double: 0 };
+{ const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
+const dur = k => POWER[k].dur * (1 + ups[k] * 0.25);
 let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: normal simit 1, altın simit 5 değerinde; banked = bu uçuştan cüzdana geçen
 let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
@@ -399,14 +404,14 @@ function showTitle() {
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelector('.menu-side').classList.toggle('hidden', tutorialPending);
   renderMissions($('titleMis')); renderMenuBadges();
-  show('missionsPanel', false); show('dailyPanel', false);
+  show('missionsPanel', false); show('dailyPanel', false); show('upPanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false);
   $('titleWallet').textContent = fmt(wallet);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
   $('titleBest').textContent = best ? `${tr('Rekor')} ${fmt(best)}` : tr('İlk uçuşun!');
   audio.music(true);
-  if (!tutorialPending && dailyState().ready) setTimeout(() => state === 'title' && !dressing && openDaily(), 700); // günün ilk açılışında ödül kendiliğinden gelir
+  if (!tutorialPending && dailyState().ready) setTimeout(() => state === 'title' && !dressing && !menuModal() && openDaily(), 700); // günün ilk açılışında ödül kendiliğinden gelir
 }
 function startGame() {
   audio.unlock();
@@ -524,6 +529,33 @@ function wear(c, el) {
   store.set(KEY_LOOK, look); applyLook(); renderWardrobe(); flapBurst = 1;
   sparkle(gull.position, 24, 0xffe7a8, 4, 0.6, 0.3);
 }
+// ---------------- güçlendirme yükseltmeleri ----------------
+function renderUps() {
+  $('upWallet').textContent = fmt(wallet);
+  const box = $('ups'); box.textContent = '';
+  for (const k of Object.keys(ups)) {
+    const lv = ups[k], max = lv >= UP_COST.length, cost = UP_COST[lv];
+    const d = document.createElement('div');
+    d.className = 'up'; d.style.setProperty('--c', POWER[k].color);
+    d.innerHTML = `<span class="up-i">${ICON_SVG[k]}</span><div class="up-m"><b></b><small></small><i class="up-pips">${UP_COST.map((_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</i></div><button class="up-buy"></button>`;
+    d.querySelector('b').textContent = tr(POWER[k].name);
+    d.querySelector('small').textContent = `${fmt(Math.round(dur(k)))} ${tr('sn')}` + (max ? '' : ` → ${fmt(Math.round(POWER[k].dur * (1 + (lv + 1) * 0.25)))} ${tr('sn')}`);
+    const b = d.querySelector('.up-buy');
+    if (max) { b.textContent = tr('Tam'); b.disabled = true; }
+    else { b.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(cost)}`; b.classList.toggle('poor', wallet < cost); }
+    b.addEventListener('click', e => { e.stopPropagation(); buyUp(k, d); });
+    box.appendChild(d);
+  }
+}
+function buyUp(k, el) {
+  const lv = ups[k], cost = UP_COST[lv];
+  if (lv >= UP_COST.length) return;
+  if (wallet < cost) { sfx.click(); bump(el, 'shake'); $('upNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(cost - wallet)}`; return; }
+  wallet -= cost; ups[k]++; store.set(KEY_WALLET, wallet); store.set(KEY_UP, ups);
+  sfx.power(); vibrate([20, 30, 20]); $('upNote').textContent = tr('Güçlendirmeler daha uzun sürer.');
+  renderUps(); $('titleWallet').textContent = fmt(wallet);
+  bump($('ups').children[Object.keys(ups).indexOf(k)], 'bump');
+}
 // ---------------- görevler ----------------
 // Aynı anda üç görev; biten görev hemen simit kazandırır, yerine bir sonraki uçuşta yenisi gelir.
 // total: uçuşlar boyunca birikir (p), diğerleri tek uçuşta tutturulmalı.
@@ -634,7 +666,7 @@ function revive() {
   gull.position.y = FLY_Y; gull.rotation.set(0, 0, 0); gull.visible = true;
   tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
   combo = 0; comboT = 0;
-  pw.shield = POWER.shield.dur; invuln = 2.2; // çarptığı bacanın içinden çıkarken kalkan harcanmasın
+  pw.shield = dur('shield'); invuln = 2.2; // çarptığı bacanın içinden çıkarken kalkan harcanmasın
   show('over', false); show('hud'); hideTutorial();
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
   ui.combo.classList.remove('on'); renderPowers(); updateHud();
@@ -672,7 +704,7 @@ function renderPowers() {
 }
 function tickPowers() {
   for (const el of ui.powers.children) {
-    const k = el.dataset.k, f = pw[k] / POWER[k].dur;
+    const k = el.dataset.k, f = pw[k] / dur(k);
     el.querySelector('i').style.transform = `scaleX(${clamp(f, 0, 1)})`;
     el.classList.toggle('ending', pw[k] < 2);
   }
@@ -711,7 +743,7 @@ function steerFromX(clientX) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
-const menuModal = () => !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden');
+const menuModal = () => !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -740,6 +772,8 @@ onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') startGame(); });
 onBtn('missionsBtn', () => { renderMissions($('titleMis')); show('missionsPanel'); });
 onBtn('closeMissions', () => show('missionsPanel', false));
+onBtn('upsBtn', () => { $('upNote').textContent = tr('Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.'); renderUps(); show('upPanel'); });
+onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
 onBtn('dailyBtn', () => openDaily());
 onBtn('claimBtn', () => claimDaily());
 onBtn('closeWardrobe', () => closeWardrobe());
@@ -919,7 +953,7 @@ function frame() {
       for (const p of powerups) {
         if (p.taken || Math.abs(p.z - g.z) > 1.6 || Math.abs(p.x - g.x) > 1.6) continue;
         p.taken = true; scene.remove(p.g);
-        pw[p.kind] = POWER[p.kind].dur; renderPowers(); run.power++;
+        pw[p.kind] = dur(p.kind); renderPowers(); run.power++;
         hitStop = 0.05; trauma = Math.min(1, trauma + 0.2);
         sparkle(tmp.set(p.x, p.y, p.z), 40, new THREE.Color(POWER[p.kind].color).getHex(), 7, 0.8, 0.5);
         sfx.power(); vibrate(25);
@@ -1237,5 +1271,5 @@ window.__game = {
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
-  pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
+  pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = dur(k); renderPowers(); }, get ups() { return { ...ups }; }, setGod: (b) => (god = !!b), setQuality,
 };
