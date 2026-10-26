@@ -11,7 +11,7 @@ const $ = id => document.getElementById(id);
 const tr = s => (window.PF && window.PF.t ? window.PF.t(s) : s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
-const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily';
 
 // ---------------- ayarlar ----------------
 const settings = Object.assign({ sfx: true, music: true, vibe: true }, store.get(KEY_SET, {}));
@@ -357,14 +357,17 @@ const fmt = n => n.toLocaleString('tr-TR');
 
 function showTitle() {
   state = 'title'; bank(); resetWorld(); refillMissions();
-  show('titleMisBox', !tutorialPending); document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
-  renderMissions($('titleMis'));
+  document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
+  document.querySelector('.menu-side').classList.toggle('hidden', tutorialPending);
+  renderMissions($('titleMis')); renderMenuBadges();
+  show('missionsPanel', false); show('dailyPanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false);
   $('titleWallet').textContent = fmt(wallet);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
   $('titleBest').textContent = best ? `Rekor ${fmt(best)}` : 'İlk uçuşun!';
   audio.music(true);
+  if (!tutorialPending && dailyState().ready) setTimeout(() => state === 'title' && !dressing && openDaily(), 700); // günün ilk açılışında ödül kendiliğinden gelir
 }
 function startGame() {
   audio.unlock();
@@ -441,7 +444,7 @@ function bank() {
 }
 function applyLook() { for (const c of COSTUMES) outfit[c.id].visible = look.on.includes(c.id); }
 applyLook();
-let dressing = false;
+let dressing = false, showcase = 0;
 function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; $('wardNote').textContent = tr('Simitler cüzdanına girer; onlarla martına kostüm al.');
@@ -533,6 +536,46 @@ function renderMissions(box) {
     d.querySelector('.mis-t').textContent = m.done || !v ? misText(m) : `${misText(m)} · ${fmt(v)}/${fmt(m.n)}`;
     box.appendChild(d);
   }
+}
+// menüdeki rozetler: biten görev sayısı, alınmamış günlük ödül
+function renderMenuBadges() {
+  const done = missions.filter(m => !m.done && misProgress(m) >= m.n).length, left = missions.filter(m => !m.done).length;
+  $('misBadge').textContent = left; show('misBadge', left > 0 && !done);
+  show('dailyDot', dailyState().ready);
+}
+// ---------------- günlük ödül ----------------
+// Her gün bir kez; üst üste gelinen günler ödülü büyütür, bir gün kaçarsa seri baştan başlar.
+const DAILY = [20, 30, 40, 60, 80, 100, 150];
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+function dailyState() {
+  const s = store.get(KEY_DAILY, {}) || {}, today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
+  if (s.last === today) return { ready: false, streak: s.streak || 1 };
+  const streak = s.last === dayKey(y) ? (s.streak || 0) % DAILY.length + 1 : 1;
+  return { ready: true, streak };
+}
+function openDaily() {
+  if (state !== 'title') return;
+  const d = dailyState(), box = $('days'); box.textContent = '';
+  DAILY.forEach((r, i) => {
+    const el = document.createElement('div');
+    el.className = 'day' + (i + 1 < d.streak || (!d.ready && i + 1 === d.streak) ? ' got' : '') + (d.ready && i + 1 === d.streak ? ' now' : '');
+    el.innerHTML = `<span></span><b>${fmt(r)}<svg class="ico"><use href="#i-simit"/></svg></b>`;
+    el.querySelector('span').textContent = `${tr('Gün')} ${i + 1}`;
+    box.appendChild(el);
+  });
+  $('dailyNote').textContent = tr(d.ready ? 'Her gün uğra, ödül büyüsün. Bir gün kaçırırsan baştan başlar.' : 'Bugünün ödülünü aldın. Yarın yine gel!');
+  $('claimBtn').textContent = tr(d.ready ? 'Al' : 'Tamam');
+  show('dailyPanel');
+}
+function claimDaily() {
+  const d = dailyState();
+  if (d.ready) {
+    const r = DAILY[d.streak - 1];
+    wallet += r; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(), streak: d.streak });
+    $('titleWallet').textContent = fmt(wallet); bump($('titleWallet').parentNode);
+    sfx.gold(); vibrate([20, 30, 20]); renderMenuBadges();
+  }
+  show('dailyPanel', false);
 }
 function rewardReady() { return !window.PF || !window.PF.canReward || window.PF.canReward(); }
 function askRevive() {
@@ -628,6 +671,7 @@ function steerFromX(clientX) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
+const menuModal = () => !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -643,7 +687,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyM') { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) { if (state === 'play' || state === 'countdown') pause(); else if (state === 'paused') resume(); }
   if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) {
-    if (state === 'title' || (state === 'over' && overLock <= 0)) { e.preventDefault(); startGame(); }
+    if ((state === 'title' && !menuModal()) || (state === 'over' && overLock <= 0)) { e.preventDefault(); startGame(); }
     else if (state === 'paused') { e.preventDefault(); resume(); }
   }
 });
@@ -653,6 +697,11 @@ onBtn('againBtn', () => { if (overLock <= 0) startGame(); });
 onBtn('homeBtn', () => showTitle());
 onBtn('reviveBtn', () => askRevive());
 onBtn('wardrobeBtn', () => openWardrobe());
+onBtn('playBtn', () => { if (state === 'title') startGame(); });
+onBtn('missionsBtn', () => { renderMissions($('titleMis')); show('missionsPanel'); });
+onBtn('closeMissions', () => show('missionsPanel', false));
+onBtn('dailyBtn', () => openDaily());
+onBtn('claimBtn', () => claimDaily());
 onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
@@ -919,18 +968,30 @@ function frame() {
   const gy = onDeck ? DECK + 0.08 : waveAt(g.x, g.z, t) + 0.2;
   blob.position.set(g.x, gy, g.z);
   blob.scale.setScalar(clamp(1.2 - (g.y - gy) * 0.07, 0.4, 1.1));
-  blob.visible = state !== 'over' && !(onDeck && renderer.shadowMap.enabled);
+  blob.visible = state !== 'over' && showcase < 0.5 && !(onDeck && renderer.shadowMap.enabled);
   placeSun(g.x, g.z);
 
   // ---- kamera: yumuşak takip + sarsıntı ----
   const land = camera.aspect > 1;
   const followZ = state === 'dead' || state === 'over' ? camera.position.z - (land ? 11 : 13.5) : g.z;
   let cx = g.x * 0.85 - lean * 1.3, cy = FLY_Y + (land ? 4.2 : 5.4), cz = followZ + (land ? 11 : 13.5);
+  showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' ? 4 : 1.6, realDt);
   if (dressing) { cx = g.x + (land ? 1.2 : 1.6); cy = FLY_Y + 1.5; cz = g.z - 5.2; } // kostüm paneli: önden yakın çekim
+  else if (showcase > 0.001) {
+    // oyun kamerasının martıya göre açısından vitrin açısına yay çizerek geç: kamera martının içinden geçmez
+    const a0 = Math.atan2(cx - g.x, cz - g.z), r0 = Math.hypot(cx - g.x, cz - g.z);
+    const a1 = Math.PI - 0.5 + Math.sin(t * 0.23) * 0.35 + Math.sin(t * 0.61 + 1) * 0.12, r1 = land ? 7.5 : 9.5;
+    const k = showcase * showcase * (3 - 2 * showcase), a = a0 + (a1 - a0) * k, r = r0 + (r1 - r0) * k;
+    cx = g.x + Math.sin(a) * r; cz = g.z + Math.cos(a) * r; cy = cy + (FLY_Y + (land ? 1.8 : 2.6) - cy) * k;
+  }
   camera.position.x = damp(camera.position.x, cx, 5, realDt);
   camera.position.y = damp(camera.position.y, cy, 5, realDt);
-  camera.position.z = damp(camera.position.z, cz, 12, realDt);
+  camera.position.z = damp(camera.position.z, cz, showcase > 0.001 ? 8 : 12, realDt);
   if (dressing) camera.lookAt(g.x - (land ? 2.2 : 0), g.y - (land ? 0.2 : 1.6), g.z); // yatayda martı solda, panel sağda
+  else if (showcase > 0.001) {
+    const k = showcase * showcase * (3 - 2 * showcase);
+    camera.lookAt(g.x * 0.92 + lean * 2.6 + (g.x - g.x * 0.92 - lean * 2.6) * k, FLY_Y - (land ? 0.2 : 0.6) + (g.y + (land ? 0.3 : 0.2) - FLY_Y + (land ? 0.2 : 0.6)) * k, followZ - 12 + (g.z + 12 - followZ) * k);
+  }
   else camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - (land ? 0.2 : 0.6), followZ - 12); // virajın içine bak
   camera.rotation.z += gull.rotation.z * 0.06 - lean * 0.13;
   trauma = Math.max(0, trauma - realDt * 1.6);
@@ -939,13 +1000,13 @@ function frame() {
     camera.position.x += Math.sin(tt * 47.3) * 0.5 * s; camera.position.y += Math.sin(tt * 53.1 + 1) * 0.4 * s;
     camera.rotation.z += Math.sin(tt * 39.7 + 2) * 0.05 * s;
   }
-  const fovBase = land ? 56 : 68;
+  const fovBase = (land ? 56 : 68) - showcase * (land ? 10 : 14);
   const boost = pw.magnet > 0 || pw.double > 0 ? 2 : 0;
   camera.fov = damp(camera.fov, fovBase + (speed - 15) * 0.42 + boost + slingV * 0.5, 3, realDt);
   camera.updateProjectionMatrix();
   sky.position.copy(camera.position);
   // önümüzdeki en fazla iki viraj çizimde yay olarak bükülür; ufuk, güneş ve siluet yönle döner
-  bendOn = damp(bendOn, dressing ? 0 : 1, 2, realDt);
+  bendOn = damp(bendOn, dressing ? 0 : 1 - showcase, 2, realDt);
   const ahead = turns.filter(u => u.z1 < g.z), wD = Math.max(4, camera.position.z - g.z);
   for (const [i, B] of [BEND, BEND2].entries()) {
     const u = ahead[i];
