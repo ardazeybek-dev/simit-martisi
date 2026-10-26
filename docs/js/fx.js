@@ -147,20 +147,6 @@ export function updateSpeedLines(dt, gx, gy, gz, speed, intensity) {
   lnGeo.attributes.position.needsUpdate = true;
 }
 
-// ---------------- yüzen yazılar (DOM, havuzlu) ----------------
-const v3 = new THREE.Vector3();
-const popLayer = document.getElementById('pops');
-export function popText(text, worldPos, cls = '') {
-  v3.copy(worldPos).project(camera);
-  if (v3.z > 1 || Math.abs(v3.x) > 1.1 || Math.abs(v3.y) > 1.1) return;
-  const el = document.createElement('div');
-  el.className = 'pop ' + cls; el.textContent = text;
-  el.style.left = `${(v3.x * 0.5 + 0.5) * innerWidth}px`; el.style.top = `${(-v3.y * 0.5 + 0.5) * innerHeight}px`;
-  popLayer.appendChild(el);
-  el.addEventListener('animationend', () => el.remove());
-  setTimeout(() => el.remove(), cls.includes('shout') ? 2200 : 1600);
-}
-
 export function updateFx(dt) {
   chunks.update(dt); flats.update(dt); updateSparks(dt); updatePuffs(dt);
 }
@@ -168,5 +154,4 @@ export function clearFx() {
   chunks.clear(); flats.clear(); sparks.length = 0; spGeo.setDrawRange(0, 0);
   for (const p of puffs) { scene.remove(p.s); puffPool.push(p.s); }
   puffs.length = 0;
-  popLayer.textContent = '';
 }

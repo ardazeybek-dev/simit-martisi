@@ -3,7 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading, applyWeather } from './scene.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, CRUISE, cruiseMat, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate } from './models.js';
-import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
+import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
 
@@ -606,7 +606,7 @@ function crash(why) {
     pw.shield = 0; invuln = 1.3; hitStop = 0.07; trauma = Math.min(1, trauma + 0.45);
     sparkle(gull.position, 40, 0x8fd3ff, 7, 0.7, 0.6);
     flats.emit(gull.position, 16, { speed: 7, life: 0.8, size: 0.5, color: [0x8fd3ff, 0xffffff], gravity: 4 });
-    sfx.shieldBreak(); vibrate(40); popText(tr('Kalkan!'), gull.position, 'blue'); renderPowers();
+    sfx.shieldBreak(); vibrate(40); renderPowers();
     return;
   }
   state = 'dead'; cause = why; crashT = 0; vy = 5.5; ui.powers.textContent = '';
@@ -823,7 +823,6 @@ function checkMissions() {
     m.done = true; wallet += m.r; store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions);
     if (state === 'play') {
       sfx.gold(); vibrate([20, 30, 20]);
-      popText(`${tr('Görev tamam!')} +${m.r}`, tmp2.set(gull.position.x, gull.position.y + 2.4, gull.position.z), 'gold big');
     }
   }
 }
@@ -900,7 +899,6 @@ function revive() {
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
   ui.combo.classList.remove('on'); renderPowers(); updateHud();
   sfx.power(); audio.music(true); audio.duck(false);
-  popText(tr('İkinci şans!'), tmp.set(gull.position.x, gull.position.y + 1.6, gull.position.z), 'blue');
   state = 'countdown'; countdown = 3; cdShown = 0; show('countdown');
 }
 function confetti() {
@@ -1233,7 +1231,7 @@ function frame() {
         if (!s.hit && g.z < s.z1 && g.z > s.z0 && Math.abs(g.x - s.x) < s.hw) {
           s.hit = true; smokeT = 1.4;
           if (combo > 0) { combo = 0; comboT = 0; }
-          sfx.cough(); popText(tr('Öhö öhö!'), tmp.set(g.x, g.y + 1.4, g.z), 'smoke'); vibrate(30);
+          sfx.cough(); vibrate(30);
         }
       }
       for (const u of turns) {
@@ -1446,22 +1444,6 @@ function angry(p) {
   p.angry = 1.6;
   if (!p.feeder) p.mesh.geometry = p.angryGeo(); // ikramcı kızmaz, sevinçten zıplar
 }
-const cheers = ['Afiyet olsun!', 'Al bakalım!', 'Hadi gel!'];
-// simidi kapılan yolcu tipine göre kısa bir laf eder (amca, dede, teyze...)
-const SHOUTS = {
-  amca: ['Oha ulen!', 'Ulennn!', 'Hoop!', 'Bırak onu!', 'Yuh artık!', 'Allah Allah!', 'Ulen martı!'],
-  dede: ['Ahhh simidim…', 'Evlat!', 'Vay terbiyesiz!', 'Hayırsız martı!', 'Gözlüğüm!'],
-  teyze: ['Ay simidim!', 'Ayol!', 'Ay kalbim!', 'Vay hınzır!', 'Kış kış!'],
-  abla: ['Yaaa!', 'Aşk olsun!', 'Ciddi mi?'],
-  genc: ['Kanka!', 'Oha!', 'Efsane!', 'Çakal martı!'],
-};
-let shoutT = 0;
-function shout(p, x, y, z) {
-  const now = performance.now();
-  if (now - shoutT < 600) return; // balonlar üst üste binmesin
-  shoutT = now;
-  popText(tr(pick(SHOUTS[p.kind] || SHOUTS.amca)), tmp2.set(x, y + 1.3, z), 'shout');
-}
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1);
@@ -1482,11 +1464,10 @@ function takeSimit(s) {
     chunks.emit(tmp, 7, { speed: 3, life: 0.7, size: 0.075, color: [0xc97835, 0xf6e2b3, 0xb8642a], gravity: 9 });
     vibrate(8);
   }
-  popText(`+${gain}`, tmp.set(s.x, s.y + 0.8, s.z), s.gold ? 'gold big' : m > 1 ? 'gold' : '');
   bump(ui.score);
   flapBurst = Math.max(flapBurst, 0.4);
-  if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; popText(`${tr(pick(cheers))} +${15 * m}`, tmp.set(s.x, s.y + 1.4, s.z), 'gold'); }
-  else if (s.person) { angry(s.person); if (Math.random() < 0.5) shout(s.person, s.x, s.y, s.z); }
+  if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; }
+  else if (s.person) angry(s.person);
 }
 // viraj çıkışı: çizgideki simitlerin çoğu alındıysa bonus ve sapan gibi fırlama
 function judgeTurn(u) {
@@ -1496,7 +1477,6 @@ function judgeTurn(u) {
     const gain = 40 * mult() * (pw.double > 0 ? 2 : 1);
     points += gain; run.turn++; sling = 1.5;
     sfx.sling(); vibrate([15, 30, 25]); trauma = Math.min(1, trauma + 0.3); flapBurst = 1;
-    popText(`${tr('Kusursuz viraj!')} +${gain}`, tmp2.set(gull.position.x, gull.position.y + 2, gull.position.z), 'gold');
     sparkle(gull.position, 30, 0xffe7a8, 6, 0.7, 0.3);
   } else if (r >= 0.5) {
     points += 10;
@@ -1507,7 +1487,6 @@ function weatherTick(dt) {
     gustNext -= dt;
     if (gustNext <= 0) {
       gustT = rand(1.4, 2.2); gustDir = pick([-1, 1]); gustNext = rand(7, 12); sfx.gust();
-      popText(`${gustDir > 0 ? '→' : '←'} ${tr('Rüzgâr!')}`, tmp2.set(gull.position.x, gull.position.y + 2, gull.position.z), 'near');
     }
     gustT -= dt;
     wind = damp(wind, gustDir * (gustT > 0 ? GUST : 1), gustT > 0 ? 2.5 : 1.2, dt);
@@ -1518,10 +1497,9 @@ function weatherTick(dt) {
   if (weather === 'snow') {
     const was = warmth;
     warmth -= dt / COLD_S;
-    if (was >= 0.25 && warmth < 0.25) { sfx.shiver(); popText(tr('Üşüyorsun!'), tmp2.set(gull.position.x, gull.position.y + 1.8, gull.position.z), 'blue'); }
+    if (was >= 0.25 && warmth < 0.25) sfx.shiver();
     if (warmth <= 0) { // dondun: kombo sıfırlanır, biraz ısınıp devam
       warmth = 0.45; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.35); sfx.shiver(); vibrate([30, 30, 30]);
-      popText(tr('Dondun!'), tmp2.set(gull.position.x, gull.position.y + 2, gull.position.z), 'blue');
       sparkle(gull.position, 30, 0xdff6ff, 4, 0.8, 0.6);
     }
     const w = Math.round(warmth * 50);
@@ -1532,7 +1510,6 @@ function weatherTick(dt) {
   }
 }
 // iskeleye varış (kapının altından geçiş): uçuş sürer, çubuk sıradaki durağa geçer
-const welcome = ['Hoş geldin martı!', 'Geldi bizimki!', 'Vapur gecikti, martı gelmedi!', 'Simit burada!'];
 function arrive() {
   const i = stopI++, gain = 25 * i * mult();
   points += gain; if (combo > 0) comboT = COMBO_T;
@@ -1556,8 +1533,6 @@ function arrive() {
     sparkle(p, 46, c, 8, 1.1, 0.3); sfx.near();
   }, 120 + k * 260));
   sparkle(tmp2.set(gull.position.x, gull.position.y + 0.5, gull.position.z), 30, 0xffe7a8, 6, 0.8);
-  const p = piers.find(q => q.i === i);
-  if (p && i < STOPS.length - 1) popText(tr(pick(welcome)), tmp2.set(p.side * 7, 3.5, gull.position.z - 14), 'shout');
 }
 function gearUp() {
   sfx.power(); trauma = Math.min(1, trauma + 0.15); flapBurst = 1;

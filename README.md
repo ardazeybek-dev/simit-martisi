@@ -32,12 +32,12 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Hazards:** funnels, flag masts, kites, rival gulls. Dark funnel smoke does not kill you but breaks your combo.
   - Hazards stay sparse early on: rival gulls come one at a time from about 200 m, red ones after Karaköy, blue ones after Beşiktaş; the first Galata Bridge comes after Karaköy.
   - Rival colour tells you how it flies: *grey* glides side to side, *red* dives straight at you from further out, *blue* zigzags at random.
-- **Passengers:** uncles, grandpas, aunties, young women and lads, each with their own outfit and their own shouts when you snatch their simit (a neighbour sometimes chimes in). The decks are kept sparse: most of the few who stand hold a simit (snatch it, they get angry); a handful sit on benches looking out to sea with a glass of tea and no simit. A *feeder* at the rail holds a simit out for you: take it and they cheer and pay a bonus.
+- **Passengers:** uncles, grandpas, aunties, young women and lads, each with their own outfit; snatch a simit and they get angry. The decks are kept sparse: most of the few who stand hold a simit (snatch it, they get angry); a handful sit on benches looking out to sea with a glass of tea and no simit. A *feeder* at the rail holds a simit out for you: take it and they cheer and pay a bonus.
 - **Galata Bridge:** every 1-1.5 km the lane passes under the bridge. Anglers on both rails dangle their lines down to the water at uneven gaps (a red float marks each one); thread between them, front row then back row, following the simits. Touch a line and you are hooked. Clear both rows for an *Under the bridge!* bonus.
 - **Deck props:** when you come near a green rubbish bin its lid pops and a simit piece jumps up to your height; crates with a cat that hisses as you pass; rope coils.
 - **Glass salon ferries:** further on, some ferries carry a closed two-storey glass salon. Fly through the open passage in the middle and collect the simits inside; the glass on either side is solid.
 - **Weather follows the real calendar** (picked again every flight): snow in winter, mostly rain in autumn, now and then fog, mostly clear in spring and summer.
-  - *Rain:* lightning, and gusts of wind (*Gust!* with an arrow) shove the gull sideways; steer against them.
+  - *Rain:* lightning, and gusts of wind shove the gull sideways; steer against them.
   - *Snow:* a warmth meter drains while you fly. Simits warm you up (a golden one a lot); let it run out and you freeze, losing your combo.
   - *Fog:* the view shortens, hazards appear late, ferry horns sound through the mist.
 - **Speeding up:** the further you fly, the faster it gets. A *Speed up!* call every 300 m; the climb is steep in the first minute and keeps creeping up until a top speed.
@@ -45,6 +45,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Simit wallet:** every simit you catch is banked (a golden one counts as 5). Spend them on outfits in the *Kostümler* panel on the title screen: fez, sunglasses, scarf, captain hat, golden crown, moustache, and pink, night or golden feathers. Head, eyes, neck, face and feathers each take one item.
 - **Weekly leaderboard:** about 1.2 million players (offline: bots seeded by the week, so everyone sees the same table) with names and flags from 20 countries. Bot scores grow through the week, so holding your rank means flying again. Your weekly best sets your rank; the game-over screen shows it and how far you climbed. When the week ends you get simits by your final rank (top 100: 2,000, top 1,000: 1,000, top 10,000: 500, top 100,000: 200, top 50%: 80, otherwise 30). The panel tells you how many points the next tier needs.
 - **Missions:** three at a time ("catch 30 simits in one flight", "5 close calls", "fly 5 times"...). A finished mission pays simits on the spot and is replaced at the start of the next flight. Progress shows on the game-over screen.
+- **Quiet screen:** no floating texts during a flight; bonuses, missions and power-ups land silently in the score and the wallet. Only the *VİRAJ* sign and the pier arrival card appear.
 - **Settings:** music and sound effects volume sliders (also in the pause menu), vibration, and language (Turkish or English, the browser language by default).
 - First launch shows a 3-second swipe tutorial; best score, settings, wallet, outfits and missions are kept in `localStorage`.
 
