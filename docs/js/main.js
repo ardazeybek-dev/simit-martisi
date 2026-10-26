@@ -660,7 +660,7 @@ function frame() {
     flapPh += dt * (9 + speed * 0.18) * (0.6 + flapPow * 0.4);
     flapGull(gull, flapPh, flapPow, 0.1 + (1 - flapPow) * 0.08);
   } else if (state === 'dead' || state === 'over') {
-    crashT += dt;
+    crashT += dt; lean = damp(lean, 0, 3, dt);
     const floor = waveAt(g.x, g.z, t) + 0.25;
     if (g.y > floor + 0.01) {
       vy -= 18 * dt; g.y = Math.max(floor, g.y + vy * dt); g.z -= Math.max(0, 7 - crashT * 7) * dt;

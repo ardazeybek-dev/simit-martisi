@@ -83,13 +83,13 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .icon-btn svg { width: 22px; height: 22px; }
 /* viraj uyarısı: oklar dönüş yönüne akar */
 .turn-sign { position: fixed; z-index: 5; pointer-events: none; left: 50%; top: calc(104px + var(--sat)); display: flex; align-items: center; gap: 10px;
-  padding: 6px 16px 6px 12px; border-radius: 999px; background: rgba(226, 70, 59, .88); color: var(--cream); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+  padding: 6px 12px 6px 16px; border-radius: 999px; background: rgba(226, 70, 59, .88); color: var(--cream); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
   opacity: 0; transform: translateX(-50%) scale(.7); transition: opacity .2s, transform .25s cubic-bezier(.3, 1.6, .5, 1); }
 .turn-sign.on { opacity: 1; transform: translateX(-50%) scale(1); }
 .turn-sign b { font-size: 20px; letter-spacing: .08em; }
 .turn-sign svg { width: 48px; height: 20px; fill: var(--cream); }
 .turn-sign.on svg { animation: chev .5s linear infinite; }
-.turn-sign.left { flex-direction: row-reverse; padding: 6px 12px 6px 16px; }
+.turn-sign.left { flex-direction: row-reverse; padding: 6px 16px 6px 12px; }
 .turn-sign.left svg { transform: scaleX(-1); }
 .turn-sign.left.on svg { animation-name: chevl; }
 @keyframes chev { 50% { transform: translateX(5px); opacity: .7; } }
