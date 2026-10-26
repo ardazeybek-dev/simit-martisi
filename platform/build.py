@@ -26,6 +26,7 @@ SDK_TAG = {
     # https://docs.crazygames.com/sdk/intro/
     "crazygames": '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>',
 }
+# docs.crazygames.com/requirements/ads/ : no ads during gameplay or behind menu buttons
 ALLOWED_URLS = ("https://sdk.crazygames.com/", "http://www.w3.org/", "https://www.w3.org/")
 
 # Baloo 2 variable font, latin + latin-ext (Turkish letters), same ranges as @fontsource-variable/baloo-2
@@ -86,10 +87,11 @@ def patch_main(js):
               "  if (isBest) { if (best > 0) PF.happy(); best = final; store.set(KEY_BEST, best); }", "happytime")
     js = sub1(js, "if (firstFrame) { firstFrame = false;", "if (firstFrame) { firstFrame = false; PF.loaded();", "loaded")
 
-    # ad break between runs; startGame is blocked while the ad runs
-    js = sub1(js, "if (state === 'title' && !isUi(e)) startGame();", "if (state === 'title' && !isUi(e)) PF.adBreak(startGame);", "title ad")
+    # ad break only on "play again" after game over: CrazyGames forbids ads on menu buttons.
+    # startGame is blocked while the ad runs
     js = sub1(js, "if (state === 'title' || (state === 'over' && overLock <= 0)) { e.preventDefault(); startGame(); }",
-              "if (state === 'title' || (state === 'over' && overLock <= 0)) { e.preventDefault(); PF.adBreak(startGame); }", "key ad")
+              "if (state === 'title') { e.preventDefault(); startGame(); }\n"
+              "    else if (state === 'over' && overLock <= 0) { e.preventDefault(); PF.adBreak(startGame); }", "key ad")
     js = sub1(js, "onBtn('againBtn', () => { if (overLock <= 0) startGame(); });",
               "onBtn('againBtn', () => { if (overLock <= 0) PF.adBreak(startGame); });", "again ad")
     return js

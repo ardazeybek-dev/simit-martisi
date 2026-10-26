@@ -68,7 +68,7 @@ The portal copy:
 - loads three.js and the Baloo 2 font from `platform/vendor/` (portals reject absolute URLs),
 - drops the service worker, manifest, social meta tags and the share button,
 - opens in English unless the browser language is Turkish,
-- calls the CrazyGames SDK v3: loading and gameplay events, `happytime` on a new best, a midgame ad between runs after 60 s of play, audio muted during ads and when the portal asks for it.
+- calls the CrazyGames SDK v3: loading and gameplay events, `happytime` on a new best, a midgame ad on "play again" after 60 s of play (never on the title screen: no ads behind menu buttons), audio muted during ads and when the portal asks for it.
 
 Without the SDK (ad blocker, local run) every portal call is a no-op and the game plays normally.
 `?pf_minplay=0` shows the ad break on the first restart, for testing.
