@@ -1081,6 +1081,10 @@ function frame() {
 
   // ---- kalkan / sis ----
   shieldOrb.visible = (pw.shield > 0 || (invuln > 0 && Math.sin(t * 40) > 0)) && !(settings.cam === 'eye' && showcase < 0.02 && !dressing); // gözden bakarken kalkan içten görünmesin
+  // martının gözünden uçarken gövde, şapka ve gözlük kameranın önüne girmesin; kanatlar görünür kalır
+  const eyeCam = settings.cam === 'eye' && !dressing && (state === 'play' || state === 'countdown');
+  gull.userData.body.visible = !eyeCam;
+  for (const c of COSTUMES) if (outfit[c.id]) outfit[c.id].visible = !eyeCam && look.on.includes(c.id);
   if (shieldOrb.visible) { shieldOrb.rotation.y = t * 1.5; shieldOrb.scale.setScalar(1 + Math.sin(t * 8) * 0.04); }
   gull.visible = !(invuln > 0 && pw.shield <= 0 && Math.sin(t * 50) < -0.3);
   ui.vignette.style.opacity = smokeT > 0 ? Math.min(1, smokeT) : 0;
@@ -1100,7 +1104,7 @@ function frame() {
   const [back, up] = cam === 'far' ? [land ? 16 : 19, land ? 7.5 : 9.5] : cam === 'top' ? [land ? 5 : 6, land ? 15 : 18] : cam === 'eye' ? [-1, 0.42] : [land ? 11 : 13.5, land ? 4.2 : 5.4];
   const followZ = state === 'dead' || state === 'over' ? camera.position.z - back : g.z;
   let cx = cam === 'eye' ? g.x : g.x * 0.85 - lean * 1.3, cy = (cam === 'eye' && state !== 'dead' && state !== 'over' ? g.y : FLY_Y) + up, cz = followZ + back;
-  showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' ? 4 : 1.6, realDt);
+  showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' || settings.cam === 'eye' ? 4 : 1.6, realDt);
   if (dressing) { cx = g.x + (land ? 1.2 : 1.6); cy = FLY_Y + 1.5; cz = g.z - 5.2; } // kostüm paneli: önden yakın çekim
   else if (showcase > 0.001) {
     // oyun kamerasının martıya göre açısından vitrin açısına yay çizerek geç: kamera martının içinden geçmez
@@ -1278,7 +1282,7 @@ showTitle();
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'));
+  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
