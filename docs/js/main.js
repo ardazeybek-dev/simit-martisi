@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
-import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight } from './scene.js';
+import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND } from './scene.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
@@ -543,6 +543,14 @@ const clock = new THREE.Clock();
 let t = 0;
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
 let firstFrame = true;
+// virajlar: uzun düzlük, sonra tek yönlü yumuşak bir dönüş (~15°); ufuk açısı çok sapınca ters yöne döner
+const TURN_K = 0.0016;
+let bendS = 0, bendAmt = 0, bendOnS = 0, yawAmt = 0;
+const turn = { s: 260, len: 170, dir: 1 };
+function nextTurn() {
+  turn.s += turn.len + rand(260, 460); turn.len = rand(140, 200);
+  turn.dir = Math.abs(yawAmt) > 0.2 ? -Math.sign(yawAmt) : Math.random() < 0.5 ? -1 : 1;
+}
 
 function frame() {
   requestAnimationFrame(frame);
@@ -581,12 +589,12 @@ function frame() {
     } else { speed = 15; autopilot(); }
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 14 * dt, -LANE, LANE);
     if (keys.ArrowRight || keys.KeyD) tx = clamp(tx + 14 * dt, -LANE, LANE);
-    const dz = speed * dt; g.z -= dz; if (state === 'play') dist += dz / 2;
+    const dz = speed * dt; g.z -= dz; bendS += dz; if (state === 'play') dist += dz / 2;
     // kritik sönümlü yay: hızlı ama yumuşak takip
     const k = 140, c = 2 * Math.sqrt(k) * 0.95;
     vx += ((tx - g.x) * k - vx * c) * dt;
     g.x += vx * dt;
-    gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07, -0.85, 0.85), 10, dt);
+    gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - bendAmt * 0.3, -0.85, 0.85), 10, dt);
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025, -0.35, 0.35), 10, dt);
     gull.rotation.x = damp(gull.rotation.x, -0.05 + Math.sin(t * 1.1) * 0.03, 4, dt);
     g.y = FLY_Y + Math.sin(t * 2.2) * 0.12;
@@ -758,7 +766,7 @@ function frame() {
   camera.position.z = damp(camera.position.z, cz, 12, realDt);
   if (dressing) camera.lookAt(g.x - (land ? 2.2 : 0), g.y - (land ? 0.2 : 1.6), g.z); // yatayda martı solda, panel sağda
   else camera.lookAt(g.x * 0.92, FLY_Y - (land ? 0.2 : 0.6), followZ - 12);
-  camera.rotation.z += gull.rotation.z * 0.06;
+  camera.rotation.z += gull.rotation.z * 0.06 - bendAmt * 0.05;
   trauma = Math.max(0, trauma - realDt * 1.6);
   if (trauma > 0) {
     const s = trauma * trauma, tt = performance.now() * 0.001;
@@ -770,7 +778,14 @@ function frame() {
   camera.fov = damp(camera.fov, fovBase + (speed - 15) * 0.42 + boost, 3, realDt);
   camera.updateProjectionMatrix();
   sky.position.copy(camera.position);
+  // viraj ileride belirir, yaklaşır; içindeyken ufuk dönüş yönünün tersine kayar
+  if (bendS > turn.s + turn.len) nextTurn();
+  bendOnS = damp(bendOnS, dressing ? 0 : state === 'title' ? 0.8 : clamp(dist / 120, 0, 1), 1.5, realDt);
+  BEND.value.set(TURN_K * turn.dir * bendOnS * (land ? 0.8 : 1), Math.max(0, turn.s - bendS), turn.s + turn.len - bendS, 16);
+  bendAmt = damp(bendAmt, bendS > turn.s ? turn.dir * bendOnS : 0, 1.2, realDt);
+  yawAmt = (yawAmt + bendAmt * TURN_K * speed * dt) * Math.exp(-speed * dt / 900);
   far.position.set(camera.position.x * 0.9, 0, camera.position.z);
+  far.rotation.y = yawAmt;
   updateWater(t, camera.position.x, camera.position.z);
   updateSpeedLines(dt, g.x, g.y, g.z, speed, state === 'play' ? (speed - 20) / 12 + (pw.double > 0 ? 0.4 : 0) : 0);
 
@@ -867,5 +882,5 @@ window.__game = {
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
-  pause, resume, addPoints: n => (points += n), power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
+  pause, resume, setBend: s => (bendS = s), get turn() { return { ...turn, at: bendS }; }, addPoints: n => (points += n), power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
 };

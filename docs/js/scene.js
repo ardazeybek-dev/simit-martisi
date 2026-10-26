@@ -20,6 +20,23 @@ export const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(PAL.fog, 60, 260);
 export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 900);
 
+// ---------------- kıvrılan Boğaz ----------------
+// Oyun mantığı düz bir koridorda kalır. Çizimde martının ilerisindeki tek bir viraj gösterilir:
+// [p, q] aralığında sabit eğrilik (x), öncesi düz, sonrası o açıyla düz devam. Mesafe göz uzayı
+// derinliğinden ölçülür. Sisli malzemeler bükülür; gökyüzü, uzak siluet ve gölge geçişi bükülmez.
+export const BEND = { value: new THREE.Vector4(0, 1e4, 1e4, 16) }; // x: eğrilik, y-z: virajın başı ve sonu, w: martının derinliği
+const BEND_GLSL = `
+#ifdef USE_FOG
+  float bendD = max(0.0, -mvPosition.z - uBend.w);
+  float bendIn = clamp(bendD, uBend.y, uBend.z) - uBend.y;
+  mvPosition.x += uBend.x * (0.5 * bendIn * bendIn + (uBend.z - uBend.y) * max(0.0, bendD - uBend.z));
+#endif
+`;
+THREE.ShaderChunk.fog_pars_vertex += '\n#ifdef USE_FOG\n  uniform vec4 uBend;\n#endif';
+THREE.ShaderChunk.project_vertex = THREE.ShaderChunk.project_vertex.replace('gl_Position', BEND_GLSL + 'gl_Position');
+THREE.ShaderLib.sprite.vertexShader = THREE.ShaderLib.sprite.vertexShader.replace('\tgl_Position', BEND_GLSL + '\tgl_Position');
+THREE.Material.prototype.onBeforeCompile = function (shader) { shader.uniforms.uBend = BEND; };
+
 // ---------------- ışıklar ----------------
 export const hemi = new THREE.HemisphereLight(0xffd9c2, 0x30496e, 1.25);
 scene.add(hemi);
@@ -197,6 +214,7 @@ const waterMat = new THREE.ShaderMaterial({
       vec4 wp = modelMatrix * vec4(position, 1.0);
       float h = wave(wp.xz); wp.y += h; vH = h; vWorld = wp.xyz;
       vec4 mvPosition = viewMatrix * wp;
+      ${BEND_GLSL}
       gl_Position = projectionMatrix * mvPosition;
       #include <fog_vertex>
     }`,
