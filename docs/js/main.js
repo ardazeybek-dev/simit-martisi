@@ -7,8 +7,8 @@ import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clea
 import { audio, sfx } from './audio.js';
 
 const $ = id => document.getElementById(id);
-// portal kopyasında çeviri ve reklam köprüsü (window.PF); GitHub Pages'te yoktur
-const tr = s => (window.PF && window.PF.t ? window.PF.t(s) : s);
+// çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
+const tr = s => window.I18N.t(s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
 const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily';
@@ -369,7 +369,7 @@ let shownScore = -1, shownSimit = -1, shownDist = -1, shownMult = 0;
 function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
 function bump(el, cls = 'bump') { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 const total = () => points + Math.floor(dist / 10);
-const fmt = n => n.toLocaleString('tr-TR');
+const fmt = n => n.toLocaleString(window.I18N.lang === 'tr' ? 'tr-TR' : 'en-US');
 
 function showTitle() {
   state = 'title'; bank(); resetWorld(); refillMissions();
@@ -381,7 +381,7 @@ function showTitle() {
   dressing = false; show('wardrobe', false);
   $('titleWallet').textContent = fmt(wallet);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
-  $('titleBest').textContent = best ? `Rekor ${fmt(best)}` : 'İlk uçuşun!';
+  $('titleBest').textContent = best ? `${tr('Rekor')} ${fmt(best)}` : tr('İlk uçuşun!');
   audio.music(true);
   if (!tutorialPending && dailyState().ready) setTimeout(() => state === 'title' && !dressing && openDaily(), 700); // günün ilk açılışında ödül kendiliğinden gelir
 }
@@ -406,7 +406,7 @@ function crash(why) {
     pw.shield = 0; invuln = 1.3; hitStop = 0.07; trauma = Math.min(1, trauma + 0.45);
     sparkle(gull.position, 40, 0x8fd3ff, 7, 0.7, 0.6);
     flats.emit(gull.position, 16, { speed: 7, life: 0.8, size: 0.5, color: [0x8fd3ff, 0xffffff], gravity: 4 });
-    sfx.shieldBreak(); vibrate(40); popText('Kalkan!', gull.position, 'blue'); renderPowers();
+    sfx.shieldBreak(); vibrate(40); popText(tr('Kalkan!'), gull.position, 'blue'); renderPowers();
     return;
   }
   state = 'dead'; cause = why; crashT = 0; vy = 5.5; ui.powers.textContent = '';
@@ -425,12 +425,12 @@ function showOver() {
   const isBest = final > best, prevBest = best;
   if (isBest) { best = final; store.set(KEY_BEST, best); }
   const msg = { 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!' };
-  $('overTitle').textContent = msg[cause] || 'Pat!';
-  $('stSimit').textContent = fmt(simitCount) + (goldCount ? ` (+${goldCount} altın)` : '');
+  $('overTitle').textContent = tr(msg[cause] || 'Pat!');
+  $('stSimit').textContent = fmt(simitCount) + (goldCount ? ` (+${goldCount} ${tr('altın')})` : '');
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
   $('stCombo').textContent = `${bestCombo}`;
   ui.powers.textContent = '';
-  $('overBest').textContent = isBest ? 'Önceki rekoru geçtin' : `Rekor ${fmt(best)}`;
+  $('overBest').textContent = isBest ? tr('Önceki rekoru geçtin') : `${tr('Rekor')} ${fmt(best)}`;
   $('newRecord').classList.toggle('hidden', !isBest);
   if (!revived) countMission('runs');
   checkMissions(); store.set(KEY_MIS, missions); bank();
@@ -727,20 +727,24 @@ onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 onBtn('soundBtn', () => { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); });
 onBtn('shareBtn', async () => {
-  const text = `Simit Martısı'nda ${fmt(total())} puan yaptım, ${simitCount} simit kaptım! Sen kaç yaparsın?`;
+  const text = tr('Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?').replace('{s}', fmt(total())).replace('{n}', fmt(simitCount));
   const url = location.href.split('#')[0].split('?')[0];
   try {
-    if (navigator.share) await navigator.share({ title: 'Simit Martısı', text, url });
-    else { await navigator.clipboard.writeText(`${text} ${url}`); $('shareBtn').textContent = 'Kopyalandı'; setTimeout(() => ($('shareBtn').textContent = 'Paylaş'), 1800); }
+    if (navigator.share) await navigator.share({ title: document.title, text, url });
+    else { await navigator.clipboard.writeText(`${text} ${url}`); $('shareBtn').textContent = tr('Kopyalandı'); setTimeout(() => ($('shareBtn').textContent = tr('Paylaş')), 1800); }
   } catch (e) {}
 });
 for (const el of document.querySelectorAll('[data-toggle]')) {
   el.addEventListener('click', e => { e.stopPropagation(); const k = el.dataset.toggle; settings[k] = !settings[k]; saveSettings(); sfx.click(); if (k === 'vibe') vibrate(30); });
 }
+for (const el of document.querySelectorAll('[data-lang]')) {
+  el.addEventListener('click', e => { e.stopPropagation(); if (el.dataset.lang === window.I18N.lang) return; settings.lang = el.dataset.lang; store.set(KEY_SET, settings); sfx.click(); location.reload(); });
+}
 function saveSettings() { store.set(KEY_SET, settings); audio.set({ sfx: settings.sfx, music: settings.music }); syncToggles(); }
 function syncToggles() {
   for (const el of document.querySelectorAll('[data-toggle]')) el.setAttribute('aria-pressed', settings[el.dataset.toggle] ? 'true' : 'false');
   $('soundUse').setAttribute('href', settings.sfx || settings.music ? '#i-sound' : '#i-mute');
+  for (const el of document.querySelectorAll('[data-lang]')) el.setAttribute('aria-pressed', el.dataset.lang === window.I18N.lang ? 'true' : 'false');
 }
 syncToggles();
 // sekme arka plana geçince otomatik duraklat
@@ -892,7 +896,7 @@ function frame() {
         hitStop = 0.05; trauma = Math.min(1, trauma + 0.2);
         sparkle(tmp.set(p.x, p.y, p.z), 40, new THREE.Color(POWER[p.kind].color).getHex(), 7, 0.8, 0.5);
         sfx.power(); vibrate(25);
-        popText(POWER[p.kind].name, tmp.set(p.x, p.y + 1, p.z), 'power');
+        popText(tr(POWER[p.kind].name), tmp.set(p.x, p.y + 1, p.z), 'power');
       }
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x), dzo = Math.abs(g.z - o.z);
@@ -918,7 +922,7 @@ function frame() {
         if (!s.hit && g.z < s.z1 && g.z > s.z0 && Math.abs(g.x - s.x) < s.hw) {
           s.hit = true; smokeT = 1.4;
           if (combo > 0) { combo = 0; comboT = 0; }
-          sfx.cough(); popText('Öhö öhö!', tmp.set(g.x, g.y + 1.4, g.z), 'smoke'); vibrate(30);
+          sfx.cough(); popText(tr('Öhö öhö!'), tmp.set(g.x, g.y + 1.4, g.z), 'smoke'); vibrate(30);
         }
       }
       for (const u of turns) {
@@ -1095,7 +1099,7 @@ function takeSimit(s) {
   popText(`+${gain}`, tmp.set(s.x, s.y + 0.8, s.z), s.gold ? 'gold big' : m > 1 ? 'gold' : '');
   bump(ui.score);
   flapBurst = Math.max(flapBurst, 0.4);
-  if (s.person) { angry(s.person); if (Math.random() < 0.5) popText(pick(shouts), tmp.set(s.x, s.y + 1.4, s.z), 'shout'); }
+  if (s.person) { angry(s.person); if (Math.random() < 0.5) popText(tr(pick(shouts)), tmp.set(s.x, s.y + 1.4, s.z), 'shout'); }
 }
 // viraj çıkışı: çizgideki simitlerin çoğu alındıysa bonus ve sapan gibi fırlama
 function judgeTurn(u) {
@@ -1148,7 +1152,7 @@ function nearMiss(x) {
   const gain = 5 * mult();
   points += gain; run.near++;
   sfx.near(); trauma = Math.min(1, trauma + 0.12);
-  popText(`Kıl payı! +${gain}`, tmp2.set(gull.position.x, gull.position.y + 1.6, gull.position.z), 'near');
+  popText(`${tr('Kıl payı!')} +${gain}`, tmp2.set(gull.position.x, gull.position.y + 1.6, gull.position.z), 'near');
   sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0xffffff, 3, 0.35);
 }
 

@@ -57,20 +57,6 @@ def patch_main(js):
               "const PF = window.PF, T = (s) => PF.t(s);\n"
               "let adLock = false;\n"
               "PF.bind({ mute(on) { audio.setForced(on); }, pauseInput(on) { adLock = !!on; } });\n", "helpers")
-    js = sub1(js, "const fmt = n => n.toLocaleString('tr-TR');",
-              "const fmt = n => n.toLocaleString(PF.lang === 'tr' ? 'tr-TR' : 'en-US');", "number format")
-
-    # texts
-    js = sub1(js, "best ? `Rekor ${fmt(best)}` : 'İlk uçuşun!'", "best ? `${T('Rekor')} ${fmt(best)}` : T('İlk uçuşun!')", "title best")
-    js = sub1(js, "popText('Kalkan!'", "popText(T('Kalkan!')", "shield text")
-    js = sub1(js, "$('overTitle').textContent = msg[cause] || 'Pat!';", "$('overTitle').textContent = T(msg[cause] || 'Pat!');", "over title")
-    js = sub1(js, "` (+${goldCount} altın)`", "` (+${goldCount} ${T('altın')})`", "gold count")
-    js = sub1(js, "isBest ? 'Önceki rekoru geçtin' : `Rekor ${fmt(best)}`",
-              "isBest ? T('Önceki rekoru geçtin') : `${T('Rekor')} ${fmt(best)}`", "over best")
-    js = sub1(js, "popText('Öhö öhö!'", "popText(T('Öhö öhö!')", "smoke text")
-    js = sub1(js, "popText(pick(shouts)", "popText(T(pick(shouts))", "shouts")
-    js = sub1(js, "`Kıl payı! +${gain}`", "`${T('Kıl payı!')} +${gain}`", "near miss")
-    js = sub1(js, "popText(POWER[p.kind].name", "popText(T(POWER[p.kind].name)", "power name")
 
     # gameplay events
     js = sub1(js, "function showTitle() {\n  state = 'title';", "function showTitle() {\n  PF.gameplayStop();\n  state = 'title';", "home event")

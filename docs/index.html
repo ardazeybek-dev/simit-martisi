@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.4.0">
+<meta name="app-version" content="2.5.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -155,6 +155,7 @@
       <button class="toggle" data-toggle="music"><span>Müzik</span><i></i></button>
       <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
+    <div class="seg"><span>Dil</span><div><button data-lang="tr">Türkçe</button><button data-lang="en">English</button></div></div>
     <p class="fine">Bilgisayarda: fare ya da ← → ile yönlendir, P duraklat, M sesi kapat.</p>
     <button class="btn primary" id="closeSettings">Tamam</button>
   </div>
@@ -198,10 +199,12 @@
 
 <div id="countdown" class="hidden"></div>
 
+<script src="js/i18n.js"></script>
+<script>I18N.translateDom();</script>
 <script type="module" src="js/main.js"></script>
 <script>
   // modül yüklenemezse (internet yoksa ve önbellek boşsa) kullanıcıya söyle
-  setTimeout(function () { var m = document.getElementById('loaderMsg'); if (m && document.getElementById('loader')) m.textContent = 'Oyun yüklenemedi. Bağlantını kontrol edip sayfayı yenile.'; }, 15000);
+  setTimeout(function () { var m = document.getElementById('loaderMsg'); if (m && document.getElementById('loader')) m.textContent = I18N.t('Oyun yüklenemedi. Bağlantını kontrol edip sayfayı yenile.'); }, 15000);
   if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 </script>
 </body>
