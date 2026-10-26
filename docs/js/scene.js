@@ -104,8 +104,9 @@ scene.add(sky);
 // ---------------- uzak dekor: kamerayla birlikte kayar ----------------
 export const far = new THREE.Group();
 scene.add(far);
+const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
 {
-  const basic = (c, o = {}) => new THREE.MeshBasicMaterial({ color: c, fog: false, ...o });
+  const basic = (c, o = {}) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false, ...o }); m.userData.base = c; farMats.push(m); return m; };
   const mFarHill = basic(PAL.hillFar), mHill = basic(PAL.hillNear), mCity = basic(PAL.city), mCityFar = basic(PAL.cityFar);
   const add = (geo, m, x, y, z, parent = far) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
 
@@ -270,7 +271,7 @@ const waterMat = new THREE.ShaderMaterial({
       #include <colorspace_fragment>
       // uzak su sis rengine (şeftali) değil puslu deniz rengine solar: siluetin dibine kadar su gibi okunur
       #ifdef USE_FOG
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, uFar, smoothstep(fogNear, fogFar, vFogDepth));
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, linearToOutputTexel(vec4(uFar, 1.0)).rgb, smoothstep(fogNear, fogFar, vFogDepth)); // renk çıktı uzayında: gökle aynı tonda
       #endif
     }`,
 });
@@ -300,4 +301,27 @@ const Y_AXIS = new THREE.Vector3(0, 1, 0);
 export function setHeading(yaw) {
   sky.rotation.y = yaw;
   waterMat.uniforms.uSunDir.value.copy(SUN_DIR).applyAxisAngle(Y_AXIS, yaw);
+}
+
+// ---------------- hava tonu ----------------
+// tint: hedef renk, amt: ne kadar karışır, sun: güneş/parıltı gücü; fog: [near, far]
+const WEATHER = {
+  clear: { farFog: 0, tint: 0xffffff, amt: 0, sun: 1, fog: [60, 260] },
+  rain: { farFog: 0.3, tint: 0x8c96ab, amt: 0.5, sun: 0.45, fog: [45, 230] },
+  snow: { farFog: 0.55, tint: 0xe2e8f2, amt: 0.55, sun: 0.7, fog: [40, 220] },
+  fog: { farFog: 1, tint: 0xe9e6e8, amt: 0.72, sun: 0.55, fog: [14, 135] },
+};
+const _t = new THREE.Color();
+const toned = (hex, w) => new THREE.Color(hex).lerp(_t, w.amt);
+export function applyWeather(kind) {
+  const w = WEATHER[kind] || WEATHER.clear; _t.setHex(w.tint);
+  const u = skyMat.uniforms;
+  u.top.value.copy(toned(PAL.skyTop, w)); u.mid.value.copy(toned(PAL.skyMid, w)); u.low.value.copy(toned(PAL.skyLow, w)); u.hor.value.copy(toned(PAL.horizon, w));
+  u.sunCol.value.setHex(PAL.sun).multiplyScalar(w.sun);
+  scene.fog.color.copy(toned(PAL.fog, w)); scene.fog.near = w.fog[0]; scene.fog.far = w.fog[1];
+  const wu = waterMat.uniforms;
+  wu.uSky.value.copy(toned(PAL.seaSky, w)); wu.uFar.value.copy(toned(PAL.seaFar, w)).lerp(scene.fog.color, w.farFog); wu.uSun.value.setHex(0xffe2b0).multiplyScalar(w.sun);
+  wu.uDeep.value.copy(toned(PAL.seaDeep, { amt: w.amt * 0.4 })); wu.uShallow.value.copy(toned(PAL.seaShallow, { amt: w.amt * 0.4 }));
+  sunLight.intensity = 2.4 * (0.5 + w.sun * 0.5); hemi.color.copy(toned(PAL.hemiSky, w));
+  for (const m of farMats) m.color.copy(toned(m.userData.base, { amt: Math.min(0.85, w.amt * (kind === 'fog' ? 1.6 : 1.1)) }));
 }

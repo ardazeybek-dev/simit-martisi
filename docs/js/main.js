@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
-import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading } from './scene.js';
+import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading, applyWeather } from './scene.js';
+import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, MAIDEN, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
@@ -323,6 +324,9 @@ const look = { owned: [], on: [] };
 let tutorialPending = !store.get(KEY_TUT, false);
 const keys = {};
 let gear = 0, gearAt = GEAR_M;
+// hava (weather.js): yağmurda rüzgâr esintisi martıyı yana iter, karda simit yemezsen üşürsün, siste ufuk kısalır
+let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
+const GUST = 8, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
 const run = { near: 0, power: 0, steal: 0, turn: 0 }; // görevler için uçuş sayaçları
 
 function resetWorld() {
@@ -333,6 +337,9 @@ function resetWorld() {
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
   run.near = run.power = run.steal = run.turn = 0; gear = 0; gearAt = GEAR_M;
+  weather = pickWeather(); applyWeather(weather); setWeatherFx(weather);
+  wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
+  show('warm', false); $('warm').classList.remove('cold');
   generate(-280);
   camera.position.set(0, FLY_Y + 5.4, 13.5);
 }
@@ -392,6 +399,7 @@ function crash(why) {
   hideTutorial();
 }
 function showOver() {
+  show('warm', false); shownWarm = -1;
   state = 'over'; overLock = 0.8;
   const final = total();
   const isBest = final > best, prevBest = best;
@@ -737,6 +745,7 @@ function frame() {
     const cur = turns.find(u => g.z < u.z0 && g.z > u.z1);
     lean = damp(lean, cur ? cur.dir : 0, 3, dt);
     push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH;
+    if (state === 'play') weatherTick(dt);
     const txl = LANE * 1.25;
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 14 * dt, -txl, txl);
     if (keys.ArrowRight || keys.KeyD) tx = clamp(tx + 14 * dt, -txl, txl);
@@ -744,9 +753,9 @@ function frame() {
     if (cur) heading += cur.k * dz * bendOn; else heading *= Math.exp(-dt / 30); // ufuk, düzlükte yavaşça toparlanır
     // kritik sönümlü yay: hızlı ama yumuşak takip
     const k = 140, c = 2 * Math.sqrt(k) * 0.95;
-    vx += ((clamp(tx - Math.sign(lean) * push, -LANE, LANE) - g.x) * k - vx * c) * dt;
+    vx += ((clamp(tx - Math.sign(lean) * push + (state === 'play' ? wind * 0.32 : 0), -LANE, LANE) - g.x) * k - vx * c) * dt;
     g.x += vx * dt;
-    gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt);
+    gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (weather === 'snow' && warmth < 0.25 && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
     gull.rotation.x = damp(gull.rotation.x, -0.05 + Math.sin(t * 1.1) * 0.03, 4, dt);
     g.y = FLY_Y + Math.sin(t * 2.2) * 0.12;
@@ -948,6 +957,7 @@ function frame() {
   const sign = state === 'play' && ahead[0] && !ahead[0].entered && ahead[0].z0 > g.z - 70 ? ahead[0].dir : 0;
   if (sign !== shownSign) { shownSign = sign; $('turnSign').classList.toggle('on', !!sign); $('turnSign').classList.toggle('left', sign < 0); }
   updateWater(t, camera.position.x, camera.position.z);
+  updateWeatherFx(dt, t, camera.position.x, camera.position.z, wind);
   updateSpeedLines(dt, g.x, g.y, g.z, speed, state === 'play' ? (speed - 20) / 12 + (pw.double > 0 ? 0.4 : 0) + slingV / 6 : 0);
 
   // ---- ses, arayüz ----
@@ -982,6 +992,7 @@ function takeSimit(s) {
   points += gain; simitCount++; countMission('simitTotal');
   if (s.turn) s.turn.got++;
   if (s.th) thrownStat.caught++;
+  if (weather === 'snow') warmth = Math.min(1, warmth + (s.gold ? 0.35 : 0.08)); // sıcak simit ısıtır
   if (s.person) run.steal++;
   if (s.gold) {
     goldCount++; sfx.gold(); hitStop = 0.06; trauma = Math.min(1, trauma + 0.25); vibrate(20);
@@ -1010,6 +1021,35 @@ function judgeTurn(u) {
     sparkle(gull.position, 30, 0xffe7a8, 6, 0.7, 0.3);
   } else if (r >= 0.5) {
     points += 10; popText(`${tr('Güzel viraj')} +10`, tmp2.set(gull.position.x, gull.position.y + 1.8, gull.position.z), 'near');
+  }
+}
+function weatherTick(dt) {
+  if (weather === 'rain') {
+    gustNext -= dt;
+    if (gustNext <= 0) {
+      gustT = rand(1.4, 2.2); gustDir = pick([-1, 1]); gustNext = rand(7, 12); sfx.gust();
+      popText(`${gustDir > 0 ? '→' : '←'} ${tr('Rüzgâr!')}`, tmp2.set(gull.position.x, gull.position.y + 2, gull.position.z), 'near');
+    }
+    gustT -= dt;
+    wind = damp(wind, gustDir * (gustT > 0 ? GUST : 1), gustT > 0 ? 2.5 : 1.2, dt);
+    boltNext -= dt;
+    if (boltNext <= 0) { boltNext = rand(9, 18); bump(ui.flash, 'flashing'); sfx.thunder(); }
+  } else wind = damp(wind, 0, 2, dt);
+  if (weather === 'fog') { hornNext -= dt; if (hornNext <= 0) { hornNext = rand(12, 20); sfx.horn(); } }
+  if (weather === 'snow') {
+    const was = warmth;
+    warmth -= dt / COLD_S;
+    if (was >= 0.25 && warmth < 0.25) { sfx.shiver(); popText(tr('Üşüyorsun!'), tmp2.set(gull.position.x, gull.position.y + 1.8, gull.position.z), 'blue'); }
+    if (warmth <= 0) { // dondun: kombo sıfırlanır, biraz ısınıp devam
+      warmth = 0.45; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.35); sfx.shiver(); vibrate([30, 30, 30]);
+      popText(tr('Dondun!'), tmp2.set(gull.position.x, gull.position.y + 2, gull.position.z), 'blue');
+      sparkle(gull.position, 30, 0xdff6ff, 4, 0.8, 0.6);
+    }
+    const w = Math.round(warmth * 50);
+    if (w !== shownWarm) {
+      if (shownWarm < 0) show('warm');
+      shownWarm = w; $('warm').querySelector('i').style.transform = `scaleX(${warmth})`; $('warm').classList.toggle('cold', warmth < 0.25);
+    }
   }
 }
 function gearUp() {

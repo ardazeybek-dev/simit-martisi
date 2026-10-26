@@ -102,6 +102,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .pw .bar { width: 64px; height: 6px; border-radius: 9px; background: rgba(255, 255, 255, .15); overflow: hidden; }
 .pw .bar i { display: block; height: 100%; background: var(--c); transform-origin: left; border-radius: 9px; }
 .pw.ending { animation: blink .3s steps(2) infinite; }
+/* üşüme göstergesi (karlı havada): simit yedikçe dolar */
+#warm { position: fixed; z-index: 5; pointer-events: none; right: calc(16px + var(--sar)); top: calc(70px + var(--sat)); --c: #8fd3ff; animation: none; }
+#warm.cold { animation: blink .4s steps(2) infinite; --c: #ff8a7a; }
 @keyframes pwin { from { transform: translateX(-30px) scale(.6); opacity: 0; } }
 @keyframes blink { 50% { opacity: .35; } }
 
