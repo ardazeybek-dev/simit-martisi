@@ -13,7 +13,7 @@ export const PAL = OLD_PAL ? {
 } : {
   skyTop: 0x6f7fbf, skyMid: 0xb196c8, skyLow: 0xf2b3b5, horizon: 0xffdcb4,
   fog: 0xf5c9b0, sun: 0xfff6de,
-  seaDeep: 0x2a6684, seaShallow: 0x67acb8, seaSky: 0xf4c6ae, seaFar: 0xc4aec6,
+  seaDeep: 0x07607e, seaShallow: 0x33bcbc, seaSky: 0xc9ecef, seaFar: 0x9fcfd6, // berrak turkuaz Boğaz
   hillFar: 0xd2a7bb, hillNear: 0xb98fae, city: 0x9677a3, cityFar: 0xae90b6,
   bridge: 0x9a7aa6, tower: 0xa483ac, cloud: 0xffe0c8, cloud2: 0xe7b2c6, hemiSky: 0xffe6d4, hemiGround: 0x5a7394, sunLight: 0xffcaa2,
 };
@@ -270,12 +270,12 @@ const waterMat = new THREE.ShaderMaterial({
       vec3 v = normalize(cameraPosition - vWorld);
       float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0);
       vec3 col = mix(uDeep, uShallow, smoothstep(-0.45, 0.55, vH));
-      col = mix(col, uSky, clamp(fres * 1.1, 0.0, 0.85));
+      col = mix(col, uSky, clamp(fres * 0.9, 0.0, 0.6)); // yansıma suyu boğmasın: turkuaz okunur
       vec3 r = reflect(-v, n);
       float s = max(dot(r, uSunDir), 0.0);
       col += uSun * (pow(s, 140.0) * 1.7 + pow(s, 12.0) * 0.14);
       float crest = smoothstep(0.42, 0.58, vH + rip.x * 0.6);
-      col = mix(col, vec3(1.0, 0.93, 0.85), crest * 0.35);
+      col = mix(col, vec3(0.93, 1.0, 0.98), crest * 0.3);
       gl_FragColor = vec4(col, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>

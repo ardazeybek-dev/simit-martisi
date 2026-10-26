@@ -49,7 +49,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 
 - Plain ES modules under `docs/`, no build step; [three.js](https://threejs.org/) 0.160 from jsDelivr via an import map
 - All models are generated in code and merged into vertex-coloured meshes (one draw call per ferry / passenger)
-- Soft pastel sunset palette, custom GPU wave shader with fresnel and sun glitter (waves calm down with distance into a hazy far sea), gradient sky dome, Istanbul skyline (Galata Tower, mosques, Bosphorus Bridge, Maiden's Tower)
+- Soft pastel sunset sky over clear turquoise water, custom GPU wave shader with fresnel and sun glitter (waves calm down with distance into a hazy far sea), gradient sky dome, Istanbul skyline (Galata Tower, mosques, Bosphorus Bridge, Maiden's Tower)
 - Off-lane scenery: anchored fishing boats with anglers, and every 1-2 km a close pass by the Maiden's Tower on its islet
 - Pooled instanced particles, smoke sprites, speed lines, camera shake, hit-stop
 - Music and all sound effects are synthesized with the Web Audio API, no audio files: a Hicaz tune with plucked saz strings (Karplus-Strong), kanun tremolo, a ney in the middle section and darbuka in maqsum rhythm; cymbals and fills join in as the flight speeds up
