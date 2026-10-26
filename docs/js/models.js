@@ -11,11 +11,18 @@ function wingShape(rootChord, tipChord, len, sweep) {
   g.rotateX(Math.PI / 2); // x = açıklık, z = kanat kirişi (arkaya doğru +)
   return g;
 }
-function featherTip(len, chord) {
+// uç tüyü (primary): sivri, ince; kanat ucunda yelpaze gibi açılıp "parmak" siluetini verir
+function primary(len, w) {
   const s = new THREE.Shape();
-  s.moveTo(0, -chord * 0.3); s.lineTo(len * 0.55, -chord * 0.1); s.lineTo(len, chord * 0.55); s.lineTo(len * 0.3, chord * 0.75); s.lineTo(0, chord * 0.7); s.closePath();
-  const g = new THREE.ExtrudeGeometry(s, { depth: 0.052, bevelEnabled: false });
+  s.moveTo(0, -w * 0.5); s.lineTo(len * 0.7, -w * 0.45); s.lineTo(len, 0); s.lineTo(len * 0.7, w * 0.5); s.lineTo(0, w * 0.5); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.03, bevelEnabled: false });
   g.rotateX(Math.PI / 2);
+  return g;
+}
+// kanadın ön kenarı: kalın, yuvarlak kemik hattı; kanada kalınlık verir, arkadan bakınca da okunur
+function edgeRoll(len, r0, r1) {
+  const g = new THREE.CylinderGeometry(r1, r0, len, 7, 1);
+  g.rotateZ(-Math.PI / 2); g.translate(len / 2, 0, 0); g.scale(1, 0.75, 1);
   return g;
 }
 
@@ -37,7 +44,8 @@ function gullGeos(type) {
   const C = GULL_PAL[type] || GULL_PAL.player;
   const k = new Kit();
   // gövde: ileri (−z) doğru incelen damla
-  k.add(new THREE.SphereGeometry(0.42, 9, 7), C.body, 0, 0, 0, 0, 0, 0, 0.95, 0.82, 1.85);
+  // sırt (manto) kanat renginde: arkadan bakınca martı beyaz topak değil, gri sırtlı kuş okunur
+  k.add(new THREE.SphereGeometry(0.42, 11, 8), (f, y) => (y > 0.2 ? C.wing : C.body), 0, 0, 0, 0, 0, 0, 0.95, 0.82, 1.85);
   k.add(new THREE.SphereGeometry(0.3, 9, 7), (f, y) => (y < -0.05 ? 0xe8e6e0 : C.head), 0, 0.2, -0.72);
   k.add(new THREE.ConeGeometry(0.085, 0.42, 6), C.beak, 0, 0.14, -1.12, -Math.PI / 2);
   k.add(new THREE.SphereGeometry(0.035, 5, 4), 0xd8352a, 0, 0.1, -1.18); // gagadaki kırmızı benek
@@ -50,10 +58,18 @@ function gullGeos(type) {
   // toplanmış ayaklar
   for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.06, 0.06, 0.3), 0xf08a3a, s * 0.12, -0.3, 0.45);
   const bodyGeo = k.build();
-  const armGeo = new Kit().add(wingShape(0.72, 0.62, 1.15, 0.08), C.wing).build();
-  const handKit = new Kit().add(wingShape(0.62, 0.3, 0.95, 0.22), C.wing).add(featherTip(0.7, 0.32), C.tip, 0.82, 0, 0.18);
-  // uçtaki beyaz benekler
-  handKit.add(new THREE.SphereGeometry(0.05, 4, 3), 0xffffff, 1.25, 0.03, 0.42, 0, 0, 0, 1, 0.4, 1);
+  // kol: gri yüzey + kalın beyaz ön kenar + beyaz arka kenar şeridi
+  const armGeo = new Kit().add(wingShape(0.72, 0.62, 1.15, 0.08), C.wing)
+    .add(edgeRoll(1.17, 0.085, 0.07), C.body, 0, -0.02, -0.25, 0, -0.126)
+    .add(new THREE.BoxGeometry(1.1, 0.056, 0.09), C.body, 0.57, -0.025, 0.45, 0, -0.04).build();
+  const handKit = new Kit().add(wingShape(0.62, 0.3, 0.95, 0.22), C.wing)
+    .add(edgeRoll(0.98, 0.07, 0.035), C.body, 0, -0.02, -0.21, 0, -0.35);
+  // uç tüyleri: dıştaki dümdüz açılır, içe doğru geriye yatar; ilk ikisinde beyaz "ayna" benek
+  for (let i = 0; i < 5; i++) {
+    const len = 0.78 - i * 0.08, ry = -0.08 - i * 0.17, bx = 0.6 + i * 0.03, bz = -0.04 + i * 0.075, by = -0.012 - i * 0.007;
+    handKit.add(primary(len, 0.15), C.tip, bx, by, bz, 0, ry);
+    if (i < 2) handKit.add(new THREE.SphereGeometry(0.045, 5, 3), 0xffffff, bx + Math.cos(ry) * len * 0.72, by + 0.012, bz - Math.sin(ry) * len * 0.72, 0, 0, 0, 1, 0.35, 1);
+  }
   const handGeo = handKit.build();
   return (gullGeoCache[type] = { bodyGeo, armGeo, handGeo });
 }
