@@ -149,12 +149,13 @@
   <div class="card">
     <h2>Duraklatıldı</h2>
     <button class="btn primary" id="resumeBtn">Devam et</button>
+    <div class="vols">
+      <label class="vol"><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></label>
+      <label class="vol"><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></label>
+    </div>
     <div class="toggles">
-      <button class="toggle" data-toggle="sfx"><span>Ses efektleri</span><i></i></button>
-      <button class="toggle" data-toggle="music"><span>Müzik</span><i></i></button>
       <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
-    <div class="seg"><span>Kamera</span><div><button data-cam="near">Yakın</button><button data-cam="far">Uzak</button><button data-cam="top">Kuş bakışı</button><button data-cam="eye">Martı gözü</button></div></div>
     <button class="link" id="quitBtn">Ana menü</button>
   </div>
 </section>
@@ -162,12 +163,13 @@
 <section id="settings" class="screen modal hidden">
   <div class="card">
     <h2>Ayarlar</h2>
+    <div class="vols">
+      <label class="vol"><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></label>
+      <label class="vol"><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></label>
+    </div>
     <div class="toggles">
-      <button class="toggle" data-toggle="sfx"><span>Ses efektleri</span><i></i></button>
-      <button class="toggle" data-toggle="music"><span>Müzik</span><i></i></button>
       <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
-    <div class="seg"><span>Kamera</span><div><button data-cam="near">Yakın</button><button data-cam="far">Uzak</button><button data-cam="top">Kuş bakışı</button><button data-cam="eye">Martı gözü</button></div></div>
     <div class="seg"><span>Dil</span><div><button data-lang="tr">Türkçe</button><button data-lang="en">English</button></div></div>
     <p class="fine">Bilgisayarda: fare ya da ← → ile yönlendir, P duraklat, M sesi kapat.</p>
     <button class="btn primary" id="closeSettings">Tamam</button>

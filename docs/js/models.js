@@ -504,7 +504,7 @@ export const CAT = (() => {
 // Koridoru boydan boya keser; tabliye kameranın üstünde (yakın kamera altından geçer). Ayaklar ve alt kattaki lokantalar şeridin dışında.
 // Küpeşteden balıkçıların oltaları suya sarkar: ipler engel (main.js), her balıkçı + oltası tek geometri.
 export const BRIDGE_Y = 12; // tabliyenin alt yüzü
-export const bridgeMat = vcMat.clone(); bridgeMat.transparent = true; // kamera tepedeyken martı görünsün diye saydamlaşır
+export const bridgeMat = vcMat;
 export const BRIDGE = (() => {
   const k = new Kit(), Y = BRIDGE_Y, W = 96, stone = 0xb9b0a0, steel = 0x6f8497, under = 0x4e5560;
   k.add(new THREE.BoxGeometry(W, 1, 6), (f, y) => (y < Y + 0.2 ? under : 0x9aa0a8), 0, Y + 0.5, 0);      // tabliye

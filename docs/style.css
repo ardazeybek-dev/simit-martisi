@@ -222,7 +222,11 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .btn.ghost { background: rgba(255, 255, 255, .08); border: 1px solid var(--line); color: var(--cream); font-size: 18px; }
 .btn.ghost:active { transform: scale(.97); }
 .link { margin-top: 12px; font-size: 16px; font-weight: 700; opacity: .7; padding: 6px 12px; text-decoration: underline; text-underline-offset: 4px; }
-.toggles { margin: 16px 0 6px; display: grid; gap: 8px; }
+.vols { margin: 16px 0 0; display: grid; gap: 8px; }
+.vol { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 14px;
+  background: rgba(255, 255, 255, .06); border: 1px solid var(--line); font-size: 17px; font-weight: 700; }
+.vol input { flex: none; width: 52%; accent-color: var(--teal); height: 26px; cursor: pointer; }
+.toggles { margin: 8px 0 6px; display: grid; gap: 8px; }
 .toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px 14px; border-radius: 14px;
   background: rgba(255, 255, 255, .06); border: 1px solid var(--line); font-size: 17px; font-weight: 700; }
 .toggle i { position: relative; width: 46px; height: 26px; border-radius: 99px; background: rgba(255, 255, 255, .2); transition: background .2s; }
@@ -344,7 +348,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   .sheet .card { max-width: 440px; }
   .modal.sheet { align-items: flex-end; }
   .big { font-size: 56px; }
-  .toggles { grid-template-columns: repeat(3, 1fr); }
   .toggle { flex-direction: column; gap: 6px; font-size: 15px; }
   .score { font-size: 34px; }
   #powers { top: calc(74px + var(--sat)); }

@@ -10,13 +10,14 @@ const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
-const CAMS = ['near', 'far', 'top', 'eye'];
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
 const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades';
 
 // ---------------- ayarlar ----------------
-const settings = Object.assign({ sfx: true, music: true, vibe: true, cam: 'near' }, store.get(KEY_SET, {}));
-audio.set({ sfx: settings.sfx, music: settings.music });
+// sfx / music: sessize alma (M tuşu, ses düğmesi); sfxVol / musicVol: Ayarlar'daki kaydırıcılar (0-1)
+const settings = Object.assign({ sfx: true, music: true, vibe: true, sfxVol: 1, musicVol: 0.8 }, store.get(KEY_SET, {}));
+const soundOpts = () => ({ sfx: settings.sfx, music: settings.music, sfxVol: settings.sfxVol, musicVol: settings.musicVol });
+audio.set(soundOpts());
 const vibrate = ms => { if (settings.vibe && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) {} };
 
 // ---------------- oyuncu ----------------
@@ -896,17 +897,24 @@ onBtn('shareBtn', async () => {
 for (const el of document.querySelectorAll('[data-toggle]')) {
   el.addEventListener('click', e => { e.stopPropagation(); const k = el.dataset.toggle; settings[k] = !settings[k]; saveSettings(); sfx.click(); if (k === 'vibe') vibrate(30); });
 }
-for (const el of document.querySelectorAll('[data-cam]')) {
-  el.addEventListener('click', e => { e.stopPropagation(); settings.cam = el.dataset.cam; saveSettings(); sfx.click(); });
+for (const el of document.querySelectorAll('[data-vol]')) {
+  const k = el.dataset.vol;
+  el.addEventListener('click', e => e.stopPropagation());
+  el.addEventListener('pointerdown', e => e.stopPropagation());
+  el.addEventListener('input', () => { settings[k + 'Vol'] = el.value / 100; settings[k] = el.value > 0; saveSettings(); });
+  el.addEventListener('change', () => { if (k === 'sfx') sfx.catch(1); }); // bırakınca örnek ses
 }
 for (const el of document.querySelectorAll('[data-lang]')) {
   el.addEventListener('click', e => { e.stopPropagation(); if (el.dataset.lang === window.I18N.lang) return; settings.lang = el.dataset.lang; store.set(KEY_SET, settings); sfx.click(); location.reload(); });
 }
-function saveSettings() { store.set(KEY_SET, settings); audio.set({ sfx: settings.sfx, music: settings.music }); syncToggles(); }
+function saveSettings() {
+  for (const k of ['sfx', 'music']) if (settings[k] && !(settings[k + 'Vol'] > 0)) settings[k + 'Vol'] = 0.8; // sessizden açınca kaydırıcı sıfırda kalmasın
+  store.set(KEY_SET, settings); audio.set(soundOpts()); syncToggles();
+}
 function syncToggles() {
   for (const el of document.querySelectorAll('[data-toggle]')) el.setAttribute('aria-pressed', settings[el.dataset.toggle] ? 'true' : 'false');
   $('soundUse').setAttribute('href', settings.sfx || settings.music ? '#i-sound' : '#i-mute');
-  for (const el of document.querySelectorAll('[data-cam]')) el.setAttribute('aria-pressed', el.dataset.cam === settings.cam ? 'true' : 'false');
+  for (const el of document.querySelectorAll('[data-vol]')) el.value = settings[el.dataset.vol] ? Math.round(settings[el.dataset.vol + 'Vol'] * 100) : 0;
   for (const el of document.querySelectorAll('[data-lang]')) el.setAttribute('aria-pressed', el.dataset.lang === window.I18N.lang ? 'true' : 'false');
 }
 syncToggles();
@@ -1187,10 +1195,6 @@ function frame() {
       sparkle(tmp2.set(g.x, g.y + 0.5, g.z), 16, 0xffe7a8, 4, 0.6);
     }
   }
-  { // kamera tabliyenin üstündeyse (uzak, kuş bakışı) köprü altında martı görünsün diye tabliye saydamlaşır
-    const high = settings.cam === 'far' || settings.cam === 'top', near = bridges.some(b => Math.abs(g.z - b.z) < 16);
-    bridgeMat.opacity = damp(bridgeMat.opacity, high && near ? 0.28 : 1, 6, dt);
-  }
   for (const f of dolphins) {
     const x0 = f.ax - f.dir * f.w / 2, H = FLY_Y - 1.45;
     if (f.u < 0) { // atlamadan önce: sırt yüzgeci suyu yararak kalkış noktasında oyalanır
@@ -1211,11 +1215,7 @@ function frame() {
   updateFx(dt);
 
   // ---- kalkan / sis ----
-  shieldOrb.visible = (pw.shield > 0 || (invuln > 0 && Math.sin(t * 40) > 0)) && !(settings.cam === 'eye' && showcase < 0.02 && !dressing); // gözden bakarken kalkan içten görünmesin
-  // martının gözünden uçarken gövde, şapka ve gözlük kameranın önüne girmesin; kanatlar görünür kalır
-  const eyeCam = settings.cam === 'eye' && !dressing && (state === 'play' || state === 'countdown');
-  gull.userData.body.visible = !eyeCam;
-  for (const c of COSTUMES) if (outfit[c.id]) outfit[c.id].visible = !eyeCam && look.on.includes(c.id);
+  shieldOrb.visible = (pw.shield > 0 || (invuln > 0 && Math.sin(t * 40) > 0));
   if (shieldOrb.visible) { shieldOrb.rotation.y = t * 1.5; shieldOrb.scale.setScalar(1 + Math.sin(t * 8) * 0.04); }
   gull.visible = !(invuln > 0 && pw.shield <= 0 && Math.sin(t * 50) < -0.3);
   ui.vignette.style.opacity = smokeT > 0 ? Math.min(1, smokeT) : 0;
@@ -1230,12 +1230,10 @@ function frame() {
 
   // ---- kamera: yumuşak takip + sarsıntı ----
   const land = camera.aspect > 1;
-  // kamera seçimi (Ayarlar): near = varsayılan; [arkada, yukarıda] uzaklıkları
-  const cam = CAMS.includes(settings.cam) ? settings.cam : 'near';
-  const [back, up] = cam === 'far' ? [land ? 16 : 19, land ? 7.5 : 9.5] : cam === 'top' ? [land ? 5 : 6, land ? 15 : 18] : cam === 'eye' ? [-1, 0.42] : [land ? 11 : 13.5, land ? 4.2 : 5.4];
+  const back = land ? 11 : 13.5, up = land ? 4.2 : 5.4; // martının arkasında, yukarısında
   const followZ = state === 'dead' || state === 'over' ? camera.position.z - back : g.z;
-  let cx = cam === 'eye' ? g.x : g.x * 0.85 - lean * 1.3, cy = (cam === 'eye' && state !== 'dead' && state !== 'over' ? g.y : FLY_Y) + up, cz = followZ + back;
-  showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' || settings.cam === 'eye' ? 4 : 1.6, realDt);
+  let cx = g.x * 0.85 - lean * 1.3, cy = FLY_Y + up, cz = followZ + back;
+  showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' ? 4 : 1.6, realDt);
   if (dressing) { cx = g.x + (land ? 1.2 : 1.6); cy = FLY_Y + 1.5; cz = g.z - 5.2; } // kostüm paneli: önden yakın çekim
   else if (showcase > 0.001) {
     // oyun kamerasının martıya göre açısından vitrin açısına yay çizerek geç: kamera martının içinden geçmez
@@ -1247,16 +1245,11 @@ function frame() {
   camera.position.x = damp(camera.position.x, cx, 5, realDt);
   camera.position.y = damp(camera.position.y, cy, 5, realDt);
   camera.position.z = damp(camera.position.z, cz, showcase > 0.001 ? 8 : 12, realDt);
-  const eye = cam === 'eye' && !dressing && showcase < 0.02;
-  if (eye) camera.position.set(cx, cy, cz); // martının gözü: gecikme olursa kamera gövdenin içine düşer
   if (dressing) camera.lookAt(g.x - (land ? 2.2 : 0), g.y - (land ? 0.2 : 1.6), g.z); // yatayda martı solda, panel sağda
   else if (showcase > 0.001) {
     const k = showcase * showcase * (3 - 2 * showcase);
     camera.lookAt(g.x * 0.92 + lean * 2.6 + (g.x - g.x * 0.92 - lean * 2.6) * k, FLY_Y - (land ? 0.2 : 0.6) + (g.y + (land ? 0.3 : 0.2) - FLY_Y + (land ? 0.2 : 0.6)) * k, followZ - 12 + (g.z + 12 - followZ) * k);
   }
-  else if (cam === 'top') camera.lookAt(g.x * 0.9 + lean * 2, FLY_Y - 1.5, followZ - 9);
-  else if (eye) camera.lookAt(g.x + lean * 3 + vx * 0.08, cy - 0.9, followZ - 20);
-  else if (cam === 'far') camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - 0.6, followZ - 16);
   else camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - (land ? 0.2 : 0.6), followZ - 12); // virajın içine bak
   camera.rotation.z += gull.rotation.z * 0.06 - lean * 0.13;
   trauma = Math.max(0, trauma - realDt * 1.6);
@@ -1458,7 +1451,7 @@ window.__game = {
   get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },
   get bins() { return bins.map(b => ({ x: +b.s.x.toFixed(1), ahead: +(gull.position.z - b.z).toFixed(1), u: +b.s.bin.u.toFixed(2), taken: !!b.s.taken })); },
   get cats() { return cats.map(c => ({ ahead: +(gull.position.z - c.z).toFixed(1), done: c.done })); },
-  get bridges() { return bridges.map(b => ({ ahead: +(gull.position.z - b.z).toFixed(1), done: b.done, op: +bridgeMat.opacity.toFixed(2), path: b.path, gx: +gull.position.x.toFixed(2) })); },
+  get bridges() { return bridges.map(b => ({ ahead: +(gull.position.z - b.z).toFixed(1), done: b.done, path: b.path, gx: +gull.position.x.toFixed(2) })); },
   get dolphins() { return dolphins.map(f => ({ ax: +f.ax.toFixed(1), x: +f.mesh.position.x.toFixed(1), y: +f.mesh.position.y.toFixed(1), u: +f.u.toFixed(2), got: f.got, ahead: +(gull.position.z - f.z).toFixed(1) })); },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },

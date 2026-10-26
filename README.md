@@ -31,7 +31,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Hazards:** funnels, flag masts, kites, rival gulls. Dark funnel smoke does not kill you but breaks your combo.
   - Rival colour tells you how it flies: *grey* glides side to side, *red* dives straight at you from further out, *blue* zigzags at random.
 - **Passengers:** uncles, grandpas, aunties, young women and lads, each with their own outfit and their own shouts when you snatch their simit (a neighbour sometimes chimes in). Most stand holding a simit (snatch it, they get angry); some sit on benches along the rails looking out to sea with a glass of tea and no simit. A *feeder* at the rail holds a simit out for you: take it and they cheer and pay a bonus.
-- **Galata Bridge:** every 1-1.5 km the lane passes under the bridge. Anglers on both rails dangle their lines down to the water at uneven gaps (a red float marks each one); thread between them, front row then back row, following the simits. Touch a line and you are hooked. Clear both rows for an *Under the bridge!* bonus. With the far or bird's eye camera the deck turns see-through while you pass.
+- **Galata Bridge:** every 1-1.5 km the lane passes under the bridge. Anglers on both rails dangle their lines down to the water at uneven gaps (a red float marks each one); thread between them, front row then back row, following the simits. Touch a line and you are hooked. Clear both rows for an *Under the bridge!* bonus.
 - **Deck props:** when you come near a green rubbish bin its lid pops and a simit piece jumps up to your height; crates with a cat that hisses as you pass; rope coils.
 - **Glass salon ferries:** further on, some ferries carry a closed two-storey glass salon. Fly through the open passage in the middle and collect the simits inside; the glass on either side is solid.
 - **Weather follows the real calendar** (picked again every flight): snow in winter, mostly rain in autumn, now and then fog, mostly clear in spring and summer.
@@ -42,7 +42,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Second chance:** after a good run (250+ points and at least 40% of your best) the game-over screen offers one revive per run. You continue from where you crashed with a shield and a 3-2-1 countdown. Free on the web version, a rewarded ad on the portal build.
 - **Simit wallet:** every simit you catch is banked (a golden one counts as 5). Spend them on outfits in the *Kostümler* panel on the title screen: fez, sunglasses, scarf, captain hat, golden crown, moustache, and pink, night or golden feathers. Head, eyes, neck, face and feathers each take one item.
 - **Missions:** three at a time ("catch 30 simits in one flight", "5 close calls", "fly 5 times"...). A finished mission pays simits on the spot and is replaced at the start of the next flight. Progress shows on the game-over screen.
-- **Settings:** camera (close by default, far, bird's eye, gull's eye; also in the pause menu) and language (Turkish or English, the browser language by default).
+- **Settings:** music and sound effects volume sliders (also in the pause menu), vibration, and language (Turkish or English, the browser language by default).
 - First launch shows a 3-second swipe tutorial; best score, settings, wallet, outfits and missions are kept in `localStorage`.
 
 ## Tech

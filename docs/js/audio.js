@@ -1,6 +1,6 @@
 // Bütün sesler koddan üretilir: dosya yok, indirme yok.
 let AC = null, master, sfxBus, musicBus, ambBus, musicFilter, noiseBuf, seaGain, seaFilter;
-const opts = { sfx: true, music: true };
+const opts = { sfx: true, music: true, sfxVol: 1, musicVol: 0.8 };
 let nextNote = 0, step = 0, musicOn = false;
 
 export const audio = {
@@ -46,9 +46,10 @@ export const audio = {
 function apply() {
   if (!AC) return;
   const t = AC.currentTime;
-  sfxBus.gain.setTargetAtTime(opts.sfx ? 1 : 0, t, 0.02);
-  ambBus.gain.setTargetAtTime(opts.sfx ? 0.9 : 0, t, 0.2);
-  musicBus.gain.setTargetAtTime(opts.music && musicOn ? 0.32 : 0, t, 0.4);
+  const sv = opts.sfx ? opts.sfxVol * opts.sfxVol : 0, mv = opts.music && musicOn ? opts.musicVol * opts.musicVol : 0; // kare: kulak daha doğal duyar
+  sfxBus.gain.setTargetAtTime(sv, t, 0.02);
+  ambBus.gain.setTargetAtTime(0.9 * sv, t, 0.2);
+  musicBus.gain.setTargetAtTime(0.5 * mv, t, 0.15);
 }
 
 function env(g, t, a, peak, dec) {
