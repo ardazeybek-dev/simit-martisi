@@ -401,6 +401,30 @@ export const MAIDEN = (() => {
 
 // ---------------- vapur ----------------
 export const DECK = 2.6;
+// camlı salon: güvertede iki katlı kapalı salon, ortasından boydan boya geçit (martı içinden uçar).
+// Geçidin iki yanı engel; tavanı cam, içeriden de görünür. tx: geçidin x'i (-1, 0, 1), SALON_LEN boyunca.
+export const SALON_LEN = 14, SALON_GAP = 2, SALON_TOP = DECK + 4.3;
+export const glassMat = new THREE.MeshStandardMaterial({ color: 0xa8dcf0, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.4, depthWrite: false, side: THREE.DoubleSide });
+const salonCache = new Map();
+export function salonGeo(tx) {
+  if (salonCache.has(tx)) return salonCache.get(tx);
+  const k = new Kit(), gk = new Kit(), Lz = SALON_LEN;
+  for (const [a, b] of [[-3.9, tx - SALON_GAP], [tx + SALON_GAP, 3.9]]) {
+    const w = b - a, c = (a + b) / 2;
+    k.add(new THREE.BoxGeometry(w, 0.8, Lz), 0xf3efe6, c, DECK + 0.4, 0);                 // alt duvar
+    k.add(new THREE.BoxGeometry(w + 0.06, 0.22, Lz + 0.06), 0x2b4560, c, DECK + 2.05, 0); // katlar arası bant
+    k.add(new THREE.BoxGeometry(w + 0.3, 0.2, Lz + 0.3), 0xf6f1e6, c, SALON_TOP - 0.1, 0); // çatı
+    k.add(new THREE.BoxGeometry(w + 0.34, 0.09, Lz + 0.34), 0xc8352e, c, SALON_TOP - 0.24, 0); // kırmızı saçak şeridi
+    for (let z = -Lz / 2; z <= Lz / 2 + 0.01; z += 2) for (const x of [a, b]) k.add(new THREE.BoxGeometry(0.1, SALON_TOP - DECK - 0.8, 0.1), 0xf3efe6, x, (DECK + 0.8 + SALON_TOP) / 2, z); // pencere dikmeleri
+    gk.add(new THREE.BoxGeometry(w, 1.15, Lz), 0xffffff, c, DECK + 1.37, 0);                // 1. kat camı
+    gk.add(new THREE.BoxGeometry(w, SALON_TOP - DECK - 2.4, Lz), 0xffffff, c, (DECK + 2.16 + SALON_TOP - 0.2) / 2, 0); // 2. kat camı
+  }
+  for (let z = -Lz / 2; z <= Lz / 2 + 0.01; z += 3.5) k.add(new THREE.BoxGeometry(SALON_GAP * 2 + 0.2, 0.12, 0.14), 0xf3efe6, tx, SALON_TOP - 0.1, z); // geçidin tavan kirişleri
+  gk.add(new THREE.BoxGeometry(SALON_GAP * 2, 0.05, Lz), 0xffffff, tx, SALON_TOP - 0.15, 0); // cam tavan
+  const out = { solid: k.build(), glass: gk.build() };
+  salonCache.set(tx, out);
+  return out;
+}
 export const FERRY_LENGTHS = [44, 49, 54, 58];
 const ferryCache = new Map();
 export function ferryGeo(L) {
