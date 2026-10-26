@@ -225,7 +225,12 @@ const waterMat = new THREE.ShaderMaterial({
     #include <fog_pars_vertex>
     void main(){
       vec4 wp = modelMatrix * vec4(position, 1.0);
-      float h = wave(wp.xz); wp.y += h; vH = h; vWorld = wp.xyz;
+      // uzakta dalga söner: virajda bükülen ufuk kabarmaz, sakin bir çizgi kalır
+      float h = wave(wp.xz) * (1.0 - smoothstep(90.0, 190.0, length(wp.xz - cameraPosition.xz)));
+      #ifdef FLAT
+        h = 0.0;
+      #endif
+      wp.y += h; vH = h; vWorld = wp.xyz;
       vec4 mvPosition = viewMatrix * wp;
       ${BEND_GLSL}
       gl_Position = projectionMatrix * mvPosition;
@@ -262,11 +267,19 @@ waterGeo.rotateX(-Math.PI / 2);
 export const water = new THREE.Mesh(waterGeo, waterMat);
 water.frustumCulled = false;
 scene.add(water);
+// açık deniz: dalgalı suyun altında geniş, düz bir katman. Virajda dalgalı suyun yan kenarı görüşe döndüğünde
+// arkasında gökyüzü değil deniz görünür. Aynı shader ve uniform'lar, yalnız dalgasız.
+const seaMat = new THREE.ShaderMaterial({ fog: true, uniforms: waterMat.uniforms, vertexShader: waterMat.vertexShader, fragmentShader: waterMat.fragmentShader, defines: { FLAT: '' } });
+const seaGeo = new THREE.PlaneGeometry(1600, 1600, 48, 48); seaGeo.rotateX(-Math.PI / 2);
+const sea = new THREE.Mesh(seaGeo, seaMat);
+sea.position.y = -0.65; sea.frustumCulled = false; sea.renderOrder = -1;
+scene.add(sea);
 // CPU tarafı aynı dalga (gölge ve sıçrama yüksekliği için)
 export const waveAt = (x, z, t) => Math.sin(x * 0.16 + z * 0.11 + t * 1.3) * 0.36 + Math.sin(x * 0.33 - z * 0.07 + t * 2.0) * 0.17;
 export function updateWater(t, cx, cz) {
   water.position.z = Math.round((cz - 150) / CELL) * CELL;
   water.position.x = Math.round(cx / CELL) * CELL;
+  sea.position.x = water.position.x; sea.position.z = water.position.z - 300;
   waterMat.uniforms.uTime.value = t;
 }
 

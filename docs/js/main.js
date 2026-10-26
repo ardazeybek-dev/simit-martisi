@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading } from './scene.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
 const $ = id => document.getElementById(id);
 // portal kopyasında çeviri ve reklam köprüsü (window.PF); GitHub Pages'te yoktur
 const tr = s => (window.PF && window.PF.t ? window.PF.t(s) : s);
-const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7;
+const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
 const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions';
 
@@ -36,7 +36,7 @@ const difficulty = () => clamp(-genZ / 650, 0, 5);
 // simitler içe kıvrılan yarış çizgisine dizilir, çizginin çoğunu kapan sapan gibi fırlar.
 // Ayar: TURN_ANG (dönüş açısı, rad), TURN_LEN (viraj boyu), TURN_GAP (iki viraj arası), PUSH (savrulma).
 const TURNS_ON = new URLSearchParams(location.search).get('turn') !== '0'; // ?turn=0 → düz Boğaz (karşılaştırma için)
-const TURN_ANG = [0.6, 0.9], TURN_LEN = [80, 110], TURN_GAP = [200, 340], S_CHANCE = 0.3, PUSH = 1;
+const TURN_ANG = [0.6, 0.9], TURN_LEN = [80, 110], TURN_GAP = [340, 520], S_CHANCE = 0.3, PUSH = 1;
 let turns = [], turnZ = 0, planYaw = 0, heading = 0, lean = 0, push = 0, sling = 0, slingV = 0, bendOn = 0;
 function planTurns(limit) {
   if (!TURNS_ON) return;
@@ -70,7 +70,7 @@ function addSimit(x, y, z, gold) {
 }
 
 // ---------------- fırlatılan simitler ----------------
-// Açık suda simitler havada asılı durmaz: kenardaki simitçi kayığından martıya atılır. Atış martının uzaklığına göre
+// Açık suda simitler havada asılı durmaz: kenardaki simitçi, simidini bölüp parçalarını martıya atar. Atış martının uzaklığına göre
 // zamanlanır; simit kavis çizip yakalama noktasına martıyla aynı anda iner, kaçarsa denize düşer. Suda halka iniş yerini gösterir.
 // Ayar: THROW_T (uçuş süresi, sn), THROW_H (kavis yüksekliği). ?throw=0 → eski, havada duran simitler.
 const THROW_ON = new URLSearchParams(location.search).get('throw') !== '0';
@@ -84,7 +84,7 @@ function throwVolleys(z0, len, first) {
   while (z > end) {
     const n = 3 + ((Math.random() * 3) | 0), bz = z - (n - 1) * 1.7 + rand(-2, 2);
     const b = makeSimitBoat(side); b.g.position.set(side * rand(9.5, 11), 0, bz); b.g.rotation.y = rand(-0.3, 0.3); scene.add(b.g);
-    const bt = { ...b, z: bz, hand: 0 };
+    const bt = { ...b, z: bz, hand: 0, thrown: 0 };
     boats.push(bt); decor.push({ mesh: b.g, z: bz, ph: Math.random() * 6 });
     for (let i = 0; i < n && z > end; i++) {
       addThrown(bt, x, z, !first && Math.random() < 0.035);
@@ -95,7 +95,7 @@ function throwVolleys(z0, len, first) {
   }
 }
 function addThrown(bt, cx, cz, gold) {
-  const m = makeSimit(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); scene.add(m);
+  const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); scene.add(m);
   const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); scene.add(ring);
   simits.push({ mesh: m, x: cx, y: FLY_Y, z: cz, free: true, gold, th: { bt, cx, cz, T: rand(...THROW_T), H: rand(...THROW_H), u: -1, p0: new THREE.Vector3(), ring } });
 }
@@ -110,7 +110,7 @@ function flySimits(dt) {
       th.ring.position.y = waveAt(th.cx, th.cz, t) + 0.12;
       if (g.z - th.cz > speed * th.T || (state !== 'play' && state !== 'title')) continue;
       th.u = 0; th.bt.person.simit.getWorldPosition(th.p0); th.bt.hand = 0.45;
-      const tray = th.bt.tray.find(m => m.visible); if (tray) tray.visible = false;
+      const tray = th.bt.tray.find(m => m.visible); if (tray && ++th.bt.thrown % 3 === 0) tray.visible = false; // her simitten üç parça
       s.mesh.visible = true; s.mesh.rotation.set(rand(0, 6), rand(0, 6), 0);
     }
     th.u += dt / th.T;
@@ -301,6 +301,7 @@ const look = { owned: [], on: [] };
   look.owned = (Array.isArray(l.owned) ? l.owned : []).filter(ok); look.on = (Array.isArray(l.on) ? l.on : []).filter(id => look.owned.includes(id)); }
 let tutorialPending = !store.get(KEY_TUT, false);
 const keys = {};
+let gear = 0, gearAt = GEAR_M;
 const run = { near: 0, power: 0, steal: 0, turn: 0 }; // görevler için uçuş sayaçları
 
 function resetWorld() {
@@ -310,7 +311,7 @@ function resetWorld() {
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
-  run.near = run.power = run.steal = run.turn = 0;
+  run.near = run.power = run.steal = run.turn = 0; gear = 0; gearAt = GEAR_M;
   generate(-280);
   camera.position.set(0, FLY_Y + 5.4, 13.5);
 }
@@ -707,7 +708,9 @@ function frame() {
       playT += dt;
       sling = Math.max(0, sling - dt);
       slingV = damp(slingV, sling > 0 ? 11 : 0, sling > 0 ? 8 : 1.6, dt);
-      speed = 15 + 19 * (1 - Math.exp(-playT / 75)) + slingV;
+      // ilerledikçe hızlanır: önce hızlı tırmanır, sonra tavana (SPEED_MAX) kadar yavaşça artmayı sürdürür
+      speed = Math.min(SPEED_MAX, 15 + 17 * (1 - Math.exp(-playT / 60)) + playT * 0.04) + slingV;
+      if (dist >= gearAt) { gearAt += GEAR_M; gear++; gearUp(); }
     } else { speed = 15; autopilot(); }
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)
     const cur = turns.find(u => g.z < u.z0 && g.z > u.z1);
@@ -987,6 +990,10 @@ function judgeTurn(u) {
   } else if (r >= 0.5) {
     points += 10; popText(`${tr('Güzel viraj')} +10`, tmp2.set(gull.position.x, gull.position.y + 1.8, gull.position.z), 'near');
   }
+}
+function gearUp() {
+  sfx.power(); trauma = Math.min(1, trauma + 0.15); flapBurst = 1;
+  popText(`${tr('Hızlanıyor!')} ${gear + 1}`, tmp2.set(gull.position.x, gull.position.y + 2.2, gull.position.z), 'power');
 }
 function nearMiss(x) {
   const gain = 5 * mult();

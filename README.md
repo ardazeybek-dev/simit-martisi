@@ -21,13 +21,13 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 
 - **Score** = simit points + 1 point per 10 m flown.
 - **Combo:** catch simits in a row to raise the multiplier (x2 at 4, up to x5). The ring in the HUD shows how long the chain stays alive.
-- **Simit boats:** on open water, simit sellers in rowboats on both banks toss simits to you. Each one arcs over and comes down where a ripple ring marks the water, right as you get there; miss it and it splashes into the sea.
+- **Simit boats:** on open water, simit sellers in rowboats on both banks break their simits and toss the pieces to you. Each piece arcs over and comes down where a ripple ring marks the water, right as you get there; miss it and it splashes into the sea.
 - **Golden simit:** rare, worth 5x a normal one.
 - **Near miss:** brushing past a funnel or mast gives a small bonus.
-- **Turns:** the Bosphorus bends every 10-15 seconds, sometimes in an S. Red chevron boards and a *VİRAJ* sign warn you first. Inside a turn the wind pushes the gull outward, so lean toward the inside: the simits trace the racing line with a golden one at the apex. Catch most of the line for a *Perfect turn* bonus and a slingshot burst of speed.
+- **Turns:** the Bosphorus bends every 15-25 seconds, sometimes in an S. Red chevron boards and a *VİRAJ* sign warn you first. Inside a turn the wind pushes the gull outward, so lean toward the inside: the simits trace the racing line with a golden one at the apex. Catch most of the line for a *Perfect turn* bonus and a slingshot burst of speed.
 - **Power-ups** (floating bubbles): Magnet pulls simits (even out of passengers' hands), Shield absorbs one hit, 2x doubles all points.
 - **Hazards:** funnels, flag masts, rival gulls, kites. Dark funnel smoke does not kill you but breaks your combo.
-- Speed and hazard density ramp up smoothly over the first couple of minutes.
+- **Speeding up:** the further you fly, the faster it gets. A *Speed up!* call every 300 m; the climb is steep in the first minute and keeps creeping up until a top speed.
 - **Second chance:** after a good run (250+ points and at least 40% of your best) the game-over screen offers one revive per run. You continue from where you crashed with a shield and a 3-2-1 countdown. Free on the web version, a rewarded ad on the portal build.
 - **Simit wallet:** every simit you catch is banked (a golden one counts as 5). Spend them on outfits in the *Kostümler* panel on the title screen: fez, sunglasses, scarf, captain hat, golden crown. Head, eyes and neck each take one item.
 - **Missions:** three at a time ("catch 30 simits in one flight", "5 close calls", "fly 5 times"...). A finished mission pays simits on the spot and is replaced at the start of the next flight. Progress shows on the game-over screen.

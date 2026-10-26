@@ -87,12 +87,28 @@ function simitGeo() {
     return r < 0.55 ? 0xb8642a : r < 0.8 ? 0xc97835 : 0x9c4f1f;
   }).build();
 }
+// simit parçası: halkanın üçte biri, kırık uçları içi açık hamur rengi
+function pieceGeo() {
+  const arc = new THREE.TorusGeometry(0.32, 0.13, 8, 8, Math.PI * 0.7);
+  const k = new Kit().add(arc, () => { const r = Math.random(); return r < 0.2 ? 0xf6e2b3 : r < 0.6 ? 0xb8642a : 0xc97835; });
+  for (const a of [0, Math.PI * 0.7]) {
+    const cap = new THREE.CircleGeometry(0.13, 8).rotateX(a ? -Math.PI / 2 : Math.PI / 2).rotateZ(a); // halkanın teğetine dik, dışa bakar
+    k.add(cap, 0xf3dcae, Math.cos(a) * 0.32, Math.sin(a) * 0.32, 0);
+  }
+  return k.build();
+}
 export const GEO = {
   simit: simitGeo(),
+  piece: pieceGeo(),
   bubble: new THREE.IcosahedronGeometry(0.85, 2),
   blob: new THREE.CircleGeometry(1, 20),
 };
 export const goldMat = new THREE.MeshStandardMaterial({ color: 0xffc23a, emissive: 0xc77a00, emissiveIntensity: 0.55, metalness: 0.6, roughness: 0.3, flatShading: true });
+export function makeSimitPiece(gold = false) {
+  const m = new THREE.Mesh(GEO.piece, gold ? goldMat : vcMat);
+  m.scale.setScalar(1.25);
+  return m;
+}
 export function makeSimit(gold = false) {
   const m = new THREE.Mesh(GEO.simit, gold ? goldMat : vcMat);
   m.castShadow = false;
