@@ -43,6 +43,7 @@ const STOPS = [['Kadıköy', 0, "Kadıköy'e", 0], ['Karaköy', 400, "Karaköy'e
   .map(([name, m, to, gift]) => ({ name, m: Math.round(m * STOP_K), to, gift }));
 let farStop = clamp(+store.get(KEY_ROUTE, 0) || 0, 0, STOPS.length - 1); // şimdiye dek varılan en uzak iskele
 let newStop = 0; // bu uçuşta ilk kez varılan en uzak iskele (oyun sonu için)
+let slowT = 0; const GATE_FW_Y = 15;
 let stopI = 1, pierI = 1, stopM = STOPS.map(s => s.m); // stopI: sıradaki varış, pierI: sıradaki kurulacak iskele, stopM: bu uçuşta kapıların gerçek metresi
 const PIER_HALF = 36; // iskele kesiti: kapıdan önce ve sonra bu kadar boş su
 
@@ -169,10 +170,10 @@ function spawnGap(first, fixLen) {
     addSimit(x, FLY_Y, z, !first && Math.random() < 0.035);
   }
   if (!first) {
-    const n = d < 0.35 ? 0 : Math.min(4, 1 + Math.floor(d * 0.9));
-    for (let i = 0; i < n; i++) addRival(z0 - rand(10, len - 6), rand(-4, 4), rand(1.2, 3.2), undefined, z0 - 4); // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
-    if (d > 0.7 && Math.random() < 0.35 + d * 0.08) {
-      const nk = d > 2.5 && Math.random() < 0.5 ? 2 : 1;
+    const n = d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.7 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.4 ? 1 : 0) : 2; // rakipler seyrek: tek tek gelir, okunabilsin
+    for (let i = 0; i < n; i++) addRival(z0 - rand(10, len - 6), rand(-4, 4), rand(0.8, 2.2), undefined, z0 - 4); // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+    if (d > 1.3 && Math.random() < 0.2 + d * 0.06) {
+      const nk = d > 3 && Math.random() < 0.4 ? 2 : 1;
       for (let i = 0; i < nk; i++) {
         const k = makeKite(), bx = rand(-3.5, 3.5), z = z0 - rand(10, len - 8);
         k.position.set(bx, FLY_Y + 0.2, z); scene.add(k);
@@ -180,7 +181,7 @@ function spawnGap(first, fixLen) {
       }
     }
     // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
-    if (d > 0.35 && len > 34 && Math.random() < 0.28 + d * 0.07) {
+    if (d > 0.9 && len > 34 && Math.random() < 0.18 + d * 0.05) {
       const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-3.6, 3.6), k = rand(0.2, 0.32);
       const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b);
       const o = { x: xa + side * 60 * k, z, hw: 1.9, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false };
@@ -213,7 +214,7 @@ function spawnGap(first, fixLen) {
 // mavi düzensiz zikzak çizer (her an yön değiştirebilir). Zorluk arttıkça renkliler çoğalır.
 function addRival(z, bx, sw, kind, zMax = Infinity) {
   const d = difficulty();
-  kind = kind || (d > 1 && Math.random() < 0.28 ? 'red' : d > 0.6 && Math.random() < 0.35 ? 'blue' : 'grey');
+  kind = kind || (d > 1.6 && Math.random() < 0.25 ? 'red' : d > 2.2 && Math.random() < 0.3 ? 'blue' : 'grey'); // renkliler Beşiktaş'tan sonra
   if (kind === 'red') z -= 18; // hızlı gelir: daha uzaktan başlar
   const r = makeGull(kind); r.scale.setScalar(0.8); r.rotation.y = Math.PI;
   r.position.set(bx, FLY_Y, z); scene.add(r);
@@ -255,7 +256,7 @@ function spawnBridge() {
   const br = { g, z: bz, lines: [], done: false }, gaps = [];
   for (const s of [1, -1]) { // 1: martıya bakan ön sıra, -1: arka sıra
     const xs = [];
-    for (let x = -LANE - 0.2 + rand(0, 1.4); x < LANE + 0.6; x += rand(1.9, 3.2)) xs.push(x);
+    for (let x = -LANE - 0.2 + rand(0, 1.4); x < LANE + 0.6; x += rand(2.8, 4.2)) xs.push(x);
     const row = [];
     for (let i = 0; i <= xs.length; i++) { const a = i ? xs[i - 1] : -LANE - 1, b = i < xs.length ? xs[i] : LANE + 1, c = clamp((a + b) / 2, -LANE + 0.9, LANE - 0.9), w = Math.min(b - c, c - a); if (w > 0.95) row.push({ c, w }); }
     gaps.push(row);
@@ -439,12 +440,16 @@ function spawnPier() {
   g.add(makeStopGate(STOPS[i].name));
   const b = new THREE.Mesh(last ? LIGHTHOUSE : PIER, vcMat); b.castShadow = true;
   b.position.x = side * (last ? 16 : 17); b.rotation.y = side > 0 ? 0 : Math.PI; g.add(b);
-  if (!last) for (let k = 0, n = 3 + ((Math.random() * 3) | 0); k < n; k++) { // iskelede martıyı bekleyenler
-    const p = makePerson(false); p.mesh.position.set(side * (17 - rand(5.2, 8.4)), 1.28, rand(-4.5, 4.5)); p.mesh.rotation.y = -side * Math.PI / 2 + rand(-0.4, 0.4); g.add(p.mesh);
+  const throwers = [];
+  if (!last) for (let k = 0, n = 3 + ((Math.random() * 3) | 0); k < n; k++) { // iskelede martıyı bekleyenler; ilk ikisi simit atar
+    const p = makePerson(k < 2); p.mesh.position.set(side * (17 - rand(5.2, 8.4)), 1.28, k < 2 ? -2 - k * 3 : rand(-4.5, 4.5)); p.mesh.rotation.y = -side * Math.PI / 2 + rand(-0.4, 0.4); g.add(p.mesh);
+    if (k < 2) { const bt = { g: b, person: p, tray: [{ visible: true }, { visible: true }, { visible: true }], z: gz, hand: 0, thrown: 0 }; boats.push(bt); throwers.push(bt); }
   }
   const gx = rand(-3, 3);
   for (let k = 5; k >= 1; k--) addSimit(gx + k * rand(-0.5, 0.5), FLY_Y, gz + k * 3.4, false);
   addSimit(gx, FLY_Y, gz, true);
+  // kapının ardında simit yağmuru: iskeledekiler parça parça atar, martı geldiğinde inerler
+  for (let k = 0, x = gx; throwers.length && k < 9; k++) { x = clamp(x + rand(-2.2, 2.2), -LANE + 0.8, LANE - 0.8); addThrown(throwers[k % 2], x, gz - 5 - k * 3.4, k === 8); }
   piers.push({ g, z: gz, i, side });
   genZ = z0 - PIER_HALF * 2;
 }
@@ -526,13 +531,13 @@ const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0 }; // görevler i
 
 function resetWorld(newWeather = true) {
   clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = rand(-500, -300); cruiseZ = rand(-120, -40);
-  bridgeZ = BRIDGE_SOON ? -90 : -rand(650, 900);
+  bridgeZ = BRIDGE_SOON ? -90 : -rand(1150, 1450); // ilk köprü Karaköy'den sonra
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
-  run.near = run.power = run.steal = run.turn = run.dolphin = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0;
+  run.near = run.power = run.steal = run.turn = run.dolphin = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   if (newWeather) { weather = pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
@@ -1103,6 +1108,7 @@ function frame() {
   if (hitStop > 0) { hitStop -= realDt; dt = 0; }
   timeScale = damp(timeScale, 1, 2.2, realDt);
   dt *= state === 'dead' ? timeScale : 1;
+  if (slowT > 0) { slowT -= realDt; dt *= 0.4; }
   if (state === 'countdown') {
     countdown -= realDt;
     const n = Math.ceil(countdown / 0.5);
@@ -1255,13 +1261,13 @@ function frame() {
       flapGull(r.mesh, t * 16 + r.ph, 1);
     } else if (r.kind === 'blue') { // zikzak: rastgele aralıklarla yeni hedef, sabit hızla keskin dönüş
       p.z = Math.min(p.z + 5 * dt * go, r.zMax);
-      if ((r.zt -= dt) <= 0) { r.zt = rand(0.3, 0.95); r.tx = clamp(r.bx + rand(-3.6, 3.6), -LANE, LANE); }
-      const dx = r.tx - p.x, step = Math.min(Math.abs(dx), 7.5 * dt) * Math.sign(dx);
+      if ((r.zt -= dt) <= 0) { r.zt = rand(0.75, 1.3); r.tx = clamp(r.bx + rand(-2.6, 2.6), -LANE, LANE); }
+      const dx = r.tx - p.x, step = Math.min(Math.abs(dx), 4.5 * dt) * Math.sign(dx);
       p.x += step; r.mesh.rotation.z = damp(r.mesh.rotation.z, -Math.sign(dx) * (Math.abs(dx) > 0.1 ? 0.55 : 0), 10, dt);
       flapGull(r.mesh, t * 13 + r.ph, 1);
     } else {
-      p.z = Math.min(p.z + 5 * dt * go, r.zMax); p.x = r.bx + Math.sin(t * 1.4 + r.ph) * r.sw;
-      r.mesh.rotation.z = Math.cos(t * 1.4 + r.ph) * 0.35;
+      p.z = Math.min(p.z + 5 * dt * go, r.zMax); p.x = r.bx + Math.sin(t * 0.9 + r.ph) * r.sw;
+      r.mesh.rotation.z = Math.cos(t * 0.9 + r.ph) * 0.3;
       flapGull(r.mesh, t * 11 + r.ph, 0.9);
     }
     p.y = FLY_Y + Math.sin(t * 3 + r.ph) * 0.15;
@@ -1543,6 +1549,12 @@ function arrive() {
   }
   bump(el, 'on');
   sfx.horn(); sfx.power(); vibrate([20, 30, 20]); confetti();
+  slowT = 0.55; flapBurst = 1; trauma = Math.min(1, trauma + 0.2); // kısa ağır çekim: an hissedilsin
+  const gz = gull.position.z;
+  [0xff5a5f, 0xffc23a, 0x2bd4c0, 0xffffff].forEach((c, k) => setTimeout(() => { // tabelanın üstünde havai fişek
+    const p = tmp2.set(rand(-6, 6), GATE_FW_Y + rand(0, 3), gz - 8 - k * 4);
+    sparkle(p, 46, c, 8, 1.1, 0.3); sfx.near();
+  }, 120 + k * 260));
   sparkle(tmp2.set(gull.position.x, gull.position.y + 0.5, gull.position.z), 30, 0xffe7a8, 6, 0.8);
   const p = piers.find(q => q.i === i);
   if (p && i < STOPS.length - 1) popText(tr(pick(welcome)), tmp2.set(p.side * 7, 3.5, gull.position.z - 14), 'shout');
