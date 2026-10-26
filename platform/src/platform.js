@@ -34,7 +34,13 @@
     'Reklam şu an yok, sonra tekrar dene': 'No ad available right now, try again later',
     'Kostümler': 'Outfits', 'Cüzdan': 'Wallet', 'Giy': 'Wear', 'Giyili': 'Wearing', 'Yeterli simit yok': 'Not enough simits',
     'Simitler cüzdanına girer; onlarla martına kostüm al.': 'Every simit you catch goes into your wallet. Spend them on outfits.',
-    'Fes': 'Fez', 'Güneş gözlüğü': 'Sunglasses', 'Atkı': 'Scarf', 'Kaptan şapkası': 'Captain hat', 'Altın taç': 'Golden crown'
+    'Fes': 'Fez', 'Güneş gözlüğü': 'Sunglasses', 'Atkı': 'Scarf', 'Kaptan şapkası': 'Captain hat', 'Altın taç': 'Golden crown',
+    'Görevler': 'Missions', 'Görev tamam!': 'Mission complete!',
+    'Bir uçuşta {n} simit kap': 'Catch {n} simits in one flight', 'Bir uçuşta {n} kez kıl payı geç': 'Get {n} close calls in one flight',
+    'Bir uçuşta {n} altın simit kap': 'Catch {n} golden simits in one flight', 'Bir uçuşta {n} m uç': 'Fly {n} m in one flight',
+    '{n} simitlik seri yap': 'Make a {n} simit streak', 'Bir uçuşta {n} güçlendirme topla': 'Pick up {n} power-ups in one flight',
+    'Bir uçuşta yolcuların elinden {n} simit kap': 'Snatch {n} simits from passengers in one flight',
+    'Bir uçuşta {n} puan yap': 'Score {n} points in one flight', '{n} kez uç': 'Fly {n} times', 'Toplam {n} simit topla': 'Collect {n} simits in total'
   };
   var lang = 'en';
   try { var l = (navigator.languages && navigator.languages[0]) || navigator.language || ''; if (/^tr\b/i.test(l)) lang = 'tr'; } catch (e) {}

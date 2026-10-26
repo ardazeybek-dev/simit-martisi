@@ -10,7 +10,7 @@ const $ = id => document.getElementById(id);
 const tr = s => (window.PF && window.PF.t ? window.PF.t(s) : s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7;
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
-const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions';
 
 // ---------------- ayarlar ----------------
 const settings = Object.assign({ sfx: true, music: true, vibe: true }, store.get(KEY_SET, {}));
@@ -175,6 +175,7 @@ const look = { owned: [], on: [] };
   look.owned = (Array.isArray(l.owned) ? l.owned : []).filter(ok); look.on = (Array.isArray(l.on) ? l.on : []).filter(id => look.owned.includes(id)); }
 let tutorialPending = !store.get(KEY_TUT, false);
 const keys = {};
+const run = { near: 0, power: 0, steal: 0 }; // görevler için uçuş sayaçları
 
 function resetWorld() {
   clearWorld(); genZ = -8; segCount = 0;
@@ -182,6 +183,7 @@ function resetWorld() {
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
+  run.near = run.power = run.steal = 0;
   generate(-280);
   camera.position.set(0, FLY_Y + 5.4, 13.5);
 }
@@ -198,7 +200,9 @@ const total = () => points + Math.floor(dist / 10);
 const fmt = n => n.toLocaleString('tr-TR');
 
 function showTitle() {
-  state = 'title'; bank(); resetWorld();
+  state = 'title'; bank(); resetWorld(); refillMissions();
+  show('titleMisBox', !tutorialPending); document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
+  renderMissions($('titleMis'));
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false);
   $('titleWallet').textContent = fmt(wallet);
@@ -209,6 +213,7 @@ function showTitle() {
 function startGame() {
   audio.unlock();
   sfx.click();
+  refillMissions();
   resetWorld(); state = 'play';
   show('title', false); show('over', false); show('hud'); show('pause', false);
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
@@ -250,7 +255,9 @@ function showOver() {
   ui.powers.textContent = '';
   $('overBest').textContent = isBest ? 'Önceki rekoru geçtin' : `Rekor ${fmt(best)}`;
   $('newRecord').classList.toggle('hidden', !isBest);
-  bank();
+  if (!revived) countMission('runs');
+  checkMissions(); store.set(KEY_MIS, missions); bank();
+  renderMissions($('overMis'));
   $('overEarn').innerHTML = `<span>+${fmt(banked)} <svg class="ico"><use href="#i-simit"/></svg></span><span>${tr('Cüzdan')} ${fmt(wallet)}</span>`;
   show('over'); show('hud', false); hideTutorial();
   // ikinci şans: iyi bir uçuşta, uçuş başına bir kez (portalda ödüllü reklamla)
@@ -316,6 +323,58 @@ function wear(c, el) {
   look.on = look.on.filter(id => COSTUMES.find(x => x.id === id).slot !== c.slot).concat(c.id);
   store.set(KEY_LOOK, look); applyLook(); renderWardrobe(); flapBurst = 1;
   sparkle(gull.position, 24, 0xffe7a8, 4, 0.6, 0.3);
+}
+// ---------------- görevler ----------------
+// Aynı anda üç görev; biten görev hemen simit kazandırır, yerine bir sonraki uçuşta yenisi gelir.
+// total: uçuşlar boyunca birikir (p), diğerleri tek uçuşta tutturulmalı.
+const MISSIONS = [
+  { k: 'simit', text: 'Bir uçuşta {n} simit kap', n: [20, 30, 45, 60], r: [15, 25, 40, 60] },
+  { k: 'near', text: 'Bir uçuşta {n} kez kıl payı geç', n: [3, 5, 8], r: [20, 30, 45] },
+  { k: 'gold', text: 'Bir uçuşta {n} altın simit kap', n: [2, 3], r: [30, 50] },
+  { k: 'dist', text: 'Bir uçuşta {n} m uç', n: [300, 500, 800], r: [15, 30, 50] },
+  { k: 'combo', text: '{n} simitlik seri yap', n: [8, 12, 16], r: [20, 30, 45] },
+  { k: 'power', text: 'Bir uçuşta {n} güçlendirme topla', n: [2, 3], r: [20, 35] },
+  { k: 'steal', text: 'Bir uçuşta yolcuların elinden {n} simit kap', n: [8, 15], r: [20, 35] },
+  { k: 'score', text: 'Bir uçuşta {n} puan yap', n: [800, 1500, 3000], r: [20, 35, 60] },
+  { k: 'runs', text: '{n} kez uç', n: [3, 5], r: [15, 25], total: true },
+  { k: 'simitTotal', text: 'Toplam {n} simit topla', n: [100, 200], r: [30, 50], total: true },
+];
+const misDef = k => MISSIONS.find(d => d.k === k);
+let missions = (store.get(KEY_MIS, []) || []).filter(m => m && misDef(m.k) && m.n > 0 && m.r > 0).slice(0, 3);
+function runVal(k) {
+  return { simit: simitCount, gold: goldCount, dist: Math.floor(dist), combo: bestCombo, score: total(), near: run.near, power: run.power, steal: run.steal }[k] || 0;
+}
+const misProgress = m => (misDef(m.k).total ? m.p || 0 : runVal(m.k));
+const misText = m => tr(misDef(m.k).text).replace('{n}', fmt(m.n));
+function refillMissions() {
+  missions = missions.filter(m => !m.done);
+  while (missions.length < 3) {
+    const d = pick(MISSIONS.filter(x => !missions.some(m => m.k === x.k))), i = (Math.random() * d.n.length) | 0;
+    missions.push({ k: d.k, n: d.n[i], r: d.r[i], p: 0, done: false });
+  }
+  store.set(KEY_MIS, missions);
+}
+function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k === k) m.p = (m.p || 0) + n; }
+function checkMissions() {
+  for (const m of missions) {
+    if (m.done || misProgress(m) < m.n) continue;
+    m.done = true; wallet += m.r; store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions);
+    if (state === 'play') {
+      sfx.gold(); vibrate([20, 30, 20]);
+      popText(`${tr('Görev tamam!')} +${m.r}`, tmp2.set(gull.position.x, gull.position.y + 2.4, gull.position.z), 'gold big');
+    }
+  }
+}
+function renderMissions(box) {
+  box.textContent = '';
+  for (const m of missions) {
+    const v = Math.min(m.n, misProgress(m));
+    const d = document.createElement('div');
+    d.className = 'mis' + (m.done ? ' done' : '');
+    d.innerHTML = `<span class="mis-t"></span><span class="mis-r">+${m.r}<svg class="ico"><use href="#i-simit"/></svg></span><i class="mis-bar"><b style="width:${(v / m.n) * 100}%"></b></i>`;
+    d.querySelector('.mis-t').textContent = m.done || !v ? misText(m) : `${misText(m)} · ${fmt(v)}/${fmt(m.n)}`;
+    box.appendChild(d);
+  }
 }
 function rewardReady() { return !window.PF || !window.PF.canReward || window.PF.canReward(); }
 function askRevive() {
@@ -587,7 +646,7 @@ function frame() {
       for (const p of powerups) {
         if (p.taken || Math.abs(p.z - g.z) > 1.6 || Math.abs(p.x - g.x) > 1.6) continue;
         p.taken = true; scene.remove(p.g);
-        pw[p.kind] = POWER[p.kind].dur; renderPowers();
+        pw[p.kind] = POWER[p.kind].dur; renderPowers(); run.power++;
         hitStop = 0.05; trauma = Math.min(1, trauma + 0.2);
         sparkle(tmp.set(p.x, p.y, p.z), 40, new THREE.Color(POWER[p.kind].color).getHex(), 7, 0.8, 0.5);
         sfx.power(); vibrate(25);
@@ -719,7 +778,7 @@ function frame() {
   audio.tick();
   audio.setSpeed((speed - 15) / 19);
   if (state === 'play') {
-    updateHud();
+    updateHud(); checkMissions();
     const m = mult();
     const on = combo >= 2;
     ui.combo.classList.toggle('on', on);
@@ -744,7 +803,8 @@ function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1);
   const base = s.gold ? 50 : 10, gain = base * m;
-  points += gain; simitCount++;
+  points += gain; simitCount++; countMission('simitTotal');
+  if (s.person) run.steal++;
   if (s.gold) {
     goldCount++; sfx.gold(); hitStop = 0.06; trauma = Math.min(1, trauma + 0.25); vibrate(20);
     sparkle(tmp.set(s.x, s.y, s.z), 34, 0xffd35a, 6, 0.8, 0.3);
@@ -762,7 +822,7 @@ function takeSimit(s) {
 }
 function nearMiss(x) {
   const gain = 5 * mult();
-  points += gain;
+  points += gain; run.near++;
   sfx.near(); trauma = Math.min(1, trauma + 0.12);
   popText(`Kıl payı! +${gain}`, tmp2.set(gull.position.x, gull.position.y + 1.6, gull.position.z), 'near');
   sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0xffffff, 3, 0.35);
@@ -803,7 +863,7 @@ window.__game = {
   get state() { return state; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, get powers() { return { ...pw }; },
   get wallet() { return wallet; }, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },
-  openWardrobe, closeWardrobe,
+  openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
