@@ -37,7 +37,8 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 
 - Plain ES modules under `docs/`, no build step; [three.js](https://threejs.org/) 0.160 from jsDelivr via an import map
 - All models are generated in code and merged into vertex-coloured meshes (one draw call per ferry / passenger)
-- Custom GPU wave shader with fresnel and sun glitter, gradient sky dome, Istanbul skyline (Galata Tower, mosques, Bosphorus Bridge, Maiden's Tower)
+- Soft pastel sunset palette, custom GPU wave shader with fresnel and sun glitter (waves calm down with distance into a hazy far sea), gradient sky dome, Istanbul skyline (Galata Tower, mosques, Bosphorus Bridge, Maiden's Tower)
+- Off-lane scenery: anchored fishing boats with anglers, and every 1-2 km a close pass by the Maiden's Tower on its islet
 - Pooled instanced particles, smoke sprites, speed lines, camera shake, hit-stop
 - Music loop and all sound effects are synthesized with the Web Audio API, no audio files
 - Adaptive quality: pixel ratio and real-time shadows step down automatically on slow devices
@@ -55,7 +56,7 @@ python -m http.server 8000
 Then open http://localhost:8000. An internet connection is needed the first time to load three.js and the font.
 The service worker only registers on https, so local runs are never cached.
 
-Append `?turn=0` to fly a straight Bosphorus without turns, or `?throw=0` for the old floating simits instead of thrown ones (handy for comparing the feel).
+Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the old floating simits instead of thrown ones, or `?pal=old` for the earlier deep sunset colours (handy for comparing).
 
 Append `?q=0`, `?q=1` or `?q=2` to the URL to lock the quality level (low / medium / high) and turn off automatic adjustment.
 

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading } from './scene.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, MAIDEN, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
@@ -28,7 +28,7 @@ blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
 // ---------------- dünya ----------------
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [];
-let genZ = 0, segCount = 0;
+let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, land = [];
 const difficulty = () => clamp(-genZ / 650, 0, 5);
 
 // ---------------- virajlar ----------------
@@ -36,7 +36,7 @@ const difficulty = () => clamp(-genZ / 650, 0, 5);
 // simitler içe kıvrılan yarış çizgisine dizilir, çizginin çoğunu kapan sapan gibi fırlar.
 // Ayar: TURN_ANG (dönüş açısı, rad), TURN_LEN (viraj boyu), TURN_GAP (iki viraj arası), PUSH (savrulma).
 const TURNS_ON = new URLSearchParams(location.search).get('turn') !== '0'; // ?turn=0 → düz Boğaz (karşılaştırma için)
-const TURN_ANG = [0.6, 0.9], TURN_LEN = [80, 110], TURN_GAP = [340, 520], S_CHANCE = 0.3, PUSH = 1;
+const TURN_ANG = [0.38, 0.6], TURN_LEN = [80, 110], TURN_GAP = [340, 520], S_CHANCE = 0.3, PUSH = 1;
 let turns = [], turnZ = 0, planYaw = 0, heading = 0, lean = 0, push = 0, sling = 0, slingV = 0, bendOn = 0;
 function planTurns(limit) {
   if (!TURNS_ON) return;
@@ -252,7 +252,27 @@ function spawnFerry() {
   genZ = zFront - 2;
 }
 
+// ---------------- kıyı dekoru: koridorun dışında balıkçı tekneleri, arada bir yakından geçen Kız Kulesi ----------------
+function spawnScenery(limit) {
+  while (sceneryZ > limit) {
+    sceneryZ -= rand(35, 80);
+    if (Math.random() < 0.7) {
+      const side = pick([-1, 1]), b = makeFishingBoat(side);
+      b.position.set(side * rand(16, 30), 0, sceneryZ); b.rotation.y = rand(-0.5, 0.5);
+      scene.add(b); decor.push({ mesh: b, z: sceneryZ, ph: Math.random() * 6 });
+    }
+    if (sceneryZ < maidenZ) {
+      maidenZ = sceneryZ - rand(1100, 1700);
+      const m = new THREE.Mesh(MAIDEN, vcMat), side = pick([-1, 1]);
+      m.position.set(side * rand(34, 40), 0, sceneryZ - 20); m.rotation.y = side > 0 ? 0 : Math.PI; m.castShadow = true;
+      scene.add(m); land.push({ mesh: m, z: sceneryZ - 20 });
+    }
+  }
+}
+
 function clearWorld() {
+  for (const l of land) scene.remove(l.mesh);
+  land = [];
   for (const f of ferries) scene.remove(f.group);
   for (const s of simits) { if (s.free) scene.remove(s.mesh); dropThrown(s); }
   for (const a of [...rivals.map(r => r.mesh), ...kites.map(k => k.g), ...powerups.map(p => p.g), ...decor.map(d => d.mesh)]) scene.remove(a);
@@ -260,7 +280,7 @@ function clearWorld() {
   clearFx();
 }
 function generate(limit) {
-  planTurns(limit - 200);
+  planTurns(limit - 200); spawnScenery(limit);
   while (genZ > limit) {
     const tn = turns.find(u => !u.built && u.z0 > genZ - 75); // yaklaşan virajın öncesini düz suyla doldur
     if (!tn) { segCount % 2 === 0 ? spawnGap(segCount === 0) : spawnFerry(); segCount++; }
@@ -279,6 +299,7 @@ function cleanup(z) {
   kites = kites.filter(k => (k.z > behind ? (scene.remove(k.g), false) : true));
   powerups = powerups.filter(p => (p.z > behind ? (scene.remove(p.g), false) : true));
   decor = decor.filter(d => (d.z > behind ? (scene.remove(d.mesh), false) : true));
+  land = land.filter(l => (l.z > behind + 30 ? (scene.remove(l.mesh), false) : true));
   people = people.filter(p => p.wz < behind);
   turns = turns.filter(u => u.z1 < behind);
 }
@@ -305,7 +326,7 @@ let gear = 0, gearAt = GEAR_M;
 const run = { near: 0, power: 0, steal: 0, turn: 0 }; // görevler için uçuş sayaçları
 
 function resetWorld() {
-  clearWorld(); genZ = -8; segCount = 0;
+  clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = rand(-500, -300);
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;

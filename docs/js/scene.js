@@ -2,11 +2,20 @@ import * as THREE from 'three';
 import { rand, canvasTex } from './util.js';
 
 // ---------------- renk paleti (gün batımı İstanbul) ----------------
-export const PAL = {
+// Varsayılan yumuşak pastel; ?pal=old eski koyu, doygun gün batımı (karşılaştırma için)
+const OLD_PAL = new URLSearchParams(location.search).get('pal') === 'old';
+export const PAL = OLD_PAL ? {
   skyTop: 0x1c2456, skyMid: 0x6a3d7f, skyLow: 0xe0697a, horizon: 0xffc58c,
   fog: 0xf2a27e, sun: 0xfff0c8,
-  seaDeep: 0x0d3550, seaShallow: 0x2c7b8f, seaSky: 0xf0a27c,
+  seaDeep: 0x0d3550, seaShallow: 0x2c7b8f, seaSky: 0xf0a27c, seaFar: 0xb07a92,
   hillFar: 0xb46a86, hillNear: 0x8a4d7a, city: 0x5d3466, cityFar: 0x7b4775,
+  bridge: 0x6c3c6e, tower: 0x7d4778, cloud: 0xffc6a0, cloud2: 0xd37c95, hemiSky: 0xffd9c2, hemiGround: 0x30496e, sunLight: 0xffb98a,
+} : {
+  skyTop: 0x6f7fbf, skyMid: 0xb196c8, skyLow: 0xf2b3b5, horizon: 0xffdcb4,
+  fog: 0xf5c9b0, sun: 0xfff6de,
+  seaDeep: 0x2a6684, seaShallow: 0x67acb8, seaSky: 0xf4c6ae, seaFar: 0xc4aec6,
+  hillFar: 0xd2a7bb, hillNear: 0xb98fae, city: 0x9677a3, cityFar: 0xae90b6,
+  bridge: 0x9a7aa6, tower: 0xa483ac, cloud: 0xffe0c8, cloud2: 0xe7b2c6, hemiSky: 0xffe6d4, hemiGround: 0x5a7394, sunLight: 0xffcaa2,
 };
 export const SUN_DIR = new THREE.Vector3(-0.17, 0.11, -0.98).normalize();
 
@@ -51,9 +60,9 @@ THREE.ShaderLib.sprite.vertexShader = THREE.ShaderLib.sprite.vertexShader.replac
 THREE.Material.prototype.onBeforeCompile = function (shader) { shader.uniforms.uBend = BEND; shader.uniforms.uBend2 = BEND2; };
 
 // ---------------- ışıklar ----------------
-export const hemi = new THREE.HemisphereLight(0xffd9c2, 0x30496e, 1.25);
+export const hemi = new THREE.HemisphereLight(PAL.hemiSky, PAL.hemiGround, 1.25);
 scene.add(hemi);
-export const sunLight = new THREE.DirectionalLight(0xffb98a, 2.4);
+export const sunLight = new THREE.DirectionalLight(PAL.sunLight, 2.4);
 sunLight.shadow.mapSize.set(1024, 1024);
 Object.assign(sunLight.shadow.camera, { left: -16, right: 16, top: 26, bottom: -26, near: 1, far: 90 });
 sunLight.shadow.bias = -0.0006; sunLight.shadow.normalBias = 0.03;
@@ -101,8 +110,8 @@ scene.add(far);
   const add = (geo, m, x, y, z, parent = far) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
 
   // güneşin önünden geçen ince bulut şeritleri
-  const cloudMat = basic(0xffc6a0, { transparent: true, opacity: 0.55, depthWrite: false });
-  const cloudMat2 = basic(0xd37c95, { transparent: true, opacity: 0.6, depthWrite: false });
+  const cloudMat = basic(PAL.cloud, { transparent: true, opacity: 0.55, depthWrite: false });
+  const cloudMat2 = basic(PAL.cloud2, { transparent: true, opacity: 0.6, depthWrite: false });
   for (let i = 0; i < 9; i++) {
     const c = add(new THREE.CircleGeometry(1, 7), i % 3 ? cloudMat2 : cloudMat, rand(-420, 300), rand(70, 190), -600);
     c.scale.set(rand(40, 110), rand(2.5, 6), 1);
@@ -161,7 +170,7 @@ scene.add(far);
   }
 
   // Boğaz Köprüsü: iki ayak, tabla, ana kablolar ve askılar
-  const bm = basic(0x6c3c6e);
+  const bm = basic(PAL.bridge);
   const bx0 = -170, bx1 = -60, bz = -360, top = 66, deck = 22;
   for (const x of [bx0, bx1]) {
     for (const dz of [-1.6, 1.6]) add(new THREE.BoxGeometry(2.2, top, 1.4), bm, x, top / 2, bz + dz);
@@ -194,7 +203,7 @@ scene.add(far);
   far.add(new THREE.Points(cg, new THREE.PointsMaterial({ map: glowTex, color: 0xffc070, size: 3.2, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })));
 
   // Kız Kulesi: küçük adacıkta
-  const kx = 260, kz = -300, km = basic(0x7d4778);
+  const kx = 260, kz = -300, km = basic(PAL.tower);
   add(new THREE.CylinderGeometry(9, 11, 2, 10), km, kx, 0, kz);
   add(new THREE.BoxGeometry(9, 6, 7), km, kx - 1, 4, kz);
   add(new THREE.CylinderGeometry(2.2, 2.4, 13, 8), km, kx + 2, 8.5, kz);
@@ -218,7 +227,7 @@ const waterMat = new THREE.ShaderMaterial({
     uTime: { value: 0 },
     uDeep: { value: new THREE.Color(PAL.seaDeep) }, uShallow: { value: new THREE.Color(PAL.seaShallow) },
     uSky: { value: new THREE.Color(PAL.seaSky) }, uSun: { value: new THREE.Color(0xffe2b0) },
-    uSunDir: { value: SUN_DIR.clone() },
+    uSunDir: { value: SUN_DIR.clone() }, uFar: { value: new THREE.Color(PAL.seaFar) },
   }]),
   vertexShader: `${WAVE}
     varying vec3 vWorld; varying float vH;
@@ -237,7 +246,7 @@ const waterMat = new THREE.ShaderMaterial({
       #include <fog_vertex>
     }`,
   fragmentShader: `${WAVE}
-    uniform vec3 uDeep, uShallow, uSky, uSun, uSunDir;
+    uniform vec3 uDeep, uShallow, uSky, uSun, uSunDir, uFar;
     varying vec3 vWorld; varying float vH;
     #include <fog_pars_fragment>
     void main(){
@@ -259,7 +268,10 @@ const waterMat = new THREE.ShaderMaterial({
       gl_FragColor = vec4(col, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
-      #include <fog_fragment>
+      // uzak su sis rengine (şeftali) değil puslu deniz rengine solar: siluetin dibine kadar su gibi okunur
+      #ifdef USE_FOG
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, uFar, smoothstep(fogNear, fogFar, vFogDepth));
+      #endif
     }`,
 });
 const waterGeo = new THREE.PlaneGeometry(WATER_W, WATER_D, SEG_X, SEG_Z);

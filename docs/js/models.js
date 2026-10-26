@@ -154,16 +154,21 @@ export function makePerson(hold, look = pick(LOOKS)) {
 // ---------------- simitçi kayığı ----------------
 // Kenarda sallanan sandal; simitçi tepsiden alıp martıya simit fırlatır. Tepsideki yığın atıldıkça azalır.
 const SIMITCI = { shirt: 0xf2efe6, skin: 0xd49b74, hair: 1, scarf: true };
-function boatHull() {
+function boatHull(depth = 0.75) {
   const s = new THREE.Shape();
   s.moveTo(0, -2.4); s.quadraticCurveTo(1.05, -1.2, 1, 0.4); s.quadraticCurveTo(0.95, 1.8, 0, 2.3);
   s.quadraticCurveTo(-0.95, 1.8, -1, 0.4); s.quadraticCurveTo(-1.05, -1.2, 0, -2.4);
-  const g = new THREE.ExtrudeGeometry(s, { depth: 0.75, bevelEnabled: false, curveSegments: 5 });
+  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 5 });
   g.rotateX(-Math.PI / 2);
   return g;
 }
-const BOAT = new Kit()
-  .add(boatHull(), (f, y) => (y > 0.6 ? 0xc8352e : y > 0.38 ? 0x3a7fc2 : 0xf3efe6), 0, -0.25, 0)
+// gövde renk şeritleri ayrı katmanlar (tek kalıpta yüz rengi testere dişi gibi kırılır); bands: [[kalınlık, renk], ...] alttan üste
+function hullBands(k, bands, y0, sx = 1, sz = 1) {
+  let y = y0;
+  for (const [h, c] of bands) { k.add(boatHull(h), c, 0, y, 0, 0, 0, 0, sx, 1, sz); y += h; }
+  return k;
+}
+const BOAT = hullBands(new Kit(), [[0.4, 0xf3efe6], [0.22, 0x3a7fc2], [0.13, 0xc8352e]], -0.25)
   .add(new THREE.BoxGeometry(1.75, 0.08, 4), 0x9c6a3e, 0, 0.32, 0)
   .add(new THREE.BoxGeometry(1.9, 0.1, 0.32), 0xa8774a, 0, 0.45, -1.1)
   .add(new THREE.BoxGeometry(1.9, 0.1, 0.32), 0xa8774a, 0, 0.45, 1.2)
@@ -183,6 +188,56 @@ export function makeSimitBoat(side) {
   });
   return { g, person: p, tray };
 }
+
+// ---------------- balıkçı teknesi ----------------
+// Koridorun dışında demirli; kamaralı, direkli, oltalı balıkçı. Renk çiftleri pastel.
+const FISH_COLS = [[0xf3efe6, 0x5fa8d3, 0xe07a5f], [0xf3efe6, 0x4f9d69, 0xe3b23c], [0x8fc3d9, 0xf3efe6, 0xd9544f], [0xf6e7c8, 0x3a6ea5, 0xc8352e]];
+const fishCache = [];
+function fishingBoatGeo(ci) {
+  if (fishCache[ci]) return fishCache[ci];
+  const [hullC, band, roof] = FISH_COLS[ci];
+  const k = hullBands(new Kit(), [[0.4, 0x2b3a4c], [0.5, hullC], [0.22, band]], -0.3, 1.7, 1.9)
+    .add(new THREE.BoxGeometry(2.9, 0.08, 7), 0xa8774a, 0, 0.55, 0)
+    .add(new THREE.BoxGeometry(1.7, 1.3, 1.8), 0xf3efe6, 0, 1.2, 1.3)
+    .add(new THREE.BoxGeometry(1.74, 0.35, 1.84), band, 0, 1.35, 1.3)
+    .add(new THREE.BoxGeometry(2, 0.12, 2.1), roof, 0, 1.92, 1.3)
+    .add(new THREE.CylinderGeometry(0.07, 0.09, 4.2, 5), 0xf3efe6, 0, 2.6, -1)
+    .add(new THREE.BoxGeometry(1.6, 0.05, 0.05), 0xf3efe6, 0, 3.6, -1)
+    .add(new THREE.SphereGeometry(0.16, 6, 4), 0xffe07a, 0, 4.75, -1)
+    .add(new THREE.SphereGeometry(0.55, 7, 5), 0x7d8f6a, 0.5, 0.65, -2.3, 0, 0, 0, 1.2, 0.45, 1) // ağ yığını
+    .add(new THREE.TorusGeometry(0.3, 0.09, 5, 10), (f) => (f % 6 < 3 ? 0xf07b22 : 0xffffff), 1.47, 0.9, 0.2, 0, Math.PI / 2);
+  return (fishCache[ci] = k.build());
+}
+const ROD = new Kit().add(new THREE.CylinderGeometry(0.025, 0.04, 3.2, 4), 0x3a2a1c, 0, 1.6, 0).build();
+const rodLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+const ROD_LINE = new THREE.CylinderGeometry(0.008, 0.008, 3.4, 3);
+// side: hangi kıyıda (+1 sağ); balıkçı koridora doğru olta sallar
+export function makeFishingBoat(side) {
+  const g = new THREE.Group();
+  const hull = new THREE.Mesh(fishingBoatGeo((Math.random() * FISH_COLS.length) | 0), vcMat); hull.castShadow = true; g.add(hull);
+  const p = makePerson(false); p.mesh.position.set(-side * 0.7, 0.58, -1.2); p.mesh.rotation.y = rand(-0.4, 0.4); g.add(p.mesh);
+  const rod = new THREE.Mesh(ROD, vcMat); rod.position.set(-side * 0.95, 1.7, -1.2); rod.rotation.z = side * 0.9; g.add(rod);
+  const line = new THREE.Mesh(ROD_LINE, rodLineMat); line.position.set(-side * 3.35, 2, -1.2); g.add(line);
+  return g;
+}
+
+// ---------------- Kız Kulesi (yakın, kıyıdan geçerken) ----------------
+export const MAIDEN = (() => {
+  const k = new Kit();
+  k.add(new THREE.DodecahedronGeometry(9, 0), (f, y) => (y > 0.5 ? 0xb7a58f : 0x8d7f70), 0, -3.5, 0, 0, 0, 0, 1.25, 0.5, 1);
+  k.add(new THREE.BoxGeometry(14, 0.5, 10), 0xd8cdb8, 0, 1.2, 0);
+  k.add(new THREE.BoxGeometry(10, 4.5, 7), 0xf6eee0, -1.5, 3.6, 0.5);
+  k.add(new THREE.BoxGeometry(10.3, 0.4, 7.3), 0xcfa58c, -1.5, 5.95, 0.5);
+  for (let i = 0; i < 4; i++) k.add(new THREE.BoxGeometry(0.9, 1.4, 0.1), 0x5f7fa8, -5 + i * 2.3, 3.8, 4.06);
+  k.add(new THREE.CylinderGeometry(2, 2.2, 12, 10), 0xf6eee0, 3.5, 7, -0.5);
+  k.add(new THREE.CylinderGeometry(2.35, 2.35, 0.5, 10), 0xcfa58c, 3.5, 10.5, -0.5);
+  k.add(new THREE.CylinderGeometry(1.6, 1.6, 2.4, 10), 0xf6eee0, 3.5, 12.9, -0.5);
+  for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; k.add(new THREE.BoxGeometry(0.5, 1, 0.1), 0x5f7fa8, 3.5 + Math.sin(a) * 1.62, 12.9, -0.5 + Math.cos(a) * 1.62, 0, a); }
+  k.add(new THREE.ConeGeometry(2, 3.4, 10), 0x8fa9c4, 3.5, 15.8, -0.5);
+  k.add(new THREE.CylinderGeometry(0.06, 0.06, 1.6, 4), 0xd9b24a, 3.5, 18.2, -0.5);
+  k.add(new THREE.BoxGeometry(0.5, 0.5, 0.5), 0xe30a17, 4, 18.6, -0.5); // bayrak
+  return k.build();
+})();
 
 // ---------------- vapur ----------------
 export const DECK = 2.6;
