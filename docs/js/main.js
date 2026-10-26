@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight } from './scene.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
@@ -10,6 +10,7 @@ const $ = id => document.getElementById(id);
 const tr = s => (window.PF && window.PF.t ? window.PF.t(s) : s);
 const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7;
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look';
 
 // ---------------- ayarlar ----------------
 const settings = Object.assign({ sfx: true, music: true, vibe: true }, store.get(KEY_SET, {}));
@@ -21,6 +22,7 @@ const gull = makeGull();
 gull.scale.setScalar(0.95);
 scene.add(gull);
 const shieldOrb = makeShieldOrb(); shieldOrb.visible = false; gull.add(shieldOrb);
+const outfit = dressGull(gull);
 const blob = new THREE.Mesh(GEO.blob, new THREE.MeshBasicMaterial({ color: 0x0a1020, transparent: true, opacity: 0.3, depthWrite: false }));
 blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
@@ -166,13 +168,18 @@ let crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flap
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revived = false;
 const pw = { magnet: 0, shield: 0, double: 0 };
 let best = +store.get(KEY_BEST, 0) || 0;
+// simit cüzdanı: normal simit 1, altın simit 5 değerinde; banked = bu uçuştan cüzdana geçen
+let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
+const look = { owned: [], on: [] };
+{ const l = store.get(KEY_LOOK, {}), ok = id => COSTUMES.some(c => c.id === id);
+  look.owned = (Array.isArray(l.owned) ? l.owned : []).filter(ok); look.on = (Array.isArray(l.on) ? l.on : []).filter(id => look.owned.includes(id)); }
 let tutorialPending = !store.get(KEY_TUT, false);
 const keys = {};
 
 function resetWorld() {
   clearWorld(); genZ = -8; segCount = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
-  speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
+  speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
   generate(-280);
@@ -191,8 +198,10 @@ const total = () => points + Math.floor(dist / 10);
 const fmt = n => n.toLocaleString('tr-TR');
 
 function showTitle() {
-  state = 'title'; resetWorld();
+  state = 'title'; bank(); resetWorld();
   ui.powers.textContent = '';
+  dressing = false; show('wardrobe', false);
+  $('titleWallet').textContent = fmt(wallet);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
   $('titleBest').textContent = best ? `Rekor ${fmt(best)}` : 'İlk uçuşun!';
   audio.music(true);
@@ -241,6 +250,8 @@ function showOver() {
   ui.powers.textContent = '';
   $('overBest').textContent = isBest ? 'Önceki rekoru geçtin' : `Rekor ${fmt(best)}`;
   $('newRecord').classList.toggle('hidden', !isBest);
+  bank();
+  $('overEarn').innerHTML = `<span>+${fmt(banked)} <svg class="ico"><use href="#i-simit"/></svg></span><span>${tr('Cüzdan')} ${fmt(wallet)}</span>`;
   show('over'); show('hud', false); hideTutorial();
   // ikinci şans: iyi bir uçuşta, uçuş başına bir kez (portalda ödüllü reklamla)
   const canRevive = !revived && final >= 250 && final >= prevBest * 0.4 && rewardReady();
@@ -258,6 +269,53 @@ function showOver() {
   el.textContent = '0';
   requestAnimationFrame(step);
   audio.duck(false);
+}
+// ---------------- cüzdan ve kostümler ----------------
+function bank() {
+  const earned = simitCount + goldCount * 4, gain = earned - banked;
+  if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
+}
+function applyLook() { for (const c of COSTUMES) outfit[c.id].visible = look.on.includes(c.id); }
+applyLook();
+let dressing = false;
+function openWardrobe() {
+  if (state !== 'title') return;
+  dressing = true; $('wardNote').textContent = tr('Simitler cüzdanına girer; onlarla martına kostüm al.');
+  renderWardrobe(); show('title', false); show('wardrobe');
+}
+function closeWardrobe() {
+  dressing = false; show('wardrobe', false);
+  if (state === 'title') { $('titleWallet').textContent = fmt(wallet); show('title'); }
+}
+function renderWardrobe() {
+  $('walletN').textContent = fmt(wallet);
+  const box = $('costumes'); box.textContent = '';
+  for (const c of COSTUMES) {
+    const own = look.owned.includes(c.id), on = look.on.includes(c.id);
+    const b = document.createElement('button');
+    b.className = 'cos' + (on ? ' on' : '') + (own ? ' own' : wallet < c.price ? ' poor' : '');
+    b.dataset.id = c.id;
+    b.innerHTML = `<span class="cos-i">${COSTUME_SVG[c.id]}</span><b></b><small></small>`;
+    b.querySelector('b').textContent = tr(c.name);
+    const tag = b.querySelector('small');
+    if (own) tag.textContent = tr(on ? 'Giyili' : 'Giy');
+    else tag.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(c.price)}`;
+    b.addEventListener('click', e => { e.stopPropagation(); wear(c, b); });
+    box.appendChild(b);
+  }
+}
+// alınmamışsa satın al ve giy; giyiliyse çıkar; aynı yuvada (baş, göz, boyun) tek kostüm
+function wear(c, el) {
+  if (!look.owned.includes(c.id)) {
+    if (wallet < c.price) { sfx.click(); bump(el, 'shake'); $('wardNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(c.price - wallet)}`; return; }
+    wallet -= c.price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]);
+  } else if (look.on.includes(c.id)) {
+    look.on = look.on.filter(id => id !== c.id); sfx.click();
+    store.set(KEY_LOOK, look); applyLook(); renderWardrobe(); return;
+  } else sfx.power();
+  look.on = look.on.filter(id => COSTUMES.find(x => x.id === id).slot !== c.slot).concat(c.id);
+  store.set(KEY_LOOK, look); applyLook(); renderWardrobe(); flapBurst = 1;
+  sparkle(gull.position, 24, 0xffe7a8, 4, 0.6, 0.3);
 }
 function rewardReady() { return !window.PF || !window.PF.canReward || window.PF.canReward(); }
 function askRevive() {
@@ -363,6 +421,7 @@ addEventListener('pointermove', e => {
 $('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e)) startGame(); });
 addEventListener('keydown', e => {
   keys[e.code] = true;
+  if (dressing) { if (e.code === 'Escape') closeWardrobe(); return; }
   if (e.code === 'KeyM') { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) { if (state === 'play' || state === 'countdown') pause(); else if (state === 'paused') resume(); }
   if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) {
@@ -375,6 +434,8 @@ const onBtn = (id, fn) => $(id).addEventListener('click', e => { e.stopPropagati
 onBtn('againBtn', () => { if (overLock <= 0) startGame(); });
 onBtn('homeBtn', () => showTitle());
 onBtn('reviveBtn', () => askRevive());
+onBtn('wardrobeBtn', () => openWardrobe());
+onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
 onBtn('quitBtn', () => { audio.resume(); showTitle(); });
@@ -631,11 +692,13 @@ function frame() {
   // ---- kamera: yumuşak takip + sarsıntı ----
   const land = camera.aspect > 1;
   const followZ = state === 'dead' || state === 'over' ? camera.position.z - (land ? 11 : 13.5) : g.z;
-  const cx = g.x * 0.85, cy = FLY_Y + (land ? 4.2 : 5.4), cz = followZ + (land ? 11 : 13.5);
+  let cx = g.x * 0.85, cy = FLY_Y + (land ? 4.2 : 5.4), cz = followZ + (land ? 11 : 13.5);
+  if (dressing) { cx = g.x + (land ? 1.2 : 1.6); cy = FLY_Y + 1.5; cz = g.z - 5.2; } // kostüm paneli: önden yakın çekim
   camera.position.x = damp(camera.position.x, cx, 5, realDt);
   camera.position.y = damp(camera.position.y, cy, 5, realDt);
   camera.position.z = damp(camera.position.z, cz, 12, realDt);
-  camera.lookAt(g.x * 0.92, FLY_Y - (land ? 0.2 : 0.6), followZ - 12);
+  if (dressing) camera.lookAt(g.x - (land ? 2.2 : 0), g.y - (land ? 0.2 : 1.6), g.z); // yatayda martı solda, panel sağda
+  else camera.lookAt(g.x * 0.92, FLY_Y - (land ? 0.2 : 0.6), followZ - 12);
   camera.rotation.z += gull.rotation.z * 0.06;
   trauma = Math.max(0, trauma - realDt * 1.6);
   if (trauma > 0) {
@@ -739,6 +802,8 @@ requestAnimationFrame(frame);
 window.__game = {
   get state() { return state; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, get powers() { return { ...pw }; },
+  get wallet() { return wallet; }, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },
+  openWardrobe, closeWardrobe,
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },

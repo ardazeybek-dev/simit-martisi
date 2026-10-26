@@ -48,6 +48,7 @@
     <symbol id="i-gear" viewBox="0 0 24 24"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.8 1.7 1l.4 2.6h4l.4-2.6c.6-.2 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></symbol>
     <symbol id="i-sound" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.6 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
     <symbol id="i-mute" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-hanger" viewBox="0 0 24 24"><path d="M12 7.2a2.2 2.2 0 1 1 2.2-2.2c0 1.3-2.2 1.6-2.2 3.1v.6l8.6 5.6c1.2.8.7 2.7-.8 2.7H4.2c-1.5 0-2-1.9-.8-2.7L12 8.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-hand" viewBox="0 0 64 64"><path fill="#fff" stroke="#1b1838" stroke-width="2.5" stroke-linejoin="round" d="M25 30V10a4 4 0 0 1 8 0v16l1-1a4 4 0 0 1 7 1 4 4 0 0 1 7 2 4 4 0 0 1 6 3v12c0 9-6 15-15 15h-3c-6 0-9-3-12-8l-8-13a4 4 0 0 1 6-5z"/></symbol>
   </defs>
 </svg>
@@ -94,7 +95,10 @@
   </div>
   <div class="spacer"></div>
   <div class="title-bottom">
-    <div class="best-chip"><svg class="ico"><use href="#i-simit"/></svg><span id="titleBest"></span></div>
+    <div class="title-chips">
+      <div class="best-chip"><svg class="ico"><use href="#i-simit"/></svg><span id="titleBest"></span></div>
+      <button class="best-chip wardrobe-chip" id="wardrobeBtn"><svg class="ico"><use href="#i-hanger"/></svg><span>Kostümler</span><b id="titleWallet">0</b></button>
+    </div>
     <div class="tap">Dokun ve başla</div>
     <div class="legend">
       <span><i class="dot ok"></i>Simitleri kap</span>
@@ -129,6 +133,15 @@
   </div>
 </section>
 
+<section id="wardrobe" class="screen modal sheet hidden">
+  <div class="card">
+    <div class="sheet-head"><h2>Kostümler</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="walletN">0</b></div></div>
+    <div id="costumes" class="costumes"></div>
+    <p class="fine" id="wardNote"></p>
+    <button class="btn primary" id="closeWardrobe">Tamam</button>
+  </div>
+</section>
+
 <section id="over" class="screen modal hidden">
   <div class="card over-card">
     <div id="confetti"></div>
@@ -142,6 +155,9 @@
       <div><b id="stCombo">0</b><span>en iyi seri</span></div>
     </div>
     <p class="best-line" id="overBest"></p>
+    <div class="over-extra">
+      <p class="earn" id="overEarn"></p>
+    </div>
     <div class="actions">
       <button class="btn primary hidden" id="reviveBtn"><svg class="ad-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="3"/><path d="M17.5 10.2l4-2.4v8.4l-4-2.4z"/></svg><svg class="sh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z"/></svg><span id="reviveLbl">İkinci şans</span></button>
       <p class="revive-note hidden" id="reviveNote"></p>

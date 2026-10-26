@@ -285,3 +285,68 @@ export function makeShieldOrb() {
   m.add(w);
   return m;
 }
+
+// ---------------- kostümler ----------------
+// Simit cüzdanıyla alınır; yalnızca oyuncunun martısına takılır. Her biri tek Kit geometrisi,
+// bir kez üretilir ve görünürlüğü açılıp kapanır (giyip çıkarınca yeni tampon açılmaz).
+export const COSTUMES = [
+  { id: 'fes', name: 'Fes', slot: 'head', price: 60 },
+  { id: 'glasses', name: 'Güneş gözlüğü', slot: 'eyes', price: 120 },
+  { id: 'scarf', name: 'Atkı', slot: 'neck', price: 200 },
+  { id: 'captain', name: 'Kaptan şapkası', slot: 'head', price: 350 },
+  { id: 'crown', name: 'Altın taç', slot: 'head', price: 900 },
+];
+// baş merkezi (0, 0.2, −0.72), yarıçap 0.3; gaga −z yönünde
+function costumeGeo(id) {
+  const k = new Kit();
+  if (id === 'fes') {
+    k.add(new THREE.CylinderGeometry(0.15, 0.2, 0.27, 12), (f, y) => (y > 0.69 ? 0x9e1b24 : 0xc62a33), 0, 0.57, -0.74, -0.18);
+    k.add(new THREE.BoxGeometry(0.025, 0.025, 0.2), 0x1a1a1a, 0, 0.7, -0.62, -0.5);
+    k.add(new THREE.ConeGeometry(0.05, 0.16, 6), 0x1a1a1a, 0, 0.6, -0.53);
+  } else if (id === 'captain') {
+    k.add(new THREE.CylinderGeometry(0.25, 0.25, 0.07, 14), 0x1b2738, 0, 0.5, -0.72);
+    k.add(new THREE.CylinderGeometry(0.27, 0.24, 0.13, 14), 0xf6f4ee, 0, 0.59, -0.72);
+    k.add(new THREE.CylinderGeometry(0.32, 0.29, 0.06, 14), 0xffffff, 0, 0.67, -0.73, -0.08);
+    k.add(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 12, 1, false, Math.PI * 0.5, Math.PI), 0x111111, 0, 0.48, -0.86, 0.3);
+    k.add(new THREE.OctahedronGeometry(0.055), 0xffc23a, 0, 0.6, -0.98, 0, 0, 0, 1, 1, 0.5);
+  } else if (id === 'crown') {
+    k.add(new THREE.CylinderGeometry(0.22, 0.21, 0.12, 12), 0xf2b22c, 0, 0.53, -0.72);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      k.add(new THREE.ConeGeometry(0.06, 0.16, 5), 0xffcb45, Math.sin(a) * 0.18, 0.66, -0.72 + Math.cos(a) * 0.18);
+      k.add(new THREE.SphereGeometry(0.03, 5, 4), 0xfff2b0, Math.sin(a) * 0.18, 0.75, -0.72 + Math.cos(a) * 0.18);
+    }
+    k.add(new THREE.OctahedronGeometry(0.05), 0xe5484d, 0, 0.53, -0.94);
+    for (const s of [-1, 1]) k.add(new THREE.OctahedronGeometry(0.04), 0x3aa7ff, s * 0.21, 0.53, -0.72);
+  } else if (id === 'glasses') {
+    // camlar gözlerin (±0.19, 0.28, −0.86) önünde, yüzün yanlarına yaslı; köprü gaganın üstünden geçer
+    for (const s of [-1, 1]) {
+      k.add(new THREE.BoxGeometry(0.2, 0.14, 0.035), 0x14161c, s * 0.2, 0.29, -0.93, 0, s * 0.75);
+      k.add(new THREE.BoxGeometry(0.025, 0.025, 0.28), 0x14161c, s * 0.29, 0.31, -0.74);
+    }
+    k.add(new THREE.BoxGeometry(0.16, 0.03, 0.03), 0x14161c, 0, 0.33, -1.0);
+  } else if (id === 'scarf') {
+    const ring = new THREE.TorusGeometry(0.3, 0.075, 6, 16);
+    k.add(ring, (f) => (f % 8 < 4 ? 0xd23a33 : 0xf6f0e4), 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
+    const tail = (x, z, ry) => k.add(new THREE.BoxGeometry(0.13, 0.035, 0.42, 1, 1, 4), (f, y) => (f % 8 < 4 ? 0xd23a33 : 0xf6f0e4), x, 0.12, z, -0.25, ry);
+    tail(0.2, -0.22, 0.25); tail(0.28, -0.2, 0.5);
+  }
+  return k.build();
+}
+// martıya bütün kostümleri gizli olarak takar; { id: mesh } döner
+export function dressGull(gull) {
+  const out = {};
+  for (const c of COSTUMES) {
+    const m = new THREE.Mesh(costumeGeo(c.id), vcMat);
+    m.castShadow = true; m.visible = false;
+    gull.add(m); out[c.id] = m;
+  }
+  return out;
+}
+export const COSTUME_SVG = {
+  fes: '<svg viewBox="0 0 48 48"><path d="M14 40l4-26h12l4 26z" fill="#c62a33"/><path d="M18 14h12l.6 4H17.4z" fill="#9e1b24"/><path d="M24 14q8-2 9 10" stroke="#1a1a1a" stroke-width="2" fill="none"/><path d="M31 23l4 9h-6z" fill="#1a1a1a"/><rect x="11" y="38" width="26" height="4" rx="2" fill="#7a141b"/></svg>',
+  glasses: '<svg viewBox="0 0 48 48"><path d="M4 18h40" stroke="#14161c" stroke-width="3"/><rect x="5" y="17" width="16" height="13" rx="5" fill="#14161c"/><rect x="27" y="17" width="16" height="13" rx="5" fill="#14161c"/><path d="M8 20l5 0M30 20l5 0" stroke="#5d6b86" stroke-width="2" stroke-linecap="round"/></svg>',
+  scarf: '<svg viewBox="0 0 48 48"><path d="M8 14q16 8 32 0v8q-16 8-32 0z" fill="#d23a33"/><path d="M15 18.5v8M24 20v8M33 18.5v8" stroke="#f6f0e4" stroke-width="3"/><path d="M28 24l6 18h-8l-3-16z" fill="#d23a33"/><path d="M26.6 31h6.4M27.8 36h6.6" stroke="#f6f0e4" stroke-width="3"/></svg>',
+  captain: '<svg viewBox="0 0 48 48"><ellipse cx="24" cy="17" rx="19" ry="7" fill="#fff"/><path d="M9 18h30v9H9z" fill="#f6f4ee"/><rect x="9" y="25" width="30" height="6" fill="#1b2738"/><path d="M10 31q14 9 28 0z" fill="#111"/><path d="M24 19l3 3-3 3-3-3z" fill="#ffc23a"/></svg>',
+  crown: '<svg viewBox="0 0 48 48"><path d="M8 36l-2-22 10 9 8-14 8 14 10-9-2 22z" fill="#f2b22c"/><rect x="8" y="34" width="32" height="6" rx="2" fill="#d99a1c"/><circle cx="24" cy="29" r="3.2" fill="#e5484d"/><circle cx="14" cy="30" r="2.2" fill="#3aa7ff"/><circle cx="34" cy="30" r="2.2" fill="#3aa7ff"/></svg>',
+};
