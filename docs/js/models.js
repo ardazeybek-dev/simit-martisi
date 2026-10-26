@@ -197,6 +197,16 @@ function personGeo(L, hold, angry, mode = '') {
     up(new THREE.BoxGeometry(0.46, 0.05, 0.04), L.glassFrame, 0, 2.01, 0.22);
     for (const x of [-0.1, 0.1]) up(new THREE.BoxGeometry(0.17, 0.13, 0.05), 0x101218, x, 1.97, 0.23);
   }
+  if (L.belly) up(new THREE.SphereGeometry(0.3, 9, 7), L.shirt, 0, 1.08, 0.08, 0, 0, 0, 1, 0.9, 0.95); // amca göbeği
+  if (L.beard) up(new THREE.SphereGeometry(0.2, 8, 6, 0, Math.PI * 2, Math.PI * 0.45, Math.PI * 0.55), L.beard, 0, 1.9, 0.07, 0, 0, 0, 1, 1.1, 1);
+  if (L.must) { // pala bıyık: iki yana sarkan, uzaktan seçilsin diye kalın
+    for (const s of [-1, 1]) up(new THREE.BoxGeometry(0.15, 0.06, 0.07), L.must, s * 0.08, 1.87, 0.22, 0, 0, s * 0.35);
+  }
+  if (L.bun) up(new THREE.SphereGeometry(0.12, 7, 5), HAIRS[L.hair], 0, 2.14, -0.16);
+  if (L.cane && !sit && mode !== 'feed' && L.pose === 'down') { // dedenin bastonu: sol elde, yere dayalı
+    k.add(new THREE.CylinderGeometry(0.03, 0.03, 0.95, 5), 0x5a3a22, -0.46, 0.47, 0.08);
+    up(new THREE.BoxGeometry(0.16, 0.05, 0.05), 0x5a3a22, -0.4, 0.96, 0.08);
+  }
   if (L.bag) { up(new THREE.BoxGeometry(0.16, 0.5, 0.44), L.bag, 0.38, 1.0, -0.05); up(new THREE.BoxGeometry(0.04, 0.6, 0.04), L.bag, 0.24, 1.55, 0.05, 0, 0, -0.5); }
   // kollar: sol duruşa göre (aşağı / belde / telefon), sağ simit tutuyorsa ya da kızgınsa havada
   const arm = L.shirt;
@@ -218,17 +228,37 @@ function personGeo(L, hold, angry, mode = '') {
   personCache.set(key, g);
   return g;
 }
-// sınırlı sayıda görünüm: önbellek en fazla 36 × birkaç geometride doyar
-const LOOKS = Array.from({ length: 36 }, (_, id) => {
-  const skirt = Math.random() < 0.25, hat = Math.random() < 0.5 ? pick(HATS.slice(1)) : '';
-  return {
-    id, shirt: SHIRTS[id % SHIRTS.length], pants: pick(PANTS), skin: pick(SKINS), skirt,
-    hair: Math.random() < 0.85 ? (Math.random() * HAIRS.length) | 0 : -1, long: skirt ? Math.random() < 0.7 : Math.random() < 0.1,
-    hat, hatCol: pick(HAT_COLS), scarf: Math.random() < 0.25, scarfCol: pick([0xd8352e, 0x2f7fd0, 0xf2b81c, 0xf2efe6, 0x2bb3a3]),
-    jacket: Math.random() < 0.25 ? pick([0x2f3b4c, 0x5a4636, 0x6b7a5a]) : 0, glasses: Math.random() < 0.28, glassFrame: pick([0xf2efe6, 0xe3b23c, 0xd8352e]),
-    bag: Math.random() < 0.22 ? pick([0xd8352e, 0xf2b81c, 0x2bb3a3, 0x8a5a32]) : 0, tea: Math.random() < 0.6,
-    pose: pick(['down', 'down', 'hip', 'phone', 'wave']),
+// sınırlı sayıda görünüm: önbellek en fazla 40 × birkaç geometride doyar.
+// Tipler: amca (bıyık, göbek, kasket/fes), dede (beyaz saç, sakal, baston, gözlük), teyze (etek, eşarp ya da topuz, çanta),
+// abla (uzun saç, telefon, güneş gözlüğü), genç (bere/kep). Tip, simidi kapılınca ne bağıracağını da belirler (main.js).
+const KINDS = ['amca', 'amca', 'amca', 'dede', 'dede', 'teyze', 'teyze', 'teyze', 'abla', 'genc'];
+const LOOKS = Array.from({ length: 40 }, (_, id) => {
+  const kind = KINDS[id % KINDS.length], r = Math.random;
+  const L = {
+    id, kind, shirt: SHIRTS[(id * 7) % SHIRTS.length], pants: pick(PANTS), skin: pick(SKINS), skirt: false,
+    hair: (r() * 3) | 0, long: false, hat: '', hatCol: pick(HAT_COLS), scarf: false, scarfCol: pick([0xd8352e, 0x2f7fd0, 0xf2b81c, 0xf2efe6, 0x2bb3a3]),
+    jacket: 0, glasses: false, glassFrame: pick([0xf2efe6, 0xe3b23c, 0xd8352e, 0x1b1c22]),
+    bag: 0, tea: r() < 0.6, pose: pick(['down', 'down', 'hip', 'phone', 'wave']),
   };
+  const bag = () => pick([0xd8352e, 0xf2b81c, 0x2bb3a3, 0x8a5a32, 0x7d5ba6]);
+  if (kind === 'amca') {
+    Object.assign(L, { shirt: pick([0xf2efe6, 0x8fbf9f, 0x5fa8d3, 0xc98b5a, 0xe3b23c, 0x3a6ea5]), hair: pick([0, 2, 3]), must: pick([0x1a1a1a, 0x2e211a, 0x8a8178]),
+      belly: r() < 0.55, hat: pick(['kasket', 'kasket', 'fes', 'hasir', '']), jacket: r() < 0.45 ? pick([0x2f3b4c, 0x5a4636, 0x6b7a5a]) : 0, glasses: r() < 0.45, pose: pick(['down', 'hip', 'hip', 'wave', 'phone']) });
+  } else if (kind === 'dede') {
+    Object.assign(L, { shirt: pick([0xf2efe6, 0xc9c3b8, 0x8fbf9f, 0xe8d8a8]), hair: 3, must: 0xece8e0, beard: r() < 0.55 ? 0xece8e0 : 0, cane: r() < 0.75,
+      hat: pick(['kasket', 'kasket', 'fes', 'hasir', '']), hatCol: pick([0x3b3b3b, 0x5a4636, 0x2f3b4c]), jacket: pick([0x6b5a4a, 0x2f3b4c, 0x8a7a64, 0x5a6b5a]), glasses: r() < 0.7, pose: 'down' });
+  } else if (kind === 'teyze') {
+    const esarp = r() < 0.5;
+    Object.assign(L, { skirt: r() < 0.8, hair: pick([0, 1, 4, 5]), long: !esarp && r() < 0.3, bun: !esarp && r() < 0.5, hat: esarp ? 'esarp' : r() < 0.2 ? 'hasir' : '',
+      hatCol: pick([0xe89bb0, 0x7d5ba6, 0x2bb3a3, 0xd8352e, 0xe8d8a8, 0x3a6ea5]), shirt: pick([0xe89bb0, 0x7d5ba6, 0xd9544f, 0x4f9d69, 0xe07a5f, 0xe3b23c]),
+      pants: pick([0x2f4f6f, 0x5a4636, 0x7d5ba6, 0x262c3a]), bag: r() < 0.6 ? bag() : 0, glasses: r() < 0.35, scarf: r() < 0.25, pose: pick(['down', 'hip', 'wave', 'down']) });
+  } else if (kind === 'abla') {
+    Object.assign(L, { skirt: r() < 0.5, hair: pick([0, 1, 2, 4, 5]), long: true, hat: r() < 0.25 ? pick(['hasir', 'bere']) : '', bag: r() < 0.5 ? bag() : 0,
+      glasses: r() < 0.4, glassFrame: pick([0xe3b23c, 0xd8352e, 0x1b1c22]), scarf: r() < 0.2, pose: pick(['phone', 'phone', 'wave', 'down']) });
+  } else {
+    Object.assign(L, { hair: pick([0, 1, 2, 4]), hat: r() < 0.6 ? pick(['bere', 'kep', 'kep']) : '', scarf: r() < 0.3, glasses: r() < 0.25, pose: pick(['phone', 'wave', 'down']) });
+  }
+  return L;
 });
 const SIMITCI_LOOK = { id: 'simitci', shirt: 0xf2efe6, pants: 0x262c3a, skin: 0xd49b74, hair: 1, hat: 'kasket', hatCol: 0x3b3b3b, scarf: true, scarfCol: 0xc8352e, pose: 'down' };
 // simidin elde durduğu yer (yolcunun yerel ekseninde)
@@ -238,11 +268,12 @@ export function makePerson(hold, look = pick(LOOKS), mode = '') {
   mesh.castShadow = true;
   mesh.rotation.y = rand(-0.6, 0.6);
   // simit tutanların boyu sabit (elindeki simidin yeri main.js'te hesaplanır); ötekiler biraz uzun/kısa, arada çocuk
-  if (!hold) mesh.scale.setScalar(Math.random() < 0.08 ? 0.68 : rand(0.92, 1.08));
+  const kid = !hold && Math.random() < 0.08;
+  if (!hold) mesh.scale.setScalar(kid ? 0.68 : rand(0.92, 1.08));
   let simit = null;
   if (hold) { simit = makeSimit(); simit.position.set(...SIMIT_AT[mode] || SIMIT_AT['']); mesh.add(simit); }
   const angryGeo = () => personGeo(look, false, true, mode === 'sit' ? 'sit' : '');
-  return { mesh, simit, sy: simit ? simit.position.y : 0, angryGeo, calmGeo: mesh.geometry, angry: 0, ph: Math.random() * 6, feeder: mode === 'feed', sit: mode === 'sit' };
+  return { mesh, simit, sy: simit ? simit.position.y : 0, angryGeo, calmGeo: mesh.geometry, angry: 0, ph: Math.random() * 6, feeder: mode === 'feed', sit: mode === 'sit', kind: kid ? 'cocuk' : look.kind || 'amca' };
 }
 // güverte bankı: küpeşte boyunca, sırtı içe dönük; oturanlar denize bakar
 export const BENCH = new Kit()

@@ -158,7 +158,7 @@ export function popText(text, worldPos, cls = '') {
   el.style.left = `${(v3.x * 0.5 + 0.5) * innerWidth}px`; el.style.top = `${(-v3.y * 0.5 + 0.5) * innerHeight}px`;
   popLayer.appendChild(el);
   el.addEventListener('animationend', () => el.remove());
-  setTimeout(() => el.remove(), 1600);
+  setTimeout(() => el.remove(), cls.includes('shout') ? 2200 : 1600);
 }
 
 export function updateFx(dt) {

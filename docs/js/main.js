@@ -1270,7 +1270,33 @@ function angry(p) {
   if (!p.feeder) p.mesh.geometry = p.angryGeo(); // ikramcı kızmaz, sevinçten zıplar
 }
 const cheers = ['Afiyet olsun!', 'Al bakalım!', 'Hadi gel!'];
-const shouts = ['Simidim!', 'Hoop!', 'Yaa!', 'Martıya bak!', 'Bırak onu!', 'Ah simidim…', 'Oha!', 'Kaçtı!', 'Hayırdır?'];
+// simidi kapılan yolcu tipine göre bağırır (amca, dede, teyze...); bazen yanındaki biri de laf atar (çocuklar sevinir)
+const SHOUTS = {
+  amca: ['Oha ulen!', 'Ulennn!', 'Hoop hemşerim!', 'Bırak onu ulen!', 'Simidim gitti ya!', 'Martıya bak martıya!', 'Yuh artık!', 'Allah Allah!', 'Çayın yanına neyle yicem?', 'Ulen martı!', 'Bu martı sabıkalı!'],
+  dede: ['Ahhh simidim…', 'Evlat, o benim!', 'Hey gidi günler…', 'Bizim zamanımızda martılar böyle değildi!', 'Gözlüğüm nerde?', 'Vay terbiyesiz!', 'Bastonla kovarım ha!', 'Hayırsız martı!'],
+  teyze: ['Ay simidim!', 'Aaa! Martıya bak!', 'Ay kalbim!', 'Vay hınzır!', 'Ayol!', 'Torunumun simidiydi o!', 'Kış kış!', 'Ay yüreğim ağzıma geldi!'],
+  abla: ['Yaaa!', 'Videoya çekecektim!', 'Bu ne hız?', 'Aşk olsun!', 'İnanamıyorum!', 'Hikâyeye atıyorum bunu!'],
+  genc: ['Kanka simidim!', 'Oha!', 'Efsane martı!', 'Hoop!', 'Bro?!', 'Çakal martı!'],
+};
+const BYSTAND = {
+  amca: ['Ahahah gördün mü?', 'Hah, oh olsun!', 'Bizimkini de alma ha!'],
+  dede: ['Tövbe tövbe…', 'Martılar azdı!'],
+  teyze: ['Aman simidini sakla!', 'Ay gördün mü?'],
+  abla: ['Çektin mi onu?', 'Ahaha!'],
+  genc: ['Ahahaha!', 'Efsane!'],
+  cocuk: ['Annee martı!', 'Bir daha yap!', 'Martı abi bana da!', 'Yaşasın martı!'],
+};
+let shoutT = 0;
+function shout(p, x, y, z) {
+  const now = performance.now();
+  if (now - shoutT < 380) return; // balonlar üst üste binmesin
+  shoutT = now;
+  popText(tr(pick(SHOUTS[p.kind] || SHOUTS.amca)), tmp2.set(x, y + 1.3, z), 'shout');
+  if (Math.random() < 0.35) { // yakındaki biri de laf atar
+    const by = people.find(o => o !== p && !o.feeder && Math.abs(o.wz - p.wz) < 3.5 && BYSTAND[o.kind] && o.mesh.parent);
+    if (by) { const at = by.mesh.getWorldPosition(new THREE.Vector3()); at.y += 2.6; setTimeout(() => state === 'play' && popText(tr(pick(BYSTAND[by.kind])), at, 'shout by'), 420); }
+  }
+}
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1);
@@ -1294,7 +1320,7 @@ function takeSimit(s) {
   bump(ui.score);
   flapBurst = Math.max(flapBurst, 0.4);
   if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; popText(`${tr(pick(cheers))} +${15 * m}`, tmp.set(s.x, s.y + 1.4, s.z), 'gold'); }
-  else if (s.person) { angry(s.person); if (Math.random() < 0.5) popText(tr(pick(shouts)), tmp.set(s.x, s.y + 1.4, s.z), 'shout'); }
+  else if (s.person) { angry(s.person); if (Math.random() < 0.8) shout(s.person, s.x, s.y, s.z); }
 }
 // viraj çıkışı: çizgideki simitlerin çoğu alındıysa bonus ve sapan gibi fırlama
 function judgeTurn(u) {
