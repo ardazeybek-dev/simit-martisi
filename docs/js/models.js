@@ -125,8 +125,7 @@ function personGeo(shirt, skin, hair, hold, angry, scarf) {
 }
 // sınırlı sayıda görünüm: önbellek en fazla 24 × 3 geometride doyar
 const LOOKS = Array.from({ length: 24 }, (_, i) => ({ shirt: SHIRTS[i % SHIRTS.length], skin: pick(SKINS), hair: Math.random() < 0.8 ? (Math.random() * HAIRS.length) | 0 : -1, scarf: Math.random() < 0.15 }));
-export function makePerson(hold) {
-  const look = pick(LOOKS);
+export function makePerson(hold, look = pick(LOOKS)) {
   const mesh = new THREE.Mesh(personGeo(look.shirt, look.skin, look.hair, hold, false, look.scarf), vcMat);
   mesh.castShadow = true;
   mesh.rotation.y = rand(-0.6, 0.6);
@@ -134,6 +133,39 @@ export function makePerson(hold) {
   if (hold) { simit = makeSimit(); simit.position.set(0.34, 2.56, 0); mesh.add(simit); }
   const angryGeo = () => personGeo(look.shirt, look.skin, look.hair, false, true, look.scarf);
   return { mesh, simit, angryGeo, calmGeo: mesh.geometry, angry: 0, ph: Math.random() * 6 };
+}
+
+// ---------------- simitçi kayığı ----------------
+// Kenarda sallanan sandal; simitçi tepsiden alıp martıya simit fırlatır. Tepsideki yığın atıldıkça azalır.
+const SIMITCI = { shirt: 0xf2efe6, skin: 0xd49b74, hair: 1, scarf: true };
+function boatHull() {
+  const s = new THREE.Shape();
+  s.moveTo(0, -2.4); s.quadraticCurveTo(1.05, -1.2, 1, 0.4); s.quadraticCurveTo(0.95, 1.8, 0, 2.3);
+  s.quadraticCurveTo(-0.95, 1.8, -1, 0.4); s.quadraticCurveTo(-1.05, -1.2, 0, -2.4);
+  const g = new THREE.ExtrudeGeometry(s, { depth: 0.75, bevelEnabled: false, curveSegments: 5 });
+  g.rotateX(-Math.PI / 2);
+  return g;
+}
+const BOAT = new Kit()
+  .add(boatHull(), (f, y) => (y > 0.6 ? 0xc8352e : y > 0.38 ? 0x3a7fc2 : 0xf3efe6), 0, -0.25, 0)
+  .add(new THREE.BoxGeometry(1.75, 0.08, 4), 0x9c6a3e, 0, 0.32, 0)
+  .add(new THREE.BoxGeometry(1.9, 0.1, 0.32), 0xa8774a, 0, 0.45, -1.1)
+  .add(new THREE.BoxGeometry(1.9, 0.1, 0.32), 0xa8774a, 0, 0.45, 1.2)
+  .add(new THREE.CylinderGeometry(0.04, 0.04, 2.6, 4), 0x8a5a32, 1.1, 0.55, 0.3, 0.4, 0, 1.35)
+  .add(new THREE.CylinderGeometry(0.5, 0.42, 0.08, 10), 0x7a4a26, 0, 0.62, -1.1)
+  .build();
+const BOAT_TRAY = [[0, 0], [0.22, 0.14], [-0.2, 0.16], [0.02, -0.24], [0.1, 0.05, 1], [-0.12, -0.04, 1]];
+// side: kayığın durduğu kenar (+1 sağ); simitçi koridora döner
+export function makeSimitBoat(side) {
+  const g = new THREE.Group();
+  const hull = new THREE.Mesh(BOAT, vcMat); hull.castShadow = true; g.add(hull);
+  const p = makePerson(true, SIMITCI);
+  p.mesh.position.set(0, 0.36, 0.25); p.mesh.rotation.y = side > 0 ? Math.PI : 0; g.add(p.mesh);
+  const tray = BOAT_TRAY.map(([x, z, up]) => {
+    const m = makeSimit(); m.position.set(x, 0.72 + (up ? 0.1 : 0), -1.1 + z); m.rotation.x = -Math.PI / 2 + rand(-0.2, 0.2); m.scale.setScalar(0.75);
+    g.add(m); return m;
+  });
+  return { g, person: p, tray };
 }
 
 // ---------------- vapur ----------------

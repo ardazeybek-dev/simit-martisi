@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading } from './scene.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, popText, updateFx, clearFx } from './fx.js';
 import { audio, sfx } from './audio.js';
 
@@ -27,7 +27,7 @@ const blob = new THREE.Mesh(GEO.blob, new THREE.MeshBasicMaterial({ color: 0x0a1
 blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
 // ---------------- dünya ----------------
-let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [];
+let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [];
 let genZ = 0, segCount = 0;
 const difficulty = () => clamp(-genZ / 650, 0, 5);
 
@@ -69,11 +69,84 @@ function addSimit(x, y, z, gold) {
   simits.push({ mesh: m, x, y, z, free: true, gold });
 }
 
+// ---------------- fırlatılan simitler ----------------
+// Açık suda simitler havada asılı durmaz: kenardaki simitçi kayığından martıya atılır. Atış martının uzaklığına göre
+// zamanlanır; simit kavis çizip yakalama noktasına martıyla aynı anda iner, kaçarsa denize düşer. Suda halka iniş yerini gösterir.
+// Ayar: THROW_T (uçuş süresi, sn), THROW_H (kavis yüksekliği). ?throw=0 → eski, havada duran simitler.
+const THROW_ON = new URLSearchParams(location.search).get('throw') !== '0';
+const THROW_T = [1.05, 1.35], THROW_H = [2.4, 3.6];
+const RING = new THREE.RingGeometry(0.5, 0.72, 20);
+const thrownStat = { caught: 0, missed: 0 };
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false });
+function throwVolleys(z0, len, first) {
+  const end = z0 - len + 5;
+  let z = z0 - (first ? 24 : 7), x = rand(-2.5, 2.5), side = pick([-1, 1]);
+  while (z > end) {
+    const n = 3 + ((Math.random() * 3) | 0), bz = z - (n - 1) * 1.7 + rand(-2, 2);
+    const b = makeSimitBoat(side); b.g.position.set(side * rand(9.5, 11), 0, bz); b.g.rotation.y = rand(-0.3, 0.3); scene.add(b.g);
+    const bt = { ...b, z: bz, hand: 0 };
+    boats.push(bt); decor.push({ mesh: b.g, z: bz, ph: Math.random() * 6 });
+    for (let i = 0; i < n && z > end; i++) {
+      addThrown(bt, x, z, !first && Math.random() < 0.035);
+      z -= rand(2.8, 4.2);
+      x = clamp(x + rand(-2.4, 2.4), -LANE + 0.8, LANE - 0.8);
+    }
+    z -= rand(4, 9); side = -side;
+  }
+}
+function addThrown(bt, cx, cz, gold) {
+  const m = makeSimit(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); scene.add(m);
+  const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); scene.add(ring);
+  simits.push({ mesh: m, x: cx, y: FLY_Y, z: cz, free: true, gold, th: { bt, cx, cz, T: rand(...THROW_T), H: rand(...THROW_H), u: -1, p0: new THREE.Vector3(), ring } });
+}
+function dropThrown(s) { if (s.th) scene.remove(s.th.ring); }
+function flySimits(dt) {
+  const g = gull.position;
+  for (const s of simits) {
+    const th = s.th;
+    if (!th) continue;
+    if (s.taken || s.pulled) { if (th.ring.parent) scene.remove(th.ring); continue; }
+    if (th.u < 0) {
+      th.ring.position.y = waveAt(th.cx, th.cz, t) + 0.12;
+      if (g.z - th.cz > speed * th.T || (state !== 'play' && state !== 'title')) continue;
+      th.u = 0; th.bt.person.simit.getWorldPosition(th.p0); th.bt.hand = 0.45;
+      const tray = th.bt.tray.find(m => m.visible); if (tray) tray.visible = false;
+      s.mesh.visible = true; s.mesh.rotation.set(rand(0, 6), rand(0, 6), 0);
+    }
+    th.u += dt / th.T;
+    const u = th.u;
+    if (u <= 1) {
+      const h = 1 - (1 - u) * (1 - u); // yatayda yavaşlar → yakalama noktasına dik iner
+      s.x = th.p0.x + (th.cx - th.p0.x) * h; s.z = th.p0.z + (th.cz - th.p0.z) * h;
+      s.y = th.p0.y + (FLY_Y - th.p0.y) * u + th.H * Math.sin(Math.PI * u);
+    } else {
+      const k = (u - 1) * th.T, v0 = (FLY_Y - th.p0.y - th.H * Math.PI) / th.T;
+      s.y = FLY_Y + v0 * k - 7 * k * k;
+      const w = waveAt(s.x, s.z, t);
+      if (s.y < w) {
+        s.taken = true; scene.remove(s.mesh); scene.remove(th.ring); thrownStat.missed++;
+        chunks.emit(tmp.set(s.x, w + 0.1, s.z), 6, { speed: 2.5, up: 1, life: 0.6, size: 0.09, color: [0xffffff, 0xcfe9f2], gravity: 12, spin: 0.3 });
+        continue;
+      }
+    }
+    th.ring.position.y = waveAt(th.cx, th.cz, t) + 0.12; th.ring.scale.setScalar(1 - Math.min(u, 1) * 0.35);
+    s.mesh.position.set(s.x, s.y, s.z);
+    s.mesh.rotation.x += dt * 7; s.mesh.rotation.z += dt * 4;
+  }
+  for (const b of boats) {
+    if (b.hand <= 0) continue;
+    b.hand -= dt;
+    b.person.mesh.rotation.z = (b.g.position.x > 0 ? 1 : -1) * Math.sin(Math.max(0, b.hand) / 0.45 * Math.PI) * 0.3; // atış hamlesi
+    b.person.simit.visible = b.hand < 0.1 && b.tray.some(m => m.visible);
+  }
+}
+
 function spawnGap(first, fixLen) {
   const d = difficulty();
   const len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, 56)), z0 = genZ;
   const ph = Math.random() * 6, amp = rand(1.5, 4.2);
-  for (let z = z0 - 7; z > z0 - len + 5; z -= 3.4) {
+  if (THROW_ON && !(first && tutorialPending)) throwVolleys(z0, len, first);
+  else for (let z = z0 - 7; z > z0 - len + 5; z -= 3.4) {
     const x = clamp(Math.sin((z0 - z) * 0.09 + ph) * amp, -LANE + 0.5, LANE - 0.5);
     addSimit(x, FLY_Y, z, !first && Math.random() < 0.035);
   }
@@ -99,7 +172,7 @@ function spawnGap(first, fixLen) {
       const p = makePowerUp(kind); p.position.set(x, FLY_Y, z); scene.add(p);
       powerups.push({ g: p, kind, x, y: FLY_Y, z });
     }
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < (THROW_ON ? 1 : 2); i++) {
       const b = new THREE.Mesh(BUOY, vcMat); b.position.set(pick([-1, 1]) * rand(7, 11), 0, z0 - rand(5, len));
       scene.add(b); decor.push({ mesh: b, z: b.position.z, ph: Math.random() * 6 });
     }
@@ -181,9 +254,9 @@ function spawnFerry() {
 
 function clearWorld() {
   for (const f of ferries) scene.remove(f.group);
-  for (const s of simits) if (s.free) scene.remove(s.mesh);
+  for (const s of simits) { if (s.free) scene.remove(s.mesh); dropThrown(s); }
   for (const a of [...rivals.map(r => r.mesh), ...kites.map(k => k.g), ...powerups.map(p => p.g), ...decor.map(d => d.mesh)]) scene.remove(a);
-  ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = [];
+  ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = [];
   clearFx();
 }
 function generate(limit) {
@@ -200,7 +273,8 @@ function cleanup(z) {
   ferries = ferries.filter(f => (f.zFront > behind ? (scene.remove(f.group), false) : true));
   obstacles = obstacles.filter(o => o.z < behind);
   smokes = smokes.filter(s => s.z0 < behind);
-  simits = simits.filter(s => (s.z > behind ? (s.free && scene.remove(s.mesh), false) : true));
+  simits = simits.filter(s => (s.z > behind ? (s.free && scene.remove(s.mesh), dropThrown(s), false) : true));
+  boats = boats.filter(b => b.z < behind);
   rivals = rivals.filter(r => (r.mesh.position.z > behind ? (scene.remove(r.mesh), false) : true));
   kites = kites.filter(k => (k.z > behind ? (scene.remove(k.g), false) : true));
   powerups = powerups.filter(p => (p.z > behind ? (scene.remove(p.g), false) : true));
@@ -680,12 +754,13 @@ function frame() {
   if (overLock > 0) overLock -= realDt;
 
   generate(g.z - 280); cleanup(g.z);
+  flySimits(dt);
 
   // ---- toplama, güçlendirme, çarpışma ----
   if (state === 'play' || state === 'title') {
     const magnet = pw.magnet > 0 && state === 'play';
     for (const s of simits) {
-      if (s.taken) continue;
+      if (s.taken || (s.th && s.th.u < 0)) continue; // henüz atılmamış simit tepside
       const dzs = g.z - s.z;
       if (magnet && dzs > -2 && dzs < 16 && Math.abs(s.x - g.x) < 7) {
         if (!s.free) { // yolcunun elinden kopar
@@ -797,7 +872,7 @@ function frame() {
     }
   }
   for (const d of decor) { d.mesh.position.y = waveAt(d.mesh.position.x, d.z, t) - 0.1; d.mesh.rotation.z = Math.sin(t * 1.7 + d.ph) * 0.12; }
-  for (const s of simits) if (s.free && !s.taken && !s.pulled) { s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
+  for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
   updateFx(dt);
 
   // ---- kalkan / sis ----
@@ -882,6 +957,7 @@ function takeSimit(s) {
   const base = s.gold ? 50 : 10, gain = base * m;
   points += gain; simitCount++; countMission('simitTotal');
   if (s.turn) s.turn.got++;
+  if (s.th) thrownStat.caught++;
   if (s.person) run.steal++;
   if (s.gold) {
     goldCount++; sfx.gold(); hitStop = 0.06; trauma = Math.min(1, trauma + 0.25); vibrate(20);
@@ -924,7 +1000,7 @@ function nearMiss(x) {
 function autopilot() {
   const g = gull.position;
   let target = 0, bestD = 1e9;
-  for (const s of simits) { const d = g.z - s.z; if (!s.taken && d > 2 && d < 30 && d < bestD) { bestD = d; target = s.x; } }
+  for (const s of simits) { const d = g.z - (s.th ? s.th.cz : s.z); if (!s.taken && d > 2 && d < 30 && d < bestD) { bestD = d; target = s.th ? s.th.cx : s.x; } }
   for (const o of obstacles) { const d = g.z - o.z; if (d > -1 && d < 14 && Math.abs(target - o.x) < o.hw + 1.4) target = o.x + (target > o.x ? 1 : -1) * (o.hw + 1.8); }
   tx = clamp(target + Math.sign(lean) * push, -LANE * 1.25, LANE * 1.25);
 }
@@ -958,6 +1034,7 @@ window.__game = {
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
+  get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
   pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
 };
