@@ -65,8 +65,8 @@ const wakeMat = new THREE.MeshBasicMaterial({
 });
 const WAKE = new THREE.PlaneGeometry(6.5, 26);
 
-function addSimit(x, y, z, gold) {
-  const m = makeSimit(gold); m.position.set(x, y, z); m.rotation.x = 0.25; scene.add(m);
+function addSimit(x, y, z, gold, piece = false) {
+  const m = piece ? makeSimitPiece(gold) : makeSimit(gold); m.position.set(x, y, z); m.rotation.x = 0.25; scene.add(m);
   simits.push({ mesh: m, x, y, z, free: true, gold });
 }
 
@@ -189,7 +189,7 @@ function spawnTurn(tn) {
   for (let z = z0 - 3; z > end + 3; z -= 3.2) {
     const u = (tn.z0 - z) / len, gold = !apex && u > 0.5;
     if (gold) apex = true;
-    addSimit(lineX(z), FLY_Y, z, gold);
+    addSimit(lineX(z), FLY_Y, z, gold, THROW_ON); // açık denizde bütün simit yok: parçalar
     if (u > 0 && u < 1) { simits[simits.length - 1].turn = tn; tn.total++; }
   }
   for (let z = Math.min(z0, tn.z0 + 30); z > tn.z1; z -= 13) {
@@ -329,7 +329,7 @@ let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext 
 const GUST = 8, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
 const run = { near: 0, power: 0, steal: 0, turn: 0 }; // görevler için uçuş sayaçları
 
-function resetWorld() {
+function resetWorld(newWeather = true) {
   clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = rand(-500, -300);
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
@@ -337,7 +337,7 @@ function resetWorld() {
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
   run.near = run.power = run.steal = run.turn = 0; gear = 0; gearAt = GEAR_M;
-  weather = pickWeather(); applyWeather(weather); setWeatherFx(weather);
+  if (newWeather) { weather = pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
   generate(-280);
@@ -370,7 +370,7 @@ function startGame() {
   audio.unlock();
   sfx.click();
   refillMissions();
-  resetWorld(); state = 'play';
+  resetWorld(state !== 'title'); state = 'play';
   show('title', false); show('over', false); show('hud'); show('pause', false);
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
   ui.combo.classList.remove('on');
@@ -1102,6 +1102,7 @@ window.__game = {
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revived; }, revive: () => askRevive(),
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
+  get weather() { return weather; },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
   pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = POWER[k].dur; renderPowers(); }, setGod: (b) => (god = !!b), setQuality,
