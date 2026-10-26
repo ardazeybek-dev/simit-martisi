@@ -434,6 +434,55 @@ export const DOLPHIN = (() => {
   return k.build();
 })();
 
+// ---------------- Galata Köprüsü ----------------
+// Koridoru boydan boya keser; tabliye kameranın üstünde (yakın kamera altından geçer). Ayaklar ve alt kattaki lokantalar şeridin dışında.
+// Küpeşteden balıkçıların oltaları suya sarkar: ipler engel (main.js), her balıkçı + oltası tek geometri.
+export const BRIDGE_Y = 12; // tabliyenin alt yüzü
+export const bridgeMat = vcMat.clone(); bridgeMat.transparent = true; // kamera tepedeyken martı görünsün diye saydamlaşır
+export const BRIDGE = (() => {
+  const k = new Kit(), Y = BRIDGE_Y, W = 96, stone = 0xb9b0a0, steel = 0x6f8497, under = 0x4e5560;
+  k.add(new THREE.BoxGeometry(W, 1, 6), (f, y) => (y < Y + 0.2 ? under : 0x9aa0a8), 0, Y + 0.5, 0);      // tabliye
+  for (const s of [-1, 1]) {
+    k.add(new THREE.BoxGeometry(W, 0.34, 0.24), steel, 0, Y + 0.85, s * 3.05);                             // yan kiriş
+    k.add(new THREE.BoxGeometry(W, 0.08, 0.08), steel, 0, Y + 2.05, s * 2.9);                              // korkuluk
+    for (let x = -W / 2; x <= W / 2; x += 1.4) k.add(new THREE.BoxGeometry(0.07, 1.05, 0.07), steel, x, Y + 1.55, s * 2.9);
+    for (let x = -W / 2 + 4; x < W / 2; x += 11) {                                                        // fenerler
+      k.add(new THREE.CylinderGeometry(0.07, 0.09, 3.2, 6), 0x3c4652, x, Y + 2.6, s * 2.6);
+      k.add(new THREE.SphereGeometry(0.26, 8, 6), 0xffe3a6, x, Y + 4.3, s * 2.6);
+    }
+  }
+  for (const x of [-8.6, 8.6, -20, 20, -32, 32, -44, 44]) {                                                // ayaklar (sivri mahmuzlu)
+    k.add(new THREE.BoxGeometry(2.2, Y + 1.5, 4.4), stone, x, (Y - 1.5) / 2, 0);
+    for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(1.1, 1.1, Y + 1.5, 4, 1), stone, x, (Y - 1.5) / 2, s * 2.2, 0, Math.PI / 4, 0, 1, 1, 1);
+  }
+  for (const s of [-1, 1]) {                                                                               // alt kat lokantalar: kıyı tarafında
+    const a = 9.8, b = W / 2, c = s * (a + b) / 2, w = b - a;
+    k.add(new THREE.BoxGeometry(w, 2.8, 4.6), 0xe9e1d2, c, Y - 1.4, 0);
+    for (const z of [-2.31, 2.31]) k.add(new THREE.BoxGeometry(w - 0.4, 1.1, 0.04), 0xffcf7e, c, Y - 1.3, z); // sıcak pencere şeridi
+    k.add(new THREE.BoxGeometry(w, 0.18, 5.2), 0xc8352e, c, Y - 2.85, 0);                                  // tente
+  }
+  return k.build();
+})();
+// balıkçı: küpeştede durur, oltası dışarı (+z) uzanır. ROD_TIP: olta ucunun balıkçıya göre yeri
+export const ROD_TIP = { y: 3.4, z: 2.2 };
+const FISHER_COLS = [0x2f5d8a, 0x7a3b2e, 0x3d6b45, 0x5a4a7a];
+export const FISHERS = FISHER_COLS.map((jacket, i) => {
+  const k = new Kit(), skin = SKINS[i % SKINS.length];
+  for (const x of [-0.11, 0.11]) k.add(new THREE.BoxGeometry(0.14, 0.62, 0.16), 0x2a2e36, x, 0.31, 0);
+  k.add(new THREE.BoxGeometry(0.46, 0.62, 0.3), jacket, 0, 0.92, 0);
+  k.add(new THREE.SphereGeometry(0.16, 8, 6), skin, 0, 1.38, 0);
+  k.add(new THREE.CylinderGeometry(0.17, 0.17, 0.1, 8), i % 2 ? 0x2b2b30 : 0xd9c9a0, 0, 1.52, 0); // kasket
+  k.add(new THREE.BoxGeometry(0.1, 0.1, 0.36), jacket, 0.16, 1.0, 0.2); // uzanan kol
+  const rodLen = Math.hypot(ROD_TIP.y - 1.0, ROD_TIP.z - 0.35);
+  k.add(new THREE.CylinderGeometry(0.018, 0.035, rodLen, 5), 0x2c2620, 0.16, (1.0 + ROD_TIP.y) / 2, (0.35 + ROD_TIP.z) / 2, Math.atan2(ROD_TIP.z - 0.35, ROD_TIP.y - 1.0));
+  k.add(new THREE.BoxGeometry(0.4, 0.3, 0.3), 0xd8d2c4, -0.45, 0.15, 0.05); // kova
+  return k.build();
+});
+// misina: üstten sarkar (orijin tepede); boyu scale.y ile ayarlanır. Altta kırmızı-beyaz mantar (su yüzünde işaret)
+export const FLINE = (() => { const g = new THREE.CylinderGeometry(0.035, 0.035, 1, 4, 1); g.translate(0, -0.5, 0); return g; })();
+export const flineMat = new THREE.MeshBasicMaterial({ color: 0xfff6e0 });
+export const BOBBER = new Kit().add(new THREE.SphereGeometry(0.2, 8, 6), (f, y) => (y > 0 ? 0xe23a2e : 0xffffff)).add(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 4), 0xffffff, 0, 0.3, 0).build();
+
 // ---------------- vapur ----------------
 export const DECK = 2.6;
 // camlı salon: güvertede iki katlı kapalı salon, ortasından boydan boya geçit (martı içinden uçar).

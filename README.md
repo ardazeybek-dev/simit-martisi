@@ -31,6 +31,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Hazards:** funnels, flag masts, kites, rival gulls. Dark funnel smoke does not kill you but breaks your combo.
   - Rival colour tells you how it flies: *grey* glides side to side, *red* dives straight at you from further out, *blue* zigzags at random.
 - **Passengers:** most stand holding a simit (snatch it, they get angry); some sit on benches along the rails looking out to sea with a glass of tea and no simit. A *feeder* at the rail holds a simit out for you: take it and they cheer and pay a bonus.
+- **Galata Bridge:** every 1-1.5 km the lane passes under the bridge. Anglers on both rails dangle their lines down to the water at uneven gaps (a red float marks each one); thread between them, front row then back row, following the simits. Touch a line and you are hooked. Clear both rows for an *Under the bridge!* bonus. With the far or bird's eye camera the deck turns see-through while you pass.
 - **Glass salon ferries:** further on, some ferries carry a closed two-storey glass salon. Fly through the open passage in the middle and collect the simits inside; the glass on either side is solid.
 - **Weather follows the real calendar** (picked again every flight): snow in winter, mostly rain in autumn, now and then fog, mostly clear in spring and summer.
   - *Rain:* lightning, and gusts of wind (*Gust!* with an arrow) shove the gull sideways; steer against them.
@@ -66,7 +67,7 @@ python -m http.server 8000
 Then open http://localhost:8000. An internet connection is needed the first time to load three.js and the font.
 The service worker only registers on https, so local runs are never cached.
 
-Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the old floating simits instead of thrown ones, or `?pal=old` for the earlier deep sunset colours, `?weather=rain|snow|fog|clear` to force the weather (handy for comparing).
+Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the old floating simits instead of thrown ones, or `?pal=old` for the earlier deep sunset colours, `?weather=rain|snow|fog|clear` to force the weather, `?bridge` to meet the Galata Bridge right away (handy for comparing).
 
 Append `?q=0`, `?q=1` or `?q=2` to the URL to lock the quality level (low / medium / high) and turn off automatic adjustment.
 
