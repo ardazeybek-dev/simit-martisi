@@ -40,7 +40,8 @@
     'Bir uçuşta {n} altın simit kap': 'Catch {n} golden simits in one flight', 'Bir uçuşta {n} m uç': 'Fly {n} m in one flight',
     '{n} simitlik seri yap': 'Make a {n} simit streak', 'Bir uçuşta {n} güçlendirme topla': 'Pick up {n} power-ups in one flight',
     'Bir uçuşta yolcuların elinden {n} simit kap': 'Snatch {n} simits from passengers in one flight',
-    'Bir uçuşta {n} puan yap': 'Score {n} points in one flight', '{n} kez uç': 'Fly {n} times', 'Toplam {n} simit topla': 'Collect {n} simits in total'
+    'Bir uçuşta {n} puan yap': 'Score {n} points in one flight', '{n} kez uç': 'Fly {n} times', 'Toplam {n} simit topla': 'Collect {n} simits in total',
+    'VİRAJ': 'TURN', 'Kusursuz viraj!': 'Perfect turn!', 'Güzel viraj': 'Nice turn', 'Bir uçuşta {n} kusursuz viraj al': 'Take {n} perfect turns in one flight'
   };
   var lang = 'en';
   try { var l = (navigator.languages && navigator.languages[0]) || navigator.language || ''; if (/^tr\b/i.test(l)) lang = 'tr'; } catch (e) {}

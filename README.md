@@ -23,6 +23,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Combo:** catch simits in a row to raise the multiplier (x2 at 4, up to x5). The ring in the HUD shows how long the chain stays alive.
 - **Golden simit:** rare, worth 5x a normal one.
 - **Near miss:** brushing past a funnel or mast gives a small bonus.
+- **Turns:** the Bosphorus bends every 10-15 seconds, sometimes in an S. Red chevron boards and a *VİRAJ* sign warn you first. Inside a turn the wind pushes the gull outward, so lean toward the inside: the simits trace the racing line with a golden one at the apex. Catch most of the line for a *Perfect turn* bonus and a slingshot burst of speed.
 - **Power-ups** (floating bubbles): Magnet pulls simits (even out of passengers' hands), Shield absorbs one hit, 2x doubles all points.
 - **Hazards:** funnels, flag masts, rival gulls, kites. Dark funnel smoke does not kill you but breaks your combo.
 - Speed and hazard density ramp up smoothly over the first couple of minutes.
@@ -52,6 +53,8 @@ python -m http.server 8000
 
 Then open http://localhost:8000. An internet connection is needed the first time to load three.js and the font.
 The service worker only registers on https, so local runs are never cached.
+
+Append `?turn=0` to fly a straight Bosphorus without turns (handy for comparing the feel).
 
 Append `?q=0`, `?q=1` or `?q=2` to the URL to lock the quality level (low / medium / high) and turn off automatic adjustment.
 

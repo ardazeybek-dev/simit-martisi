@@ -21,21 +21,34 @@ scene.fog = new THREE.Fog(PAL.fog, 60, 260);
 export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 900);
 
 // ---------------- kıvrılan Boğaz ----------------
-// Oyun mantığı düz bir koridorda kalır. Çizimde martının ilerisindeki tek bir viraj gösterilir:
-// [p, q] aralığında sabit eğrilik (x), öncesi düz, sonrası o açıyla düz devam. Mesafe göz uzayı
-// derinliğinden ölçülür. Sisli malzemeler bükülür; gökyüzü, uzak siluet ve gölge geçişi bükülmez.
-export const BEND = { value: new THREE.Vector4(0, 1e4, 1e4, 16) }; // x: eğrilik, y-z: virajın başı ve sonu, w: martının derinliği
+// Oyun mantığı düz bir koridorda kalır. Çizimde martının ilerisindeki en fazla iki viraj gösterilir:
+// [p, q] aralığı k eğrilikli bir yay, öncesi düz, sonrası yeni yönde düz. Makaslama değil gerçek yay:
+// vapurlar yan yatmadan döner. Mesafe göz uzayı derinliğinden ölçülür, martının derinliğinde bükülme sıfırdır.
+// Sisli malzemeler bükülür; gökyüzü, uzak siluet ve gölge geçişi bükülmez.
+export const BEND = { value: new THREE.Vector4(0, 1e4, 1e4, 16) };  // x: eğrilik, y-z: virajın başı ve sonu, w: martının derinliği
+export const BEND2 = { value: new THREE.Vector4(0, 1e4, 1e4, 0) }; // ilk virajdan sonraki viraj (S-viraj)
 const BEND_GLSL = `
 #ifdef USE_FOG
-  float bendD = max(0.0, -mvPosition.z - uBend.w);
-  float bendIn = clamp(bendD, uBend.y, uBend.z) - uBend.y;
-  mvPosition.x += uBend.x * (0.5 * bendIn * bendIn + (uBend.z - uBend.y) * max(0.0, bendD - uBend.z));
+  if (-mvPosition.z > uBend.w) {
+    vec2 bxd = bendArc(bendArc(vec2(mvPosition.x, -mvPosition.z - uBend.w), uBend2), uBend);
+    mvPosition.x = bxd.x; mvPosition.z = -(bxd.y + uBend.w);
+  }
 #endif
 `;
-THREE.ShaderChunk.fog_pars_vertex += '\n#ifdef USE_FOG\n  uniform vec4 uBend;\n#endif';
+THREE.ShaderChunk.fog_pars_vertex += `
+#ifdef USE_FOG
+  uniform vec4 uBend, uBend2;
+  // xd: (yanal x, martıdan derinlik) → yay üzerindeki yeri; b: (k, p, q)
+  vec2 bendArc(vec2 xd, vec4 b) {
+    if (abs(b.x) < 1e-6 || xd.y <= b.y) return xd;
+    float a = b.x * (min(xd.y, b.z) - b.y), c = cos(a), s = sin(a);
+    vec2 o = vec2((1.0 - c) / b.x, b.y + s / b.x) + max(0.0, xd.y - b.z) * vec2(s, c);
+    return o + xd.x * vec2(c, -s);
+  }
+#endif`;
 THREE.ShaderChunk.project_vertex = THREE.ShaderChunk.project_vertex.replace('gl_Position', BEND_GLSL + 'gl_Position');
 THREE.ShaderLib.sprite.vertexShader = THREE.ShaderLib.sprite.vertexShader.replace('\tgl_Position', BEND_GLSL + '\tgl_Position');
-THREE.Material.prototype.onBeforeCompile = function (shader) { shader.uniforms.uBend = BEND; };
+THREE.Material.prototype.onBeforeCompile = function (shader) { shader.uniforms.uBend = BEND; shader.uniforms.uBend2 = BEND2; };
 
 // ---------------- ışıklar ----------------
 export const hemi = new THREE.HemisphereLight(0xffd9c2, 0x30496e, 1.25);
@@ -205,7 +218,7 @@ const waterMat = new THREE.ShaderMaterial({
     uTime: { value: 0 },
     uDeep: { value: new THREE.Color(PAL.seaDeep) }, uShallow: { value: new THREE.Color(PAL.seaShallow) },
     uSky: { value: new THREE.Color(PAL.seaSky) }, uSun: { value: new THREE.Color(0xffe2b0) },
-    uSunDir: { value: SUN_DIR },
+    uSunDir: { value: SUN_DIR.clone() },
   }]),
   vertexShader: `${WAVE}
     varying vec3 vWorld; varying float vH;
@@ -255,4 +268,11 @@ export function updateWater(t, cx, cz) {
   water.position.z = Math.round((cz - 150) / CELL) * CELL;
   water.position.x = Math.round(cx / CELL) * CELL;
   waterMat.uniforms.uTime.value = t;
+}
+
+// virajda yön değişince güneş, gökyüzü ve sudaki parıltı birlikte döner (uzak siluet main.js'te)
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+export function setHeading(yaw) {
+  sky.rotation.y = yaw;
+  waterMat.uniforms.uSunDir.value.copy(SUN_DIR).applyAxisAngle(Y_AXIS, yaw);
 }

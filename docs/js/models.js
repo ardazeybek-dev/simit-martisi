@@ -243,6 +243,28 @@ export const BUOY = new Kit()
   .add(new THREE.SphereGeometry(0.14, 6, 4), 0xffe07a, 0, 1.45, 0)
   .build();
 
+// ---------------- viraj tabelası: şamandıranın üstünde kırmızı-beyaz ok levhası ----------------
+const CHEV_POST = new Kit()
+  .add(new THREE.CylinderGeometry(0.55, 0.7, 1, 8), (f, y) => (y > 0.1 ? 0xf3efe6 : 0xe2463b), 0, 0.2, 0)
+  .add(new THREE.CylinderGeometry(0.08, 0.08, 2.4, 6), 0xf3efe6, 0, 1.6, 0)
+  .build();
+const CHEV_BOARD = new THREE.PlaneGeometry(2.2, 1.3);
+const chevMat = new THREE.MeshBasicMaterial({
+  side: THREE.DoubleSide,
+  map: canvasTex(128, 76, (g) => {
+    g.fillStyle = '#e2463b'; g.fillRect(0, 0, 128, 76);
+    g.fillStyle = '#fff4e2';
+    for (const x of [14, 60]) { g.beginPath(); g.moveTo(x, 8); g.lineTo(x + 24, 8); g.lineTo(x + 50, 38); g.lineTo(x + 24, 68); g.lineTo(x, 68); g.lineTo(x + 26, 38); g.closePath(); g.fill(); }
+  }),
+});
+// dir: virajın yönü (+1 sağ); ok o yönü gösterir
+export function makeChevron(dir) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(CHEV_POST, vcMat));
+  const b = new THREE.Mesh(CHEV_BOARD, chevMat); b.position.y = 3.2; b.scale.x = dir; g.add(b);
+  return g;
+}
+
 // ---------------- güçlendirmeler ----------------
 export const POWER = {
   magnet: { name: 'Mıknatıs', color: '#e5484d', dur: 8 },

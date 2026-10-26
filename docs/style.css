@@ -81,6 +81,19 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   box-shadow: 0 6px 18px rgba(0, 0, 0, .2); transition: transform .1s; }
 .icon-btn:active { transform: scale(.92); }
 .icon-btn svg { width: 22px; height: 22px; }
+/* viraj uyarısı: oklar dönüş yönüne akar */
+.turn-sign { position: fixed; z-index: 5; pointer-events: none; left: 50%; top: calc(104px + var(--sat)); display: flex; align-items: center; gap: 10px;
+  padding: 6px 16px 6px 12px; border-radius: 999px; background: rgba(226, 70, 59, .88); color: var(--cream); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+  opacity: 0; transform: translateX(-50%) scale(.7); transition: opacity .2s, transform .25s cubic-bezier(.3, 1.6, .5, 1); }
+.turn-sign.on { opacity: 1; transform: translateX(-50%) scale(1); }
+.turn-sign b { font-size: 20px; letter-spacing: .08em; }
+.turn-sign svg { width: 48px; height: 20px; fill: var(--cream); }
+.turn-sign.on svg { animation: chev .5s linear infinite; }
+.turn-sign.left { flex-direction: row-reverse; padding: 6px 12px 6px 16px; }
+.turn-sign.left svg { transform: scaleX(-1); }
+.turn-sign.left.on svg { animation-name: chevl; }
+@keyframes chev { 50% { transform: translateX(5px); opacity: .7; } }
+@keyframes chevl { 0%, 100% { transform: scaleX(-1); } 50% { transform: scaleX(-1) translateX(5px); opacity: .7; } }
 #powers { position: fixed; z-index: 5; pointer-events: none; left: calc(16px + var(--sal)); top: calc(92px + var(--sat)); display: flex; flex-direction: column; gap: 8px; }
 .pw { display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; border-radius: 999px; background: var(--glass);
   border: 1px solid var(--line); animation: pwin .3s cubic-bezier(.3, 1.6, .5, 1); color: var(--c); }

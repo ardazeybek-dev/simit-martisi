@@ -73,6 +73,15 @@ function hiss(dur, vol, freq, type = 'bandpass', when = 0, q = 1, bus = sfxBus) 
   env(g, t, 0.005, vol, dur);
   s.connect(f); f.connect(g); g.connect(bus); s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.05);
 }
+// süzgeci kayan rüzgâr: viraja girişte ve sapan fırlatmada
+function sweep(dur, vol, f0, f1, when = 0, q = 1.2) {
+  if (!AC) return;
+  const t = AC.currentTime + when, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = noiseBuf; f.type = 'bandpass'; f.Q.value = q;
+  f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + dur * 0.45); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(sfxBus); s.start(t, Math.random() * 0.8); s.stop(t + dur + 0.05);
+}
 
 export const sfx = {
   cry(vol = 0.13, when = 0) { // martı: kırık, üç heceli çığlık
@@ -114,6 +123,8 @@ export const sfx = {
   cough() { for (let i = 0; i < 2; i++) hiss(0.12, 0.25, 500, 'bandpass', i * 0.16, 1.5); },
   crash() { hiss(0.6, 0.55, 700, 'lowpass'); tone('sine', 170, 0.5, 0.4, { f1: 40 }); hiss(0.25, 0.25, 2500, 'bandpass', 0.02); },
   splash() { hiss(0.7, 0.35, 1200, 'lowpass', 0, 0.7); hiss(0.4, 0.12, 4000, 'highpass', 0.05); },
+  whoosh() { sweep(1.2, 0.2, 240, 1500, 0, 1.4); },
+  sling() { sweep(0.8, 0.28, 500, 3400, 0, 1); tone('triangle', 520, 0.35, 0.07, { f1: 1240 }); tone('triangle', 780, 0.3, 0.05, { f1: 1860, when: 0.07 }); },
   click() { tone('triangle', 1200, 0.05, 0.07); },
   record() { [0, 4, 7, 12, 7, 12, 16].forEach((s, i) => tone('square', 523 * Math.pow(2, s / 12), 0.16, 0.05, { when: i * 0.09, filter: 2600 })); },
   count() { tone('triangle', 740, 0.08, 0.08); },
