@@ -552,8 +552,8 @@ export const BOBBER = new Kit().add(new THREE.SphereGeometry(0.2, 8, 6), (f, y) 
 // ---------------- vapur ----------------
 export const DECK = 2.6;
 // camlı salon: güvertede iki katlı kapalı salon, ortasından boydan boya geçit (martı içinden uçar).
-// Geçidin iki yanı engel; tavanı cam, içeriden de görünür. tx: geçidin x'i (-1, 0, 1), SALON_LEN boyunca.
-export const SALON_LEN = 14, SALON_GAP = 2, SALON_TOP = DECK + 4.3;
+// Geçidin iki yanı engel; tavanı cam, içeriden de görünür. tx: geçidin x'i (-0.6, 0, 0.6), SALON_LEN boyunca.
+export const SALON_LEN = 14, SALON_GAP = 2.6, SALON_TOP = DECK + 4.3;
 export const glassMat = new THREE.MeshStandardMaterial({ color: 0xa8dcf0, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.4, depthWrite: false, side: THREE.DoubleSide });
 const salonCache = new Map();
 export function salonGeo(tx) {

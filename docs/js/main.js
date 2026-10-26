@@ -9,7 +9,7 @@ import { audio, sfx } from './audio.js';
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
-const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.7, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
+const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.15, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
 const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades';
 
@@ -70,7 +70,7 @@ const WAKE = new THREE.PlaneGeometry(6.5, 26);
 
 function addSimit(x, y, z, gold, piece = false) {
   const m = piece ? makeSimitPiece(gold) : makeSimit(gold); m.position.set(x, y, z); m.rotation.x = 0.25; scene.add(m);
-  simits.push({ mesh: m, x, y, z, free: true, gold });
+  simits.push({ mesh: m, x, y, z, free: true, gold, piece });
 }
 
 // ---------------- fırlatılan simitler ----------------
@@ -78,7 +78,7 @@ function addSimit(x, y, z, gold, piece = false) {
 // zamanlanır; simit kavis çizip yakalama noktasına martıyla aynı anda iner, kaçarsa denize düşer. Suda halka iniş yerini gösterir.
 // Ayar: THROW_T (uçuş süresi, sn), THROW_H (kavis yüksekliği). ?throw=0 → eski, havada duran simitler.
 const THROW_ON = new URLSearchParams(location.search).get('throw') !== '0';
-const BRIDGE_SOON = new URLSearchParams(location.search).has('bridge'); // ?bridge → ilk köprü hemen gelir (deneme için)
+const BRIDGE_SOON = new URLSearchParams(location.search).has('bridge'), SALON_ALL = new URLSearchParams(location.search).has('salon'); // ?bridge → ilk köprü hemen gelir (deneme için)
 const THROW_T = [1.05, 1.35], THROW_H = [2.4, 3.6];
 const RING = new THREE.RingGeometry(0.5, 0.72, 20);
 const thrownStat = { caught: 0, missed: 0 };
@@ -102,7 +102,7 @@ function throwVolleys(z0, len, first) {
 function addThrown(bt, cx, cz, gold) {
   const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); scene.add(m);
   const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); scene.add(ring);
-  simits.push({ mesh: m, x: cx, y: FLY_Y, z: cz, free: true, gold, th: { bt, cx, cz, T: rand(...THROW_T), H: rand(...THROW_H), u: -1, p0: new THREE.Vector3(), ring } });
+  simits.push({ mesh: m, x: cx, y: FLY_Y, z: cz, free: true, gold, piece: true, th: { bt, cx, cz, T: rand(...THROW_T), H: rand(...THROW_H), u: -1, p0: new THREE.Vector3(), ring } });
 }
 function dropThrown(s) { if (s.th) scene.remove(s.th.ring); }
 function flySimits(dt) {
@@ -157,7 +157,7 @@ function spawnGap(first, fixLen) {
   }
   if (!first) {
     const n = d < 0.35 ? 0 : Math.min(4, 1 + Math.floor(d * 0.9));
-    for (let i = 0; i < n; i++) addRival(z0 - rand(10, len - 6), rand(-4, 4), rand(1.2, 3.2));
+    for (let i = 0; i < n; i++) addRival(z0 - rand(10, len - 6), rand(-4, 4), rand(1.2, 3.2), undefined, z0 - 4); // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
     if (d > 0.7 && Math.random() < 0.35 + d * 0.08) {
       const nk = d > 2.5 && Math.random() < 0.5 ? 2 : 1;
       for (let i = 0; i < nk; i++) {
@@ -198,13 +198,13 @@ function spawnGap(first, fixLen) {
 
 // rakip martı: rengi davranışını söyler. Gri süzülür; kırmızı hızla üstüne dalar (erken görünür, düz gelir);
 // mavi düzensiz zikzak çizer (her an yön değiştirebilir). Zorluk arttıkça renkliler çoğalır.
-function addRival(z, bx, sw, kind) {
+function addRival(z, bx, sw, kind, zMax = Infinity) {
   const d = difficulty();
   kind = kind || (d > 1 && Math.random() < 0.28 ? 'red' : d > 0.6 && Math.random() < 0.35 ? 'blue' : 'grey');
   if (kind === 'red') z -= 18; // hızlı gelir: daha uzaktan başlar
   const r = makeGull(kind); r.scale.setScalar(0.8); r.rotation.y = Math.PI;
   r.position.set(bx, FLY_Y, z); scene.add(r);
-  rivals.push({ mesh: r, kind, bx, z, ph: Math.random() * 6, sw, hit: false, spin: 0, tx: bx, zt: 0 });
+  rivals.push({ mesh: r, kind, bx, z, zMax, ph: Math.random() * 6, sw, hit: false, spin: 0, tx: bx, zt: 0 });
 }
 // viraj: açık deniz; simitler dıştan girip içe kıvrılan yarış çizgisinde, tepede altın simit; dış kenarda ok tabelaları
 function spawnTurn(tn) {
@@ -288,8 +288,8 @@ function spawnFerry() {
 
   // camlı salon: zorlaştıkça bazı vapurlar kapalı salonlu olur; martı ortadaki geçitten geçmek zorunda, içinde simit dizisi
   let salon = null;
-  if (d > 0.4 && Math.random() < 0.38) {
-    const tx = pick([-1, 0, 1]), sz = rand(-2, 4), geo = salonGeo(tx);
+  if (SALON_ALL || (d > 0.4 && Math.random() < 0.38)) { // ?salon → her vapur salonlu (deneme için)
+    const tx = pick([-0.6, 0, 0.6]), sz = rand(-2, 4), geo = salonGeo(tx);
     const solid = new THREE.Mesh(geo.solid, vcMat); solid.position.z = sz; solid.castShadow = solid.receiveShadow = true; g.add(solid);
     const glass = new THREE.Mesh(geo.glass, glassMat); glass.position.z = sz; glass.renderOrder = 3; g.add(glass);
     for (const [a, b] of [[-3.9, tx - SALON_GAP], [tx + SALON_GAP, 3.9]]) obstacle((a + b) / 2, sz, (b - a) / 2, SALON_LEN / 2, SALON_TOP, 'cama');
@@ -301,7 +301,7 @@ function spawnFerry() {
   const chims = [];
   for (let i = 0; i < nCh; i++) {
     const cx = rand(-2.6, 2.6), cz = -L / 2 + 12 + (i + 0.5) * (L - 16) / nCh + rand(-3, 3);
-    if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 2.5) continue; // bacalar salonun dışında
+    if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın
     const c = new THREE.Mesh(CHIMNEY, vcMat); c.position.set(cx, DECK, cz); c.castShadow = c.receiveShadow = true; g.add(c);
     obstacle(cx, cz, 0.95, 0.95, DECK + 4.7, 'bacaya');
     const dark = d > 1.2 && Math.random() < clamp((d - 1) * 0.22, 0, 0.55);
@@ -372,7 +372,7 @@ function spawnFerry() {
     p.simit.getWorldPosition(tmp);
     simits.push({ mesh: p.simit, x: tmp.x, y: tmp.y, z: tmp.z, person: p, gold });
   }
-  ferries.push({ group: g, x: x0, zFront, zBack, ph: Math.random() * 6, chims, flag });
+  ferries.push({ group: g, x: x0, zFront, zBack, ph: Math.random() * 6, chims, flag, salon: salon && { x: x0 + salon.tx, z: zc + salon.sz } });
   genZ = zFront - 2;
 }
 
@@ -453,7 +453,7 @@ let crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flap
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revived = false;
 const pw = { magnet: 0, shield: 0, double: 0 };
 // güçlendirme yükseltmeleri: simitle alınır, her seviye süreyi tabanın %25'i kadar uzatır (Subway Surfers usulü)
-const UP_COST = [80, 160, 300, 500, 800];
+const UP_COST = [300, 700, 1400, 2500, 4000];
 const ups = { magnet: 0, shield: 0, double: 0 };
 { const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
 const dur = k => POWER[k].dur * (1 + ups[k] * 0.25);
@@ -553,7 +553,7 @@ function showOver() {
   if (isBest) { best = final; store.set(KEY_BEST, best); }
   const msg = { 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!' };
   $('overTitle').textContent = tr(msg[cause] || 'Pat!');
-  $('stSimit').textContent = fmt(simitCount) + (goldCount ? ` (+${goldCount} ${tr('altın')})` : '');
+  $('stSimit').textContent = fmt(Math.floor(simitCount)) + (goldCount >= 1 ? ` (+${Math.floor(goldCount)} ${tr('altın')})` : '');
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
   $('stCombo').textContent = `${bestCombo}`;
   ui.powers.textContent = '';
@@ -583,7 +583,7 @@ function showOver() {
 }
 // ---------------- cüzdan ve kostümler ----------------
 function bank() {
-  const earned = simitCount + goldCount * 4, gain = earned - banked;
+  const earned = Math.floor(simitCount + goldCount * 4), gain = earned - banked;
   if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
 }
 function applyLook() {
@@ -678,9 +678,9 @@ const MISSIONS = [
 const misDef = k => MISSIONS.find(d => d.k === k);
 let missions = (store.get(KEY_MIS, []) || []).filter(m => m && misDef(m.k) && m.n > 0 && m.r > 0).slice(0, 3);
 function runVal(k) {
-  return { simit: simitCount, gold: goldCount, dist: Math.floor(dist), combo: bestCombo, score: total(), near: run.near, power: run.power, steal: run.steal, turn: run.turn, dolphin: run.dolphin }[k] || 0;
+  return { simit: Math.floor(simitCount), gold: Math.floor(goldCount), dist: Math.floor(dist), combo: bestCombo, score: total(), near: run.near, power: run.power, steal: run.steal, turn: run.turn, dolphin: run.dolphin }[k] || 0;
 }
-const misProgress = m => (misDef(m.k).total ? m.p || 0 : runVal(m.k));
+const misProgress = m => Math.floor(misDef(m.k).total ? m.p || 0 : runVal(m.k));
 const misText = m => tr(misDef(m.k).text).replace('{n}', fmt(m.n));
 function refillMissions() {
   missions = missions.filter(m => !m.done);
@@ -790,11 +790,12 @@ function confetti() {
 function updateHud() {
   const s = total();
   if (s !== shownScore) { ui.score.textContent = fmt(s); shownScore = s; }
-  if (simitCount !== shownSimit) { ui.simits.textContent = fmt(simitCount); shownSimit = simitCount; }
+  if (Math.floor(simitCount) !== shownSimit) { shownSimit = Math.floor(simitCount); ui.simits.textContent = fmt(shownSimit); }
   const dm = Math.floor(dist);
   if (dm !== shownDist) { ui.dist.textContent = fmt(dm); shownDist = dm; }
 }
-const mult = () => Math.min(5, 1 + Math.floor(combo / 4));
+// çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
+const mult = () => Math.min(5, 1 + Math.floor(Math.sqrt(combo / 3)));
 function renderPowers() {
   ui.powers.textContent = '';
   for (const k of Object.keys(pw)) {
@@ -887,7 +888,7 @@ onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 onBtn('soundBtn', () => { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); });
 onBtn('shareBtn', async () => {
-  const text = tr('Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?').replace('{s}', fmt(total())).replace('{n}', fmt(simitCount));
+  const text = tr('Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?').replace('{s}', fmt(total())).replace('{n}', fmt(Math.floor(simitCount)));
   const url = location.href.split('#')[0].split('?')[0];
   try {
     if (navigator.share) await navigator.share({ title: document.title, text, url });
@@ -1113,18 +1114,19 @@ function frame() {
   for (const r of rivals) {
     const p = r.mesh.position;
     if (r.hit) { p.x += r.spin * 14 * dt; p.y += 6 * dt; r.mesh.rotation.z += r.spin * 12 * dt; continue; }
+    const go = g.z - p.z < 35 ? 1 : 0; // martı yaklaşınca harekete geçer: önceden kayıp başka bölgeye (vapur salonuna) girmez
     if (r.kind === 'red') { // dalış: hızlı ve düz, hafif kayar
-      p.z += 15 * dt;
+      p.z = Math.min(p.z + 15 * dt * go, r.zMax);
       p.x = r.bx + Math.sin(t * 0.9 + r.ph) * 0.5; r.mesh.rotation.z = Math.cos(t * 0.9 + r.ph) * 0.15; r.mesh.rotation.x = 0.18;
       flapGull(r.mesh, t * 16 + r.ph, 1);
     } else if (r.kind === 'blue') { // zikzak: rastgele aralıklarla yeni hedef, sabit hızla keskin dönüş
-      p.z += 5 * dt;
+      p.z = Math.min(p.z + 5 * dt * go, r.zMax);
       if ((r.zt -= dt) <= 0) { r.zt = rand(0.3, 0.95); r.tx = clamp(r.bx + rand(-3.6, 3.6), -LANE, LANE); }
       const dx = r.tx - p.x, step = Math.min(Math.abs(dx), 7.5 * dt) * Math.sign(dx);
       p.x += step; r.mesh.rotation.z = damp(r.mesh.rotation.z, -Math.sign(dx) * (Math.abs(dx) > 0.1 ? 0.55 : 0), 10, dt);
       flapGull(r.mesh, t * 13 + r.ph, 1);
     } else {
-      p.z += 5 * dt; p.x = r.bx + Math.sin(t * 1.4 + r.ph) * r.sw;
+      p.z = Math.min(p.z + 5 * dt * go, r.zMax); p.x = r.bx + Math.sin(t * 1.4 + r.ph) * r.sw;
       r.mesh.rotation.z = Math.cos(t * 1.4 + r.ph) * 0.35;
       flapGull(r.mesh, t * 11 + r.ph, 0.9);
     }
@@ -1323,14 +1325,15 @@ function shout(p, x, y, z) {
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1);
-  const base = s.gold ? 50 : 10, gain = base * m;
-  points += gain; simitCount++; countMission('simitTotal');
+  // simit parçası (atılan, çöpten çıkan) çeyrek simittir: puanın ve cüzdana katkısının dörtte biri
+  const q = s.piece ? 0.25 : 1, base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
+  points += gain; simitCount += q; countMission('simitTotal', q);
   if (s.turn) s.turn.got++;
   if (s.th) thrownStat.caught++;
   if (weather === 'snow') warmth = Math.min(1, warmth + (s.gold ? 0.35 : 0.08)); // sıcak simit ısıtır
   if (s.person) run.steal++;
   if (s.gold) {
-    goldCount++; sfx.gold(); hitStop = 0.06; trauma = Math.min(1, trauma + 0.25); vibrate(20);
+    goldCount += q; sfx.gold(); hitStop = 0.06; trauma = Math.min(1, trauma + 0.25); vibrate(20);
     sparkle(tmp.set(s.x, s.y, s.z), 34, 0xffd35a, 6, 0.8, 0.3);
     chunks.emit(tmp, 10, { speed: 4, life: 0.8, size: 0.09, color: [0xffd35a, 0xfff0b0], gravity: 8 });
   } else {
@@ -1449,6 +1452,7 @@ window.__game = {
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0) => addRival(gull.position.z - ahead, x, 2, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
   get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },
+  get salons() { return ferries.filter(f => f.salon).map(f => ({ x: +f.salon.x.toFixed(2), ahead: +(gull.position.z - f.salon.z).toFixed(1) })); },
   get bins() { return bins.map(b => ({ x: +b.s.x.toFixed(1), ahead: +(gull.position.z - b.z).toFixed(1), u: +b.s.bin.u.toFixed(2), taken: !!b.s.taken })); },
   get cats() { return cats.map(c => ({ ahead: +(gull.position.z - c.z).toFixed(1), done: c.done })); },
   get bridges() { return bridges.map(b => ({ ahead: +(gull.position.z - b.z).toFixed(1), done: b.done, path: b.path, gx: +gull.position.x.toFixed(2) })); },

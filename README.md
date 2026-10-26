@@ -20,14 +20,14 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 ## Gameplay
 
 - **Score** = simit points + 1 point per 10 m flown.
-- **Combo:** catch simits in a row to raise the multiplier (x2 at 4, up to x5). The ring in the HUD shows how long the chain stays alive.
-- **Simit boats:** on open water, simit sellers in rowboats on both banks break their simits and toss the pieces to you. Each piece arcs over and comes down where a ripple ring marks the water, right as you get there; miss it and it splashes into the sea.
+- **Combo:** catch simits in a row to raise the multiplier; it climbs slowly (x2 at 3, x3 at 12, x4 at 27, x5 at 48) and the chain dies quickly if you miss. The ring in the HUD shows how long it stays alive.
+- **Simit boats:** on open water, simit sellers in rowboats on both banks break their simits and toss the pieces to you. Each piece is a quarter simit (a quarter of the points and of the wallet value); it arcs over and comes down where a ripple ring marks the water, right as you get there; miss it and it splashes into the sea.
 - **Golden simit:** rare, worth 5x a normal one.
 - **Dolphins:** on open water a pod shows its fins, then leaps across the lane one after another as you arrive. Fly right over the top of a leap for a *Dolphin!* bonus that also refreshes your combo timer. They never hurt you.
 - **Near miss:** brushing past a funnel or mast gives a small bonus.
 - **Turns:** the Bosphorus bends every 15-25 seconds, sometimes in an S. Red chevron boards and a *VİRAJ* sign warn you first. Inside a turn the wind pushes the gull outward, so lean toward the inside: the simits trace the racing line with a golden one at the apex. Catch most of the line for a *Perfect turn* bonus and a slingshot burst of speed.
 - **Power-ups** (floating bubbles): Magnet pulls simits (even out of passengers' hands), Shield absorbs one hit, 2x doubles all points.
-  Upgrade them with simits in the *Güçlendir* panel: five levels each, every level adds a quarter of the base time.
+  Upgrade them with simits in the *Güçlendir* panel: five levels each (300 up to 4,000 simits a level), every level adds a quarter of the base time.
 - **Hazards:** funnels, flag masts, kites, rival gulls. Dark funnel smoke does not kill you but breaks your combo.
   - Rival colour tells you how it flies: *grey* glides side to side, *red* dives straight at you from further out, *blue* zigzags at random.
 - **Passengers:** uncles, grandpas, aunties, young women and lads, each with their own outfit and their own shouts when you snatch their simit (a neighbour sometimes chimes in). Most stand holding a simit (snatch it, they get angry); some sit on benches along the rails looking out to sea with a glass of tea and no simit. A *feeder* at the rail holds a simit out for you: take it and they cheer and pay a bonus.
@@ -68,7 +68,7 @@ python -m http.server 8000
 Then open http://localhost:8000. An internet connection is needed the first time to load three.js and the font.
 The service worker only registers on https, so local runs are never cached.
 
-Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the old floating simits instead of thrown ones, or `?pal=old` for the earlier deep sunset colours, `?weather=rain|snow|fog|clear` to force the weather, `?bridge` to meet the Galata Bridge right away (handy for comparing).
+Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the old floating simits instead of thrown ones, or `?pal=old` for the earlier deep sunset colours, `?weather=rain|snow|fog|clear` to force the weather, `?bridge` to meet the Galata Bridge right away, `?salon` to give every ferry a glass salon (handy for comparing).
 
 Append `?q=0`, `?q=1` or `?q=2` to the URL to lock the quality level (low / medium / high) and turn off automatic adjustment.
 
