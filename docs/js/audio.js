@@ -38,7 +38,7 @@ export const audio = {
   resume() { if (AC && AC.state !== 'running') AC.resume(); nextNote = 0; },
   set(o) { Object.assign(opts, o); apply(); },
   get opts() { return { ...opts }; },
-  setSpeed(k) { if (seaFilter) seaFilter.frequency.setTargetAtTime(420 + k * 500, AC.currentTime, 0.4); },
+  setSpeed(k) { intensity = Math.max(0, Math.min(1, k / 1.2)); if (seaFilter) seaFilter.frequency.setTargetAtTime(420 + k * 500, AC.currentTime, 0.4); },
   music(on) { musicOn = on; apply(); },
   duck(low) { if (musicFilter) musicFilter.frequency.setTargetAtTime(low ? 500 : 9000, AC.currentTime, low ? 0.08 : 0.6); },
   tick() { if (AC && musicOn && opts.music) scheduleMusic(); },
@@ -134,28 +134,110 @@ export const sfx = {
   go() { tone('triangle', 1110, 0.18, 0.1); },
 };
 
-// ---------------- müzik: hafif, döngülü, D majör pentatonik ----------------
-const BPM = 100, S16 = 60 / BPM / 4;
-const CHORDS = [[50, 57, 62, 66], [47, 54, 59, 62], [43, 50, 55, 59], [45, 52, 57, 61]]; // D  Bm  G  A
-const MEL = [ // 0 = sus; her satır bir akor ölçüsü (16 adım)
-  [74, 0, 76, 0, 78, 0, 81, 0, 78, 0, 76, 0, 74, 0, 0, 0],
-  [71, 0, 74, 0, 76, 0, 74, 0, 71, 0, 69, 0, 71, 0, 0, 0],
-  [67, 0, 71, 0, 74, 0, 76, 0, 78, 0, 76, 0, 74, 0, 71, 0],
-  [69, 0, 73, 0, 76, 0, 0, 78, 76, 0, 73, 0, 69, 0, 0, 0],
-];
+// ---------------- müzik: Hicaz makamında İstanbul havası ----------------
+// Saz (Karplus-Strong tel), uzun notalarda kanun tremolosu, B bölümünde ney, darbukada maksum usulü (düm-tek).
+// Bölümler: A, A' (oktav), B (ney), A, darbuka arası. Hızlandıkça (setSpeed) zil ve ara vuruşlar katılır.
+const BPM = 104, S16 = 60 / BPM / 4;
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+let intensity = 0;
+// [adım, nota, uzunluk(16'lık)]; Re Hicaz: Re Mi♭ Fa# Sol La Si♭ Do Re
+const A = [
+  [[0, 74, 2], [2, 72, 1], [3, 70, 1], [4, 69, 3], [7, 70, 1], [8, 69, 1], [9, 67, 1], [10, 66, 1], [11, 67, 1], [12, 69, 4]],
+  [[0, 67, 1], [1, 69, 1], [2, 70, 1], [3, 72, 1], [4, 70, 1], [5, 69, 1], [6, 67, 1], [7, 66, 1], [8, 67, 2], [10, 66, 1], [11, 63, 1], [12, 62, 4]],
+  [[0, 62, 1], [1, 66, 1], [2, 69, 1], [3, 74, 1], [4, 72, 2], [6, 70, 1], [7, 69, 1], [8, 70, 1], [9, 72, 1], [10, 74, 1], [11, 75, 1], [12, 74, 4]],
+  [[0, 72, 1], [1, 70, 1], [2, 69, 1], [3, 67, 1], [4, 66, 1], [5, 67, 1], [6, 69, 2], [8, 67, 1], [9, 66, 1], [10, 63, 1], [11, 66, 1], [12, 62, 4]],
+];
+const B = [
+  [[0, 69, 3], [3, 74, 3], [6, 75, 2], [8, 74, 2], [10, 72, 2], [12, 70, 4]],
+  [[0, 69, 1], [1, 70, 1], [2, 72, 2], [4, 70, 1], [5, 69, 1], [6, 67, 2], [8, 69, 8]],
+  [[0, 67, 2], [2, 70, 2], [4, 74, 2], [6, 79, 2], [8, 78, 2], [10, 75, 2], [12, 74, 4]],
+  [[0, 72, 1], [1, 70, 1], [2, 69, 1], [3, 67, 1], [4, 69, 2], [6, 70, 1], [7, 69, 1], [8, 67, 1], [9, 66, 1], [10, 63, 1], [11, 66, 1], [12, 62, 4]],
+];
+const ROOT_A = [38, 43, 38, 45], ROOT_B = [45, 43, 43, 38]; // Re, Sol, Re, La / La, Sol, Sol, Re
+const FORM = [['A', 0], ['A', 12], ['B', 0], ['A', 0], ['brk', 0]]; // [bölüm, oktav kaydırma]
+const BARS = FORM.map(([k]) => (k === 'brk' ? 1 : 4)), TOTAL = BARS.reduce((a, b) => a + b, 0);
+function where(bar) {
+  let b = bar % TOTAL;
+  for (let i = 0; i < FORM.length; i++) { if (b < BARS[i]) return { sec: FORM[i][0], oct: FORM[i][1], i: b }; b -= BARS[i]; }
+}
+// Karplus-Strong: gürültüyle dolu bir halka, her turda ortalanıp söner → telli çalgı. Nota başına bir kez üretilir.
+const ksCache = new Map();
+function ksBuf(m) {
+  if (ksCache.has(m)) return ksCache.get(m);
+  const sr = AC.sampleRate, n = Math.round(sr * 1.3), N = Math.max(2, Math.round(sr / mtof(m) - 0.5));
+  const buf = AC.createBuffer(1, n, sr), d = buf.getChannelData(0), ring = new Float32Array(N);
+  for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+  const decay = m > 70 ? 0.994 : 0.997;
+  let idx = 0, peak = 0;
+  for (let i = 0; i < n; i++) {
+    const a = ring[idx], b = ring[(idx + 1) % N];
+    d[i] = a; peak = Math.max(peak, Math.abs(a));
+    ring[idx] = (a * 0.55 + b * 0.45) * decay; // hafif eğik ortalama: saz gibi parlak kalsın
+    idx = (idx + 1) % N;
+  }
+  for (let i = 0; i < n; i++) d[i] /= peak;
+  ksCache.set(m, buf);
+  return buf;
+}
+function pluck(m, when, vol, dur = 1, pan = 0) {
+  const t = AC.currentTime + when, s = AC.createBufferSource(), g = AC.createGain();
+  s.buffer = ksBuf(m);
+  g.gain.setValueAtTime(vol, t); g.gain.setTargetAtTime(0.0001, t + dur * 0.5, dur * 0.3);
+  let out = g;
+  if (pan && AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = pan; g.connect(p); out = p; }
+  s.connect(g); out.connect(musicBus); s.start(t); s.stop(t + dur + 0.4);
+}
+// ney: nefesli, yavaş açılan, sonradan titreyen üfleme
+function ney(m, when, dur, vol) {
+  const t = AC.currentTime + when, f = mtof(m), g = AC.createGain(), o = AC.createOscillator(), o2 = AC.createOscillator();
+  const vib = AC.createOscillator(), vg = AC.createGain(), lp = AC.createBiquadFilter(), g2 = AC.createGain();
+  o.type = 'sine'; o2.type = 'triangle'; o.frequency.value = f; o2.frequency.value = f * 2;
+  vib.frequency.value = 5.2; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(f * 0.006, t + Math.min(dur, 0.5));
+  vib.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency);
+  lp.type = 'lowpass'; lp.frequency.value = 2400; g2.gain.value = 0.18;
+  o.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.12);
+  g.gain.setValueAtTime(vol, t + dur * 0.8); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.15);
+  g.connect(musicBus);
+  for (const x of [o, o2, vib]) { x.start(t); x.stop(t + dur + 0.2); }
+  hiss(Math.min(dur, 0.4), vol * 0.35, f * 2, 'bandpass', when, 2, musicBus); // nefes
+}
+function dum(when, v = 1) { tone('sine', 98, 0.2, 0.32 * v, { when, f1: 52, bus: musicBus, attack: 0.003 }); hiss(0.06, 0.08 * v, 260, 'lowpass', when, 1, musicBus); }
+function tek(when, v = 1) { hiss(0.05, 0.16 * v, 3400, 'bandpass', when, 1.4, musicBus); tone('triangle', 1650, 0.03, 0.035 * v, { when, bus: musicBus, attack: 0.002 }); }
+function zil(when, v = 1) { hiss(0.14, 0.05 * v, 9000, 'highpass', when, 1, musicBus); }
+
 function scheduleMusic() {
   if (nextNote < AC.currentTime) nextNote = AC.currentTime + 0.05;
   while (nextNote < AC.currentTime + 0.25) {
-    const bar = Math.floor(step / 16) % 4, s = step % 16, t = nextNote - AC.currentTime;
-    const ch = CHORDS[bar];
-    if (s === 0) for (const m of ch.slice(1)) tone('triangle', mtof(m), S16 * 15, 0.035, { when: t, attack: 0.25, bus: musicBus, filter: 1400, detune: (Math.random() - 0.5) * 12 });
-    if (s % 4 === 0) tone('sine', mtof(ch[0] - 12), S16 * 3, 0.16, { when: t, bus: musicBus });
-    if (s % 4 === 2) tone('sine', mtof(ch[0]), S16 * 1.5, 0.06, { when: t, bus: musicBus });
-    const phrase = Math.floor(step / 64) % 2;
-    const m = MEL[bar][s];
-    if (m && (phrase === 0 || s % 4 === 0)) tone('triangle', mtof(m + (phrase ? 12 : 0)), S16 * 2.2, 0.07, { when: t, bus: musicBus, filter: 3200 });
-    if (s % 2 === 1) hiss(0.03, 0.025, 8000, 'highpass', t, 1, musicBus);
+    const bar = Math.floor(step / 16), s = step % 16, t = nextNote - AC.currentTime;
+    const w = where(bar), sec = w.sec, hot = intensity;
+    // darbuka: maksum (düm . tek . . . tek . düm . . . tek . . .), arada süslemeler
+    if (s === 0 || s === 8) dum(t, s === 0 ? 1 : 0.8);
+    else if (s === 2 || s === 6 || s === 12) tek(t);
+    else if (sec === 'brk' ? s % 2 === 1 : (s === 14 || s === 15) && (hot > 0.3 || bar % 2)) tek(t, 0.45);
+    else if (hot > 0.55 && s % 2 === 1 && Math.random() < hot * 0.5) tek(t, 0.25);
+    if (hot > 0.35 && (s === 4 || s === 12)) zil(t, 0.6 + hot * 0.4);
+    if (sec === 'brk') { if (s === 0) pluck(50, t, 0.18, 1.6); nextNote += S16; step++; continue; }
+    // bas (ud gibi): kök, beşli, kök, oktav; altında sabit dem
+    const root = (sec === 'B' ? ROOT_B : ROOT_A)[w.i];
+    if (s === 0) pluck(root, t, 0.34, 1.1, -0.15);
+    else if (s === 6) pluck(root + 7, t, 0.2, 0.6, -0.15);
+    else if (s === 8) pluck(root, t, 0.26, 0.8, -0.15);
+    else if (s === 12 && hot > 0.2) pluck(root + 12, t, 0.18, 0.5, -0.15);
+    if (s === 0) tone('sine', mtof(root + 12), S16 * 15, 0.035, { when: t, attack: 0.4, bus: musicBus });
+    // ezgi
+    for (const [st, m0, len] of (sec === 'B' ? B : A)[w.i]) {
+      if (st !== s) continue;
+      const m = m0 + w.oct;
+      if (sec === 'B') {
+        ney(m, t, len * S16 * 0.95, 0.075);
+        if (len >= 2) pluck(m - 12, t, 0.12, 0.5, 0.35); // saz alttan eşlik
+      } else {
+        pluck(m, t, 0.26, Math.max(0.35, len * S16 * 1.6), 0.2);
+        if (len >= 3) for (let k = 1; k < len; k++) pluck(m, t + k * S16, 0.1, 0.25, -0.25); // kanun tremolosu
+        if (w.oct) pluck(m - 12, t + 0.012, 0.12, 0.5, -0.2); // oktavda ikinci saz
+      }
+    }
     nextNote += S16; step++;
   }
 }
