@@ -37,17 +37,25 @@ export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 900);
 // Sisli malzemeler bükülür; gökyüzü, uzak siluet ve gölge geçişi bükülmez.
 export const BEND = { value: new THREE.Vector4(0, 1e4, 1e4, 16) };  // x: eğrilik, y-z: virajın başı ve sonu, w: martının derinliği
 export const BEND2 = { value: new THREE.Vector4(0, 1e4, 1e4, 0) }; // ilk virajdan sonraki viraj (S-viraj)
+// Bükme kameranın eğiminden arındırılmış yatay çerçevede yapılır (uLevel: göz uzayı → yalnız yönü kalan kamera).
+// Göz uzayında bükülse, aşağı bakan kamerada yaklaşan uzak su ekranda ufkun üstüne çıkar, siluetin arkasına deniz bandı biner.
+export const LEVEL = { value: new THREE.Matrix3() };
 const BEND_GLSL = `
 #ifdef USE_FOG
-  if (-mvPosition.z > uBend.w) {
-    vec2 bxd = bendArc(bendArc(vec2(mvPosition.x, -mvPosition.z - uBend.w), uBend2), uBend);
-    mvPosition.x = bxd.x; mvPosition.z = -(bxd.y + uBend.w);
+  {
+    vec3 lv = uLevel * mvPosition.xyz;
+    if (-lv.z > uBend.w) {
+      vec2 bxd = bendArc(bendArc(vec2(lv.x, -lv.z - uBend.w), uBend2), uBend);
+      lv.x = bxd.x; lv.z = -(bxd.y + uBend.w);
+      mvPosition.xyz = lv * uLevel;
+    }
   }
 #endif
 `;
 THREE.ShaderChunk.fog_pars_vertex += `
 #ifdef USE_FOG
   uniform vec4 uBend, uBend2;
+  uniform mat3 uLevel;
   // xd: (yanal x, martıdan derinlik) → yay üzerindeki yeri; b: (k, p, q)
   vec2 bendArc(vec2 xd, vec4 b) {
     if (abs(b.x) < 1e-6 || xd.y <= b.y) return xd;
@@ -58,7 +66,7 @@ THREE.ShaderChunk.fog_pars_vertex += `
 #endif`;
 THREE.ShaderChunk.project_vertex = THREE.ShaderChunk.project_vertex.replace('gl_Position', BEND_GLSL + 'gl_Position');
 THREE.ShaderLib.sprite.vertexShader = THREE.ShaderLib.sprite.vertexShader.replace('\tgl_Position', BEND_GLSL + '\tgl_Position');
-THREE.Material.prototype.onBeforeCompile = function (shader) { shader.uniforms.uBend = BEND; shader.uniforms.uBend2 = BEND2; };
+THREE.Material.prototype.onBeforeCompile = function (shader) { shader.uniforms.uBend = BEND; shader.uniforms.uBend2 = BEND2; shader.uniforms.uLevel = LEVEL; };
 
 // ---------------- ışıklar ----------------
 export const hemi = new THREE.HemisphereLight(PAL.hemiSky, PAL.hemiGround, 1.25);

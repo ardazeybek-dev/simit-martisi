@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
-import { MOBILE, renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, setHeading, applyWeather } from './scene.js';
+import { MOBILE, renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather } from './scene.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, animCrowd, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx } from './fx.js';
@@ -1110,6 +1110,7 @@ function applyShadows() {
 const clock = new THREE.Clock();
 let t = 0;
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+const _fw = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _qy = new THREE.Quaternion(), _m4 = new THREE.Matrix4();
 let firstFrame = true;
 function frame() {
   requestAnimationFrame(frame);
@@ -1446,6 +1447,10 @@ function frame() {
     const u = ahead[i];
     if (u) B.value.set(u.k * bendOn, Math.max(0, g.z - u.z0), g.z - u.z1, wD); else B.value.set(0, 1e4, 1e4, wD);
   }
+  // bükme çerçevesi: kameranın eğimi ve yatışı çıkarılır, yalnız yönü kalır (scene.js LEVEL)
+  _fw.set(0, 0, -1).applyQuaternion(camera.quaternion);
+  _qy.setFromAxisAngle(_up, Math.atan2(-_fw.x, -_fw.z)).invert().multiply(camera.quaternion);
+  LEVEL.value.setFromMatrix4(_m4.makeRotationFromQuaternion(_qy));
   far.position.set(camera.position.x * 0.9, 0, camera.position.z);
   far.rotation.y = heading * bendOn;
   setHeading(heading * bendOn);
