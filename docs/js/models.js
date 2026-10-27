@@ -163,6 +163,9 @@ function personGeo(L, hold, angry, mode = '') {
   const k = new Kit(), sit = mode === 'sit', dy = sit ? -0.32 : 0;
   const head = angry ? 0xe2584e : L.skin;
   const up = (geo, c, x, y, z, rx = 0, ry = 0, rz = 0, sx, sy, sz) => k.add(geo, c, x, y + dy, z, rx, ry, rz, sx, sy, sz); // gövdeden yukarısı oturunca alçalır
+  // kafa takımı (kafa, saç, şapka, yüz) kafanın merkezine göre bir boy büyük: tatlı, iri kafalı yolcular, uzaktan da yüzleri okunur
+  const HS = 1.25, HY = 1.95;
+  const hd = (geo, c, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) => up(geo, c, x * HS, HY + (y - HY) * HS, z * HS, rx, ry, rz, sx * HS, sy * HS, sz * HS);
   const cyl = (rt, rb, h, c, x, y, z, rz = 0, rx = 0) => up(new THREE.CylinderGeometry(rt, rb, h, 6), c, x, y, z, rx, 0, rz);
   if (sit) { // uyluk öne, baldır aşağı
     for (const x of [-0.12, 0.12]) {
@@ -179,30 +182,39 @@ function personGeo(L, hold, angry, mode = '') {
   }
   up(new THREE.CylinderGeometry(0.25, 0.32, 0.95, 8), L.shirt, 0, 1.25, 0);
   if (L.jacket) for (const x of [-0.17, 0.17]) up(new THREE.BoxGeometry(0.16, 0.9, 0.05), L.jacket, x, 1.27, 0.28);
-  up(new THREE.SphereGeometry(0.23, 9, 7), head, 0, 1.95, 0);
+  hd(new THREE.SphereGeometry(0.23, 12, 9), head, 0, 1.95, 0);
+  // yüz: iki parlak göz, pembe yanaklar, gülümseme; kızgınken çatık kaş ve açık ağız
+  for (const x of [-0.085, 0.085]) {
+    hd(new THREE.SphereGeometry(0.042, 6, 5), 0x1a1a22, x, 1.94, 0.205, 0, 0, 0, 1, 1.25, 0.7);
+    hd(new THREE.SphereGeometry(0.014, 4, 3), 0xffffff, x + 0.015, 1.955, 0.235);
+    hd(new THREE.SphereGeometry(0.05, 6, 4), angry ? 0xb8322c : 0xf28c8c, x * 1.65, 1.885, 0.17, 0, 0, 0, 1, 0.7, 0.5);
+    if (angry) hd(new THREE.BoxGeometry(0.09, 0.025, 0.03), 0x2a1a14, x, 2.0, 0.215, 0, 0, x > 0 ? 0.45 : -0.45);
+  }
+  if (angry) hd(new THREE.SphereGeometry(0.045, 6, 4), 0x5a1a1a, 0, 1.855, 0.21, 0, 0, 0, 1, 0.8, 0.6);
+  else hd(new THREE.TorusGeometry(0.04, 0.012, 3, 8, Math.PI), 0x7a2e2a, 0, 1.88, 0.222, 0, 0, Math.PI);
   if (L.hair >= 0 && L.hat !== 'esarp') {
-    up(new THREE.SphereGeometry(0.245, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2.2), HAIRS[L.hair], 0, 1.99, -0.02);
-    if (L.long) up(new THREE.BoxGeometry(0.42, 0.42, 0.14), HAIRS[L.hair], 0, 1.82, -0.17);
+    hd(new THREE.SphereGeometry(0.245, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2.2), HAIRS[L.hair], 0, 1.99, -0.02);
+    if (L.long) hd(new THREE.BoxGeometry(0.42, 0.42, 0.14), HAIRS[L.hair], 0, 1.82, -0.17);
   }
   // şapka ve aksesuarlar uzaktan, telefonda da seçilsin diye bir boy büyük ve doygun renkli
   const hc = L.hatCol;
-  if (L.hat === 'kasket') { up(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 10), hc, 0, 2.14, 0.01); up(new THREE.BoxGeometry(0.34, 0.04, 0.22), hc, 0, 2.09, 0.3); }
-  else if (L.hat === 'bere') { up(new THREE.SphereGeometry(0.28, 9, 6, 0, Math.PI * 2, 0, Math.PI / 2), hc, 0, 2.0, 0); up(new THREE.SphereGeometry(0.1, 5, 4), 0xf2efe6, 0, 2.3, 0); }
-  else if (L.hat === 'hasir') { up(new THREE.CylinderGeometry(0.5, 0.5, 0.04, 12), 0xf0dc9c, 0, 2.12, 0); up(new THREE.CylinderGeometry(0.2, 0.23, 0.2, 10), 0xf0dc9c, 0, 2.22, 0); up(new THREE.CylinderGeometry(0.235, 0.235, 0.07, 10), hc, 0, 2.17, 0); }
-  else if (L.hat === 'esarp') { up(new THREE.SphereGeometry(0.27, 9, 7, 0, Math.PI * 2, 0, Math.PI * 0.62), hc, 0, 1.95, -0.03); up(new THREE.ConeGeometry(0.2, 0.32, 8), hc, 0, 1.62, -0.12); }
-  else if (L.hat === 'fes') { up(new THREE.CylinderGeometry(0.17, 0.21, 0.3, 10), 0xd42a33, 0, 2.22, 0); up(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 4), 0x1a1a1a, 0.12, 2.26, 0, 0, 0, 0.6); }
-  else if (L.hat === 'kep') { up(new THREE.SphereGeometry(0.26, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2), hc, 0, 2.0, 0); up(new THREE.BoxGeometry(0.3, 0.04, 0.26), hc, 0, 2.02, 0.32); }
-  if (L.scarf) { up(new THREE.CylinderGeometry(0.22, 0.27, 0.17, 8), L.scarfCol, 0, 1.72, 0); up(new THREE.BoxGeometry(0.13, 0.42, 0.05), L.scarfCol, 0.1, 1.48, 0.28); }
+  if (L.hat === 'kasket') { hd(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 10), hc, 0, 2.14, 0.01); hd(new THREE.BoxGeometry(0.34, 0.04, 0.22), hc, 0, 2.09, 0.3); }
+  else if (L.hat === 'bere') { hd(new THREE.SphereGeometry(0.28, 9, 6, 0, Math.PI * 2, 0, Math.PI / 2), hc, 0, 2.0, 0); hd(new THREE.SphereGeometry(0.1, 5, 4), 0xf2efe6, 0, 2.3, 0); }
+  else if (L.hat === 'hasir') { hd(new THREE.CylinderGeometry(0.5, 0.5, 0.04, 12), 0xf0dc9c, 0, 2.12, 0); hd(new THREE.CylinderGeometry(0.2, 0.23, 0.2, 10), 0xf0dc9c, 0, 2.22, 0); hd(new THREE.CylinderGeometry(0.235, 0.235, 0.07, 10), hc, 0, 2.17, 0); }
+  else if (L.hat === 'esarp') { hd(new THREE.SphereGeometry(0.27, 10, 7, Math.PI / 2 + 0.85, Math.PI * 2 - 1.7, 0, Math.PI * 0.62), hc, 0, 1.95, -0.03); hd(new THREE.TorusGeometry(0.235, 0.035, 4, 12, Math.PI * 1.1), hc, 0, 1.95, 0.12, 0, 0, -0.05 * Math.PI); hd(new THREE.ConeGeometry(0.2, 0.32, 8), hc, 0, 1.62, -0.12); }
+  else if (L.hat === 'fes') { hd(new THREE.CylinderGeometry(0.17, 0.21, 0.3, 10), 0xd42a33, 0, 2.22, 0); hd(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 4), 0x1a1a1a, 0.12, 2.26, 0, 0, 0, 0.6); }
+  else if (L.hat === 'kep') { hd(new THREE.SphereGeometry(0.26, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2), hc, 0, 2.0, 0); hd(new THREE.BoxGeometry(0.3, 0.04, 0.26), hc, 0, 2.02, 0.32); }
+  if (L.scarf) { up(new THREE.CylinderGeometry(0.22, 0.27, 0.17, 8), L.scarfCol, 0, 1.68, 0); up(new THREE.BoxGeometry(0.13, 0.42, 0.05), L.scarfCol, 0.1, 1.48, 0.28); }
   if (L.glasses) { // iki koyu cam, açık renk çerçeve: ten renginden ayrılsın
-    up(new THREE.BoxGeometry(0.46, 0.05, 0.04), L.glassFrame, 0, 2.01, 0.22);
-    for (const x of [-0.1, 0.1]) up(new THREE.BoxGeometry(0.17, 0.13, 0.05), 0x101218, x, 1.97, 0.23);
+    hd(new THREE.BoxGeometry(0.46, 0.05, 0.04), L.glassFrame, 0, 2.01, 0.22);
+    for (const x of [-0.1, 0.1]) hd(new THREE.BoxGeometry(0.17, 0.13, 0.05), 0x101218, x, 1.97, 0.23);
   }
-  if (L.belly) up(new THREE.SphereGeometry(0.3, 9, 7), L.shirt, 0, 1.08, 0.08, 0, 0, 0, 1, 0.9, 0.95); // amca göbeği
-  if (L.beard) up(new THREE.SphereGeometry(0.2, 8, 6, 0, Math.PI * 2, Math.PI * 0.45, Math.PI * 0.55), L.beard, 0, 1.9, 0.07, 0, 0, 0, 1, 1.1, 1);
+  if (L.belly) hd(new THREE.SphereGeometry(0.3, 9, 7), L.shirt, 0, 1.08, 0.08, 0, 0, 0, 1, 0.9, 0.95); // amca göbeği
+  if (L.beard) hd(new THREE.SphereGeometry(0.2, 8, 6, 0, Math.PI * 2, Math.PI * 0.45, Math.PI * 0.55), L.beard, 0, 1.9, 0.07, 0, 0, 0, 1, 1.1, 1);
   if (L.must) { // pala bıyık: iki yana sarkan, uzaktan seçilsin diye kalın
-    for (const s of [-1, 1]) up(new THREE.BoxGeometry(0.15, 0.06, 0.07), L.must, s * 0.08, 1.87, 0.22, 0, 0, s * 0.35);
+    for (const s of [-1, 1]) hd(new THREE.BoxGeometry(0.15, 0.06, 0.07), L.must, s * 0.08, 1.87, 0.22, 0, 0, s * 0.35);
   }
-  if (L.bun) up(new THREE.SphereGeometry(0.12, 7, 5), HAIRS[L.hair], 0, 2.14, -0.16);
+  if (L.bun) hd(new THREE.SphereGeometry(0.12, 7, 5), HAIRS[L.hair], 0, 2.14, -0.16);
   if (L.cane && !sit && mode !== 'feed' && L.pose === 'down') { // dedenin bastonu: sol elde, yere dayalı
     k.add(new THREE.CylinderGeometry(0.03, 0.03, 0.95, 5), 0x5a3a22, -0.46, 0.47, 0.08);
     up(new THREE.BoxGeometry(0.16, 0.05, 0.05), 0x5a3a22, -0.4, 0.96, 0.08);
@@ -275,6 +287,14 @@ export function makePerson(hold, look = pick(LOOKS), mode = '') {
   const angryGeo = () => personGeo(look, false, true, mode === 'sit' ? 'sit' : '');
   return { mesh, simit, sy: simit ? simit.position.y : 0, angryGeo, calmGeo: mesh.geometry, angry: 0, ph: Math.random() * 6, feeder: mode === 'feed', sit: mode === 'sit', kind: kid ? 'cocuk' : look.kind || 'amca' };
 }
+// bütün yolcu kalıplarını boşta parça parça hazırla: simit kapıldığı an (kızgın yüz) ya da yeni vapur gelince üretim takılması olmasın
+export function warmPeople() {
+  const jobs = [];
+  for (const L of LOOKS) for (const [h, a, m] of [[true, false, ''], [false, false, ''], [false, true, ''], [false, false, 'sit'], [false, true, 'sit'], [true, false, 'feed']]) jobs.push(() => personGeo(L, h, a, m));
+  jobs.push(() => personGeo(SIMITCI_LOOK, true, false, ''));
+  const next = () => { for (let i = 0; i < 4 && jobs.length; i++) jobs.shift()(); if (jobs.length) setTimeout(next, 30); };
+  setTimeout(next, 300);
+}
 // güverte bankı: küpeşte boyunca, sırtı içe dönük; oturanlar denize bakar
 export const BENCH = new Kit()
   .add(new THREE.BoxGeometry(0.5, 0.07, 2.1), 0xa8743e, 0, 0.47, 0)
@@ -282,6 +302,18 @@ export const BENCH = new Kit()
   .add(new THREE.BoxGeometry(0.42, 0.45, 0.06), 0x2b3a4c, 0, 0.22, -0.9)
   .add(new THREE.BoxGeometry(0.42, 0.45, 0.06), 0x2b3a4c, 0, 0.22, 0.9)
   .build();
+
+// can simidi: turuncu-beyaz dilimli halka; tekne kenarlarına asılır (ry: yüzü dışa baksın)
+const BUOY_RING = (f) => (f % 8 < 4 ? 0xff7a1a : 0xffffff);
+const lifeRing = (k, r, x, y, z, ry = Math.PI / 2) => k.add(new THREE.TorusGeometry(r, r * 0.32, 5, 12), BUOY_RING, x, y, z, 0, ry);
+// dekor teknelerinin tayfası: güvertede duran yolcular; main.js martı yakınken zıplatır, el sallatır (userData.crew)
+function addCrew(g, spots) {
+  g.userData.crew = spots.map(([x, y, z, ry, sit]) => {
+    const p = makePerson(false, undefined, sit ? 'sit' : ''); p.mesh.position.set(x, y, z); p.mesh.rotation.y = ry; p.mesh.scale.setScalar(0.85);
+    g.add(p.mesh);
+    return { m: p.mesh, y, ph: Math.random() * 6, sit: !!sit };
+  });
+}
 
 // ---------------- simitçi kayığı ----------------
 // Kenarda sallanan sandal; simitçi tepsiden alıp martıya simit fırlatır. Tepsideki yığın atıldıkça azalır.
@@ -336,7 +368,8 @@ function fishingBoatGeo(ci) {
     .add(new THREE.BoxGeometry(1.6, 0.05, 0.05), 0xf3efe6, 0, 3.6, -1)
     .add(new THREE.SphereGeometry(0.16, 6, 4), 0xffe07a, 0, 4.75, -1)
     .add(new THREE.SphereGeometry(0.55, 7, 5), 0x7d8f6a, 0.5, 0.65, -2.3, 0, 0, 0, 1.2, 0.45, 1) // ağ yığını
-    .add(new THREE.TorusGeometry(0.3, 0.09, 5, 10), (f) => (f % 6 < 3 ? 0xf07b22 : 0xffffff), 1.47, 0.9, 0.2, 0, Math.PI / 2);
+    ;
+  for (const s of [-1, 1]) lifeRing(k, 0.36, s * 1.5, 0.85, 0.2);
   return (fishCache[ci] = k.build());
 }
 const ROD = new Kit().add(new THREE.CylinderGeometry(0.025, 0.04, 3.2, 4), 0x3a2a1c, 0, 1.6, 0).build();
@@ -347,6 +380,7 @@ export function makeFishingBoat(side) {
   const g = new THREE.Group();
   const hull = new THREE.Mesh(fishingBoatGeo((Math.random() * FISH_COLS.length) | 0), vcMat); hull.castShadow = true; g.add(hull);
   const p = makePerson(false); p.mesh.position.set(-side * 0.7, 0.58, -1.2); p.mesh.rotation.y = rand(-0.4, 0.4); g.add(p.mesh);
+  addCrew(g, Math.random() < 0.6 ? [[side * 0.5, 0.58, 2.6, 0]] : []);
   const rod = new THREE.Mesh(ROD, vcMat); rod.position.set(-side * 0.95, 1.7, -1.2); rod.rotation.z = side * 0.9; g.add(rod);
   const line = new THREE.Mesh(ROD_LINE, rodLineMat); line.position.set(-side * 3.35, 2, -1.2); g.add(line);
   return g;
@@ -372,23 +406,30 @@ export function sailboatGeo(ci) {
     .add(sailTri(3.5, 7), (f, y) => (ci % 2 && y > 3 && y < 4.4 ? band : sail), 0, 1.25, -0.5)   // ana yelken
     .add(sailTri(2.4, 6.2), sail, 0, 1.0, -0.75, 0, Math.PI, 0)                                   // flok
     .add(new THREE.BoxGeometry(0.05, 0.4, 0.7), band, 0, 8.7, -0.3);                               // flama
+  for (const s of [-1, 1]) lifeRing(k, 0.32, s * 1.12, 0.55, 1.6);
   return (sailCache[ci] = k.build());
 }
 export function makeSailboat(ci = (Math.random() * SAIL_COLS.length) | 0) {
   const g = new THREE.Group();
   const h = new THREE.Mesh(sailboatGeo(ci), vcMat); h.castShadow = true; g.add(h);
+  addCrew(g, [[0.35, 0.66, 2.0, 0], ...(Math.random() < 0.5 ? [[-0.4, 0.66, -1.8, 0.4]] : [])]);
   return g;
 }
-const YACHT = hullBands(new Kit(), [[0.35, 0x2b3a4c], [0.55, 0xfdf7ec], [0.12, 0x5fa8d3]], -0.3, 1.5, 1.6)
+const YACHT_K = hullBands(new Kit(), [[0.35, 0x2b3a4c], [0.55, 0xfdf7ec], [0.12, 0x5fa8d3]], -0.3, 1.5, 1.6)
   .add(new THREE.BoxGeometry(2.6, 0.07, 6.6), 0xb98a5a, 0, 0.72, 0)
   .add(new THREE.BoxGeometry(2.1, 0.9, 3.2), 0xfdf7ec, 0, 1.2, 0.6)
   .add(new THREE.BoxGeometry(2.14, 0.32, 3.24), 0x2b3a4c, 0, 1.3, 0.6)
   .add(new THREE.BoxGeometry(1.6, 0.7, 1.8), 0xfdf7ec, 0, 2, 0.9)
   .add(new THREE.BoxGeometry(1.64, 0.26, 1.84), 0x2b3a4c, 0, 2.05, 0.9)
   .add(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 4), 0xfdf7ec, 0, 3, 1.2)
-  .add(new THREE.BoxGeometry(0.04, 0.3, 0.5), 0xe30a17, 0, 3.5, 1.4)
-  .build();
-export function makeYacht() { const g = new THREE.Group(), h = new THREE.Mesh(YACHT, vcMat); h.castShadow = true; g.add(h); return g; }
+  .add(new THREE.BoxGeometry(0.04, 0.3, 0.5), 0xe30a17, 0, 3.5, 1.4);
+for (const s of [-1, 1]) for (const z of [-1.4, 2.4]) lifeRing(YACHT_K, 0.34, s * 1.48, 0.6, z);
+const YACHT = YACHT_K.build();
+export function makeYacht() {
+  const g = new THREE.Group(), h = new THREE.Mesh(YACHT, vcMat); h.castShadow = true; g.add(h);
+  addCrew(g, [[-0.5, 0.76, -2.2, 0], [0.5, 0.76, -1.5, 0.3], ...(Math.random() < 0.6 ? [[0.3, 2.36, 0.4, 0, true]] : [])]);
+  return g;
+}
 
 // ---------------- dev yolcu gemisi (uzakta, sağ kıyıda) ----------------
 // Beyaz gövde, kat kat pencere bantları, balkon sıraları, iki kalın baca. Pruva -z.
@@ -425,8 +466,58 @@ export const CRUISE = (() => {
   // havuz güvertesi: mavi dikdörtgen ve şemsiyeler
   k.add(new THREE.BoxGeometry(5, 0.12, 8), 0x6fd3e8, 0, top + 0.06, 2);
   for (let i = 0; i < 4; i++) k.add(new THREE.ConeGeometry(0.9, 0.5, 6), i % 2 ? 0xffc23a : 0xe07a5f, (i % 2 ? 1 : -1) * 3.2, top + 1.6, -4 + i * 3);
+  for (const s of [-1, 1]) for (let z = -34; z <= 42; z += 9) lifeRing(k, 0.75, s * 7.08, 3.4, z); // gövde boyunca turuncu can simitleri
   return k.build();
 })();
+// dev gemide yolcular: üst güvertede ve basamaklı teraslarda kalabalık; martı geçerken zıplayıp el sallarlar.
+// Renk başına bir InstancedMesh (gemi başına birkaç draw call); konumlar CRUISE'un yerel ekseninde
+const CROWD_COLS = [0xff5a5f, 0xffc23a, 0x2bb3a3, 0x5fa8d3, 0xf2efe6, 0xe89bb0];
+const CROWD_GEOS = CROWD_COLS.map((c, i) => new Kit()
+  .add(new THREE.CylinderGeometry(0.32, 0.4, 1.1, 6), c, 0, 0.75, 0)
+  .add(new THREE.SphereGeometry(0.32, 7, 5), SKINS[i % SKINS.length], 0, 1.6, 0)
+  .add(new THREE.SphereGeometry(0.33, 7, 4, 0, Math.PI * 2, 0, Math.PI / 2), HAIRS[i % 3], 0, 1.66, -0.03)
+  .add(new THREE.CylinderGeometry(0.09, 0.09, 0.8, 4), c, 0.42, 1.55, 0, 0, 0, -0.5) // el sallayan kol
+  .add(new THREE.CylinderGeometry(0.12, 0.12, 0.45, 4), 0x2b3a4c, 0, 0.1, 0).build().scale(1.5, 1.5, 1.5)); // uzaktan seçilsin diye iri
+const CROWD_SPOTS = (() => {
+  const out = [], y0 = 7.6;
+  for (let i = 0; i < 26; i++) { // üst güverte (havuzun çevresi)
+    const x = rand(-4.6, 4.6), z = rand(-4, 13);
+    if (Math.abs(x) < 3 && z > -2.5 && z < 6.5) continue;
+    out.push([x, y0 + 11, z]);
+  }
+  for (let i = 0; i < 4; i++) { // teraslar: her katın önünde açıkta kalan şerit
+    const z0 = 6 + i * 2.5 - (74 - 8 * i) / 2, z1 = 6 + (i + 1) * 2.5 - (74 - 8 * (i + 1)) / 2;
+    for (let n = 0; n < 5; n++) out.push([rand(-5.2, 5.2), y0 + 2.2 * (i + 1), rand(z0 + 0.6, z1 - 0.6)]);
+  }
+  return out;
+})();
+export function makeCruise() {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(CRUISE, cruiseMat));
+  const crowd = [];
+  CROWD_GEOS.forEach((geo, c) => {
+    const spots = CROWD_SPOTS.filter((_, i) => i % CROWD_GEOS.length === c);
+    const im = new THREE.InstancedMesh(geo, cruiseMat, spots.length);
+    im.frustumCulled = false; // örnekler gövdenin üstüne yayılıyor; sınır küresi tek kişilik kalır
+    g.add(im);
+    crowd.push({ im, spots: spots.map(([x, y, z]) => ({ x, y, z, ph: Math.random() * 6, ry: rand(-0.6, 0.6) })) });
+  });
+  g.userData.crowd = crowd;
+  animCrowd(g, 0);
+  return g;
+}
+const _cm = new THREE.Matrix4(), _cq = new THREE.Quaternion(), _ce = new THREE.Euler(), _cp = new THREE.Vector3(), _cs = new THREE.Vector3(1, 1, 1);
+// kalabalık zıplar: her biri kendi ritminde, el sallarken hafifçe sallanır
+export function animCrowd(g, t) {
+  for (const { im, spots } of g.userData.crowd) {
+    spots.forEach((s, i) => {
+      const j = Math.max(0, Math.sin(t * 7 + s.ph * 3)) * 1.1;
+      _cm.compose(_cp.set(s.x, s.y + j, s.z), _cq.setFromEuler(_ce.set(0, s.ry + (g.userData.face ?? -Math.PI / 2), Math.sin(t * 5 + s.ph) * 0.15)), _cs);
+      im.setMatrixAt(i, _cm);
+    });
+    im.instanceMatrix.needsUpdate = true;
+  }
+}
 
 // ---------------- Kız Kulesi (yakın, kıyıdan geçerken) ----------------
 export const MAIDEN = (() => {

@@ -2,6 +2,9 @@
 let AC = null, master, sfxBus, musicBus, ambBus, musicFilter, noiseBuf, seaGain, seaFilter;
 const opts = { sfx: true, music: true, sfxVol: 1, musicVol: 0.8 };
 let nextNote = 0, step = 0, musicOn = false;
+// telefonda ses iş parçacığı çabuk boğulur: daha büyük tampon, daha uzun planlama payı, daha az düğüm
+const MOBILE = matchMedia('(pointer: coarse)').matches;
+const AHEAD = MOBILE ? 0.5 : 0.25;
 
 export const audio = {
   get ctx() { return AC; },
@@ -9,7 +12,8 @@ export const audio = {
   unlock() {
     if (AC) { if (AC.state !== 'running') AC.resume(); return; }
     try {
-      AC = new (window.AudioContext || window.webkitAudioContext)();
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      try { AC = new Ctx({ latencyHint: MOBILE ? 'playback' : 'interactive' }); } catch (e) { AC = new Ctx(); }
       const comp = AC.createDynamicsCompressor();
       comp.threshold.value = -14; comp.ratio.value = 4;
       master = AC.createGain(); master.gain.value = 0.8;
@@ -32,6 +36,7 @@ export const audio = {
       // iOS: sessiz bir tampon çal, bağlam açılsın
       const s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0);
       apply();
+      warmStrings();
     } catch (e) { AC = null; }
   },
   suspend() { if (AC && AC.state === 'running') AC.suspend(); },
@@ -180,12 +185,22 @@ function ksBuf(m) {
   ksCache.set(m, buf);
   return buf;
 }
+// saz telleri çalarken değil, açılışta parça parça üretilir: üretim anında ana iş parçacığı takılıp notalar gecikmesin
+function warmStrings() {
+  const notes = new Set([50]);
+  for (const r of [...ROOT_A, ...ROOT_B]) [0, 7, 12].forEach(d => notes.add(r + d));
+  for (const bar of A) for (const [, m] of bar) { notes.add(m); notes.add(m + 12); notes.add(m - 12); }
+  for (const bar of B) for (const [, m] of bar) notes.add(m - 12);
+  const list = [...notes];
+  const next = () => { if (!list.length) return; ksBuf(list.pop()); setTimeout(next, 16); };
+  setTimeout(next, 50);
+}
 function pluck(m, when, vol, dur = 1, pan = 0) {
   const t = AC.currentTime + when, s = AC.createBufferSource(), g = AC.createGain();
   s.buffer = ksBuf(m);
   g.gain.setValueAtTime(vol, t); g.gain.setTargetAtTime(0.0001, t + dur * 0.5, dur * 0.3);
   let out = g;
-  if (pan && AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = pan; g.connect(p); out = p; }
+  if (pan && !MOBILE && AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = pan; g.connect(p); out = p; }
   s.connect(g); out.connect(musicBus); s.start(t); s.stop(t + dur + 0.4);
 }
 // ney: nefesli, yavaş açılan, sonradan titreyen üfleme
@@ -209,7 +224,7 @@ function zil(when, v = 1) { hiss(0.14, 0.05 * v, 9000, 'highpass', when, 1, musi
 
 function scheduleMusic() {
   if (nextNote < AC.currentTime) nextNote = AC.currentTime + 0.05;
-  while (nextNote < AC.currentTime + 0.25) {
+  while (nextNote < AC.currentTime + AHEAD) {
     const bar = Math.floor(step / 16), s = step % 16, t = nextNote - AC.currentTime;
     const w = where(bar), sec = w.sec, hot = intensity;
     // darbuka: maksum (düm . tek . . . tek . düm . . . tek . . .), arada süslemeler

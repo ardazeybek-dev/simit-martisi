@@ -19,10 +19,11 @@ export const PAL = OLD_PAL ? {
 };
 export const SUN_DIR = new THREE.Vector3(-0.17, 0.11, -0.98).normalize();
 
+export const MOBILE = matchMedia('(pointer: coarse)').matches; // telefon/tablet: daha ucuz gölge, kalite merdiveni farklı (main.js)
 export const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 document.body.prepend(renderer.domElement);
 
 export const scene = new THREE.Scene();
@@ -231,6 +232,11 @@ const WAVE = `
     return sin(p.x*0.16 + p.y*0.11 + uTime*1.3)*0.36
          + sin(p.x*0.33 - p.y*0.07 + uTime*2.0)*0.17
          + sin(p.x*0.71 + p.y*0.53 + uTime*2.9)*0.06;
+  }
+  // eğim türevden: dört kez wave() yerine üç cos (telefonda piksel başına ucuz)
+  vec2 waveGrad(vec2 p){
+    float c1 = cos(p.x*0.16 + p.y*0.11 + uTime*1.3)*0.36, c2 = cos(p.x*0.33 - p.y*0.07 + uTime*2.0)*0.17, c3 = cos(p.x*0.71 + p.y*0.53 + uTime*2.9)*0.06;
+    return vec2(c1*0.16 + c2*0.33 + c3*0.71, c1*0.11 - c2*0.07 + c3*0.53);
   }`;
 const waterMat = new THREE.ShaderMaterial({
   fog: true,
@@ -261,9 +267,8 @@ const waterMat = new THREE.ShaderMaterial({
     varying vec3 vWorld; varying float vH;
     #include <fog_pars_fragment>
     void main(){
-      vec2 p = vWorld.xz; float e = 0.25;
-      float hx = (wave(p + vec2(e,0.)) - wave(p - vec2(e,0.))) / (2.*e);
-      float hz = (wave(p + vec2(0.,e)) - wave(p - vec2(0.,e))) / (2.*e);
+      vec2 p = vWorld.xz, gr = waveGrad(p);
+      float hx = gr.x, hz = gr.y;
       vec2 rip = vec2(sin(p.x*2.3 + uTime*3.1) + sin(p.y*1.9 - uTime*2.4 + p.x*0.7),
                       sin(p.y*2.7 + uTime*2.6) + sin(p.x*1.3 + p.y*0.9 - uTime*3.3)) * 0.07;
       vec3 n = normalize(vec3(-hx + rip.x, 1.0, -hz + rip.y));
