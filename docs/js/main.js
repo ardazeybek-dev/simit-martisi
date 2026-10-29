@@ -475,15 +475,6 @@ function spawnScenery(limit) {
       b.position.set(side * rand(15, r < 0.5 ? 30 : 40), 0, sceneryZ); b.rotation.y = rand(-0.5, 0.5) + (r >= 0.5 && Math.random() < 0.5 ? Math.PI : 0);
       scene.add(b); decor.push({ mesh: b, z: sceneryZ, ph: Math.random() * 6 });
     }
-    // açıkta seyreden gemiler: uzak şeritte karşıdan gelen ya da bizimle giden vapur, daha açıkta şilep. Dokunulmaz, yalnız manzara
-    if (Math.random() < 0.13 && !piers.some(p => Math.abs(p.z - sceneryZ) < 90)) {
-      const big = Math.random() < 0.45, side = pick([-1, 1]), g = new THREE.Group();
-      if (big) g.add(new THREE.Mesh(cargoGeo((Math.random() * 3) | 0), vcMat));
-      else { g.add(new THREE.Mesh(ferryGeo(pick(FERRY_LENGTHS)), vcMat)); const c = new THREE.Mesh(CHIMNEY, vcMat); c.position.set(0, DECK, 0); g.add(c); }
-      const toward = Math.random() < 0.6; // çoğu karşıdan gelir
-      g.rotation.y = toward ? 0 : Math.PI; g.position.set(side * (big ? rand(55, 90) : rand(26, 40)), 0, sceneryZ);
-      scene.add(g); decor.push({ mesh: g, z: sceneryZ, ph: Math.random() * 6, calm: true, vz: (toward ? 1 : -1) * rand(3, 6) });
-    }
     if (sceneryZ < cruiseZ) {
       cruiseZ = sceneryZ - rand(380, 700);
       const c = makeCruise(), flip = Math.random() < 0.5;
@@ -496,6 +487,20 @@ function spawnScenery(limit) {
       const m = new THREE.Mesh(MAIDEN, vcMat), side = pick([-1, 1]);
       m.position.set(side * rand(34, 40), 0, sceneryZ - 20); m.rotation.y = side > 0 ? 0 : Math.PI; m.castShadow = true;
       scene.add(m); land.push({ mesh: m, z: sceneryZ - 20 });
+    }
+    // açıkta seyreden gemiler: dış şeritte karşıdan gelen ya da bizimle giden vapur, daha açıkta şilep. Dokunulmaz, yalnız manzara.
+    // Demirli teknelerin (±15-40) dışında kendi şeritleri var; Kız Kulesi, yolcu gemisi ya da başka gemi o yakada yakınsa çıkmaz
+    if (Math.random() < 0.13 && !piers.some(p => Math.abs(p.z - sceneryZ) < 90)) {
+      const big = Math.random() < 0.45, side = pick([-1, 1]), x = side * (big ? rand(66, 84) : rand(50, 57));
+      const busy = [...land, ...decor.filter(d => d.vz)].some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - sceneryZ) < 170);
+      if (!busy) {
+        const g = new THREE.Group();
+        if (big) g.add(new THREE.Mesh(cargoGeo((Math.random() * 3) | 0), vcMat));
+        else { g.add(new THREE.Mesh(ferryGeo(pick(FERRY_LENGTHS)), vcMat)); const c = new THREE.Mesh(CHIMNEY, vcMat); c.position.set(0, DECK, 0); g.add(c); }
+        const toward = Math.random() < 0.6; // çoğu karşıdan gelir
+        g.rotation.y = toward ? 0 : Math.PI; g.position.set(x, 0, sceneryZ);
+        scene.add(g); decor.push({ mesh: g, z: sceneryZ, ph: Math.random() * 6, calm: true, vz: (toward ? 1 : -1) * rand(3, 6) });
+      }
     }
   }
 }
@@ -1397,9 +1402,9 @@ function frame() {
     const dz = speed * dt; g.z -= dz; if (state === 'play') dist += dz / 2;
     if (cur) heading += cur.k * dz * bendOn; else heading *= Math.exp(-dt / 30); // ufuk, düzlükte yavaşça toparlanır
     // kritik sönümlü yay: hızlı ama yumuşak takip (çevik: engelden son anda kaçılabilsin)
-    const k = 230, c = 2 * Math.sqrt(k) * 0.95;
-    vx += ((clamp(tx - Math.sign(lean) * push + (state === 'play' ? wind * 0.32 : 0), -LANE, LANE) - g.x) * k - vx * c) * dt;
-    g.x += vx * dt;
+    // alt adımlar (en çok 1/60 sn): kare hızı düşen telefonda sert yay titremesin
+    const k = 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push + (state === 'play' ? wind * 0.32 : 0), -LANE, LANE);
+    for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (weather === 'snow' && warmth < 0.25 && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
     gull.rotation.x = damp(gull.rotation.x, -0.05 + Math.sin(t * 1.1) * 0.03, 4, dt);
@@ -1562,7 +1567,7 @@ function frame() {
     }
   }
   for (const d of decor) {
-    if (d.vz) { d.z += d.vz * dt; d.mesh.position.z = d.z; }
+    if (d.vz) { if (bridges.some(b => Math.abs(b.z - d.z) < 12)) d.vz = 0; d.z += d.vz * dt; d.mesh.position.z = d.z; } // köprüye gelen gemi demirler (tabliyenin içinden geçmesin)
     d.mesh.position.y = waveAt(d.mesh.position.x, d.z, t) - 0.1; d.mesh.rotation.z = Math.sin(t * 1.7 + d.ph) * (d.calm ? 0.012 : 0.12);
     const crew = d.mesh.userData.crew; // dekor teknelerindekiler martı yaklaşınca zıplar, el sallar
     if (crew && crew.length && Math.abs(d.z - g.z) < 60) for (const c of crew) {
@@ -1947,6 +1952,7 @@ window.__game = {
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revives > 0; }, revive: () => askRevive(),
   get fish() { return fish; }, setFish, fishRevive, get fishCost() { return fishCost(); }, setFishOdds: (spawn, ok) => { fishSpawn = spawn; fishCatch = ok; },
+  get movers() { return decor.filter(d => d.calm).map(d => ({ x: +d.mesh.position.x.toFixed(1), z: +d.z.toFixed(1), vz: d.vz })); }, get decorX() { return [...decor.filter(d => !d.calm), ...land].map(d => ({ x: +d.mesh.position.x.toFixed(1), z: +d.z.toFixed(1) })); },
   get fishes() { return fishes.map(f => ({ u: +f.u.toFixed(2), done: f.done, ahead: +(gull.position.z - f.z).toFixed(1), ax: +f.ax.toFixed(2) })); },
   addFish: (ahead = 40, x = 0) => { const dir = 1, mm = new THREE.Mesh(FISH, vcMat); mm.visible = false; scene.add(mm); fishes.push({ mesh: mm, dir, ax: x, z: gull.position.z - ahead, w: 3.2, T: 0.85, lag: 0, u: -1, done: false, spin: 0, splT: 0 }); },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
