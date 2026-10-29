@@ -43,7 +43,7 @@ const difficulty = () => clamp(-genZ / 650, 0, 5);
 // Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
 const STOP_K = new URLSearchParams(location.search).has('stop') ? 0.15 : 1; // ?stop → duraklar çok yakın (deneme için)
 const routeOf = c => clamp(+store.get(c.routeKey, 0) || 0, 0, c.stops.length - 1); // o şehirde şimdiye dek varılan en uzak iskele
-const cityOpen = c => { const i = CITIES.indexOf(c); return i <= 0 || routeOf(CITIES[i - 1]) === CITIES[i - 1].stops.length - 1; };
+const cityOpen = c => { const i = CITIES.indexOf(c); return !c.soon && (i <= 0 || routeOf(CITIES[i - 1]) === CITIES[i - 1].stops.length - 1); };
 let city, STOPS, farStop;
 function useCity(c) {
   city = c; farStop = routeOf(c);

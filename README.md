@@ -20,6 +20,8 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 ## Gameplay
 
 - **Goal: fly the Bosphorus line.** Every flight leaves Kadıköy and heads up the strait: Karaköy (400 m), Beşiktaş, Ortaköy, Bebek, Rumeli Hisarı, Emirgan, Sarıyer and the Black Sea (6,800 m). The HUD shows the next pier and the metres left; a pier is a gate with its name board, the terminal on the bank and a simit line ending in a golden simit right under the sign. Flying under the sign triggers a short slow-motion moment with fireworks, then the crowd on the pier throws a shower of simit pieces into the lane; arriving pays bonus points and the flight goes on to the next pier. The first time you reach a pier it pays simits (25 up to 750) and lights up on the title-screen route map; the game-over screen tells you how far the next pier was.
+- **Cities:** fly the Bosphorus to the Black Sea and İzmir opens; pick the city with the arrows above the route map on the title screen. Each city keeps its own pier progress and first-arrival gifts; the wallet, outfits, missions and leaderboard are shared. Antalya is listed as coming soon.
+  - *İzmir:* Üçkuyular to Bostanlı (7,200 m) past Göztepe, Konak, Pasaport, Alsancak, Bayraklı and Karşıyaka, under an Aegean afternoon sky with the Konak clock tower, Kadifekale and the Bayraklı towers on the horizon. You catch gevrek instead of simit (same value). There is no bridge; instead the *imbat* blows: white wind streaks sliding across the water mark a gust lane that pushes the gull downwind while gevreks tumble across it, so leaning with the wind catches them.
 - **Score** = simit points + 1 point per 10 m flown.
 - **Lane and hit boxes:** the lane is as wide as a ferry (the gull can reach just past the rails) and steering is quick, so a late dodge still works. Hazards hit only when you really touch them; rival gulls are clearly smaller than yours. Simits and power-up bubbles are picked up from a generous distance around the gull.
 - **Combo:** catch simits in a row to raise the multiplier; it climbs slowly (x2 at 3, x3 at 12, x4 at 27, x5 at 48) and the chain dies if you go about 1.5 s without a catch. The ring in the HUD shows how long it stays alive.
@@ -110,10 +112,11 @@ docs/
   style.css             UI (HUD, screens, animations)
   js/i18n.js            language table and translation (classic script, loads before main.js)
   js/main.js            game state, input, spawning, collisions, main loop
-  js/scene.js           renderer, camera, lights, sky, skyline, water shader
+  js/scene.js           renderer, camera, lights, sky, per-city skyline and colours, water shader
   js/models.js          seagull, outfits, simit, passengers, ferry, kite, power-ups
   js/fx.js              particles, sparkles, smoke, speed lines, floating texts
   js/audio.js           synthesized music and sound effects
+  js/cities.js          cities: pier lines, save keys, pickup type and city-only features (bridges, imbat)
   js/board.js           weekly leaderboard: seeded bot players, flags, rank from score, end-of-week rewards
   js/util.js            helpers, mesh merging, safe localStorage
   sw.js                 service worker (bump VERSION on every release)
