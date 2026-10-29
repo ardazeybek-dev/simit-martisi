@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { rand, canvasTex } from './util.js';
+import { rand, canvasTex, Kit } from './util.js';
 
 // ---------------- renk paleti (gün batımı İstanbul) ----------------
 // Varsayılan yumuşak pastel; ?pal=old eski koyu, doygun gün batımı (karşılaştırma için)
@@ -115,6 +115,7 @@ scene.add(sky);
 export const far = new THREE.Group();
 scene.add(far);
 const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
+export const farShips = []; // ufukta ağır ağır kayan gemi siluetleri (main.js kaydırır)
 {
   const basic = (c, o = {}) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false, ...o }); m.userData.base = c; farMats.push(m); return m; };
   const mFarHill = basic(PAL.hillFar), mHill = basic(PAL.hillNear), mCity = basic(PAL.city), mCityFar = basic(PAL.cityFar);
@@ -222,6 +223,31 @@ const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
   for (let i = 0; i < 260; i++) cl.push(rand(-560, 560), rand(1, 12), -388);
   const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cl, 3));
   far.add(new THREE.Points(cg, new THREE.PointsMaterial({ map: glowTex, color: 0xffc070, size: 3.2, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })));
+
+  // ufukta gemiler: şilep, tanker, uzak vapur siluetleri; sise yakın tek renk, yavaşça yan yana kayar
+  const mShip = basic(PAL.cityFar), mShipNear = basic(PAL.city);
+  const silhouette = kind => {
+    const k = new Kit();
+    if (kind === 0) { // şilep: konteyner basamakları, kıçta köprüüstü
+      k.add(new THREE.BoxGeometry(60, 4, 8), 0, 0, 2, 0);
+      for (let x = -22; x < 20; x += 5) k.add(new THREE.BoxGeometry(4.6, rand(2, 6), 7), 0, x, 5, 0);
+      k.add(new THREE.BoxGeometry(7, 10, 7), 0, 25, 8, 0); k.add(new THREE.BoxGeometry(1.6, 4, 1.6), 0, 26, 14, 0);
+    } else if (kind === 1) { // tanker: alçak uzun gövde, kıçta yüksek köprü
+      k.add(new THREE.BoxGeometry(70, 3.5, 9), 0, 0, 1.75, 0);
+      k.add(new THREE.BoxGeometry(50, 1, 3), 0, -6, 4, 0);
+      k.add(new THREE.BoxGeometry(8, 9, 8), 0, 29, 7, 0); k.add(new THREE.BoxGeometry(1.8, 5, 1.8), 0, 31, 13.5, 0);
+    } else { // vapur: kısa gövde, ortada baca
+      k.add(new THREE.BoxGeometry(26, 3, 6), 0, 0, 1.5, 0); k.add(new THREE.BoxGeometry(16, 2.4, 5), 0, 0, 4.2, 0);
+      k.add(new THREE.CylinderGeometry(1, 1.1, 4, 8), 0, 0, 7, 0);
+    }
+    return k.build();
+  };
+  for (let i = 0; i < 6; i++) {
+    const kind = i % 3, near = i < 2, s = add(silhouette(kind), near ? mShipNear : mShip, rand(-280, 280), 0, near ? rand(-250, -220) : rand(-330, -280));
+    s.scale.setScalar(near ? 0.75 : 0.6); if (Math.random() < 0.5) s.rotation.y = Math.PI;
+    s.userData.v = (Math.random() < 0.5 ? -1 : 1) * rand(1.5, 3.5);
+    farShips.push(s);
+  }
 
   // Kız Kulesi: küçük adacıkta
   const kx = 260, kz = -300, km = basic(PAL.tower);

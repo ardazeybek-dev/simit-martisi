@@ -33,10 +33,10 @@ export function rankOf(score, w = week()) {
 export const totalPlayers = (w = week()) => params(w.key).total;
 
 // ödül basamakları: hafta bitince son sıraya göre
-export const TIERS = [[100, 2000], [1000, 1000], [10000, 500], [100000, 200], [0.5, 80]]; // 0.5: ilk %50
+export const TIERS = [[100, 1000], [1000, 500], [10000, 250], [100000, 100], [0.5, 40]]; // 0.5: ilk %50
 export function tierOf(rank, total) {
   for (const [lim, r] of TIERS) if (rank <= (lim < 1 ? total * lim : lim)) return { lim, reward: r };
-  return { lim: 1, reward: 30 }; // katılım
+  return { lim: 1, reward: 15 }; // katılım
 }
 
 // ---------------- botlar: ülke, isim, bayrak ----------------

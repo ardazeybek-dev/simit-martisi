@@ -615,6 +615,44 @@ export const DOLPHIN = (() => {
   return k.build();
 })();
 
+// ---------------- şilep: uzaktan geçen konteyner gemisi (yalnız manzara) ----------------
+// Pruva +z; köprüüstü kıçta. Üç renk çeşidi, her biri bir kez üretilir.
+const CARGO_COLS = [0x7a2a26, 0x24425e, 0x2f5d3a];
+const BOX_COLS = [0xc8352e, 0x2f6f9f, 0xe0a53a, 0x4f9d69, 0xd9d4c8, 0x7a4a8f, 0xe07a5f];
+const cargoCache = [];
+export function cargoGeo(ci) {
+  if (cargoCache[ci]) return cargoCache[ci];
+  const k = new Kit(), L = 46, W = 7.5;
+  const sh = new THREE.Shape(); sh.moveTo(-W / 2, L / 2); sh.lineTo(-W / 2, -L / 2 + 7); sh.quadraticCurveTo(-W / 2, -L / 2, 0, -L / 2 - 2.5);
+  sh.quadraticCurveTo(W / 2, -L / 2, W / 2, -L / 2 + 7); sh.lineTo(W / 2, L / 2); sh.closePath();
+  const layer = (y0, h, col) => { const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 5 }); g.rotateX(-Math.PI / 2); k.add(g, col, 0, y0, 0); };
+  layer(0, 1.6, 0x1b2738); layer(1.6, 2.4, CARGO_COLS[ci]);
+  for (let z = -13; z < 20; z += 3.1) { // konteyner yığınları, düzensiz yükseklik
+    const n = 1 + ((Math.random() * 3) | 0);
+    for (let h = 0; h < n; h++) k.add(new THREE.BoxGeometry(6.6, 1.22, 2.9), BOX_COLS[(Math.random() * BOX_COLS.length) | 0], 0, 4.65 + h * 1.3, z);
+  }
+  k.add(new THREE.BoxGeometry(7, 6, 5), 0xf3efe6, 0, 7, -18);   // köprüüstü
+  k.add(new THREE.BoxGeometry(7.1, 0.6, 5.1), 0x2b4560, 0, 9.2, -18);
+  k.add(new THREE.BoxGeometry(8.6, 0.25, 2), 0xf3efe6, 0, 10, -16.6); // köprü kanatları
+  k.add(new THREE.CylinderGeometry(0.9, 1.05, 3.2, 8), CARGO_COLS[ci], 0, 11.6, -20); // baca
+  k.add(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), 0xf3efe6, 0, 12, -16.5);       // anten direği
+  return (cargoCache[ci] = k.build());
+}
+
+// ---------------- zıplayan balık ----------------
+// Boğaz istavriti: burun +x, sırtı mavi-yeşil, yanları gümüş. Tek geometri, bütün balıklar paylaşır.
+export const FISH = (() => {
+  const k = new Kit(), back = 0x2f7f9a, side = 0xc9d8e0, belly = 0xf4f7f8;
+  k.add(new THREE.SphereGeometry(0.3, 10, 7), (f, y) => (y > 0.05 ? back : y > -0.06 ? side : belly), 0, 0, 0, 0, 0, 0, 1.7, 0.75, 0.5);
+  k.add(new THREE.SphereGeometry(0.045, 5, 4), 0x111418, 0.36, 0.06, 0.12);
+  k.add(new THREE.SphereGeometry(0.045, 5, 4), 0x111418, 0.36, 0.06, -0.12);
+  const tl = new THREE.Shape(); tl.moveTo(0, 0); tl.lineTo(-0.3, 0.26); tl.lineTo(-0.2, 0); tl.lineTo(-0.3, -0.26); tl.closePath();
+  const tlG = new THREE.ExtrudeGeometry(tl, { depth: 0.04, bevelEnabled: false }); tlG.translate(0, 0, -0.02);
+  k.add(tlG, back, -0.46, 0, 0); // kuyruk (dikey)
+  k.add(new THREE.BoxGeometry(0.26, 0.12, 0.03), back, -0.02, 0.24, 0, 0, 0, 0.35); // sırt yüzgeci
+  return k.build();
+})();
+
 // ---------------- güverte eşyaları ----------------
 // çöp kutusu: gövde ve kapak ayrı (kapak fırlar, içinden simit kırığı zıplar); kasalar, halat kangalı, kasanın üstünde kedi
 export const BIN = new Kit()

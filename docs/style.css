@@ -325,6 +325,16 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .actions { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; }
 #reviveBtn { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 8px; }
 #reviveBtn:disabled { opacity: .6; }
+#fishBtn { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(#8fdcff, #3b9fd0); box-shadow: 0 4px 0 #1f6f99; color: #06283a; }
+#fishBtn .ico { width: 26px; height: 26px; }
+#fishBtn b { font-size: 1.1em; }
+#fishBtn.poor { filter: saturate(.3); opacity: .7; }
+.hud-fish { display: inline-flex; align-items: center; gap: 5px; }
+.hud-fish.hidden { display: none; }
+.hud-fish.bump .ico { animation: coinHit .3s cubic-bezier(.3, 1.8, .5, 1); }
+.stat-card.fish { color: #bfe9ff; }
+.earn .earn-fish { display: inline-flex; align-items: center; gap: 4px; color: #bfe9ff; }
+.day .day-fish { color: #8fdcff; font-size: .85em; }
 #reviveBtn svg { width: 22px; height: 22px; flex: none; fill: #2a1503; }
 .ad-ico { display: none; }
 .pf-ads .ad-ico { display: block; }
@@ -334,6 +344,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .earn { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 14px 0 10px; font-weight: 800; font-size: 16px; }
 .earn span:first-child { color: #2a1503; background: linear-gradient(#ffe08a, var(--gold)); padding: 2px 12px 0; border-radius: 99px; box-shadow: 0 2px 0 #b07a12; display: inline-flex; align-items: center; gap: 4px; }
 .earn span:last-child { opacity: .8; display: inline-flex; align-items: center; gap: 4px; padding: 0 10px; border-radius: 99px; background: rgba(255, 255, 255, .07); }
+.earn { flex-wrap: wrap; row-gap: 6px; }
+.earn .earn-rate { font-size: 11px; font-weight: 700; opacity: .55; margin: 0 -2px; }
 .earn span.bump { animation: bump .35s cubic-bezier(.3, 1.8, .5, 1); }
 .over-coin { position: fixed; width: 20px; height: 20px; margin: -10px 0 0 -10px; pointer-events: none; z-index: 60;
   transition: transform .6s cubic-bezier(.4, -0.4, .6, 1), opacity .6s ease-in; }
