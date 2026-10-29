@@ -598,7 +598,7 @@ function showTitle() {
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap();
   show('missionsPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false);
   ui.powers.textContent = '';
-  dressing = false; show('wardrobe', false);
+  dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
   $('titleWallet').textContent = fmt(wallet);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
   $('titleBest').textContent = best ? `${tr('Rekor')} ${fmt(best)}` : tr('İlk uçuşun!');
@@ -733,19 +733,23 @@ function bank() {
   const earned = Math.floor(simitCount + goldCount * 4), gain = earned - banked;
   if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
 }
-function applyLook() {
-  for (const c of COSTUMES) if (outfit[c.id]) outfit[c.id].visible = look.on.includes(c.id);
-  paintGull(gull, COSTUMES.find(c => c.slot === 'body' && look.on.includes(c.id))?.id || 'player');
+// ids: giyili olanlar; kostüm panelinde seçilen parça önizleme olarak üstüne giydirilir
+function applyLook(ids = look.on) {
+  for (const c of COSTUMES) if (outfit[c.id]) outfit[c.id].visible = ids.includes(c.id);
+  paintGull(gull, COSTUMES.find(c => c.slot === 'body' && ids.includes(c.id))?.id || 'player');
 }
+const slotOf = id => COSTUMES.find(x => x.id === id).slot;
+const withItem = (ids, c) => ids.filter(id => slotOf(id) !== c.slot).concat(c.id); // aynı yuvada (baş, göz, boyun...) tek parça
 applyLook();
-let dressing = false, showcase = 0;
+let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan (önizlenen) kostüm
 function openWardrobe() {
   if (state !== 'title') return;
-  dressing = true; $('wardNote').textContent = tr('Simitler cüzdanına girer; onlarla martına kostüm al.');
+  dressing = true; cosSel = null; $('wardNote').textContent = tr('Dokun, martında dene; beğenirsen al.');
   renderWardrobe(); show('title', false); show('wardrobe');
 }
 function closeWardrobe() {
   dressing = false; show('wardrobe', false);
+  if (cosSel) { cosSel = null; applyLook(); } // satın alınmayan önizleme çıkarılır
   if (state === 'title') { $('titleWallet').textContent = fmt(wallet); show('title'); }
 }
 function renderWardrobe() {
@@ -754,29 +758,52 @@ function renderWardrobe() {
   for (const c of COSTUMES) {
     const own = look.owned.includes(c.id), on = look.on.includes(c.id);
     const b = document.createElement('button');
-    b.className = 'cos' + (on ? ' on' : '') + (own ? ' own' : wallet < c.price ? ' poor' : '');
+    b.className = 'cos' + (on ? ' on' : '') + (own ? ' own' : wallet < c.price ? ' poor' : '') + (cosSel === c.id ? ' sel' : '');
     b.dataset.id = c.id;
     b.innerHTML = `<span class="cos-i">${COSTUME_SVG[c.id]}</span><b></b><small></small>`;
     b.querySelector('b').textContent = tr(c.name);
     const tag = b.querySelector('small');
     if (own) tag.textContent = tr(on ? 'Giyili' : 'Giy');
     else tag.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(c.price)}`;
-    b.addEventListener('click', e => { e.stopPropagation(); wear(c, b); });
+    b.addEventListener('click', e => { e.stopPropagation(); pickCostume(c); });
     box.appendChild(b);
   }
+  // alttaki düğme seçilene göre: satın al (fiyatlı) / giy / çıkar
+  const act = $('cosAct'), c = COSTUMES.find(x => x.id === cosSel);
+  show('cosAct', !!c);
+  if (!c) return;
+  const own = look.owned.includes(c.id);
+  act.classList.toggle('poor', !own && wallet < c.price);
+  if (!own) act.innerHTML = `${tr('Satın al')} <svg class="ico"><use href="#i-simit"/></svg>${fmt(c.price)}`;
+  else act.textContent = tr(look.on.includes(c.id) ? 'Çıkar' : 'Giy');
 }
-// alınmamışsa satın al ve giy; giyiliyse çıkar; aynı yuvada (baş, göz, boyun) tek kostüm
-function wear(c, el) {
+// dokununca yalnızca önizleme: martı o parçayla gösterilir, cüzdana dokunulmaz
+function pickCostume(c) {
+  cosSel = c.id;
+  applyLook(look.on.includes(c.id) ? look.on : withItem(look.on, c));
+  sfx.click(); flapBurst = 1;
+  sparkle(gull.position, 12, 0xffe7a8, 3, 0.45, 0.25);
+  const own = look.owned.includes(c.id);
+  $('wardNote').textContent = own ? tr(c.name) : wallet < c.price ? `${tr('Yeterli simit yok')}: ${fmt(c.price - wallet)}` : `${tr('Önizleme')}: ${tr(c.name)}`;
+  renderWardrobe();
+}
+function costumeAction() {
+  const c = COSTUMES.find(x => x.id === cosSel);
+  if (!c) return;
   if (!look.owned.includes(c.id)) {
-    if (wallet < c.price) { sfx.click(); bump(el, 'shake'); $('wardNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(c.price - wallet)}`; return; }
+    if (wallet < c.price) { sfx.click(); bump($('cosAct'), 'shake'); $('wardNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(c.price - wallet)}`; return; }
     wallet -= c.price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]);
+    look.on = withItem(look.on, c);
+    sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
+    $('wardNote').textContent = `${tr(c.name)} ✓`;
   } else if (look.on.includes(c.id)) {
     look.on = look.on.filter(id => id !== c.id); sfx.click();
-    store.set(KEY_LOOK, look); applyLook(); renderWardrobe(); return;
-  } else sfx.power();
-  look.on = look.on.filter(id => COSTUMES.find(x => x.id === id).slot !== c.slot).concat(c.id);
-  store.set(KEY_LOOK, look); applyLook(); renderWardrobe(); flapBurst = 1;
-  sparkle(gull.position, 24, 0xffe7a8, 4, 0.6, 0.3);
+  } else {
+    look.on = withItem(look.on, c); sfx.power();
+    sparkle(gull.position, 24, 0xffe7a8, 4, 0.6, 0.3);
+  }
+  store.set(KEY_LOOK, look); applyLook(); flapBurst = 1;
+  renderWardrobe();
 }
 // ---------------- güçlendirme yükseltmeleri ----------------
 function renderUps() {
@@ -1039,6 +1066,7 @@ onBtn('closeBoard', () => show('boardPanel', false));
 onBtn('leagueClaim', () => claimLeague());
 onBtn('claimBtn', () => claimDaily());
 onBtn('closeWardrobe', () => closeWardrobe());
+onBtn('cosAct', () => costumeAction());
 onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
 onBtn('quitBtn', () => { audio.resume(); showTitle(); });
@@ -1414,7 +1442,7 @@ function frame() {
   const followZ = state === 'dead' || state === 'over' ? camera.position.z - back : g.z;
   let cx = g.x * 0.85 - lean * 1.3, cy = FLY_Y + up, cz = followZ + back;
   showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' ? 4 : 1.6, realDt);
-  if (dressing) { cx = g.x + (land ? 1.2 : 1.6); cy = FLY_Y + 1.5; cz = g.z - 5.2; } // kostüm paneli: önden yakın çekim
+  if (dressing) { cx = g.x + (land ? 1.6 : 1.6); cy = FLY_Y + (land ? 1.9 : 1.5); cz = g.z - (land ? 6.8 : 5.2); } // kostüm paneli: önden yakın çekim
   else if (showcase > 0.001) {
     // oyun kamerasının martıya göre açısından vitrin açısına yay çizerek geç: kamera martının içinden geçmez
     const a0 = Math.atan2(cx - g.x, cz - g.z), r0 = Math.hypot(cx - g.x, cz - g.z);
@@ -1425,7 +1453,7 @@ function frame() {
   camera.position.x = damp(camera.position.x, cx, 5, realDt);
   camera.position.y = damp(camera.position.y, cy, 5, realDt);
   camera.position.z = damp(camera.position.z, cz, showcase > 0.001 ? 8 : 12, realDt);
-  if (dressing) camera.lookAt(g.x - (land ? 2.2 : 0), g.y - (land ? 0.2 : 1.6), g.z); // yatayda martı solda, panel sağda
+  if (dressing) camera.lookAt(g.x - (land ? 2.6 : 0), g.y - (land ? 0.1 : 1.6), g.z); // yatayda martı solda, panel sağda
   else if (showcase > 0.001) {
     const k = showcase * showcase * (3 - 2 * showcase);
     camera.lookAt(g.x * 0.92 + lean * 2.6 + (g.x - g.x * 0.92 - lean * 2.6) * k, FLY_Y - (land ? 0.2 : 0.6) + (g.y + (land ? 0.3 : 0.2) - FLY_Y + (land ? 0.2 : 0.6)) * k, followZ - 12 + (g.z + 12 - followZ) * k);

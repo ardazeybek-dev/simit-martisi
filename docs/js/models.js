@@ -38,6 +38,9 @@ const GULL_PAL = {
   pink: { body: 0xffd6e2, head: 0xffe4ec, wing: 0xf08fb0, tip: 0x7a2b4a, beak: 0xf4b52a, eye: 0x111111 },
   night: { body: 0x3a3f4c, head: 0x2c303a, wing: 0x1e2129, tip: 0x0a0a0c, beak: 0xffc23a, eye: 0xffe07a },
   golden: { body: 0xffd77a, head: 0xffe39c, wing: 0xe0a53a, tip: 0x8a5a12, beak: 0xff8a3a, eye: 0x111111 },
+  sunset: { body: 0xffbb85, head: 0xffcf9e, wing: 0x9b5fc0, tip: 0x3d1f5c, beak: 0xffd34d, eye: 0x111111 },
+  mint: { body: 0xdcfff2, head: 0xecfff8, wing: 0x5cc9a7, tip: 0x1f5e4e, beak: 0xf4b52a, eye: 0x111111 },
+  ice: { body: 0xeaf6ff, head: 0xf6fbff, wing: 0x8fc9ef, tip: 0x2f6f9f, beak: 0xbfe6ff, eye: 0x2a6fd6 },
 };
 function gullGeos(type) {
   if (gullGeoCache[type]) return gullGeoCache[type];
@@ -905,7 +908,24 @@ export const COSTUMES = [
   { id: 'pink', name: 'Pembe tüy', slot: 'body', price: 250 },
   { id: 'night', name: 'Gece martısı', slot: 'body', price: 450 },
   { id: 'golden', name: 'Altın martı', slot: 'body', price: 1500 },
+  { id: 'beanie', name: 'Bere', slot: 'head', price: 150 },
+  { id: 'tray', name: 'Simitçi tablası', slot: 'head', price: 700 },
+  { id: 'hearts', name: 'Kalpli gözlük', slot: 'eyes', price: 220 },
+  { id: 'bowtie', name: 'Papyon', slot: 'neck', price: 160 },
+  { id: 'nazar', name: 'Nazar boncuğu', slot: 'neck', price: 400 },
+  { id: 'mint', name: 'Nane martı', slot: 'body', price: 380 },
+  { id: 'sunset', name: 'Gün batımı', slot: 'body', price: 650 },
+  { id: 'ice', name: 'Buz martısı', slot: 'body', price: 900 },
 ];
+// kalp: gözlük camı ve simge için (x-y düzleminde, ortası 0)
+function heartGeo(r) {
+  const s = new THREE.Shape();
+  s.moveTo(0, -r); s.bezierCurveTo(r * 0.2, -r * 0.6, r * 1.1, -r * 0.2, r * 1.0, r * 0.35);
+  s.bezierCurveTo(r * 0.9, r * 0.95, r * 0.2, r * 0.95, 0, r * 0.45);
+  s.bezierCurveTo(-r * 0.2, r * 0.95, -r * 0.9, r * 0.95, -r * 1.0, r * 0.35);
+  s.bezierCurveTo(-r * 1.1, -r * 0.2, -r * 0.2, -r * 0.6, 0, -r);
+  return new THREE.ExtrudeGeometry(s, { depth: 0.03, bevelEnabled: false, curveSegments: 6 });
+}
 // baş merkezi (0, 0.2, −0.72), yarıçap 0.3; gaga −z yönünde
 function costumeGeo(id) {
   const k = new Kit();
@@ -940,6 +960,30 @@ function costumeGeo(id) {
       k.add(new THREE.CapsuleGeometry(0.05, 0.2, 3, 6), 0x2a1a12, s * 0.13, 0.19, -1.0, 0, 0, -s * 1.3);
       k.add(new THREE.SphereGeometry(0.055, 6, 4), 0x2a1a12, s * 0.26, 0.26, -0.97);
     }
+  } else if (id === 'beanie') { // örgü bere: çizgili kubbe, beyaz ponpon
+    k.add(new THREE.SphereGeometry(0.3, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2), (f, y) => ((y * 30) % 2 < 1 ? 0x2f7fd0 : 0x3a93e8), 0, 0.3, -0.72, -0.12, 0, 0, 1.04, 1.05, 1.04);
+    k.add(new THREE.TorusGeometry(0.29, 0.05, 6, 16), 0xf6f0e4, 0, 0.32, -0.72, Math.PI / 2 - 0.12);
+    k.add(new THREE.SphereGeometry(0.085, 8, 6), 0xffffff, 0, 0.64, -0.68);
+  } else if (id === 'tray') { // simitçi tablası: başta tahta tepsi, üstünde simitler
+    k.add(new THREE.TorusGeometry(0.16, 0.045, 6, 12), 0xf6f0e4, 0, 0.5, -0.72, Math.PI / 2); // altındaki bez simit (yastık)
+    k.add(new THREE.CylinderGeometry(0.46, 0.44, 0.05, 18), 0xb57a3c, 0, 0.57, -0.72);
+    k.add(new THREE.TorusGeometry(0.45, 0.025, 4, 22), 0x8a5626, 0, 0.6, -0.72, Math.PI / 2);
+    const tor = new THREE.TorusGeometry(0.1, 0.04, 6, 12);
+    for (const [x, z, ry] of [[0, 0, 0], [0.24, 0.1, 0.6], [-0.22, 0.14, 1.2], [0.1, -0.24, 2], [-0.16, -0.2, 2.6], [0.26, -0.14, 0.3]])
+      k.add(tor, () => (Math.random() < 0.25 ? 0xf6e2b3 : 0xb8642a), x, 0.63, -0.72 + z, Math.PI / 2, ry);
+  } else if (id === 'hearts') { // kalpli gözlük: pembe camlar gözlerin önünde
+    for (const s of [-1, 1]) {
+      k.add(heartGeo(0.1), 0xff4f8b, s * 0.2, 0.29, -0.95, 0, Math.PI + s * 0.75);
+      k.add(new THREE.BoxGeometry(0.025, 0.025, 0.28), 0xd12f6a, s * 0.29, 0.31, -0.74);
+    }
+    k.add(new THREE.BoxGeometry(0.16, 0.03, 0.03), 0xd12f6a, 0, 0.33, -1.0);
+  } else if (id === 'bowtie') { // papyon: gerdanın önünde iki kanat ve düğüm
+    for (const s of [-1, 1]) k.add(new THREE.ConeGeometry(0.1, 0.2, 4), 0xd62f3a, s * 0.1, -0.08, -0.84, 0, 0, s * Math.PI / 2, 1, 1, 0.5);
+    k.add(new THREE.SphereGeometry(0.045, 6, 4), 0x9e1b24, 0, -0.08, -0.87);
+  } else if (id === 'nazar') { // ince kolye, ucunda mavi nazar boncuğu
+    k.add(new THREE.TorusGeometry(0.3, 0.014, 4, 20), 0xffc23a, 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
+    const disc = (r, c, dz) => k.add(new THREE.CylinderGeometry(r, r, 0.03, 14), c, 0, -0.24, -0.56 - dz, Math.PI / 2);
+    disc(0.1, 0x1f4fbf, 0); disc(0.068, 0xffffff, 0.012); disc(0.045, 0x5fb4ff, 0.024); disc(0.022, 0x111111, 0.036);
   } else if (id === 'scarf') {
     const ring = new THREE.TorusGeometry(0.3, 0.075, 6, 16);
     k.add(ring, (f) => (f % 8 < 4 ? 0xd23a33 : 0xf6f0e4), 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
@@ -960,6 +1004,14 @@ export function dressGull(gull) {
   return out;
 }
 export const COSTUME_SVG = {
+  beanie: '<svg viewBox="0 0 48 48"><path d="M8 32a16 16 0 0 1 32 0z" fill="#2f7fd0"/><path d="M12 22h24M9.5 27h29" stroke="#3a93e8" stroke-width="3"/><rect x="6" y="30" width="36" height="8" rx="4" fill="#f6f0e4"/><circle cx="24" cy="12" r="5" fill="#fff"/></svg>',
+  tray: '<svg viewBox="0 0 48 48"><ellipse cx="24" cy="30" rx="21" ry="7" fill="#8a5626"/><ellipse cx="24" cy="28" rx="20" ry="6" fill="#b57a3c"/><g fill="none" stroke="#b8642a" stroke-width="3.4"><ellipse cx="15" cy="24" rx="5" ry="3"/><ellipse cx="25" cy="22" rx="5" ry="3"/><ellipse cx="34" cy="25" rx="5" ry="3"/><ellipse cx="22" cy="28" rx="5" ry="3"/></g><path d="M18 36h12l-2 6h-8z" fill="#f6f0e4"/></svg>',
+  hearts: '<svg viewBox="0 0 48 48"><path d="M4 19h40" stroke="#d12f6a" stroke-width="3"/><path d="M13 33l-8-8a4.6 4.6 0 0 1 8-5 4.6 4.6 0 0 1 8 5z" fill="#ff4f8b"/><path d="M35 33l-8-8a4.6 4.6 0 0 1 8-5 4.6 4.6 0 0 1 8 5z" fill="#ff4f8b"/></svg>',
+  bowtie: '<svg viewBox="0 0 48 48"><path d="M24 24L6 13v22zM24 24l18-11v22z" fill="#d62f3a"/><rect x="19" y="19" width="10" height="10" rx="3" fill="#9e1b24"/></svg>',
+  nazar: '<svg viewBox="0 0 48 48"><path d="M8 6q16 22 32 0" fill="none" stroke="#ffc23a" stroke-width="2"/><circle cx="24" cy="29" r="13" fill="#1f4fbf"/><circle cx="24" cy="29" r="9" fill="#fff"/><circle cx="24" cy="29" r="6" fill="#5fb4ff"/><circle cx="24" cy="29" r="3" fill="#111"/></svg>',
+  mint: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#5cc9a7"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#dcfff2"/><circle cx="24" cy="21" r="5" fill="#dcfff2"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
+  sunset: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#9b5fc0"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#ffbb85"/><circle cx="24" cy="21" r="5" fill="#ffcf9e"/><path d="M24 23l3 4h-6z" fill="#ffd34d"/></svg>',
+  ice: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#8fc9ef"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#eaf6ff"/><circle cx="24" cy="21" r="5" fill="#f6fbff"/><path d="M24 23l3 4h-6z" fill="#bfe6ff"/><path d="M38 34v8M34 38h8M35.2 35.2l5.6 5.6M40.8 35.2l-5.6 5.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>',
   mustache: '<svg viewBox="0 0 48 48"><path d="M24 22q-6-4-12 0-5 4-9 1 2 8 10 7 7-1 11-6 4 5 11 6 8 1 10-7-4 3-9-1-6-4-12 0z" fill="#2a1a12"/></svg>',
   pink: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#f08fb0"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#ffd6e2"/><circle cx="24" cy="21" r="5" fill="#ffd6e2"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
   night: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#1e2129"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#3a3f4c"/><circle cx="24" cy="21" r="5" fill="#3a3f4c"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
