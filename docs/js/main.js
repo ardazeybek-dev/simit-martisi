@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
-import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather } from './scene.js';
+import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
+import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, animCrowd, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
@@ -15,7 +16,7 @@ const FLY_Y = 5.15, LANE = 4.6, COMBO_T = 1.5, SPEED_MAX = 40, GEAR_M = 300; // 
 // simit ve güçlendirme cömert (yakından geçmek yeter)
 const HIT = { obs: 0.12, near: 1.1, rival: 0.6, kiteX: 0.55, kiteZ: 0.38, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
-const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_ROUTE = 'simit-martisi-route', KEY_ACH = 'simit-martisi-ach', KEY_DEAL = 'simit-martisi-deal', KEY_FISH = 'simit-martisi-fish';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_CITY = 'simit-martisi-city', KEY_ACH = 'simit-martisi-ach', KEY_DEAL = 'simit-martisi-deal', KEY_FISH = 'simit-martisi-fish';
 
 // ---------------- ayarlar ----------------
 // sfx / music: sessize alma (M tuşu, ses düğmesi); sfxVol / musicVol: Ayarlar'daki kaydırıcılar (0-1)
@@ -38,13 +39,21 @@ let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups
 let bridgeZ = 0;
 let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, land = [];
 const difficulty = () => clamp(-genZ / 650, 0, 5);
-// ---------------- hat: Kadıköy'den Karadeniz'e iskeleler (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
+// ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
+// Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
 const STOP_K = new URLSearchParams(location.search).has('stop') ? 0.15 : 1; // ?stop → duraklar çok yakın (deneme için)
-// to: yönelme hâli ("Karaköy'e 120 m kaldı"), gift: o iskeleye ilk kez varınca cüzdana giren simit
-const STOPS = [['Kadıköy', 0, "Kadıköy'e", 0], ['Karaköy', 400, "Karaköy'e", 25], ['Beşiktaş', 1000, "Beşiktaş'a", 50], ['Ortaköy', 1700, "Ortaköy'e", 75],
-  ['Bebek', 2500, "Bebek'e", 125], ['Rumeli Hisarı', 3400, "Rumeli Hisarı'na", 175], ['Emirgan', 4400, "Emirgan'a", 250], ['Sarıyer', 5500, "Sarıyer'e", 350], ['Karadeniz', 6800, "Karadeniz'e", 750]]
-  .map(([name, m, to, gift]) => ({ name, m: Math.round(m * STOP_K), to, gift }));
-let farStop = clamp(+store.get(KEY_ROUTE, 0) || 0, 0, STOPS.length - 1); // şimdiye dek varılan en uzak iskele
+const routeOf = c => clamp(+store.get(c.routeKey, 0) || 0, 0, c.stops.length - 1); // o şehirde şimdiye dek varılan en uzak iskele
+const cityOpen = c => { const i = CITIES.indexOf(c); return i <= 0 || routeOf(CITIES[i - 1]) === CITIES[i - 1].stops.length - 1; };
+let city, STOPS, farStop;
+function useCity(c) {
+  city = c; farStop = routeOf(c);
+  STOPS = c.stops.map(([name, m, to, gift]) => ({ name, m: Math.round(m * STOP_K), to, gift }));
+  setCityLook(c.id);
+}
+{ // ?city=izmir → kilit olsa da o şehir (deneme için)
+  const q = cityOf(new URLSearchParams(location.search).get('city') || store.get(KEY_CITY, 'istanbul'));
+  useCity(cityOpen(q) || new URLSearchParams(location.search).has('city') ? q : CITIES[0]);
+}
 let newStop = 0; // bu uçuşta ilk kez varılan en uzak iskele (oyun sonu için)
 let slowT = 0; const GATE_FW_Y = 15;
 let stopI = 1, pierI = 1, stopM = STOPS.map(s => s.m); // stopI: sıradaki varış, pierI: sıradaki kurulacak iskele, stopM: bu uçuşta kapıların gerçek metresi
@@ -649,12 +658,20 @@ function renderRouteLine() {
   el.classList.toggle('new', newStop > 0);
   if (newStop) el.innerHTML = `${tr('Yeni iskele')}: <b>${STOPS[newStop].name}</b> +${fmt(STOPS[newStop].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
   else if (stopI < STOPS.length) el.textContent = toStop(stopI, Math.max(1, Math.ceil(stopM[stopI] - dist)));
-  else el.textContent = tr('Boğazı baştan sona uçtun!');
+  else el.textContent = tr(city.end);
 }
 function renderRouteMap() {
+  const open = cityOpen(city);
+  $('cityName').textContent = city.name;
+  $('cityPick').classList.toggle('locked', !open); $('playBtn').classList.toggle('locked', !open); $('routeMap').classList.toggle('locked', !open);
+  if (!open) {
+    $('routeMap').innerHTML = STOPS.map(s => `<i title="${s.name}"></i>`).join('');
+    $('routeGoal').textContent = '🔒 ' + tr(city.after);
+    return;
+  }
   const goal = Math.min(farStop + 1, STOPS.length - 1), done = farStop === STOPS.length - 1;
   $('routeMap').innerHTML = STOPS.map((s, i) => `<i class="${i <= farStop ? 'got' : i === goal ? 'goal' : ''}" title="${s.name}"></i>`).join('');
-  $('routeGoal').innerHTML = done ? tr('Boğazı baştan sona uçtun!') : `${tr('Hedef')}: <b>${STOPS[goal].name}</b> · ${fmt(STOPS[goal].m)} m`;
+  $('routeGoal').innerHTML = done ? tr(city.end) : `${tr('Hedef')}: <b>${STOPS[goal].name}</b> · ${fmt(STOPS[goal].m)} m`;
 }
 function showTitle() {
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions();
@@ -671,7 +688,14 @@ function showTitle() {
   if (!tutorialPending && dailyState().ready) setTimeout(() => state === 'title' && !dressing && !menuModal() && openDaily(), 700); // günün ilk açılışında ödül kendiliğinden gelir
   else if (!tutorialPending) setTimeout(() => state === 'title' && !dressing && !menuModal() && offerLeague(), 700); // biten haftanın sıralama ödülü
 }
+function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görünür ama uçulmaz
+  if (state !== 'title') return;
+  useCity(CITIES[(CITIES.indexOf(city) + d + CITIES.length) % CITIES.length]);
+  store.set(KEY_CITY, city.id);
+  applyWeather(weather); resetWorld(false); renderRouteMap();
+}
 function startGame() {
+  if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
   audio.unlock();
   sfx.click();
   refillMissions();
@@ -1258,6 +1282,8 @@ onBtn('reviveBtn', () => askRevive());
 onBtn('fishBtn', () => fishRevive());
 onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') startGame(); });
+onBtn('cityPrev', () => stepCity(-1));
+onBtn('cityNext', () => stepCity(1));
 onBtn('missionsBtn', () => { renderMissions($('titleMis')); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
 onBtn('achBtn', () => openAch());
@@ -1856,12 +1882,12 @@ function arrive() {
   points += gain; if (combo > 0) comboT = COMBO_T;
   const el = $('arrive');
   $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase(window.I18N.lang === 'tr' ? 'tr' : 'en'); // iskele adları Türkçe kalır
-  $('arriveSub').textContent = tr(i === STOPS.length - 1 ? 'Boğazı baştan sona uçtun!' : 'İskeleye vardın');
+  $('arriveSub').textContent = tr(i === STOPS.length - 1 ? city.end : 'İskeleye vardın');
   $('arriveGain').textContent = `+${fmt(gain)}`;
   if (i > farStop) { // ilk kez: iskele haritada açılır, cüzdana hediye
-    farStop = newStop = i; store.set(KEY_ROUTE, i);
+    farStop = newStop = i; store.set(city.routeKey, i);
     wallet += STOPS[i].gift; store.set(KEY_WALLET, wallet);
-    $('arriveSub').textContent = tr(i === STOPS.length - 1 ? 'Boğazı baştan sona uçtun!' : 'Yeni iskele!');
+    $('arriveSub').textContent = tr(i === STOPS.length - 1 ? city.end : 'Yeni iskele!');
     $('arriveGain').innerHTML = `+${fmt(gain)} · +${fmt(STOPS[i].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
     setTimeout(() => sfx.record(), 350);
   }
@@ -1958,6 +1984,8 @@ window.__game = {
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0) => addRival(gull.position.z - ahead, x, 2, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
   get farStop() { return farStop; },
+  get city() { return city.id; },
+  setCity(id) { useCity(cityOf(id)); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },
   get route() { return { next: STOPS[stopI] ? STOPS[stopI].name : null, at: stopM[stopI] ?? null, dist, z: gull.position.z, piers: piers.map(p => ({ i: p.i, ahead: +(gull.position.z - p.z).toFixed(1) })) }; },
   warp: m => { dist = m; gull.position.z = -2 * m; }, // deneme: uçuşu ileri sar
   get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },

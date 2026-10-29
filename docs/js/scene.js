@@ -116,7 +116,7 @@ export const far = new THREE.Group();
 scene.add(far);
 const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
 export const farShips = []; // ufukta ağır ağır kayan gemi siluetleri (main.js kaydırır)
-{
+function buildIstanbul() {
   const basic = (c, o = {}) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false, ...o }); m.userData.base = c; farMats.push(m); return m; };
   const mFarHill = basic(PAL.hillFar), mHill = basic(PAL.hillNear), mCity = basic(PAL.city), mCityFar = basic(PAL.cityFar);
   const add = (geo, m, x, y, z, parent = far) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
@@ -256,6 +256,21 @@ export const farShips = []; // ufukta ağır ağır kayan gemi siluetleri (main.
   add(new THREE.CylinderGeometry(2.2, 2.4, 13, 8), km, kx + 2, 8.5, kz);
   add(new THREE.ConeGeometry(2.8, 5, 8), km, kx + 2, 17.5, kz);
   add(new THREE.PlaneGeometry(0.9, 0.9), winMat, kx + 2, 13, kz + 2.45);
+}
+
+// şehir değişince uzak dekor baştan kurulur (yalnız menüde, uçuşta asla). Renkler İstanbul'un üstüne yazılır.
+const BASE_PAL = { ...PAL };
+const CITY_PAL = { istanbul: {}, izmir: {}, antalya: {} };
+const FAR = { istanbul: buildIstanbul };
+let farCity = null;
+export function setCityLook(id) {
+  if (id === farCity) return;
+  farCity = id;
+  Object.assign(PAL, BASE_PAL, CITY_PAL[id]);
+  far.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+  far.clear(); farMats.length = 0; farShips.length = 0;
+  (FAR[id] || FAR.istanbul)();
+  hemi.groundColor.setHex(PAL.hemiGround); sunLight.color.setHex(PAL.sunLight);
 }
 
 // ---------------- deniz (GPU'da dalga, Fresnel + güneş parıltısı) ----------------

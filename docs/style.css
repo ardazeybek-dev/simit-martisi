@@ -252,6 +252,14 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .route-map .dots::before { content: ''; position: absolute; left: 6px; right: 6px; top: 50%; height: 3px; margin-top: -1.5px; border-radius: 2px; background: rgba(255, 244, 226, .35); }
 .route-map i { position: relative; width: 12px; height: 12px; border-radius: 50%; background: #2a2552; border: 2px solid rgba(255, 244, 226, .6); }
 .route-map i.got { background: var(--gold); border-color: var(--cream); }
+.city-pick { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; text-shadow: 0 3px 0 rgba(27, 24, 56, .5); }
+.city-pick b { min-width: 120px; text-align: center; letter-spacing: .5px; }
+.city-pick.locked b { opacity: .6; }
+.city-pick.shake { animation: shake .35s; }
+.city-arrow { width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(255, 244, 226, .6); background: rgba(42, 37, 82, .55); color: var(--cream); font: inherit; font-size: 24px; line-height: 1; padding: 0 0 3px; cursor: pointer; }
+.city-arrow:active { transform: scale(.92); }
+.route-map .dots.locked { opacity: .45; }
+.play-btn.locked { filter: grayscale(1); opacity: .6; animation: none; }
 .route-map i.goal { border-color: var(--gold); animation: goal 1.2s ease-in-out infinite; }
 @keyframes goal { 50% { transform: scale(1.35); box-shadow: 0 0 0 4px rgba(255, 194, 58, .3); } }
 .route-line { display: table; margin: 4px auto 0; padding: 3px 12px 2px; border-radius: 99px; background: rgba(255, 255, 255, .06); font-size: 14.5px; font-weight: 700; color: var(--cream-2); }

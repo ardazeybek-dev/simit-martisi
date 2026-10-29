@@ -3,7 +3,7 @@ const VERSION = 'simit-martisi-v2.20.0';
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const CORE = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
-  'js/i18n.js', 'js/main.js', 'js/scene.js', 'js/models.js', 'js/fx.js', 'js/audio.js', 'js/util.js', 'js/weather.js', 'js/board.js',
+  'js/i18n.js', 'js/main.js', 'js/scene.js', 'js/models.js', 'js/fx.js', 'js/audio.js', 'js/util.js', 'js/weather.js', 'js/board.js', 'js/cities.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
