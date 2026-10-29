@@ -3,7 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, animCrowd, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, animCrowd, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
@@ -48,7 +48,7 @@ let city, STOPS, farStop;
 function useCity(c) {
   city = c; farStop = routeOf(c);
   STOPS = c.stops.map(([name, m, to, gift]) => ({ name, m: Math.round(m * STOP_K), to, gift }));
-  setCityLook(c.id);
+  setCityLook(c.id); setBait(c.bait);
 }
 { // ?city=izmir → kilit olsa da o şehir (deneme için)
   const q = cityOf(new URLSearchParams(location.search).get('city') || store.get(KEY_CITY, 'istanbul'));
@@ -625,8 +625,8 @@ const GUST = 6.5, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemede
 const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0 }; // görevler ve başarımlar için uçuş sayaçları
 
 function resetWorld(newWeather = true) {
-  clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = rand(-500, -300); cruiseZ = rand(-120, -40);
-  bridgeZ = BRIDGE_SOON ? -90 : -rand(1150, 1450); // ilk köprü Karaköy'den sonra
+  clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = city.maiden ? rand(-500, -300) : -Infinity; cruiseZ = rand(-120, -40);
+  bridgeZ = !city.bridges ? -Infinity : BRIDGE_SOON ? -90 : -rand(1150, 1450); // ilk köprü Karaköy'den sonra
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;

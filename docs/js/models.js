@@ -132,9 +132,23 @@ function pieceGeo() {
   }
   return k.build();
 }
+// İzmir gevreği: daha ince, daha koyu, susamı bol
+function gevrekGeo() {
+  const tor = new THREE.TorusGeometry(0.34, 0.1, 9, 22);
+  return new Kit().add(tor, () => { const r = Math.random(); return r < 0.34 ? 0xf3dcaa : r < 0.6 ? 0x9a4a1c : r < 0.85 ? 0xb05a26 : 0x7c3814; }).build();
+}
+function gevrekPieceGeo() {
+  const arc = new THREE.TorusGeometry(0.34, 0.1, 8, 8, Math.PI * 0.7);
+  const k = new Kit().add(arc, () => { const r = Math.random(); return r < 0.34 ? 0xf3dcaa : r < 0.65 ? 0x9a4a1c : 0xb05a26; });
+  for (const a of [0, Math.PI * 0.7]) k.add(new THREE.CircleGeometry(0.1, 8).rotateX(a ? -Math.PI / 2 : Math.PI / 2).rotateZ(a), 0xf3dcae, Math.cos(a) * 0.34, Math.sin(a) * 0.34, 0);
+  return k.build();
+}
+const BAIT = { simit: [simitGeo(), pieceGeo()], gevrek: [gevrekGeo(), gevrekPieceGeo()] };
+// şehrin yemi: bundan sonra yaratılan simitler bu geometriyi alır (dünya her uçuşta baştan kurulur)
+export function setBait(kind) { [GEO.simit, GEO.piece] = BAIT[kind] || BAIT.simit; }
 export const GEO = {
-  simit: simitGeo(),
-  piece: pieceGeo(),
+  simit: BAIT.simit[0],
+  piece: BAIT.simit[1],
   bubble: new THREE.IcosahedronGeometry(0.85, 2),
   blob: new THREE.CircleGeometry(1, 20),
 };

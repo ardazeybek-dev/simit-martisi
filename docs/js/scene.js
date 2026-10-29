@@ -116,11 +116,17 @@ export const far = new THREE.Group();
 scene.add(far);
 const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
 export const farShips = []; // ufukta ağır ağır kayan gemi siluetleri (main.js kaydırır)
-function buildIstanbul() {
-  const basic = (c, o = {}) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false, ...o }); m.userData.base = c; farMats.push(m); return m; };
-  const mFarHill = basic(PAL.hillFar), mHill = basic(PAL.hillNear), mCity = basic(PAL.city), mCityFar = basic(PAL.cityFar);
-  const add = (geo, m, x, y, z, parent = far) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
-
+// uzak dekor yardımcıları: tek renk, sissiz; hava tonu farMats üzerinden gelir
+const basic = (c, o = {}) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false, ...o }); m.userData.base = c; farMats.push(m); return m; };
+const add = (geo, m, x, y, z, parent = far) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
+const ridge = (z, y0, amp, m, seed) => {
+  const sh = new THREE.Shape(); sh.moveTo(-700, -10);
+  for (let x = -700; x <= 700; x += 20) sh.lineTo(x, y0 + Math.sin(x * 0.011 + seed) * amp + Math.sin(x * 0.031 + seed * 2) * amp * 0.4);
+  sh.lineTo(700, -10);
+  return new THREE.ShapeGeometry(sh);
+};
+const glow = () => canvasTex(32, 32, (g) => { const r = g.createRadialGradient(16, 16, 0, 16, 16, 16); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.3, 'rgba(255,230,170,.8)'); r.addColorStop(1, 'rgba(255,200,120,0)'); g.fillStyle = r; g.fillRect(0, 0, 32, 32); });
+function farClouds() {
   // güneşin önünden geçen ince bulut şeritleri
   const cloudMat = basic(PAL.cloud, { transparent: true, opacity: 0.55, depthWrite: false });
   const cloudMat2 = basic(PAL.cloud2, { transparent: true, opacity: 0.6, depthWrite: false });
@@ -128,32 +134,72 @@ function buildIstanbul() {
     const c = add(new THREE.CircleGeometry(1, 7), i % 3 ? cloudMat2 : cloudMat, rand(-420, 300), rand(70, 190), -600);
     c.scale.set(rand(40, 110), rand(2.5, 6), 1);
   }
-
-  // Anadolu yakası tepeleri: iki kat, sis rengine yakın
-  const ridge = (z, y0, amp, m, seed) => {
-    const sh = new THREE.Shape(); sh.moveTo(-700, -10);
-    for (let x = -700; x <= 700; x += 20) sh.lineTo(x, y0 + Math.sin(x * 0.011 + seed) * amp + Math.sin(x * 0.031 + seed * 2) * amp * 0.4);
-    sh.lineTo(700, -10);
-    return new THREE.ShapeGeometry(sh);
+}
+function farShipsBuild() {
+  // ufukta gemiler: şilep, tanker, uzak vapur siluetleri; sise yakın tek renk, yavaşça yan yana kayar
+  const mShip = basic(PAL.cityFar), mShipNear = basic(PAL.city);
+  const silhouette = kind => {
+    const k = new Kit();
+    if (kind === 0) { // şilep: konteyner basamakları, kıçta köprüüstü
+      k.add(new THREE.BoxGeometry(60, 4, 8), 0, 0, 2, 0);
+      for (let x = -22; x < 20; x += 5) k.add(new THREE.BoxGeometry(4.6, rand(2, 6), 7), 0, x, 5, 0);
+      k.add(new THREE.BoxGeometry(7, 10, 7), 0, 25, 8, 0); k.add(new THREE.BoxGeometry(1.6, 4, 1.6), 0, 26, 14, 0);
+    } else if (kind === 1) { // tanker: alçak uzun gövde, kıçta yüksek köprü
+      k.add(new THREE.BoxGeometry(70, 3.5, 9), 0, 0, 1.75, 0);
+      k.add(new THREE.BoxGeometry(50, 1, 3), 0, -6, 4, 0);
+      k.add(new THREE.BoxGeometry(8, 9, 8), 0, 29, 7, 0); k.add(new THREE.BoxGeometry(1.8, 5, 1.8), 0, 31, 13.5, 0);
+    } else { // vapur: kısa gövde, ortada baca
+      k.add(new THREE.BoxGeometry(26, 3, 6), 0, 0, 1.5, 0); k.add(new THREE.BoxGeometry(16, 2.4, 5), 0, 0, 4.2, 0);
+      k.add(new THREE.CylinderGeometry(1, 1.1, 4, 8), 0, 0, 7, 0);
+    }
+    return k.build();
   };
-  // tepeler ve kıyı şehri ufku üç yandan sarar: virajda bakış dönünce silüet bitip çıplak deniz gökyüzüne yükselmesin
+  for (let i = 0; i < 6; i++) {
+    const kind = i % 3, near = i < 2, s = add(silhouette(kind), near ? mShipNear : mShip, rand(-280, 280), 0, near ? rand(-250, -220) : rand(-330, -280));
+    s.scale.setScalar(near ? 0.75 : 0.6); if (Math.random() < 0.5) s.rotation.y = Math.PI;
+    s.userData.v = (Math.random() < 0.5 ? -1 : 1) * rand(1.5, 3.5);
+    farShips.push(s);
+  }
+}
+// tepeler üç yandan sarar: virajda bakış dönünce silüet bitip çıplak deniz gökyüzüne yükselmesin. h: tepe yüksekliği
+function farRidges(mFar, mNear, mHouses, h = [18, 9, 8, 6]) {
   for (const [ry, seed] of [[0, 0], [Math.PI / 2, 2.7], [-Math.PI / 2, 5.1]]) {
     const pivot = new THREE.Group(); pivot.rotation.y = ry; far.add(pivot);
-    add(ridge(-470, 18, 9, mFarHill, 1.3 + seed), mFarHill, 0, 0, -470, pivot);
-    add(ridge(-430, 8, 6, mHill, 4.1 + seed), mHill, 0, 0, -430, pivot);
+    add(ridge(-470, h[0], h[1], mFar, 1.3 + seed), mFar, 0, 0, -470, pivot);
+    add(ridge(-430, h[2], h[3], mNear, 4.1 + seed), mNear, 0, 0, -430, pivot);
     if (ry) { // yanlarda alçak, seyrek kıyı evleri
       const sc = new THREE.Shape(); sc.moveTo(-650, -5);
-      for (let x = -650; x < 650;) { const w = rand(6, 14), h = Math.random() < 0.3 ? 0 : rand(3, 9); sc.lineTo(x, h); sc.lineTo(x + w, h); x += w; }
+      for (let x = -650; x < 650;) { const w = rand(6, 14), hh = Math.random() < 0.3 ? 0 : rand(3, 9); sc.lineTo(x, hh); sc.lineTo(x + w, hh); x += w; }
       sc.lineTo(650, -5);
-      add(new THREE.ShapeGeometry(sc), mCityFar, 0, 0, -400, pivot);
+      add(new THREE.ShapeGeometry(sc), mHouses, 0, 0, -400, pivot);
     }
   }
-
-  // tarihi yarımada silüeti: tek ShapeGeometry'de binalar
+}
+// kıyı şehri silüeti: tek ShapeGeometry'de binalar
+function farSkyline(m, z, hMin, hMax) {
   const city = new THREE.Shape(); city.moveTo(-600, -5);
-  for (let x = -600; x < 600;) { const w = rand(5, 12), h = rand(5, 16); city.lineTo(x, h); city.lineTo(x + w, h); x += w; }
+  for (let x = -600; x < 600;) { const w = rand(5, 12), h = rand(hMin, hMax); city.lineTo(x, h); city.lineTo(x + w, h); x += w; }
   city.lineTo(600, -5);
-  add(new THREE.ShapeGeometry(city), mCity, 0, 0, -390);
+  add(new THREE.ShapeGeometry(city), m, 0, 0, z);
+}
+// silüetin önünde rastgele pencere ışıkları
+function farLights(n, x0, x1, y0, y1, z, tex) {
+  const cl = [];
+  for (let i = 0; i < n; i++) cl.push(rand(x0, x1), rand(y0, y1), z);
+  const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cl, 3));
+  far.add(new THREE.Points(cg, new THREE.PointsMaterial({ map: tex, color: 0xffc070, size: 3.2, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })));
+}
+
+function buildIstanbul() {
+  const mFarHill = basic(PAL.hillFar), mHill = basic(PAL.hillNear), mCity = basic(PAL.city), mCityFar = basic(PAL.cityFar);
+
+  farClouds();
+
+  // Anadolu yakası tepeleri: iki kat, sis rengine yakın
+  farRidges(mFarHill, mHill, mCityFar);
+
+  // tarihi yarımada silüeti
+  farSkyline(mCity, -390, 5, 16);
 
   // cami: kubbe + yarım kubbeler + şerefeli minareler
   const dome = (r, m, x, y, z) => add(new THREE.SphereGeometry(r, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), m, x, y, z);
@@ -215,39 +261,12 @@ function buildIstanbul() {
   const dots = [];
   for (let x = -240; x < 12; x += 6) dots.push(x, deck + 1.2, bz + 2.2);
   const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(dots, 3));
-  const glowTex = canvasTex(32, 32, (g) => { const r = g.createRadialGradient(16, 16, 0, 16, 16, 16); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.3, 'rgba(255,230,170,.8)'); r.addColorStop(1, 'rgba(255,200,120,0)'); g.fillStyle = r; g.fillRect(0, 0, 32, 32); });
+  const glowTex = glow();
   far.add(new THREE.Points(lg, new THREE.PointsMaterial({ map: glowTex, color: 0xffe2a0, size: 5, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })));
 
-  // şehir ışıkları: silüetin önünde rastgele pencereler
-  const cl = [];
-  for (let i = 0; i < 260; i++) cl.push(rand(-560, 560), rand(1, 12), -388);
-  const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cl, 3));
-  far.add(new THREE.Points(cg, new THREE.PointsMaterial({ map: glowTex, color: 0xffc070, size: 3.2, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })));
 
-  // ufukta gemiler: şilep, tanker, uzak vapur siluetleri; sise yakın tek renk, yavaşça yan yana kayar
-  const mShip = basic(PAL.cityFar), mShipNear = basic(PAL.city);
-  const silhouette = kind => {
-    const k = new Kit();
-    if (kind === 0) { // şilep: konteyner basamakları, kıçta köprüüstü
-      k.add(new THREE.BoxGeometry(60, 4, 8), 0, 0, 2, 0);
-      for (let x = -22; x < 20; x += 5) k.add(new THREE.BoxGeometry(4.6, rand(2, 6), 7), 0, x, 5, 0);
-      k.add(new THREE.BoxGeometry(7, 10, 7), 0, 25, 8, 0); k.add(new THREE.BoxGeometry(1.6, 4, 1.6), 0, 26, 14, 0);
-    } else if (kind === 1) { // tanker: alçak uzun gövde, kıçta yüksek köprü
-      k.add(new THREE.BoxGeometry(70, 3.5, 9), 0, 0, 1.75, 0);
-      k.add(new THREE.BoxGeometry(50, 1, 3), 0, -6, 4, 0);
-      k.add(new THREE.BoxGeometry(8, 9, 8), 0, 29, 7, 0); k.add(new THREE.BoxGeometry(1.8, 5, 1.8), 0, 31, 13.5, 0);
-    } else { // vapur: kısa gövde, ortada baca
-      k.add(new THREE.BoxGeometry(26, 3, 6), 0, 0, 1.5, 0); k.add(new THREE.BoxGeometry(16, 2.4, 5), 0, 0, 4.2, 0);
-      k.add(new THREE.CylinderGeometry(1, 1.1, 4, 8), 0, 0, 7, 0);
-    }
-    return k.build();
-  };
-  for (let i = 0; i < 6; i++) {
-    const kind = i % 3, near = i < 2, s = add(silhouette(kind), near ? mShipNear : mShip, rand(-280, 280), 0, near ? rand(-250, -220) : rand(-330, -280));
-    s.scale.setScalar(near ? 0.75 : 0.6); if (Math.random() < 0.5) s.rotation.y = Math.PI;
-    s.userData.v = (Math.random() < 0.5 ? -1 : 1) * rand(1.5, 3.5);
-    farShips.push(s);
-  }
+  farLights(260, -560, 560, 1, 12, -388, glowTex); // şehir ışıkları
+  farShipsBuild();
 
   // Kız Kulesi: küçük adacıkta
   const kx = 260, kz = -300, km = basic(PAL.tower);
@@ -258,10 +277,95 @@ function buildIstanbul() {
   add(new THREE.PlaneGeometry(0.9, 0.9), winMat, kx + 2, 13, kz + 2.45);
 }
 
+// ---------------- İzmir: Kordon, Konak Saat Kulesi, Kadifekale, Bayraklı kuleleri ----------------
+function buildIzmir() {
+  const mFarHill = basic(PAL.hillFar), mHill = basic(PAL.hillNear), mCity = basic(PAL.city), mCityFar = basic(PAL.cityFar);
+  const mTower = basic(PAL.tower), mGlass = basic(PAL.bridge), winMat = basic(0xffe0a0);
+  farClouds();
+  // Yamanlar ve Kadifekale: Boğaz'dan yüksek, sarı-zeytin tepeler
+  farRidges(mFarHill, mHill, mCityFar, [30, 13, 12, 7]);
+  // Kadifekale: şehrin arkasındaki tepede surlar
+  const kx = -190, kz = -415;
+  const hill = new THREE.Shape(); hill.moveTo(-110, -5);
+  for (let x = -110; x <= 110; x += 10) hill.lineTo(x, 26 * Math.cos((x / 110) * Math.PI / 2) ** 1.4 + Math.sin(x * 0.2) * 0.8);
+  hill.lineTo(110, -5);
+  add(new THREE.ShapeGeometry(hill), mHill, kx, 0, kz);
+  const wall = new Kit();
+  for (let x = -34; x <= 34; x += 4) {
+    const y = 26 * Math.cos((x / 110) * Math.PI / 2) ** 1.4;
+    wall.add(new THREE.BoxGeometry(4.1, 4, 2), 0, x, y + 1.5, 0);
+    if (Math.abs(x) % 8 === 2) wall.add(new THREE.BoxGeometry(1.6, 1.4, 2), 0, x - 1, y + 4.2, 0); // mazgal
+  }
+  for (const x of [-34, -12, 14, 34]) { const y = 26 * Math.cos((x / 110) * Math.PI / 2) ** 1.4; wall.add(new THREE.BoxGeometry(5, 8, 4), 0, x, y + 3.5, 0); }
+  add(wall.build(), mTower, kx, 0, kz + 3);
+  // alçak kıyı şehri (Konak, Alsancak)
+  farSkyline(mCity, -392, 3, 11);
+  // Bayraklı kuleleri: körfezin sağında cam gökdelenler
+  const bay = new Kit();
+  for (const [x, w, h] of [[95, 9, 46], [112, 11, 64], [128, 8, 38], [142, 12, 76], [160, 9, 52], [178, 10, 44], [194, 8, 58]]) {
+    bay.add(new THREE.BoxGeometry(w, h, 9), 0, x, h / 2, 0);
+    bay.add(new THREE.BoxGeometry(w * 0.6, 3, 6), 0, x, h + 1.5, 0); // tepe
+  }
+  bay.add(new THREE.CylinderGeometry(5.5, 6.5, 70, 10), 0, 212, 35, 0);
+  bay.add(new THREE.CylinderGeometry(0.25, 0.25, 12, 4), 0, 142, 84, 0); // anten
+  add(bay.build(), mGlass, 0, 0, -398);
+  // Asansör: yokuşta tuğla kule
+  add(new THREE.BoxGeometry(5, 24, 5), mTower, -120, 12, -386);
+  add(new THREE.BoxGeometry(9, 4, 6), mTower, -120, 26, -386);
+  // Konak Saat Kulesi: sekizgen, üç kat, tepede küçük kubbe
+  const tx = -25, tz = -372, S = 2.3;
+  const oct = (rt, rb, h, y) => add(new THREE.CylinderGeometry(rt * S, rb * S, h * S, 8), mTower, tx, y * S, tz);
+  oct(4.6, 5.2, 1.6, 0.8);   // kaide
+  oct(3.9, 4.1, 8, 5.6);     // 1. kat
+  oct(4.5, 4.5, 0.8, 10);    // kat silmesi
+  oct(3.2, 3.4, 7, 13.9);    // 2. kat
+  oct(3.8, 3.8, 0.7, 17.7);
+  oct(2.6, 2.8, 5.4, 20.8);  // saat katı
+  oct(3.1, 3.1, 0.6, 23.8);
+  oct(1.9, 2.1, 3.4, 25.8);  // fener
+  add(new THREE.SphereGeometry(2.1 * S, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), mTower, tx, 27.5 * S, tz);
+  add(new THREE.ConeGeometry(0.35 * S, 3 * S, 6), mTower, tx, 30.3 * S, tz);
+  for (const a of [0, Math.PI / 2, -Math.PI / 2]) { // saat kadranları
+    const c = add(new THREE.CircleGeometry(1.3 * S, 16), winMat, tx + Math.sin(a) * 2.75 * S, 20.8 * S, tz + Math.cos(a) * 2.75 * S); c.rotation.y = a;
+  }
+  for (const dx of [-7, 7]) add(new THREE.CylinderGeometry(1.6, 2, 3, 8), mTower, tx + dx * S, 1.5, tz + 2); // çeşmeler
+  // Konak Yalı Camii: tek kubbeli küçük sekizgen cami, tek minare
+  const cx = -70, cz = -378;
+  add(new THREE.CylinderGeometry(6, 6, 7, 8), mCity, cx, 3.5, cz);
+  add(new THREE.SphereGeometry(6.2, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2), mCity, cx, 7, cz);
+  add(new THREE.CylinderGeometry(0.9, 1.1, 26, 8), mCity, cx + 9, 13, cz);
+  add(new THREE.CylinderGeometry(1.6, 1.1, 1.2, 8), mCity, cx + 9, 21, cz);
+  add(new THREE.ConeGeometry(1.1, 6, 8), mCity, cx + 9, 29, cz);
+  // Kordon palmiyeleri: kıyı boyunca, eğik gövdeler, aralıkları düzensiz
+  const palms = new Kit();
+  for (let x = -420; x < 440; x += rand(9, 24)) {
+    if (Math.abs(x - tx) < 16) continue;
+    const h = rand(7, 11), lean = rand(-0.12, 0.12), top = [x + Math.sin(lean) * h, h];
+    palms.add(new THREE.CylinderGeometry(0.28, 0.45, h, 5), 0, x + Math.sin(lean) * h / 2, h / 2, 0, 0, 0, -lean);
+    for (let k = 0; k < 6; k++) {
+      const a = k / 6 * Math.PI * 2 + rand(-0.3, 0.3);
+      palms.add(new THREE.ConeGeometry(0.5, 4.2, 3), 0, top[0] + Math.cos(a) * 1.7, top[1] - 0.5, Math.sin(a) * 1.7, Math.sin(a) * 1.9, 0, -Math.cos(a) * 1.9);
+    }
+  }
+  add(palms.build(), mCity, 0, 0, -366);
+  const glowTex = glow();
+  farLights(200, -560, 560, 1, 9, -390, glowTex);
+  farShipsBuild();
+}
+
 // şehir değişince uzak dekor baştan kurulur (yalnız menüde, uçuşta asla). Renkler İstanbul'un üstüne yazılır.
 const BASE_PAL = { ...PAL };
-const CITY_PAL = { istanbul: {}, izmir: {}, antalya: {} };
-const FAR = { istanbul: buildIstanbul };
+const CITY_PAL = {
+  istanbul: {},
+  izmir: { // Ege ikindisi: açık mavi gök, altın ufuk, lacivert körfez, sarı-zeytin tepeler
+    skyTop: 0x5b8ccc, skyMid: 0x9fc3e3, skyLow: 0xf5d3a6, horizon: 0xffe4b4, fog: 0xf1dcc2, sun: 0xfff3d4,
+    seaDeep: 0x0b4f84, seaShallow: 0x2e9cc0, seaSky: 0xcfe7f1, seaFar: 0xa7c9dd,
+    hillFar: 0xcbb79c, hillNear: 0xab9877, city: 0x9a8e93, cityFar: 0xb4a9ab, bridge: 0x8fa2b8, tower: 0xa58a78,
+    cloud: 0xfff2de, cloud2: 0xf2d8c4, hemiSky: 0xfff0dc, hemiGround: 0x587aa0, sunLight: 0xffd6a6,
+  },
+  antalya: {},
+};
+const FAR = { istanbul: buildIstanbul, izmir: buildIzmir };
 let farCity = null;
 export function setCityLook(id) {
   if (id === farCity) return;
