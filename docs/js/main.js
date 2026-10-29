@@ -14,7 +14,7 @@ const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.5, SPEED_MAX = 40, GEAR_M = 300; // 
 // çarpışma payları: engeller affedici (kutu görünenden dar), simit ve güçlendirme cömert (yakından geçmek yeter)
 const HIT = { obs: 0.3, near: 1.25, rival: 0.85, kiteX: 0.7, kiteZ: 0.45, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
-const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_ROUTE = 'simit-martisi-route', KEY_ACH = 'simit-martisi-ach';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_ROUTE = 'simit-martisi-route', KEY_ACH = 'simit-martisi-ach', KEY_DEAL = 'simit-martisi-deal';
 
 // ---------------- ayarlar ----------------
 // sfx / music: sessize alma (M tuşu, ses düğmesi); sfxVol / musicVol: Ayarlar'daki kaydırıcılar (0-1)
@@ -575,7 +575,7 @@ let shownScore = -1, shownSimit = -1, shownDist = -1, shownMult = 0, shownStop =
 function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
 function bump(el, cls = 'bump') { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 const total = () => points + Math.floor(dist / 10);
-const fmt = n => n.toLocaleString(window.I18N.lang === 'tr' ? 'tr-TR' : 'en-US');
+const fmt = n => n.toLocaleString(window.I18N.locale);
 
 // hat: oyun sonunda tek satır, ana menüde nokta nokta harita + hedef cümlesi
 const toStop = (i, n) => tr('{to} {n} m kaldı').replace('{to}', STOPS[i].to).replace('{s}', STOPS[i].name).replace('{n}', fmt(n));
@@ -720,7 +720,7 @@ function renderBoard() {
   if (me && !ranks.includes(me)) ranks.push(me);
   ranks.sort((a, b) => a - b);
   const li = (r, img, name, score, cls = '') => `<li class="${cls}"><b>#${fmt(r)}</b><img src="${img}" alt=""><span>${name}</span><em>${fmt(score)}</em></li>`;
-  const meCC = window.I18N.lang === 'tr' ? 'TR' : 'GB';
+  const meCC = { tr: 'TR', de: 'DE', es: 'ES' }[window.I18N.lang] || 'GB';
   let html = '', prev = 0;
   for (const r of ranks) {
     if (r > prev + 1) html += '<li class="gap">⋮</li>';
@@ -768,10 +768,22 @@ function applyLook(ids = look.on) {
 const slotOf = id => COSTUMES.find(x => x.id === id).slot;
 const withItem = (ids, c) => ids.filter(id => slotOf(id) !== c.slot).concat(c.id); // aynı yuvada (baş, göz, boyun...) tek parça
 applyLook();
+// günün fırsatı: her gün alınmamış kostümlerden biri %40 indirimli; o gün alınınca yenisi ertesi gün gelir
+function dealToday() {
+  const day = dayKey(), d = store.get(KEY_DEAL, {}) || {};
+  if (d.day === day) return d.id;
+  const left = COSTUMES.filter(c => !look.owned.includes(c.id));
+  let h = 0; for (const ch of day) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const id = left.length ? left[h % left.length].id : '';
+  store.set(KEY_DEAL, { day, id });
+  return id;
+}
+const priceOf = c => (c.id === dealToday() ? Math.round((c.price * 0.6) / 10) * 10 : c.price);
 let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan (önizlenen) kostüm
 function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; cosSel = null; $('wardNote').textContent = tr('Dokun, martında dene; beğenirsen al.');
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'settings']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe');
 }
 function closeWardrobe() {
@@ -785,13 +797,15 @@ function renderWardrobe() {
   for (const c of COSTUMES) {
     const own = look.owned.includes(c.id), on = look.on.includes(c.id);
     const b = document.createElement('button');
-    b.className = 'cos' + (on ? ' on' : '') + (own ? ' own' : wallet < c.price ? ' poor' : '') + (cosSel === c.id ? ' sel' : '');
+    const price = priceOf(c), deal = !own && price < c.price;
+    b.className = 'cos' + (on ? ' on' : '') + (own ? ' own' : wallet < price ? ' poor' : '') + (cosSel === c.id ? ' sel' : '') + (deal ? ' deal' : '');
     b.dataset.id = c.id;
     b.innerHTML = `<span class="cos-i">${COSTUME_SVG[c.id]}</span><b></b><small></small>`;
     b.querySelector('b').textContent = tr(c.name);
     const tag = b.querySelector('small');
-    if (own) tag.textContent = tr(on ? 'Giyili' : 'Giy');
-    else tag.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(c.price)}`;
+    if (own) tag.textContent = on ? tr('Giyili') : tr('Giy');
+    else tag.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(price)}` + (deal ? `<s>${fmt(c.price)}</s>` : '');
+    if (deal) b.insertAdjacentHTML('beforeend', '<em class="cos-deal">-40%</em>');
     b.addEventListener('click', e => { e.stopPropagation(); pickCostume(c); });
     box.appendChild(b);
   }
@@ -800,9 +814,9 @@ function renderWardrobe() {
   show('cosAct', !!c);
   if (!c) return;
   const own = look.owned.includes(c.id);
-  act.classList.toggle('poor', !own && wallet < c.price);
-  if (!own) act.innerHTML = `${tr('Satın al')} <svg class="ico"><use href="#i-simit"/></svg>${fmt(c.price)}`;
-  else act.textContent = tr(look.on.includes(c.id) ? 'Çıkar' : 'Giy');
+  act.classList.toggle('poor', !own && wallet < priceOf(c));
+  if (!own) act.innerHTML = `${tr('Satın al')} <svg class="ico"><use href="#i-simit"/></svg>${fmt(priceOf(c))}`;
+  else act.textContent = look.on.includes(c.id) ? tr('Çıkar') : tr('Giy');
 }
 // dokununca yalnızca önizleme: martı o parçayla gösterilir, cüzdana dokunulmaz
 function pickCostume(c) {
@@ -811,15 +825,16 @@ function pickCostume(c) {
   sfx.click(); flapBurst = 1;
   sparkle(gull.position, 12, 0xffe7a8, 3, 0.45, 0.25);
   const own = look.owned.includes(c.id);
-  $('wardNote').textContent = own ? tr(c.name) : wallet < c.price ? `${tr('Yeterli simit yok')}: ${fmt(c.price - wallet)}` : `${tr('Önizleme')}: ${tr(c.name)}`;
+  $('wardNote').textContent = own ? tr(c.name) : wallet < priceOf(c) ? `${tr('Yeterli simit yok')}: ${fmt(priceOf(c) - wallet)}` : `${tr(priceOf(c) < c.price ? 'Günün fırsatı' : 'Önizleme')}: ${tr(c.name)}`;
   renderWardrobe();
 }
 function costumeAction() {
   const c = COSTUMES.find(x => x.id === cosSel);
   if (!c) return;
   if (!look.owned.includes(c.id)) {
-    if (wallet < c.price) { sfx.click(); bump($('cosAct'), 'shake'); $('wardNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(c.price - wallet)}`; return; }
-    wallet -= c.price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]);
+    const price = priceOf(c);
+    if (wallet < price) { sfx.click(); bump($('cosAct'), 'shake'); $('wardNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(price - wallet)}`; return; }
+    wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]);
     look.on = withItem(look.on, c);
     sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
     $('wardNote').textContent = `${tr(c.name)} ✓`;
@@ -1726,7 +1741,7 @@ function arrive() {
   const i = stopI++, gain = 25 * i * mult();
   points += gain; if (combo > 0) comboT = COMBO_T;
   const el = $('arrive');
-  $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase(window.I18N.lang === 'tr' ? 'tr' : 'en');
+  $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase(window.I18N.lang === 'tr' ? 'tr' : 'en'); // iskele adları Türkçe kalır
   $('arriveSub').textContent = tr(i === STOPS.length - 1 ? 'Boğazı baştan sona uçtun!' : 'İskeleye vardın');
   $('arriveGain').textContent = `+${fmt(gain)}`;
   if (i > farStop) { // ilk kez: iskele haritada açılır, cüzdana hediye
