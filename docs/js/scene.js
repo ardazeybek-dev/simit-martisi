@@ -20,7 +20,8 @@ export const PAL = OLD_PAL ? {
 export const SUN_DIR = new THREE.Vector3(-0.17, 0.11, -0.98).normalize();
 
 export const MOBILE = matchMedia('(pointer: coarse)').matches; // telefon/tablet: daha ucuz gölge, kalite merdiveni farklı (main.js)
-export const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+// telefonda MSAA kapalı: yüksek piksel yoğunluğunda kenar zaten ince, MSAA ise dolum maliyetini katlar
+export const renderer = new THREE.WebGLRenderer({ antialias: !MOBILE, powerPreference: 'high-performance' });
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
@@ -234,22 +235,27 @@ const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
 // ---------------- deniz (GPU'da dalga, Fresnel + güneş parıltısı) ----------------
 const WATER_W = 300, WATER_D = 420, SEG_X = 90, SEG_Z = 130;
 export const CELL = WATER_D / SEG_Z;
+// Dalga argümanları küçük tutulur: p suyun merkezine göre yerel (uOrigin), fazlar (k·origin + ω·t) CPU'da 2π'ye sarılır.
+// Dünya koordinatı Boğaz boyunca on binlere çıkar; telefon GPU'su o büyüklükte sin()'i bozuk hesaplar (su kumlanır).
 const WAVE = `
-  uniform float uTime;
+  uniform vec2 uOrigin; uniform vec3 uPh; uniform vec4 uRp;
   float wave(vec2 p){
-    return sin(p.x*0.16 + p.y*0.11 + uTime*1.3)*0.36
-         + sin(p.x*0.33 - p.y*0.07 + uTime*2.0)*0.17
-         + sin(p.x*0.71 + p.y*0.53 + uTime*2.9)*0.06;
+    return sin(p.x*0.16 + p.y*0.11 + uPh.x)*0.36
+         + sin(p.x*0.33 - p.y*0.07 + uPh.y)*0.17
+         + sin(p.x*0.71 + p.y*0.53 + uPh.z)*0.06;
   }
   // eğim türevden: dört kez wave() yerine üç cos (telefonda piksel başına ucuz)
   vec2 waveGrad(vec2 p){
-    float c1 = cos(p.x*0.16 + p.y*0.11 + uTime*1.3)*0.36, c2 = cos(p.x*0.33 - p.y*0.07 + uTime*2.0)*0.17, c3 = cos(p.x*0.71 + p.y*0.53 + uTime*2.9)*0.06;
+    float c1 = cos(p.x*0.16 + p.y*0.11 + uPh.x)*0.36, c2 = cos(p.x*0.33 - p.y*0.07 + uPh.y)*0.17, c3 = cos(p.x*0.71 + p.y*0.53 + uPh.z)*0.06;
     return vec2(c1*0.16 + c2*0.33 + c3*0.71, c1*0.11 - c2*0.07 + c3*0.53);
   }`;
+// [kx, kz, ω]: dalgalar (uPh) ve ince kırışıklar (uRp); CPU fazı ile shader aynı tabloyu kullanır
+const WAVES = [[0.16, 0.11, 1.3], [0.33, -0.07, 2.0], [0.71, 0.53, 2.9]];
+const RIPS = [[2.3, 0, 3.1], [0.7, 1.9, -2.4], [0, 2.7, 2.6], [1.3, 0.9, -3.3]];
 const waterMat = new THREE.ShaderMaterial({
   fog: true,
   uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
-    uTime: { value: 0 },
+    uOrigin: { value: new THREE.Vector2() }, uPh: { value: new THREE.Vector3() }, uRp: { value: new THREE.Vector4() },
     uDeep: { value: new THREE.Color(PAL.seaDeep) }, uShallow: { value: new THREE.Color(PAL.seaShallow) },
     uSky: { value: new THREE.Color(PAL.seaSky) }, uSun: { value: new THREE.Color(0xffe2b0) },
     uSunDir: { value: SUN_DIR.clone() }, uFar: { value: new THREE.Color(PAL.seaFar) },
@@ -260,7 +266,7 @@ const waterMat = new THREE.ShaderMaterial({
     void main(){
       vec4 wp = modelMatrix * vec4(position, 1.0);
       // uzakta dalga söner: virajda bükülen ufuk kabarmaz, sakin bir çizgi kalır
-      float h = wave(wp.xz) * (1.0 - smoothstep(90.0, 190.0, length(wp.xz - cameraPosition.xz)));
+      float h = wave(wp.xz - uOrigin) * (1.0 - smoothstep(90.0, 190.0, length(wp.xz - cameraPosition.xz)));
       #ifdef FLAT
         h = 0.0;
       #endif
@@ -275,10 +281,10 @@ const waterMat = new THREE.ShaderMaterial({
     varying vec3 vWorld; varying float vH;
     #include <fog_pars_fragment>
     void main(){
-      vec2 p = vWorld.xz, gr = waveGrad(p);
+      vec2 p = vWorld.xz - uOrigin, gr = waveGrad(p);
       float hx = gr.x, hz = gr.y;
-      vec2 rip = vec2(sin(p.x*2.3 + uTime*3.1) + sin(p.y*1.9 - uTime*2.4 + p.x*0.7),
-                      sin(p.y*2.7 + uTime*2.6) + sin(p.x*1.3 + p.y*0.9 - uTime*3.3)) * 0.07;
+      vec2 rip = vec2(sin(p.x*2.3 + uRp.x) + sin(p.y*1.9 + p.x*0.7 + uRp.y),
+                      sin(p.y*2.7 + uRp.z) + sin(p.x*1.3 + p.y*0.9 + uRp.w)) * 0.07;
       vec3 n = normalize(vec3(-hx + rip.x, 1.0, -hz + rip.y));
       vec3 v = normalize(cameraPosition - vWorld);
       float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0);
@@ -316,7 +322,11 @@ export function updateWater(t, cx, cz) {
   water.position.z = Math.round((cz - 150) / CELL) * CELL;
   water.position.x = Math.round(cx / CELL) * CELL;
   sea.position.x = water.position.x; sea.position.z = water.position.z - 300;
-  waterMat.uniforms.uTime.value = t;
+  const ox = water.position.x, oz = water.position.z, U = waterMat.uniforms, TAU = Math.PI * 2;
+  const ph = ([kx, kz, w]) => (((kx * ox + kz * oz + w * t) % TAU) + TAU) % TAU;
+  U.uOrigin.value.set(ox, oz);
+  U.uPh.value.set(ph(WAVES[0]), ph(WAVES[1]), ph(WAVES[2]));
+  U.uRp.value.set(ph(RIPS[0]), ph(RIPS[1]), ph(RIPS[2]), ph(RIPS[3]));
 }
 
 // virajda yön değişince güneş, gökyüzü ve sudaki parıltı birlikte döner (uzak siluet main.js'te)

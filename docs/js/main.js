@@ -613,6 +613,7 @@ function startGame() {
   resetWorld(state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
+  for (const id of ['missionsPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'settings']) show(id, false);
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
   ui.combo.classList.remove('on');
   renderPowers();
@@ -1097,7 +1098,7 @@ function setQuality(q) {
   renderer.setPixelRatio(Math.min(DPR, PR[q]));
   const size = q === 2 && !MOBILE ? 1024 : 512; // orta kalitede de gölge var, sadece daha kaba
   if (sunLight.shadow.mapSize.x !== size) { sunLight.shadow.mapSize.set(size, size); sunLight.shadow.map?.dispose(); sunLight.shadow.map = null; }
-  shadowWant = q > 0;
+  shadowWant = MOBILE ? q > 1 : q > 0; // telefonda gölge haritası yalnız en yüksek kalitede (martının altında blob gölge hep var)
   if (state !== 'play' && state !== 'countdown' && state !== 'dead') applyShadows();
   resize();
 }
@@ -1629,6 +1630,9 @@ function resize() {
 }
 addEventListener('resize', resize);
 setQuality(qLock >= 0 ? qLock : MOBILE ? 1 : 2);
+// telefon belleği sıkışınca GPU bağlamı düşebilir (siyah ya da bozuk ekran): uçuşu durdur, geri gelince sayfayı tazele
+renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); if (state === 'play') pause(); });
+renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
 
 showTitle();
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
