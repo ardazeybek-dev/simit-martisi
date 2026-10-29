@@ -11,6 +11,16 @@ export const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
 };
+// tek seferlik sıfırlama: işaret anahtarı yoksa bu cihazdaki bütün kayıtlar (cüzdan, rekor, görev, rozet...) silinir, ayarlar kalır.
+// Herkesi yeniden sıfırdan başlatmak gerekirse RESET_MARK değiştirilir. util.js ilk yüklenen modül: main.js kayıtları okumadan çalışır.
+const RESET_MARK = 'simit-martisi-reset-2026-10';
+try {
+  if (!localStorage.getItem(RESET_MARK)) {
+    const keep = ['simit-martisi-settings'];
+    for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith('simit-martisi') && !keep.includes(k)) localStorage.removeItem(k); }
+    localStorage.setItem(RESET_MARK, '1');
+  }
+} catch (e) {}
 
 // Kit: birçok parçayı tek bir vertex-renkli geometriye birleştirir → tek draw call
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
