@@ -53,6 +53,7 @@
     <symbol id="i-trophy" viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h10v2h3.5v2.5A4.5 4.5 0 0 1 16.6 12 5.5 5.5 0 0 1 13 14.8V17h3v3H8v-3h3v-2.2A5.5 5.5 0 0 1 7.4 12 4.5 4.5 0 0 1 3.5 7.5V5H7zm0 4H5.5v.5A2.5 2.5 0 0 0 7.1 9.8 7 7 0 0 1 7 8.6zm10 0v1.6a7 7 0 0 1-.1 1.2 2.5 2.5 0 0 0 1.6-2.3V7z"/></symbol>
     <symbol id="i-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5l1.6 1.6L8.5 5M4 12.5l1.6 1.6 2.9-3.1M4 18.5l1.6 1.6 2.9-3.1"/><path d="M12 7h8M12 13h8M12 19h6"/></g></symbol>
     <symbol id="i-gift" viewBox="0 0 24 24"><path fill="currentColor" d="M4 11h7.2v10H5.5A1.5 1.5 0 0 1 4 19.5zm8.8 0H20v8.5a1.5 1.5 0 0 1-1.5 1.5h-5.7zM3 7h8.2v2.6H3zm9.8 0H21v2.6h-8.2zM12 6.6c-1.3-2.9-3.4-4.3-5-3.6-1.7.7-1.1 3.4 1.6 3.6zm0 0c1.3-2.9 3.4-4.3 5-3.6 1.7.7 1.1 3.4-1.6 3.6z"/></symbol>
+    <symbol id="i-medal" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h4l2 5 2-5h4l-3.6 7.4A7 7 0 1 1 9.6 9.4zM12 11a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 1.6l1.3 2.4 2.7.4-2 1.9.5 2.7-2.5-1.3-2.5 1.3.5-2.7-2-1.9 2.7-.4z"/></symbol>
     <symbol id="i-bolt" viewBox="0 0 24 24"><path fill="currentColor" d="M13.5 2L4.5 13.6h6.2L9.6 22l9.9-12.4h-6.3z"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 4.8v14.4c0 1 1.1 1.6 2 1.1l11-7.2c.8-.5.8-1.7 0-2.2l-11-7.2c-.9-.5-2 .1-2 1.1z"/></symbol>
     <symbol id="i-hand" viewBox="0 0 64 64"><path fill="#fff" stroke="#1b1838" stroke-width="2.5" stroke-linejoin="round" d="M25 30V10a4 4 0 0 1 8 0v16l1-1a4 4 0 0 1 7 1 4 4 0 0 1 7 2 4 4 0 0 1 6 3v12c0 9-6 15-15 15h-3c-6 0-9-3-12-8l-8-13a4 4 0 0 1 6-5z"/></symbol>
@@ -109,8 +110,11 @@
     <button class="side-btn" id="wardrobeBtn"><span class="side-ico"><svg><use href="#i-hanger"/></svg></span><span>Kostümler</span></button>
     <button class="side-btn" id="missionsBtn"><span class="side-ico"><svg><use href="#i-list"/></svg></span><span>Görevler</span><i class="badge hidden" id="misBadge"></i></button>
     <button class="side-btn" id="dailyBtn"><span class="side-ico"><svg><use href="#i-gift"/></svg></span><span>Günlük ödül</span><i class="badge dot hidden" id="dailyDot"></i></button>
-    <button class="side-btn" id="boardBtn"><span class="side-ico"><svg><use href="#i-trophy"/></svg></span><span>Sıralama</span></button>
-    <button class="side-btn" id="upsBtn"><span class="side-ico"><svg><use href="#i-bolt"/></svg></span><span>Güçlendir</span></button>
+  </nav>
+  <nav class="menu-side right">
+    <button class="side-btn m-ach" id="achBtn"><span class="side-ico"><svg><use href="#i-medal"/></svg></span><span>Başarımlar</span><i class="badge hidden" id="achBadge"></i></button>
+    <button class="side-btn m-board" id="boardBtn"><span class="side-ico"><svg><use href="#i-trophy"/></svg></span><span>Sıralama</span></button>
+    <button class="side-btn m-ups" id="upsBtn"><span class="side-ico"><svg><use href="#i-bolt"/></svg></span><span>Güçlendir</span></button>
   </nav>
   <div class="title-bottom">
     <div class="route-map no-steer"><div id="routeMap" class="dots"></div><p id="routeGoal"></p></div>
@@ -129,6 +133,15 @@
     <div class="missions" id="titleMis"></div>
     <p class="fine">Görevi bitirince simitler hemen cüzdanına girer.</p>
     <button class="btn primary" id="closeMissions">Tamam</button>
+  </div>
+</section>
+
+<section id="achPanel" class="screen modal hidden">
+  <div class="card ach-card">
+    <div class="sheet-head"><h2>Başarımlar</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="achWallet">0</b></div></div>
+    <div class="achs" id="achList"></div>
+    <p class="fine">Her başarımın bronz, gümüş ve altın kademesi var; kademeyi geçince ödülünü buradan al.</p>
+    <button class="btn primary" id="closeAch">Tamam</button>
   </div>
 </section>
 
@@ -229,6 +242,7 @@
     <p class="rank-line" id="overRank"></p>
     <div class="over-extra">
       <p class="earn" id="overEarn"></p>
+      <p class="ach-line hidden" id="overAch"></p>
       <div class="missions" id="overMis"></div>
     </div>
     <div class="actions">

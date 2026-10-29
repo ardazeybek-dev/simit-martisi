@@ -14,7 +14,7 @@ const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.5, SPEED_MAX = 40, GEAR_M = 300; // 
 // çarpışma payları: engeller affedici (kutu görünenden dar), simit ve güçlendirme cömert (yakından geçmek yeter)
 const HIT = { obs: 0.3, near: 1.25, rival: 0.85, kiteX: 0.7, kiteZ: 0.45, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
-const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_ROUTE = 'simit-martisi-route';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_ROUTE = 'simit-martisi-route', KEY_ACH = 'simit-martisi-ach';
 
 // ---------------- ayarlar ----------------
 // sfx / music: sessize alma (M tuşu, ses düğmesi); sfxVol / musicVol: Ayarlar'daki kaydırıcılar (0-1)
@@ -594,9 +594,9 @@ function renderRouteMap() {
 function showTitle() {
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
-  document.querySelector('.menu-side').classList.toggle('hidden', tutorialPending);
+  document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap();
-  show('missionsPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false);
+  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
   $('titleWallet').textContent = fmt(wallet);
@@ -610,11 +610,12 @@ function startGame() {
   audio.unlock();
   sfx.click();
   refillMissions();
+  achRun = {};
   for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; } // oyun sonunda çubuk buradan dolar
   resetWorld(state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
-  for (const id of ['missionsPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'settings']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'settings']) show(id, false);
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
   ui.combo.classList.remove('on');
   renderPowers();
@@ -660,9 +661,12 @@ function showOver() {
     const wk = recordRun(final), now = rankOf(wk.best), was = wk.before > 0 ? rankOf(wk.before) : 0;
     $('overRank').textContent = tr('Haftalık sıran: {r}').replace('{r}', '#' + fmt(now)) + (was && now < was ? `  ▲ ${fmt(was - now)}` : '');
   }
+  const achBefore = achReady(); achRecord();
   if (!revived) countMission('runs');
   checkMissions(); store.set(KEY_MIS, missions); bank();
   renderMissions($('overMis'), true);
+  { const n = achReady() - achBefore; show('overAch', n > 0);
+    if (n > 0) $('overAch').innerHTML = `<svg><use href="#i-medal"/></svg>${tr('Yeni başarım!')} ${n > 1 ? '×' + n : ''}`; }
   $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span><span id="earnW">${tr('Cüzdan')} <b>${fmt(wallet - banked)}</b> <svg class="ico"><use href="#i-simit"/></svg></span>`;
   setTimeout(() => state === 'over' && earnFlow(banked, wallet), 700);
   show('over'); show('hud', false); hideTutorial();
@@ -773,7 +777,7 @@ function openWardrobe() {
 function closeWardrobe() {
   dressing = false; show('wardrobe', false);
   if (cosSel) { cosSel = null; applyLook(); } // satın alınmayan önizleme çıkarılır
-  if (state === 'title') { $('titleWallet').textContent = fmt(wallet); show('title'); }
+  if (state === 'title') { $('titleWallet').textContent = fmt(wallet); renderMenuBadges(); show('title'); }
 }
 function renderWardrobe() {
   $('walletN').textContent = fmt(wallet);
@@ -922,7 +926,76 @@ function renderMenuBadges() {
   const fresh = missions.filter(m => !m.done && !m.seen).length; // yeni gelen, henüz bakılmamış görevler
   $('misBadge').textContent = fresh; show('misBadge', fresh > 0);
   show('dailyDot', dailyState().ready);
+  const ar = achReady(); $('achBadge').textContent = ar; show('achBadge', ar > 0);
 }
+// ---------------- başarımlar ----------------
+// Kalıcı; her biri üç kademe (bronz, gümüş, altın). Sayaçlar her uçuşun sonunda (showOver) toplanır,
+// rekor ve en uzak iskele eski kayıtlardan gelir: önceden oynayan sıfırdan başlamaz. Ödül panelden alınır, uçuşta bildirim yok.
+const ACH = [
+  { id: 'simit', name: 'Simit avcısı', text: 'Toplam {n} simit kap', n: [100, 1000, 5000] },
+  { id: 'gold', name: 'Altın göz', text: 'Toplam {n} altın simit kap', n: [10, 50, 200] },
+  { id: 'maxDist', name: 'Boğaz yolcusu', text: 'Bir uçuşta {n} m uç', n: [1000, 3000, 6800] },
+  { id: 'maxScore', name: 'Rekortmen', text: 'Bir uçuşta {n} puan yap', n: [2000, 6000, 15000] },
+  { id: 'maxCombo', name: 'Seri ustası', text: '{n} simitlik seri yap', n: [15, 30, 50] },
+  { id: 'steal', name: 'Hınzır martı', text: 'Yolcuların elinden toplam {n} simit kap', n: [50, 300, 1000] },
+  { id: 'near', name: 'Kıl payı', text: 'Toplam {n} kez kıl payı geç', n: [30, 150, 500] },
+  { id: 'turn', name: 'Viraj ustası', text: 'Toplam {n} kusursuz viraj al', n: [10, 50, 200] },
+  { id: 'dolphin', name: 'Yunus dostu', text: 'Toplam {n} yunusun üstünden geç', n: [10, 60, 200] },
+  { id: 'bridge', name: 'Köprü altı', text: 'Toplam {n} kez köprü altından geç', n: [3, 15, 50] },
+  { id: 'runs', name: 'Sadık martı', text: '{n} kez uç', n: [10, 50, 200] },
+  { id: 'owned', name: 'Moda martı', text: '{n} kostüm al', n: [3, 8, 17] },
+];
+const ACH_R = [50, 150, 400];
+const ach = Object.assign({ st: {}, got: {} }, store.get(KEY_ACH, {}));
+let achRun = {}; // bu uçuşta istatistiğe eklenmiş olan (ikinci şansta iki kez sayılmasın)
+function achVal(id) {
+  const s = ach.st;
+  if (id === 'maxScore') return Math.max(s.maxScore || 0, best);
+  if (id === 'maxDist') return Math.max(s.maxDist || 0, STOPS[farStop].m);
+  if (id === 'owned') return look.owned.length;
+  return s[id] || 0;
+}
+const achTier = id => ACH.find(a => a.id === id).n.filter(n => achVal(id) >= n).length;
+const achReady = () => ACH.reduce((k, a) => k + Math.max(0, achTier(a.id) - (ach.got[a.id] || 0)), 0);
+function achRecord() { // uçuş sonu: farkı ekle, en iyileri güncelle
+  const now = { simit: Math.floor(simitCount), gold: Math.floor(goldCount), steal: run.steal, near: run.near, turn: run.turn, dolphin: run.dolphin, bridge: run.bridge, runs: 1 };
+  for (const k in now) { ach.st[k] = (ach.st[k] || 0) + now[k] - (achRun[k] || 0); achRun[k] = now[k]; }
+  ach.st.maxScore = Math.max(ach.st.maxScore || 0, total());
+  ach.st.maxDist = Math.max(ach.st.maxDist || 0, Math.floor(dist));
+  ach.st.maxCombo = Math.max(ach.st.maxCombo || 0, bestCombo);
+  store.set(KEY_ACH, ach);
+}
+function renderAch() {
+  $('achWallet').textContent = fmt(wallet);
+  const box = $('achList'); box.textContent = '';
+  for (const a of ACH) {
+    const tier = achTier(a.id), got = ach.got[a.id] || 0, v = achVal(a.id), next = a.n[Math.min(got, 2)];
+    const d = document.createElement('div');
+    d.className = 'ach'; d.dataset.t = got;
+    const goal = tier > got ? a.n[got] : a.n[Math.min(tier, 2)];
+    d.innerHTML = `<span class="ach-i"><svg><use href="#i-medal"/></svg></span><div class="ach-m"><b></b><small></small><span class="ach-bar"><i style="width:${Math.min(1, v / goal) * 100}%"></i></span></div>`;
+    d.querySelector('b').textContent = tr(a.name);
+    d.querySelector('small').textContent = `${tr(a.text).replace('{n}', fmt(goal))} · ${fmt(Math.min(v, goal))}/${fmt(goal)}`;
+    if (tier > got) {
+      const b = document.createElement('button'); b.className = 'ach-get';
+      b.innerHTML = `+${fmt(ACH_R[got])}<svg class="ico"><use href="#i-simit"/></svg>`;
+      b.addEventListener('click', e => { e.stopPropagation(); claimAch(a.id); });
+      d.appendChild(b);
+    } else d.insertAdjacentHTML('beforeend', `<span class="ach-stars">${[0, 1, 2].map(i => `<i class="${i < got ? 'on' : ''}">★</i>`).join('')}</span>`);
+    void next; box.appendChild(d);
+  }
+}
+function claimAch(id) {
+  const got = ach.got[id] || 0;
+  if (achTier(id) <= got) return;
+  wallet += ACH_R[got]; ach.got[id] = got + 1;
+  store.set(KEY_WALLET, wallet); store.set(KEY_ACH, ach);
+  sfx.record(); vibrate([20, 30, 20]);
+  renderAch(); renderMenuBadges(); $('titleWallet').textContent = fmt(wallet);
+  const row = $('achList').children[ACH.findIndex(a => a.id === id)]; if (row) bump(row, 'got');
+}
+function openAch() { if (state !== 'title') return; renderAch(); show('achPanel'); }
+
 // ---------------- günlük ödül ----------------
 // Her gün bir kez; üst üste gelinen günler ödülü büyütür, bir gün kaçarsa seri baştan başlar.
 const DAILY = [20, 30, 40, 60, 80, 100, 150];
@@ -1060,7 +1133,7 @@ function steerFromX(clientX) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
-const menuModal = () => !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('leaguePanel').classList.contains('hidden');
+const menuModal = () => !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('leaguePanel').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -1089,6 +1162,8 @@ onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') startGame(); });
 onBtn('missionsBtn', () => { renderMissions($('titleMis')); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
+onBtn('achBtn', () => openAch());
+onBtn('closeAch', () => show('achPanel', false));
 onBtn('upsBtn', () => { $('upNote').textContent = tr('Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.'); renderUps(); show('upPanel'); });
 onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
 onBtn('dailyBtn', () => openDaily());
