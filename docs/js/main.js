@@ -3,14 +3,16 @@ import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { MOBILE, renderer, scene, camera, sky, far, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather } from './scene.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, animCrowd, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople } from './models.js';
-import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx } from './fx.js';
+import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
-const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.15, SPEED_MAX = 44, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
+const FLY_Y = 5.15, LANE = 6.2, COMBO_T = 1.5, SPEED_MAX = 40, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
+// çarpışma payları: engeller affedici (kutu görünenden dar), simit ve güçlendirme cömert (yakından geçmek yeter)
+const HIT = { obs: 0.3, near: 1.25, rival: 0.85, kiteX: 0.7, kiteZ: 0.45, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
 const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_ROUTE = 'simit-martisi-route';
 
@@ -1152,7 +1154,7 @@ function frame() {
       sling = Math.max(0, sling - dt);
       slingV = damp(slingV, sling > 0 ? 11 : 0, sling > 0 ? 8 : 1.6, dt);
       // ilerledikçe hızlanır: önce hızlı tırmanır, sonra tavana (SPEED_MAX) kadar yavaşça artmayı sürdürür
-      speed = Math.min(SPEED_MAX, 15 + 17 * (1 - Math.exp(-playT / 60)) + playT * 0.04) + slingV;
+      speed = Math.min(SPEED_MAX, 15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) + slingV;
       if (dist >= gearAt) { gearAt += GEAR_M; gear++; gearUp(); }
       if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();
     } else { speed = 15; autopilot(); }
@@ -1222,14 +1224,14 @@ function frame() {
         s.x += (g.x - s.x) * k; s.y += (g.y - s.y) * k; s.z += (g.z - s.z) * k - speed * dt * 0.6;
         s.mesh.position.set(s.x, s.y, s.z);
       }
-      if (Math.abs(s.z - g.z) > 1.35 || Math.abs(s.x - g.x) > 1.3 || Math.abs(s.y - g.y) > 1.7) continue;
+      if (Math.abs(s.z - g.z) > HIT.simZ || Math.abs(s.x - g.x) > HIT.simX || Math.abs(s.y - g.y) > HIT.simY) continue;
       s.taken = true;
       if (s.free) scene.remove(s.mesh); else s.mesh.visible = false;
       if (state === 'play') takeSimit(s);
     }
     if (state === 'play') {
       for (const p of powerups) {
-        if (p.taken || Math.abs(p.z - g.z) > 1.6 || Math.abs(p.x - g.x) > 1.6) continue;
+        if (p.taken || Math.abs(p.z - g.z) > HIT.power || Math.abs(p.x - g.x) > HIT.power) continue;
         p.taken = true; scene.remove(p.g);
         pw[p.kind] = dur(p.kind); renderPowers(); run.power++;
         hitStop = 0.05; trauma = Math.min(1, trauma + 0.2);
@@ -1238,16 +1240,16 @@ function frame() {
       }
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x), dzo = Math.abs(g.z - o.z);
-        if (g.y < o.top && dx < o.hw + 0.55 && dzo < o.hd + 0.5) crash(o.kind);
+        if (g.y < o.top && dx < o.hw + HIT.obs && dzo < o.hd + HIT.obs) crash(o.kind);
         else if (!o.passed && g.z < o.z - o.hd) {
           o.passed = true;
-          if (dx < o.hw + 1.35 && state === 'play') nearMiss(o.x);
+          if (dx < o.hw + HIT.near && state === 'play') nearMiss(o.x);
         }
       }
       for (const r of rivals) {
         if (r.hit) continue;
         const rp = r.mesh.position;
-        if (Math.abs(rp.x - g.x) < 1.15 && Math.abs(rp.z - g.z) < 1.1) {
+        if (Math.abs(rp.x - g.x) < HIT.rival && Math.abs(rp.z - g.z) < HIT.rival) {
           if (pw.shield > 0 || invuln > 0 || god) { // kalkanla rakibi savur
             if (pw.shield > 0) crash('rakip martıya');
             r.hit = true; r.spin = rp.x > g.x ? 1 : -1;
@@ -1255,7 +1257,7 @@ function frame() {
           } else crash('rakip martıya');
         }
       }
-      for (const k of kites) if (Math.abs(k.g.position.x - g.x) < 0.9 && Math.abs(k.z - g.z) < 0.6) crash('uçurtmaya');
+      for (const k of kites) if (Math.abs(k.g.position.x - g.x) < HIT.kiteX && Math.abs(k.z - g.z) < HIT.kiteZ) crash('uçurtmaya');
       for (const s of smokes) {
         if (!s.hit && g.z < s.z1 && g.z > s.z0 && Math.abs(g.x - s.x) < s.hw) {
           s.hit = true; smokeT = 1.4;
@@ -1485,6 +1487,22 @@ function angry(p) {
   p.angry = 1.6;
   if (!p.feeder) p.mesh.geometry = p.angryGeo(); // ikramcı kızmaz, sevinçten zıplar
 }
+// simidi kapılan yolcu tipine göre kısa bir laf eder (amca, dede, teyze...); ikramcı sevinir
+const CHEERS = ['Afiyet olsun!', 'Al bakalım!', 'Hadi gel!'];
+const SHOUTS = {
+  amca: ['Oha ulen!', 'Ulennn!', 'Hoop!', 'Bırak onu!', 'Yuh artık!', 'Allah Allah!', 'Ulen martı!'],
+  dede: ['Ahhh simidim…', 'Evlat!', 'Vay terbiyesiz!', 'Hayırsız martı!', 'Gözlüğüm!'],
+  teyze: ['Ay simidim!', 'Ayol!', 'Ay kalbim!', 'Vay hınzır!', 'Kış kış!'],
+  abla: ['Yaaa!', 'Aşk olsun!', 'Ciddi mi?'],
+  genc: ['Kanka!', 'Oha!', 'Efsane!', 'Çakal martı!'],
+};
+let shoutT = 0;
+function shout(p, s, cheer) {
+  const now = performance.now();
+  if (now - shoutT < 600) return; // balonlar üst üste binmesin
+  shoutT = now;
+  popText(tr(pick(cheer ? CHEERS : SHOUTS[p.kind] || SHOUTS.amca)), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout');
+}
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1);
@@ -1507,8 +1525,8 @@ function takeSimit(s) {
   }
   bump(ui.score);
   flapBurst = Math.max(flapBurst, 0.4);
-  if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; }
-  else if (s.person) angry(s.person);
+  if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; shout(s.person, s, true); }
+  else if (s.person) { angry(s.person); if (Math.random() < 0.6) shout(s.person, s); }
 }
 // viraj çıkışı: çizgideki simitlerin çoğu alındıysa bonus ve sapan gibi fırlama
 function judgeTurn(u) {
