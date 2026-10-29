@@ -548,7 +548,7 @@ let gear = 0, gearAt = GEAR_M;
 // hava (weather.js): yağmurda rüzgâr esintisi martıyı yana iter, karda simit yemezsen üşürsün, siste ufuk kısalır
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
 const GUST = 8, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
-const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0 }; // görevler için uçuş sayaçları
+const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0 }; // görevler ve başarımlar için uçuş sayaçları
 
 function resetWorld(newWeather = true) {
   clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = rand(-500, -300); cruiseZ = rand(-120, -40);
@@ -558,7 +558,7 @@ function resetWorld(newWeather = true) {
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revived = false;
   pw.magnet = pw.shield = pw.double = 0;
-  run.near = run.power = run.steal = run.turn = run.dolphin = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
+  for (const k in run) run[k] = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   if (newWeather) { weather = pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
@@ -610,6 +610,7 @@ function startGame() {
   audio.unlock();
   sfx.click();
   refillMissions();
+  for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; } // oyun sonunda çubuk buradan dolar
   resetWorld(state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
@@ -661,8 +662,9 @@ function showOver() {
   }
   if (!revived) countMission('runs');
   checkMissions(); store.set(KEY_MIS, missions); bank();
-  renderMissions($('overMis'));
-  $('overEarn').innerHTML = `<span>+${fmt(banked)} <svg class="ico"><use href="#i-simit"/></svg></span><span>${tr('Cüzdan')} ${fmt(wallet)}</span>`;
+  renderMissions($('overMis'), true);
+  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span><span id="earnW">${tr('Cüzdan')} <b>${fmt(wallet - banked)}</b> <svg class="ico"><use href="#i-simit"/></svg></span>`;
+  setTimeout(() => state === 'over' && earnFlow(banked, wallet), 700);
   show('over'); show('hud', false); hideTutorial();
   // ikinci şans: iyi bir uçuşta, uçuş başına bir kez (portalda ödüllü reklamla)
   const canRevive = !revived && final >= 250 && final >= prevBest * 0.4 && rewardReady();
@@ -680,6 +682,27 @@ function showOver() {
   el.textContent = '0';
   requestAnimationFrame(step);
   audio.duck(false);
+}
+// oyun sonu: kazanç sayarak artar, simitler cüzdan hapına akar, cüzdan aynı anda dolar
+function earnFlow(gain, to) {
+  const n = $('earnN'), w = $('earnW'); if (!n || !w) return;
+  const from = to - gain, t0 = performance.now(), d = Math.min(1100, 300 + gain * 6);
+  const a = n.getBoundingClientRect(), b = w.getBoundingClientRect();
+  for (let i = 0; i < Math.min(10, Math.ceil(gain / 4)); i++) setTimeout(() => {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    el.setAttribute('class', 'over-coin'); el.innerHTML = '<use href="#i-simit"/>';
+    el.style.left = `${a.left + a.width * 0.4}px`; el.style.top = `${a.top + a.height / 2}px`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transform = `translate(${b.left + b.width * 0.7 - a.left - a.width * 0.4}px, ${b.top - a.top}px) rotate(180deg)`; el.style.opacity = '.3'; }));
+    setTimeout(() => { el.remove(); bump(w); sfx.catch(2 + (i % 6)); }, 620);
+  }, i * (d / 10));
+  const step = now => {
+    const k = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - k, 2);
+    n.firstChild.nodeValue = `+${fmt(Math.round(gain * e))} `;
+    w.querySelector('b').textContent = fmt(Math.round(from + gain * Math.min(1, Math.max(0, (now - t0 - 600) / d))));
+    if (k < 1 || now - t0 < d + 600) requestAnimationFrame(step); else w.querySelector('b').textContent = fmt(to);
+  };
+  if (gain > 0) requestAnimationFrame(step); else n.firstChild.nodeValue = '+0 ';
 }
 // ---------------- haftalık sıralama (board.js) ----------------
 const tierName = (lim, total) => (lim < 1 ? tr('ilk %50') : `${tr('ilk')} ${fmt(lim)}`);
@@ -847,13 +870,16 @@ const MISSIONS = [
   { k: 'turn', text: 'Bir uçuşta {n} kusursuz viraj al', n: [2, 3, 5], r: [20, 30, 45] },
   { k: 'dolphin', text: 'Bir uçuşta {n} yunusun üstünden geç', n: [3, 6], r: [20, 35] },
   { k: 'stop', text: 'Bir uçuşta {n} iskeleye var', n: [1, 2, 3], r: [20, 40, 70] },
+  { k: 'bridge', text: 'Bir uçuşta {n} kez köprü altından geç', n: [1, 2], r: [30, 60] },
+  { k: 'feed', text: 'Bir uçuşta ikramcılardan {n} simit al', n: [2, 4], r: [20, 40] },
+  { k: 'piece', text: 'Bir uçuşta atılan {n} simit parçası yakala', n: [8, 16], r: [20, 35] },
   { k: 'runs', text: '{n} kez uç', n: [3, 5], r: [15, 25], total: true },
   { k: 'simitTotal', text: 'Toplam {n} simit topla', n: [100, 200], r: [30, 50], total: true },
 ];
 const misDef = k => MISSIONS.find(d => d.k === k);
 let missions = (store.get(KEY_MIS, []) || []).filter(m => m && misDef(m.k) && m.n > 0 && m.r > 0).slice(0, 3);
 function runVal(k) {
-  return { simit: Math.floor(simitCount), gold: Math.floor(goldCount), dist: Math.floor(dist), combo: bestCombo, score: total(), near: run.near, stop: stopI - 1, power: run.power, steal: run.steal, turn: run.turn, dolphin: run.dolphin }[k] || 0;
+  return { simit: Math.floor(simitCount), gold: Math.floor(goldCount), dist: Math.floor(dist), combo: bestCombo, score: total(), near: run.near, stop: stopI - 1, power: run.power, steal: run.steal, bridge: run.bridge, feed: run.feed, piece: run.piece, turn: run.turn, dolphin: run.dolphin }[k] || 0;
 }
 const misProgress = m => Math.floor(misDef(m.k).total ? m.p || 0 : runVal(m.k));
 const misText = m => tr(misDef(m.k).text).replace('{n}', fmt(m.n));
@@ -875,21 +901,26 @@ function checkMissions() {
     }
   }
 }
-function renderMissions(box) {
+// fill: oyun sonunda çubuklar uçuştan önceki yerden (m.p0) dolar; bu uçuşta biten görev parlar ve simiti sayılır
+function renderMissions(box, fill = false) {
   box.textContent = '';
-  for (const m of missions) {
-    const v = Math.min(m.n, misProgress(m));
+  missions.forEach((m, i) => {
+    const v = Math.min(m.n, misProgress(m)), v0 = fill ? Math.min(v, m.p0 || 0) : v, now = fill && m.done && !m.wasDone;
     const d = document.createElement('div');
-    d.className = 'mis' + (m.done ? ' done' : '');
-    d.innerHTML = `<span class="mis-t"></span><span class="mis-r">+${m.r}<svg class="ico"><use href="#i-simit"/></svg></span><i class="mis-bar"><b style="width:${(v / m.n) * 100}%"></b></i>`;
+    d.className = 'mis' + (m.done && !now ? ' done' : '');
+    d.innerHTML = `<span class="mis-t"></span><span class="mis-r">+${m.r}<svg class="ico"><use href="#i-simit"/></svg></span><i class="mis-bar"><b style="width:${(v0 / m.n) * 100}%"></b></i>`;
     d.querySelector('.mis-t').textContent = m.done || !v ? misText(m) : `${misText(m)} · ${fmt(v)}/${fmt(m.n)}`;
     box.appendChild(d);
-  }
+    if (fill && v > v0) setTimeout(() => {
+      d.querySelector('.mis-bar b').style.width = `${(v / m.n) * 100}%`;
+      if (now) setTimeout(() => { d.classList.add('done', 'just'); sfx.gold(); vibrate(15); }, 850);
+    }, 900 + i * 350);
+  });
 }
 // menüdeki rozetler: biten görev sayısı, alınmamış günlük ödül
 function renderMenuBadges() {
-  const done = missions.filter(m => !m.done && misProgress(m) >= m.n).length, left = missions.filter(m => !m.done).length;
-  $('misBadge').textContent = left; show('misBadge', left > 0 && !done);
+  const fresh = missions.filter(m => !m.done && !m.seen).length; // yeni gelen, henüz bakılmamış görevler
+  $('misBadge').textContent = fresh; show('misBadge', fresh > 0);
   show('dailyDot', dailyState().ready);
 }
 // ---------------- günlük ödül ----------------
@@ -1056,7 +1087,7 @@ onBtn('homeBtn', () => showTitle());
 onBtn('reviveBtn', () => askRevive());
 onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') startGame(); });
-onBtn('missionsBtn', () => { renderMissions($('titleMis')); show('missionsPanel'); });
+onBtn('missionsBtn', () => { renderMissions($('titleMis')); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
 onBtn('upsBtn', () => { $('upNote').textContent = tr('Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.'); renderUps(); show('upPanel'); });
 onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
@@ -1397,7 +1428,7 @@ function frame() {
       l.bob.position.set(l.x - r * l.line.position.y, waveAt(l.x, b.z + l.line.position.z, t) - 0.08, l.line.position.z);
     }
     if (!b.done && state === 'play' && g.z < b.z - 6) {
-      b.done = true;
+      b.done = true; run.bridge++;
       const gain = 30 * mult(); points += gain;
       sfx.power(); vibrate(20);
       sparkle(tmp2.set(g.x, g.y + 0.5, g.z), 16, 0xffe7a8, 4, 0.6);
@@ -1532,6 +1563,22 @@ function shout(p, s, cheer) {
   shoutT = now;
   popText(tr(pick(cheer ? CHEERS : SHOUTS[p.kind] || SHOUTS.amca)), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout');
 }
+// kapılan simit, martının ekrandaki yerinden HUD'daki simit sayacına uçar (seyrekleştirilmiş: telefonda DOM yükü olmasın)
+const coinV = new THREE.Vector3(), coinIco = () => document.querySelector('.sub .ico');
+let coinT = 0;
+function coinFly(gold) {
+  const now = performance.now();
+  if (!gold && now - coinT < 140) return;
+  coinT = now;
+  coinV.copy(gull.position).project(camera);
+  const x = (coinV.x * 0.5 + 0.5) * innerWidth, y = (-coinV.y * 0.5 + 0.5) * innerHeight, r = coinIco().getBoundingClientRect();
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  el.setAttribute('class', 'coin-fly' + (gold ? ' gold' : '')); el.innerHTML = '<use href="#i-simit"/>';
+  el.style.transform = `translate(${x}px, ${y}px)`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transform = `translate(${r.left + r.width / 2}px, ${r.top + r.height / 2}px) scale(.6) rotate(200deg)`; el.style.opacity = '.4'; }));
+  setTimeout(() => { el.remove(); bump(coinIco()); }, 560);
+}
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1);
@@ -1542,6 +1589,8 @@ function takeSimit(s) {
   if (s.th) thrownStat.caught++;
   if (weather === 'snow') warmth = Math.min(1, warmth + (s.gold ? 0.35 : 0.08)); // sıcak simit ısıtır
   if (s.person) run.steal++;
+  if (s.person && s.person.feeder) run.feed++;
+  if (s.th) run.piece++;
   if (s.gold) {
     goldCount += q; sfx.gold(); hitStop = 0.06; trauma = Math.min(1, trauma + 0.25); vibrate(20);
     sparkle(tmp.set(s.x, s.y, s.z), 34, 0xffd35a, 6, 0.8, 0.3);
@@ -1552,7 +1601,7 @@ function takeSimit(s) {
     chunks.emit(tmp, 7, { speed: 3, life: 0.7, size: 0.075, color: [0xc97835, 0xf6e2b3, 0xb8642a], gravity: 9 });
     vibrate(8);
   }
-  bump(ui.score);
+  bump(ui.score); coinFly(s.gold);
   flapBurst = Math.max(flapBurst, 0.4);
   if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; shout(s.person, s, true); }
   else if (s.person) { angry(s.person); if (Math.random() < 0.6) shout(s.person, s); }
