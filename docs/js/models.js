@@ -1074,3 +1074,93 @@ export const COSTUME_SVG = {
   captain: '<svg viewBox="0 0 48 48"><ellipse cx="24" cy="17" rx="19" ry="7" fill="#fff"/><path d="M9 18h30v9H9z" fill="#f6f4ee"/><rect x="9" y="25" width="30" height="6" fill="#1b2738"/><path d="M10 31q14 9 28 0z" fill="#111"/><path d="M24 19l3 3-3 3-3-3z" fill="#ffc23a"/></svg>',
   crown: '<svg viewBox="0 0 48 48"><path d="M8 36l-2-22 10 9 8-14 8 14 10-9-2 22z" fill="#f2b22c"/><rect x="8" y="34" width="32" height="6" rx="2" fill="#d99a1c"/><circle cx="24" cy="29" r="3.2" fill="#e5484d"/><circle cx="14" cy="30" r="2.2" fill="#3aa7ff"/><circle cx="34" cy="30" r="2.2" fill="#3aa7ff"/></svg>',
 };
+
+// ---------------- ana menü arka sahnesi: şehri tanıtan yakın manzara ----------------
+// Vitrin kamerası martının önünde durup geriye bakar; bu sahne martının gerisinde (+z) onunla birlikte ilerler, yalnız başlık ekranında görünür.
+// Koordinatlar martıya göre: -x sol kıyı, +z martının arkası. Yan manzaranın (x 40'a kadar) ötesinde kurulur, iç içe geçmez.
+const HOUSE_COLS = [0xf1e3c8, 0xe9c9a6, 0xf3d9d0, 0xd9e1d0, 0xf6eee0, 0xe7b98f, 0xcfd8e3, 0xf0d58c];
+function hillHouses(k, x0, x1, z0, z1, hAt, n, roof = 0xc0533a) { // yamaca serpiştirilmiş evler: düzensiz aralık, farklı boy
+  for (let i = 0; i < n; i++) {
+    const x = rand(x0, x1), z = rand(z0, z1), y = hAt(x, z), w = rand(2.6, 5), d = rand(2.6, 4.5), h = rand(3, 7.5);
+    k.add(new THREE.BoxGeometry(w, h, d), pick(HOUSE_COLS), x, y + h / 2 - 0.4, z, 0, rand(-0.25, 0.25));
+    if (Math.random() < 0.7) k.add(new THREE.ConeGeometry(Math.max(w, d) * 0.74, rand(1.2, 2), 4), roof, x, y + h + 0.5, z, 0, Math.PI / 4, 0, w / Math.max(w, d), 1, d / Math.max(w, d));
+    else k.add(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3), 0xd9c7a5, x, y + h - 0.2, z);
+    for (let j = 0; j < Math.floor(h / 2.2); j++) k.add(new THREE.BoxGeometry(w * 0.7, 0.55, 0.06), 0x5f7fa8, x, y + 1.3 + j * 2.1, z - d / 2 - 0.04); // pencere şeridi kıyıya bakar
+  }
+}
+function mosque(k, x, y, z, s = 1) {
+  k.add(new THREE.BoxGeometry(18 * s, 7 * s, 16 * s), 0xe9e2d4, x, y + 3.5 * s, z);
+  k.add(new THREE.CylinderGeometry(6.4 * s, 6.8 * s, 2.4 * s, 16), 0xe2d9c6, x, y + 8.2 * s, z);
+  k.add(new THREE.SphereGeometry(6.3 * s, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2), 0x8c9cad, x, y + 9.3 * s, z);
+  k.add(new THREE.CylinderGeometry(0.12 * s, 0.12 * s, 2.4 * s, 4), 0xd9b24a, x, y + 16.6 * s, z);
+  for (const [dx, dz] of [[-6, 0], [6, 0], [0, -6], [0, 6]]) k.add(new THREE.SphereGeometry(3 * s, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0x8c9cad, x + dx * s, y + 7 * s, z + dz * s);
+  for (const [dx, dz, h] of [[-11, -9, 30], [11, -9, 30], [-11, 9, 26], [11, 9, 26]]) {
+    k.add(new THREE.CylinderGeometry(0.7 * s, 0.8 * s, h * s, 8), 0xf1ebdf, x + dx * s, y + h * s / 2, z + dz * s);
+    k.add(new THREE.CylinderGeometry(1.1 * s, 1.1 * s, 0.5 * s, 8), 0xd9cfbc, x + dx * s, y + h * s * 0.78, z + dz * s);
+    k.add(new THREE.ConeGeometry(0.85 * s, 4.2 * s, 8), 0x7f90a3, x + dx * s, y + (h + 2.1) * s, z + dz * s);
+  }
+}
+const palm = (k, x, y, z, h) => {
+  k.add(new THREE.CylinderGeometry(0.28, 0.42, h, 6), 0x8a6a4a, x, y + h / 2, z, rand(-0.08, 0.08), 0, rand(-0.08, 0.08));
+  for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2 + rand(-0.3, 0.3); k.add(new THREE.ConeGeometry(0.55, 4.2, 4), (i % 2 ? 0x4f8a3c : 0x3f7a33), x + Math.sin(a) * 1.7, y + h - 0.3, z + Math.cos(a) * 1.7, Math.cos(a) * 1.9, 0, -Math.sin(a) * 1.9, 1, 1, 0.25); }
+};
+export const TITLE_SETS = {
+  istanbul() { // Galata yamacı, Galata Kulesi, rıhtım, karşıda Süleymaniye ve Kız Kulesi
+    const k = new Kit();
+    const hill = (x, z) => Math.max(0, 16.5 - Math.hypot((x + 52) * 0.55, (z - 112) * 0.9) * 0.46);
+    k.add(new THREE.SphereGeometry(40, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), (f, y) => (y > 6 ? 0xb3a582 : 0xa39470), -52, -1, 112, 0, 0, 0, 1.6, 0.42, 0.9);
+    k.add(new THREE.BoxGeometry(150, 1.6, 7), 0xb9ad98, -40, 0.3, 84); // rıhtım
+    for (let x = -112; x < 34; x += rand(5, 9)) k.add(new THREE.CylinderGeometry(0.3, 0.3, 1.1, 6), 0x2c2f38, x, 1.6, 81); // babalar
+    hillHouses(k, -105, 4, 90, 132, hill, 120);
+    const gy = hill(-46, 108); // Galata Kulesi: taş gövde, seyir şerefesi, külah
+    k.add(new THREE.CylinderGeometry(4.4, 4.9, 4, 14), 0xc9b79b, -46, gy + 2, 108);
+    k.add(new THREE.CylinderGeometry(3.6, 4, 22, 14), (f, y) => (Math.floor(y / 3.2) % 2 ? 0xd8c8ac : 0xd1c0a2), -46, gy + 15, 108);
+    for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; for (const yy of [8, 14, 20]) k.add(new THREE.BoxGeometry(0.7, 1.4, 0.1), 0x3d4a5e, -46 + Math.sin(a) * 3.82, gy + yy, 108 + Math.cos(a) * 3.82, 0, a); }
+    k.add(new THREE.CylinderGeometry(4.3, 3.7, 1, 14), 0xb9a78b, -46, gy + 26.4, 108); // şerefe
+    k.add(new THREE.CylinderGeometry(3.4, 3.4, 3.2, 14), 0xe6dccb, -46, gy + 28.4, 108);
+    for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; k.add(new THREE.BoxGeometry(1, 2, 0.1), 0x2f3a4a, -46 + Math.sin(a) * 3.42, gy + 28.4, 108 + Math.cos(a) * 3.42, 0, a); }
+    k.add(new THREE.ConeGeometry(3.9, 9, 14), 0x56708c, -46, gy + 34.5, 108);
+    k.add(new THREE.SphereGeometry(0.45, 8, 6), 0xd9b24a, -46, gy + 39.3, 108);
+    mosque(k, 18, 0, 150, 1.25); // karşı kıyıda büyük cami
+    k.add(new THREE.BoxGeometry(90, 3, 18), 0xb7ab92, 30, 0.8, 150);
+    hillHouses(k, -10, 70, 140, 175, () => 1.5, 26);
+    const ferry = k; // iskeleye yanaşmış vapur: beyaz gövde, siyah-kırmızı bant, baca
+    ferry.add(new THREE.BoxGeometry(5.6, 2.4, 22), (f, y) => (y < 0.7 ? 0x22262e : y < 1.2 ? 0xc0392b : 0xf6f3ea), -16, 0.6, 79, 0, 1.45);
+    ferry.add(new THREE.BoxGeometry(4.6, 2.6, 14), 0xf6f3ea, -16, 3.1, 79, 0, 1.45);
+    ferry.add(new THREE.CylinderGeometry(0.8, 0.9, 3.2, 10), (f, y) => (y > 5.6 ? 0x22262e : 0xf6f3ea), -16, 5.6, 79);
+    return k.build();
+  },
+  izmir() { // Kordon palmiyeleri, Konak Saat Kulesi, Yalı Camii, Asansör, arkada Bayraklı kuleleri ve Kadifekale
+    const k = new Kit();
+    k.add(new THREE.BoxGeometry(160, 1.5, 12), 0xd8cdb5, -40, 0.3, 86); // Kordon
+    k.add(new THREE.BoxGeometry(160, 0.2, 9), 0x7fa05a, -40, 1.15, 89); // çimen
+    for (let x = -118; x < 38; x += rand(7, 11)) palm(k, x, 1.1, rand(84, 88), rand(7, 10));
+    const cx = -34, cz = 94; // Saat Kulesi: sekizgen, dört kat, kemerli
+    k.add(new THREE.CylinderGeometry(6, 6.4, 1, 8), 0xcfc2a6, cx, 1.5, cz);
+    for (const [r, h, y] of [[3.6, 7, 2], [2.9, 6, 9], [2.3, 5, 15], [1.8, 3.6, 20]]) {
+      k.add(new THREE.CylinderGeometry(r, r + 0.2, h, 8), (f, yy) => ((yy - 1) % 3 < 0.4 ? 0xc98e5a : 0xf0e3c8), cx, y + h / 2, cz);
+      k.add(new THREE.CylinderGeometry(r + 0.55, r + 0.55, 0.45, 8), 0xc98e5a, cx, y + h, cz);
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; k.add(new THREE.BoxGeometry(r * 0.55, h * 0.5, 0.1), 0x4b5a72, cx + Math.sin(a) * (r + 0.06), y + h * 0.5, cz + Math.cos(a) * (r + 0.06), 0, a); }
+    }
+    for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) k.add(new THREE.CylinderGeometry(1, 1, 0.12, 14), 0xfdfaf2, cx + Math.sin(a) * 2.95, 12, cz + Math.cos(a) * 2.95, Math.PI / 2, a, 0);
+    k.add(new THREE.SphereGeometry(1.9, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0x8ca3b8, cx, 23.6, cz);
+    k.add(new THREE.CylinderGeometry(0.08, 0.08, 2, 4), 0xd9b24a, cx, 26, cz);
+    const my = -22, mz = 96; // Yalı Camii: küçük sekizgen, tek kubbe, tek minare
+    k.add(new THREE.CylinderGeometry(4, 4, 5, 8), 0xf3e9d6, my, 3.5, mz);
+    k.add(new THREE.SphereGeometry(3.9, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0x9aaabb, my, 6, mz);
+    k.add(new THREE.CylinderGeometry(0.5, 0.6, 15, 8), 0xf3e9d6, my + 4.6, 8.5, mz + 1);
+    k.add(new THREE.ConeGeometry(0.65, 3, 8), 0x7f90a3, my + 4.6, 17.5, mz + 1);
+    const hill = (x, z) => Math.max(0, 26 - Math.hypot((x + 60) * 0.5, (z - 135) * 0.8) * 0.6);
+    k.add(new THREE.SphereGeometry(44, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), (f, y) => (y > 12 ? 0xb6a46a : 0xa39463), -60, -1, 135, 0, 0, 0, 1.5, 0.6, 0.9);
+    hillHouses(k, -110, -8, 104, 150, hill, 64, 0xc8643f);
+    for (let x = -82; x < -40; x += 3.2) k.add(new THREE.BoxGeometry(3.4, 3.2, 2), 0xa48e6c, x, hill(x, 150) + 1.6, 150); // Kadifekale surları
+    k.add(new THREE.BoxGeometry(5, 34, 5), (f, y) => (Math.floor(y / 2.5) % 2 ? 0xb5603f : 0xa8573a), -78, 17, 112); // Asansör kulesi
+    k.add(new THREE.BoxGeometry(7, 4, 7), 0xe9dcc5, -78, 36, 112);
+    k.add(new THREE.BoxGeometry(3, 1, 14), 0x6f6a62, -78, 35, 120);
+    for (const [x, z, h, w] of [[34, 165, 70, 9], [48, 175, 58, 8], [22, 182, 48, 10], [60, 160, 40, 9]]) { // Bayraklı kuleleri
+      k.add(new THREE.BoxGeometry(w, h, w), (f, y) => (Math.floor(y / 3) % 2 ? 0x7f9fb8 : 0x6c8aa3), x, h / 2, z);
+      k.add(new THREE.BoxGeometry(w * 0.7, 3, w * 0.7), 0xd9e3ea, x, h + 1.5, z);
+    }
+    return k.build();
+  },
+};

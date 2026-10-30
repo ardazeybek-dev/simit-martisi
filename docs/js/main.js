@@ -3,7 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, animCrowd, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, animCrowd, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
@@ -731,6 +731,15 @@ function placeMarks() {
   const own = Math.floor(((store.get(KEY_ACH, {}) || {}).st || {}).maxDist || 0);
   if (own >= 150) addMark(own, tr('Rekor'), '#d9952a', 'own');
   if (vs && !vs.won && vs.d >= 60 && vs.city === city.id) addMark(vs.d, fmt(vs.s), '#2f7fd6', 'vs');
+}
+// ana menü arka sahnesi: şehrin tanıdık yerleri martının gerisinde onunla ilerler; uçuş başlayınca gizlenir
+const titleSets = {};
+function updateTitleSet(gz) {
+  for (const id in titleSets) titleSets[id].visible = false;
+  if (state !== 'title' || !TITLE_SETS[city.id]) return;
+  let m = titleSets[city.id];
+  if (!m) { m = titleSets[city.id] = new THREE.Mesh(TITLE_SETS[city.id](), vcMat); m.scale.setScalar(0.45); scene.add(m); }
+  m.visible = true; m.position.z = gz + 58; // küçültülüp uzağa: kuleler başlığın iki yanında kadraja sığar
 }
 function updateMarks(gz) {
   for (const k of marks) {
@@ -1820,7 +1829,7 @@ function frame() {
       c.m.position.y = c.y + Math.max(0, Math.sin(t * 6.5 + c.ph)) * 0.35; c.m.rotation.z = Math.sin(t * 3 + c.ph) * 0.1;
     }
   }
-  animLand(g.z); updateFlocks(dt, g.z); updateMarks(g.z);
+  animLand(g.z); updateFlocks(dt, g.z); updateMarks(g.z); updateTitleSet(g.z);
   for (const s of farShips) { s.position.x += s.userData.v * dt; if (Math.abs(s.position.x) > 320) s.position.x = -Math.sign(s.position.x) * 300; }
   for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar
     c.o.x = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k;
