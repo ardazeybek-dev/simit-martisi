@@ -169,6 +169,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 /* ana menü: üstte cüzdan ve rekor, solda kostüm/görev/ödül, altta büyük Oyna */
 .menu-top { align-self: stretch; display: flex; align-items: center; gap: 8px; }
 .menu-top .grow { flex: 1; }
+.menu-top { position: relative; align-items: flex-start; }
+.stat-col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.stat-card.best { position: absolute; left: 50%; top: 0; transform: translateX(-50%); }
 .stat-card { display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 14px 0 10px; border-radius: 14px;
   background: var(--glass); border: 1px solid var(--line); font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums;
   box-shadow: 0 4px 0 rgba(15, 13, 36, .35); }
@@ -315,7 +318,12 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .vols { margin: 16px 0 0; display: grid; gap: 8px; }
 .vol { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 14px;
   background: rgba(255, 255, 255, .06); border: 1px solid var(--line); font-size: 17px; font-weight: 700; }
-.vol input { flex: none; width: 52%; accent-color: var(--teal); height: 26px; cursor: pointer; }
+.vol input { flex: none; width: 46%; accent-color: var(--teal); height: 26px; cursor: pointer; }
+.vol span { flex: 1; text-align: left; }
+.vol-ico { flex: none; display: grid; place-items: center; width: 38px; height: 38px; margin: -4px 0 -4px -6px; border: 0; border-radius: 12px;
+  background: rgba(255, 255, 255, .1); color: var(--cream); cursor: pointer; }
+.vol-ico svg { width: 22px; height: 22px; }
+.vol-ico.off { color: #ffb3a8; background: rgba(255, 120, 100, .14); }
 .toggles { margin: 8px 0 6px; display: grid; gap: 8px; }
 .toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px 14px; border-radius: 14px;
   background: rgba(255, 255, 255, .06); border: 1px solid var(--line); font-size: 17px; font-weight: 700; }
@@ -365,12 +373,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .revive-note { grid-column: 1 / -1; margin: -2px 0 0; font-size: 14px; font-weight: 700; color: #ffb3a8; }
 .earn { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 14px 0 10px; font-weight: 800; font-size: 16px; }
 .earn span:first-child { color: #2a1503; background: linear-gradient(#ffe08a, var(--gold)); padding: 2px 12px 0; border-radius: 99px; box-shadow: 0 2px 0 #b07a12; display: inline-flex; align-items: center; gap: 4px; }
-.earn span:last-child { opacity: .8; display: inline-flex; align-items: center; gap: 4px; padding: 0 10px; border-radius: 99px; background: rgba(255, 255, 255, .07); }
 .earn { flex-wrap: wrap; row-gap: 6px; }
-.earn .earn-rate { font-size: 11px; font-weight: 700; opacity: .55; margin: 0 -2px; }
 .earn span.bump { animation: bump .35s cubic-bezier(.3, 1.8, .5, 1); }
-.over-coin { position: fixed; width: 20px; height: 20px; margin: -10px 0 0 -10px; pointer-events: none; z-index: 60;
-  transition: transform .6s cubic-bezier(.4, -0.4, .6, 1), opacity .6s ease-in; }
 .earn .ico { width: 18px; height: 18px; }
 
 /* görevler */
@@ -473,7 +477,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   .sheet .card { max-width: 440px; }
   .modal.sheet { align-items: flex-end; }
   .big { font-size: 56px; }
-  .toggle { flex-direction: column; gap: 6px; font-size: 15px; }
   .score { font-size: 34px; }
   #powers { top: calc(98px + var(--sat)); }
   #tutorial { bottom: calc(8vh + 60px + var(--sab)); }

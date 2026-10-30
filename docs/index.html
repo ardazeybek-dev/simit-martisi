@@ -100,11 +100,12 @@
 
 <section id="title" class="screen hidden">
   <div class="menu-top">
-    <div class="stat-card"><svg class="ico"><use href="#i-simit"/></svg><b id="titleWallet">0</b></div>
-    <div class="stat-card fish"><svg class="ico"><use href="#i-fish"/></svg><b id="titleFish">0</b></div>
+    <div class="stat-col">
+      <div class="stat-card"><svg class="ico"><use href="#i-simit"/></svg><b id="titleWallet">0</b></div>
+      <div class="stat-card fish"><svg class="ico"><use href="#i-fish"/></svg><b id="titleFish">0</b></div>
+    </div>
     <div class="stat-card best"><svg class="ico"><use href="#i-trophy"/></svg><span id="titleBest"></span></div>
     <span class="grow"></span>
-    <button id="soundBtn" class="icon-btn" aria-label="Sesi aç/kapat"><svg><use id="soundUse" href="#i-sound"/></svg></button>
     <button id="settingsBtn" class="icon-btn" aria-label="Ayarlar"><svg><use href="#i-gear"/></svg></button>
   </div>
   <div class="logo">
@@ -196,9 +197,11 @@
   <div class="card">
     <h2>Duraklatıldı</h2>
     <button class="btn primary" id="resumeBtn">Devam et</button>
+    <div class="vols">
+      <div class="vol"><button class="vol-ico" data-mute="music" aria-label="Müzik"><svg><use href="#i-sound"/></svg></button><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></div>
+      <div class="vol"><button class="vol-ico" data-mute="sfx" aria-label="Ses efektleri"><svg><use href="#i-sound"/></svg></button><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></div>
+    </div>
     <div class="toggles">
-      <button class="toggle" data-toggle="music"><span>Müzik</span><i></i></button>
-      <button class="toggle" data-toggle="sfx"><span>Ses efektleri</span><i></i></button>
       <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
     <button class="link" id="quitBtn">Ana menü</button>
@@ -208,9 +211,9 @@
 <section id="settings" class="screen modal hidden">
   <div class="card">
     <h2>Ayarlar</h2>
-    <div class="vols">
-      <label class="vol"><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></label>
-      <label class="vol"><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></label>
+<div class="vols">
+      <div class="vol"><button class="vol-ico" data-mute="music" aria-label="Müzik"><svg><use href="#i-sound"/></svg></button><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></div>
+      <div class="vol"><button class="vol-ico" data-mute="sfx" aria-label="Ses efektleri"><svg><use href="#i-sound"/></svg></button><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></div>
     </div>
     <div class="toggles">
       <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>

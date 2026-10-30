@@ -1059,9 +1059,9 @@ function showOver() {
   { const n = achReady() - achBefore, nb = badgesGot() - bdgBefore; show('overAch', n > 0 || nb > 0);
     const part = (k, s) => (k > 0 ? `${tr(s)}${k > 1 ? ' ×' + k : ''}` : '');
     $('overAch').innerHTML = `<svg><use href="#i-medal"/></svg>${[part(n, 'Yeni başarım!'), part(nb, 'Yeni rozet!')].filter(Boolean).join(' · ')}`; }
-  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span><small class="earn-rate">${fmt(Math.floor(simitCount + goldCount * 4))} ÷ ${WALLET_RATE}</small><span id="earnW">${tr('Cüzdan')} <b>${fmt(wallet - banked)}</b> <svg class="ico"><use href="#i-simit"/></svg></span>`
+  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span>`
     + (fishRun ? `<span class="earn-fish">+${fmt(fishRun)} <svg class="ico"><use href="#i-fish"/></svg></span>` : '');
-  setTimeout(() => state === 'over' && earnFlow(banked, wallet), 700);
+  setTimeout(() => state === 'over' && earnFlow(banked), 700);
   show('over'); show('hud', false); hideTutorial();
   // yeniden doğuş: balık harcayarak (her seferinde iki katı), portalda ayrıca uçuş başına bir kez ödüllü reklamla (iyi bir uçuşta)
   const canRevive = !!window.PF && !adRevived && final >= 250 && final >= prevBest * 0.4 && rewardReady();
@@ -1081,24 +1081,17 @@ function showOver() {
   requestAnimationFrame(step);
   audio.duck(false);
 }
-// oyun sonu: kazanç sayarak artar, simitler cüzdan hapına akar, cüzdan aynı anda dolar
-function earnFlow(gain, to) {
-  const n = $('earnN'), w = $('earnW'); if (!n || !w) return;
-  const from = to - gain, t0 = performance.now(), d = Math.min(1100, 300 + gain * 6);
-  const a = n.getBoundingClientRect(), b = w.getBoundingClientRect();
-  for (let i = 0; i < Math.min(10, Math.ceil(gain / 4)); i++) setTimeout(() => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    el.setAttribute('class', 'over-coin'); el.innerHTML = '<use href="#i-simit"/>';
-    el.style.left = `${a.left + a.width * 0.4}px`; el.style.top = `${a.top + a.height / 2}px`;
-    document.body.appendChild(el);
-    requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transform = `translate(${b.left + b.width * 0.7 - a.left - a.width * 0.4}px, ${b.top - a.top}px) rotate(180deg)`; el.style.opacity = '.3'; }));
-    setTimeout(() => { el.remove(); bump(w); sfx.catch(2 + (i % 6)); }, 620);
-  }, i * (d / 10));
+// oyun sonu: kazanılan simit sayarak artar, her adımda tıkırdar
+function earnFlow(gain) {
+  const n = $('earnN'); if (!n) return;
+  const t0 = performance.now(), d = Math.min(1100, 300 + gain * 6);
+  let last = 0;
   const step = now => {
-    const k = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - k, 2);
-    n.firstChild.nodeValue = `+${fmt(Math.round(gain * e))} `;
-    w.querySelector('b').textContent = fmt(Math.round(from + gain * Math.min(1, Math.max(0, (now - t0 - 600) / d))));
-    if (k < 1 || now - t0 < d + 600) requestAnimationFrame(step); else w.querySelector('b').textContent = fmt(to);
+    const k = Math.min(1, (now - t0) / d), v = Math.round(gain * (1 - Math.pow(1 - k, 2)));
+    n.firstChild.nodeValue = `+${fmt(v)} `;
+    if (v !== last && v % 3 === 0) sfx.catch(2 + (v / 3) % 6);
+    last = v;
+    if (k < 1) requestAnimationFrame(step); else bump(n);
   };
   if (gain > 0) requestAnimationFrame(step); else n.firstChild.nodeValue = '+0 ';
 }
@@ -1649,7 +1642,7 @@ let cdShown = 0, shownSign = 0;
 // Fare: ekranın X konumu = martının hedefi. Dokunmatik: göreli sürükleme — parmak nereye konursa konsun martı
 // sıçramaz, yalnızca kaydırılan kadar gider; bırakınca olduğu yerde kalır. Alttaki çubuk (#pad) konumu gösterir.
 // Ayar: PAD_GAIN (çubuğun yarı genişliği kadar kaydırma × PAD_GAIN = şeridin yarısı)
-const PAD_GAIN = 1.6;
+const PAD_GAIN = 1;
 let padId = -1, padX0 = 0, padTx0 = 0;
 function steerFromX(clientX) {
   // ekranın ortadaki %80'i tüm şeridi kapsar → kenara doğru biraz daha yaslanmak virajda savrulmayı yener
@@ -1724,7 +1717,6 @@ onBtn('resumeBtn', () => resume());
 onBtn('quitBtn', () => { audio.resume(); showTitle(); });
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
-onBtn('soundBtn', () => { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); });
 // paylaşım kartı: o anki sahnenin karesi üstüne puan, simit, metre ve şehir (1080x1080). Telefonda görsel olarak paylaşılır.
 function scoreCard() {
   renderer.render(scene, camera); // çizim tamponu korunmuyor: aynı görevde çizip hemen kopyala
@@ -1762,8 +1754,12 @@ for (const el of document.querySelectorAll('[data-vol]')) {
   const k = el.dataset.vol;
   el.addEventListener('click', e => e.stopPropagation());
   el.addEventListener('pointerdown', e => e.stopPropagation());
-  el.addEventListener('input', () => { settings[k + 'Vol'] = el.value / 100; settings[k] = el.value > 0; saveSettings(); });
+  el.addEventListener('input', () => { if (el.value > 0) settings[k + 'Vol'] = el.value / 100; settings[k] = el.value > 0; saveSettings(); });
   el.addEventListener('change', () => { if (k === 'sfx') sfx.catch(1); }); // bırakınca örnek ses
+}
+// hoparlöre dokun: sessize al; tekrar dokun: kaydırıcı eski yerine döner
+for (const el of document.querySelectorAll('[data-mute]')) {
+  el.addEventListener('click', e => { e.stopPropagation(); const k = el.dataset.mute; settings[k] = !settings[k]; saveSettings(); sfx.click(); });
 }
 for (const el of document.querySelectorAll('[data-lang]')) {
   el.addEventListener('click', e => { e.stopPropagation(); if (el.dataset.lang === window.I18N.lang) return; settings.lang = el.dataset.lang; store.set(KEY_SET, settings); sfx.click(); location.reload(); });
@@ -1774,7 +1770,7 @@ function saveSettings() {
 }
 function syncToggles() {
   for (const el of document.querySelectorAll('[data-toggle]')) el.setAttribute('aria-pressed', settings[el.dataset.toggle] ? 'true' : 'false');
-  $('soundUse').setAttribute('href', settings.sfx || settings.music ? '#i-sound' : '#i-mute');
+  for (const el of document.querySelectorAll('[data-mute]')) { const on = !!settings[el.dataset.mute]; el.classList.toggle('off', !on); el.querySelector('use').setAttribute('href', on ? '#i-sound' : '#i-mute'); }
   for (const el of document.querySelectorAll('[data-vol]')) el.value = settings[el.dataset.vol] ? Math.round(settings[el.dataset.vol + 'Vol'] * 100) : 0;
   for (const el of document.querySelectorAll('[data-lang]')) el.setAttribute('aria-pressed', el.dataset.lang === window.I18N.lang ? 'true' : 'false');
 }
@@ -1817,7 +1813,7 @@ function padTick() {
   const on = MOBILE && (state === 'play' || state === 'countdown');
   if (on !== padOn) { padOn = on; show('pad', on); }
   if (!on) return;
-  const k = Math.round((gull.position.x / EDGE) * 1000) / 1000;
+  const k = Math.round(((padId >= 0 ? tx : gull.position.x) / EDGE) * 1000) / 1000;
   if (k === padK) return;
   padK = k; $('padKnob').style.left = `${50 + clamp(k, -1, 1) * 50}%`;
   $('pad').classList.toggle('held', padId >= 0);
