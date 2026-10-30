@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex } from './util.js';
-import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
+import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
@@ -117,7 +117,7 @@ function addSimit(x, y, z, gold, piece = false) {
 
 // ---------------- fırlatılan simitler ----------------
 // Açık suda simitler havada asılı durmaz: kenardaki simitçi, simidini bölüp parçalarını martıya atar. Atış martının uzaklığına göre
-// zamanlanır; simit kavis çizip yakalama noktasına martıyla aynı anda iner, kaçarsa denize düşer. Suda halka iniş yerini gösterir.
+// zamanlanır; simit kavis çizip yakalama noktasına martıyla aynı anda iner, kaçarsa denize düşer. İniş yeri önceden görünmez.
 // Ayar: THROW_T (uçuş süresi, sn), THROW_H (kavis yüksekliği). ?throw=0 → eski, havada duran simitler.
 const THROW_ON = new URLSearchParams(location.search).get('throw') !== '0';
 const BRIDGE_SOON = new URLSearchParams(location.search).has('bridge'), SALON_ALL = new URLSearchParams(location.search).has('salon'); // ?bridge → ilk köprü hemen gelir (deneme için)
@@ -129,7 +129,7 @@ function throwVolleys(z0, len, first) {
   const end = z0 - len + 5;
   let z = z0 - (first ? 24 : 7), x = rand(-2, 2), side = pick([-1, 1]);
   while (z > end) {
-    const n = 3 + ((Math.random() * 3) | 0), bz = z - (n - 1) * 1.7 + rand(-2, 2);
+    const n = pick([1, 1, 2, 3, 4]), bz = z - (n - 1) * 1.7 + rand(-2, 2); // kimi bir parça atar, kimi dört
     const b = makeSimitBoat(side); b.g.position.set(side * rand(9.5, 11), 0, bz); b.g.rotation.y = rand(-0.3, 0.3); scene.add(b.g);
     const bt = { ...b, z: bz, hand: 0, thrown: 0 };
     boats.push(bt); decor.push({ mesh: b.g, z: bz, ph: Math.random() * 6 });
@@ -143,7 +143,7 @@ function throwVolleys(z0, len, first) {
 }
 function addThrown(bt, cx, cz, gold, ry) { // ry: halkanın yüksekliği (vapur güvertesi); yoksa dalgada
   const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); scene.add(m);
-  const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); scene.add(ring);
+  const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); ring.visible = false; scene.add(ring); // iniş yeri sürpriz: halka yalnız plajda görünür
   simits.push({ mesh: m, x: cx, y: FLY_Y, z: cz, free: true, gold, piece: true, th: { bt, cx, cz, T: rand(...THROW_T), H: rand(...THROW_H), u: -1, p0: new THREE.Vector3(), ring, ry } });
 }
 function dropThrown(s) { if (s.th) scene.remove(s.th.ring); }
@@ -432,7 +432,7 @@ function spawnBeach() {
       boats.push(bt);
       for (const dz of [0, 2.4]) {
         addThrown(bt, xs[j] + rand(-0.25, 0.25), tz - dz, false);
-        const sm = simits[simits.length - 1]; sm.th.ring.material = beachRing[c]; sm.beach = { id, pair: i, c };
+        const sm = simits[simits.length - 1]; sm.th.ring.material = beachRing[c]; sm.th.ring.visible = true; sm.beach = { id, pair: i, c };
       }
       opts.push({ c, x: +xs[j].toFixed(2) });
     }
@@ -600,7 +600,7 @@ function spawnFerry() {
       const bt = { g: p.mesh, side: s, person: p, tray: [{ visible: true }, { visible: true }], z: zc + lz, hand: 0, thrown: 0 };
       boats.push(bt);
       let x = rand(-1.5, 1.5);
-      for (let k = 0, z = lz - 6; k < 4 && z > -L / 2 + 4; z -= rand(3, 4)) {
+      for (let k = 0, n = pick([1, 1, 2, 3, 4]), z = lz - 6; k < n && z > -L / 2 + 4; z -= rand(3, 4)) {
         x = clamp(x + rand(-1.8, 1.8), -3, 3);
         const ok = !obstacles.some(o => Math.abs(o.x - (x0 + x)) < o.hw + 1.3 && Math.abs(o.z - (zc + z)) < o.hd + 1.6);
         if (ok) { addThrown(bt, x0 + x, zc + z, false, DECK + 0.1); k++; }
@@ -694,11 +694,11 @@ function spawnScenery(limit) {
     // demir yerindeki büyük gemiler (Boğaz'da, körfezde sıra bekleyen şilepler ve tankerler): sisin içinde, orta uzaklıkta durur.
     // Kız Kulesi ya da yolcu gemisi o yakada yakınsa çıkmaz
     if (sceneryZ < anchorZ) {
-      anchorZ = sceneryZ - rand(110, 240);
-      const side = pick([-1, 1]), x = side * rand(88, 122), z = sceneryZ - rand(0, 30);
+      anchorZ = sceneryZ - rand(160, 280);
+      const side = pick([-1, 1]), x = side * rand(125, 160), z = sceneryZ - rand(0, 30);
       if (!land.some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - z) < 150)) {
         const tank = Math.random() < 0.45, s = new THREE.Mesh(tank ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat);
-        s.position.set(x, -0.2, z); s.scale.setScalar(rand(1.6, 2.2)); s.rotation.y = rand(-0.5, 0.5) + (Math.random() < 0.5 ? Math.PI : 0);
+        s.position.set(x, -0.2, z); s.scale.setScalar(rand(1.6, 2)); s.rotation.y = rand(-0.15, 0.15) + (Math.random() < 0.5 ? Math.PI : 0); // şeride paralel: yan yatıp seyir şeridine taşmaz
         scene.add(s); land.push({ mesh: s, z });
       }
     }
@@ -1596,7 +1596,8 @@ function updateHud() {
   }
 }
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
-const mult = () => Math.min(5, 1 + Math.floor(combo / 16)); // x2: 16, x3: 32, x4: 48, x5: 64 simit
+const COMBO_STEPS = [25, 60, 110, 180]; // x2, x3, x4, x5 için art arda simit: x5 ancak çok uzun, hiç kaçırmayan bir seride
+const mult = () => 1 + COMBO_STEPS.filter(n => combo >= n).length;
 function renderPowers() {
   ui.powers.textContent = '';
   for (const k of Object.keys(pw)) {
@@ -1642,7 +1643,7 @@ let cdShown = 0, shownSign = 0;
 // Fare: ekranın X konumu = martının hedefi. Dokunmatik: göreli sürükleme — parmak nereye konursa konsun martı
 // sıçramaz, yalnızca kaydırılan kadar gider; bırakınca olduğu yerde kalır. Alttaki çubuk (#pad) konumu gösterir.
 // Ayar: PAD_GAIN (çubuğun yarı genişliği kadar kaydırma × PAD_GAIN = şeridin yarısı)
-const PAD_GAIN = 1;
+const PAD_GAIN = 0.7;
 let padId = -1, padX0 = 0, padTx0 = 0;
 function steerFromX(clientX) {
   // ekranın ortadaki %80'i tüm şeridi kapsar → kenara doğru biraz daha yaslanmak virajda savrulmayı yener
@@ -1807,13 +1808,13 @@ function applyShadows() {
   try { renderer.compile(scene, camera); } catch (e) {}
 }
 
-// dokunmatik kaydırma çubuğu: yalnız uçuşta görünür, topuz martının kendisini gösterir (rüzgâr, viraj savrulması dahil)
+// dokunmatik kaydırma çubuğu: yalnız uçuşta görünür, topuz parmağın verdiği hedefi gösterir (rüzgârla titremez, bırakınca yerinde kalır)
 let padOn = false, padK = 2;
 function padTick() {
   const on = MOBILE && (state === 'play' || state === 'countdown');
   if (on !== padOn) { padOn = on; show('pad', on); }
   if (!on) return;
-  const k = Math.round(((padId >= 0 ? tx : gull.position.x) / EDGE) * 1000) / 1000;
+  const k = Math.round((tx / EDGE) * 1000) / 1000;
   if (k === padK) return;
   padK = k; $('padKnob').style.left = `${50 + clamp(k, -1, 1) * 50}%`;
   $('pad').classList.toggle('held', padId >= 0);
@@ -1823,7 +1824,7 @@ function padTick() {
 const clock = new THREE.Clock();
 let t = 0;
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
-const _fw = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _qy = new THREE.Quaternion(), _m4 = new THREE.Matrix4();
+const _frustum = new THREE.Frustum(), _fw = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _qy = new THREE.Quaternion(), _m4 = new THREE.Matrix4();
 let firstFrame = true;
 function frame() {
   requestAnimationFrame(frame);
@@ -2060,7 +2061,12 @@ function frame() {
     }
   }
   animLand(g.z); updateFlocks(dt, g.z); updateMarks(g.z); updateTitleSet(g.z);
-  for (const s of farShips) { s.position.x += s.userData.v * dt; if (Math.abs(s.position.x) > 320) s.position.x = -Math.sign(s.position.x) * 300; }
+  // ufuk gemileri: uca varınca öbür uca geçer, ama yalnız ekranda görünmüyorken (gözün önünde silinip belirmesin)
+  _frustum.setFromProjectionMatrix(_m4.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+  for (const s of farShips) {
+    s.position.x += s.userData.v * dt;
+    if (Math.abs(s.position.x) > FAR_SHIP_W && !_frustum.intersectsObject(s)) { s.position.x -= Math.sign(s.position.x) * 2 * FAR_SHIP_W; s.updateMatrixWorld(); if (_frustum.intersectsObject(s)) s.position.x += Math.sign(s.position.x) * 2 * FAR_SHIP_W; }
+  }
   updatePirates(g.z); updateFalls(dt, g.z);
   for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar
     c.o.x = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k;

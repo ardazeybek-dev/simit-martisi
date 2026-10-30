@@ -115,7 +115,8 @@ scene.add(sky);
 export const far = new THREE.Group();
 scene.add(far);
 const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
-export const farShips = []; // ufukta ağır ağır kayan gemi siluetleri (main.js kaydırır)
+export const farShips = [];
+export const FAR_SHIP_W = 420; // ufuk gemileri ±bu kadar kayar, sonra ekran dışındayken öbür uca geçer // ufukta ağır ağır kayan gemi siluetleri (main.js kaydırır)
 // uzak dekor yardımcıları: sissiz, hava tonu farMats üzerinden gelir. Köşe tonu (shade) rengi çarpar:
 // su hizasında koyu, yukarı açılır; yandan vuran ışıkla kubbe ve kule yuvarlak görünür (düz karton kesik değil, 2.5D)
 const basic = (c, o = {}) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false, vertexColors: true, ...o }); m.userData.base = c; farMats.push(m); return m; };
@@ -194,11 +195,20 @@ function farShipsBuild(mPaint) {
     }
     return k.build();
   };
-  for (let i = 0; i < 10; i++) {
-    const kind = i % 4, near = i < 4, s = add(silhouette(kind), near ? mShipNear : mShip, rand(-300, 300), 0, near ? rand(-255, -215) : rand(-335, -280));
-    s.scale.setScalar(near ? rand(0.95, 1.2) : rand(0.75, 0.95)); if (Math.random() < 0.5) s.rotation.y = Math.PI;
-    s.userData.v = (Math.random() < 0.5 ? -1 : 1) * rand(1.5, 3.5);
-    farShips.push(s);
+  // sıralar: her sırada gemiler eşit aralıklı ve aynı hızda kayar, birbirine hiç girmez. İki sıra önde, birer gemi sağ ve sol ufukta.
+  // [pivot dönüşü, z, gemi sayısı, hız, ölçek]
+  let kind = (Math.random() * 4) | 0;
+  for (const [ry, z, n, v, sc] of [[0, -240, 3, 2.4, 1.1], [0, -318, 3, -1.7, 0.85], [Math.PI / 2, -265, 1, 2, 1], [-Math.PI / 2, -265, 1, -2, 1]]) {
+    let parent = far;
+    if (ry) { parent = new THREE.Group(); parent.rotation.y = ry; far.add(parent); }
+    const x0 = rand(-FAR_SHIP_W, FAR_SHIP_W);
+    for (let i = 0; i < n; i++) {
+      const x = ((x0 + i * 2 * FAR_SHIP_W / n + FAR_SHIP_W) % (2 * FAR_SHIP_W)) - FAR_SHIP_W;
+      const s = add(silhouette(kind++ % 4), z > -300 ? mShipNear : mShip, x, 0, z + rand(-8, 8), parent);
+      s.scale.setScalar(sc * rand(0.92, 1.08)); if (v < 0) s.rotation.y = Math.PI; // pruva gidiş yönüne
+      s.userData.v = v;
+      farShips.push(s);
+    }
   }
 }
 // tepeler üç yandan sarar: virajda bakış dönünce silüet bitip çıplak deniz gökyüzüne yükselmesin. h: tepe yüksekliği
