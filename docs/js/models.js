@@ -1490,4 +1490,90 @@ export const TITLE_SETS = {
     terrain(far, -460, 460, 165, 330, 110, 28, hY, (x, y, z) => mixHex(mixHex(0x8d8a68, 0x6f8456, ramp(0.45, 0.65, fbm(x * 0.03 + 2, z * 0.03))), 0xd8cbbf, 0.18 + y / 200));
     return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
   },
+  antalya() { // ön: Kaleiçi limanı, guletler, korsan teknesi, Konyaaltı şemsiyeleri · orta: falez, Yivli Minare, Hıdırlık, Hadrian Kapısı, Düden · arka: karlı Toroslar
+    const near = new Kit(), mid = new Kit(), far = new Kit();
+    const coveZ = x => 16 + 26 * Math.exp(-(((x - 4) / 46) ** 2)); // falez Kaleiçi limanında içeri kıvrılır
+    const beach = x => ramp(-120, -165, x); // solda falez biter, Konyaaltı kumsalı başlar
+    const hM = (x, z) => {
+      const cz = coveZ(x), up = ramp(cz, cz + 3.5, z);
+      const cliff = -1 + 25 * up + 9 * ramp(cz + 4, cz + 70, z) + fbm(x * 0.04, z * 0.04) * 3 * up;
+      const sand = -1 + 1.8 * ramp(3, 16, z) + 12 * ramp(40, 120, z) + fbm(x * 0.03, z * 0.03) * 3 * ramp(40, 80, z);
+      const b = beach(x); return cliff * (1 - b) + sand * b;
+    };
+    const slope = (x, z) => Math.abs(hM(x, z + 1) - hM(x, z - 1)) / 2;
+    terrain(mid, -340, 340, 2, 150, 136, 74, hM, (x, y, z) => {
+      if (slope(x, z) > 1.2) return mixHex(mixHex(0xd4a46c, 0xa9774a, ramp(0.35, 0.7, fbm(x * 0.25, y * 0.12))), 0x8d6a48, ramp(4, -1, y)); // falez yüzü: dikey damarlı traverten
+      if (y < 1.2 && beach(x) > 0.5) return 0xeedcb2; // kumsal
+      return mixHex(mixHex(0xcbb995, 0xb7aa82, y / 34), 0x6f9a4c, ramp(0.52, 0.66, fbm(x * 0.05 + 4, z * 0.05)));
+    });
+    // falez dibinde kayalar
+    for (let x = -160; x < 330; x += rand(3, 7)) if (Math.abs(x - 4) > 50) near.add(new THREE.IcosahedronGeometry(rand(1.2, 2.6), 1), vert((f, y) => mixHex(0x7d6a55, 0xb39573, (y + 1) / 3)), x, -0.4, coveZ(x) - rand(0.5, 2), 0, rand(0, 3), 0, 1, rand(0.5, 0.9), 1);
+    // Kaleiçi limanı: iki kolu olan mendirek, ucunda fener; içeride guletler ve bir korsan teknesi
+    near.add(new THREE.BoxGeometry(44, 2.4, 4), 0xb9ad98, -26, 0, 3);
+    near.add(new THREE.BoxGeometry(36, 2.4, 4), 0xb9ad98, 42, 0, 3);
+    near.add(new THREE.BoxGeometry(4, 2.4, 22), 0xb9ad98, -46, 0, 14);
+    near.add(new THREE.BoxGeometry(4, 2.4, 22), 0xb9ad98, 58, 0, 14);
+    near.add(new THREE.CylinderGeometry(1.2, 1.4, 7, 14), (f, y) => (y > 5 ? 0xd23a33 : 0xf6f3ea), 24, 4.6, 3, 0, 0, 0);
+    near.add(new THREE.SphereGeometry(0.7, 10, 8), 0xfff1c8, 24, 8.4, 3);
+    const gulet = (x, z, ry, s = 1, sail = 0xf2ead8, hull = 0x8a5a34) => { // ahşap gövde, beyaz bant, iki direk, toplu yelken
+      near.add(new THREE.BoxGeometry(3.2 * s, 1.6 * s, 13 * s, 1, 2, 1), (f, y) => (y < 0.3 ? 0x5c3a22 : hull), x, 0.3, z, 0, ry);
+      near.add(new THREE.ConeGeometry(1.6 * s, 4 * s, 4).rotateX(-Math.PI / 2).rotateY(Math.PI / 4), hull, x - Math.sin(ry) * 8.4 * s, 0.6, z - Math.cos(ry) * 8.4 * s, 0, ry, 0, 1, 0.5, 1);
+      near.add(new THREE.BoxGeometry(2.4 * s, 1.2 * s, 5 * s), 0xf4efe2, x + Math.sin(ry) * 2.5 * s, 1.6, z + Math.cos(ry) * 2.5 * s, 0, ry);
+      for (const [o, h] of [[-2.8, 11], [2, 8]]) {
+        near.add(new THREE.CylinderGeometry(0.1 * s, 0.14 * s, h * s, 6), 0x5a4030, x + Math.sin(ry) * o * s, 1 + h * s / 2, z + Math.cos(ry) * o * s);
+        near.add(new THREE.CylinderGeometry(0.4 * s, 0.4 * s, h * 0.55 * s, 8), sail, x + Math.sin(ry) * (o + 0.3) * s, 2.6 + h * s * 0.3, z + Math.cos(ry) * (o + 0.3) * s, 0, 0, 0);
+      }
+    };
+    for (const [x, z, ry] of [[-30, 14, 1.5], [-14, 22, 1.6], [6, 30, 1.45], [30, 20, 1.65], [44, 11, 1.5]]) gulet(x, z, ry, rand(0.9, 1.1));
+    gulet(-8, 9, Math.PI / 2 + 0.1, 1.25, 0x1c1c1c, 0x2a1d16); // korsan teknesi: kara gövde, kara yelken
+    const px = -8 + Math.sin(Math.PI / 2 + 0.1) * -3.5, pz = 9 + Math.cos(Math.PI / 2 + 0.1) * -3.5 - 0.3; // ana direğin tepesinde korsan bayrağı
+    near.add(new THREE.PlaneGeometry(1.8, 1.2), 0x111111, px - 1, 14.2, pz, 0, Math.PI); near.add(new THREE.CircleGeometry(0.32, 10), 0xf6f3ea, px - 1, 14.3, pz - 0.02, 0, Math.PI);
+    // Konyaaltı: renkli çizgili şemsiyeler, şezlonglar
+    for (let x = -330; x < -175; x += rand(6, 9)) for (const z of [7, 13]) {
+      const zz = z + rand(-1, 1), y = hM(x, zz), c = pick([0xe5484d, 0x2f7fd6, 0xf2b22c, 0x2e9c6a, 0xf28c38]);
+      near.add(new THREE.CylinderGeometry(0.08, 0.08, 3, 4), 0xf4f1e8, x, y + 1.5, zz);
+      near.add(new THREE.ConeGeometry(2, 0.9, 10), (f) => ((f >> 1) % 2 ? 0xf8f6f0 : c), x, y + 3.2, zz);
+      near.add(new THREE.BoxGeometry(1, 0.3, 2.2), 0xf8f6f0, x + 1.3, y + 0.3, zz - 0.4);
+    }
+    // falezin üstü: kıyıda palmiye sırası, Kaleiçi'nde kırmızı damlı eski evler, gerisinde beyaz apartmanlar
+    for (let x = -330; x < 330; x += rand(7, 13)) { const z = beach(x) > 0.5 ? rand(18, 24) : coveZ(x) + rand(4.5, 7); palm(mid, x, hM(x, z), z, rand(6.5, 10)); }
+    const old = (x, z) => Math.abs(x - 4) < 70 && z < coveZ(x) + 32;
+    houses(mid, scatter(-60, 75, 22, 80, 6.2, (x, z) => hM(x, z) > 20 && old(x, z) && Math.hypot(x - 2, z - 46) > 9 && Math.hypot(x - 46, z - 20) > 8), hM, { flat: 0.15, h: [3, 6] });
+    houses(mid, scatter(-330, 330, 22, 140, 8.5, (x, z) => hM(x, z) > (beach(x) > 0.5 ? 3 : 20) && !old(x, z) && slope(x, z) < 0.8 && Math.abs(x - 200) > 18), hM, { flat: 0.85, h: [6, 15], cols: [0xf7f4ec, 0xf1ece0, 0xeae6dc, 0xf4e9d4, 0xdfe8ec], lit: 0.06, s: 1.3 });
+    for (const [x, z] of scatter(-330, 330, 30, 140, 15, (x, z) => hM(x, z) > 3 && slope(x, z) < 0.8 && fbm(x * 0.05 + 4, z * 0.05) > 0.55)) tree(mid, x, hM(x, z), z, rand(0.9, 1.2));
+    // Yivli Minare: yivli tuğla gövde (yüzler sırayla iki tonda), şerefe, kurşun külah; yanında altı kubbeli cami
+    const yx = 2, yz = 46, yy = hM(yx, yz);
+    mid.add(new THREE.BoxGeometry(5, 4, 5), 0xd9cbb0, yx, yy + 2, yz);
+    mid.add(new THREE.CylinderGeometry(1.7, 2.1, 26, 16), (f) => ((f >> 1) % 2 ? 0xa8553d : 0x93462f), yx, yy + 17, yz);
+    mid.add(new THREE.CylinderGeometry(2.7, 1.9, 1.2, 16), 0xb7654a, yx, yy + 27, yz);
+    mid.add(new THREE.CylinderGeometry(1.3, 1.5, 3.6, 14), 0x9e4f38, yx, yy + 30, yz);
+    mid.add(new THREE.ConeGeometry(1.55, 4.6, 14), 0x7f90a3, yx, yy + 34.1, yz);
+    mid.add(new THREE.BoxGeometry(14, 5, 10), 0xe4d8c0, yx + 9, yy + 2.5, yz + 2);
+    for (const dx of [-4, 0, 4]) for (const dz of [-2.4, 2.4]) mid.add(new THREE.SphereGeometry(2, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0x8c9cad, yx + 9 + dx, yy + 5, yz + 2 + dz);
+    // Hıdırlık Kulesi: falezin ucunda kare kaide üstünde yuvarlak taş kule
+    const hx = 46, hz = 20, hy = hM(hx, hz);
+    mid.add(new THREE.BoxGeometry(13, 6, 13), 0xc8b08a, hx, hy + 1, hz);
+    mid.add(new THREE.CylinderGeometry(5.6, 5.9, 9, 24), 0xcdb592, hx, hy + 8.5, hz);
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; if (i % 2) mid.add(new THREE.BoxGeometry(1.4, 1.2, 1), 0xcdb592, hx + Math.sin(a) * 5.4, hy + 13.6, hz + Math.cos(a) * 5.4, 0, a); }
+    // Hadrian Kapısı: üç kemerli mermer kapı, iki yanında kule
+    const gx = -38, gz = 62, gy = hM(gx, gz);
+    mid.add(new THREE.BoxGeometry(20, 9, 3), 0xefe8da, gx, gy + 4.5, gz);
+    for (const dx of [-6, 0, 6]) { mid.add(new THREE.PlaneGeometry(3.4, 5.6), 0x4a4038, gx + dx, gy + 2.8, gz - 1.52, 0, Math.PI); mid.add(new THREE.CircleGeometry(1.7, 12, 0, Math.PI), 0x4a4038, gx + dx, gy + 5.6, gz - 1.52, 0, Math.PI); }
+    for (const dx of [-12.5, 12.5]) mid.add(new THREE.BoxGeometry(5, 13, 5), 0xc9b08a, gx + dx, gy + 6.5, gz);
+    // Düden şelalesi: falezden dökülen köpüklü perde, dibinde serpinti
+    const dx = 200, dz = coveZ(dx) + 0.4, dt = hM(dx, dz + 3);
+    mid.add(new THREE.PlaneGeometry(16, dt + 1.5, 1, 6), vert((f, y) => mixHex(0xbfe6f0, 0xffffff, (dt - y) / dt)), dx, dt / 2 - 0.6, dz - 0.6, 0.08, Math.PI);
+    for (let i = 0; i < 9; i++) mid.add(new THREE.IcosahedronGeometry(rand(1.6, 3), 1), 0xf4fbff, dx + rand(-9, 9), rand(-0.6, 1.2), dz - rand(1, 4), 0, 0, 0, 1, 0.55, 1);
+    mid.add(new THREE.BoxGeometry(18, 1.2, 16), 0x6aa0c0, dx, dt - 0.1, dz + 8); // şelaleyi besleyen çay
+    // arka: karlı Toroslar (sırtlı dağ, kar sınırı gürültülü), solda denize dik inen Beydağları
+    const HZ = 0xd9e8f0, ridged = (x, z) => 1 - Math.abs(fbm(x, z) * 2 - 1);
+    const hT = (x, z) => -1 + ramp(170, 220, z) * (30 + 100 * ridged(x * 0.006, z * 0.011) * (0.55 + 0.45 * bump(x, z, 80, 290, 260, 70)));
+    terrain(far, -500, 500, 160, 340, 140, 30, hT, (x, y, z) => {
+      const sn = ramp(96, 104, y + (fbm(x * 0.05, z * 0.05) - 0.5) * 20); // kar yalnız zirvelerde
+      return mixHex(mixHex(mixHex(0x6f8468, 0x8590a0, ramp(25, 75, y)), HZ, 0.22), 0xf6f9fc, sn);
+    });
+    const hB = (x, z) => -1 + ramp(-170, -250, x) * ramp(60, 110, z) * (50 + 40 * ridged(x * 0.01 + 3, z * 0.012));
+    terrain(far, -520, -150, 50, 200, 50, 24, hB, (x, y, z) => mixHex(mixHex(0x5f7a55, 0x8b9483, ramp(30, 80, y)), HZ, 0.22));
+    return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
+  },
 };

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { rand, canvasTex, Kit } from './util.js';
+import { rand, pick, canvasTex, Kit } from './util.js';
 
 // ---------------- renk paleti (gün batımı İstanbul) ----------------
 // Varsayılan yumuşak pastel; ?pal=old eski koyu, doygun gün batımı (karşılaştırma için)
@@ -195,11 +195,11 @@ function farRidges(mFar, mNear, mHouses, h = [18, 9, 8, 6]) {
   }
 }
 // kıyı şehri silüeti: tek ShapeGeometry'de binalar
-function farSkyline(m, z, hMin, hMax) {
+function farSkyline(m, z, hMin, hMax, y = 0) {
   const city = new THREE.Shape(); city.moveTo(-600, -5);
   for (let x = -600; x < 600;) { const w = rand(5, 12), h = rand(hMin, hMax); city.lineTo(x, h); city.lineTo(x + w, h); x += w; }
   city.lineTo(600, -5);
-  add(new THREE.ShapeGeometry(city), m, 0, 0, z);
+  add(new THREE.ShapeGeometry(city), m, 0, y, z);
 }
 // silüetin önünde rastgele pencere ışıkları
 function farLights(n, x0, x1, y0, y1, z, tex) {
@@ -376,6 +376,69 @@ function buildIzmir() {
   farShipsBuild();
 }
 
+// ---------------- Antalya: karlı Toroslar, falezler üstünde şehir, Kaleiçi limanı, Yivli Minare, Düden şelalesi, Konyaaltı ----------------
+function buildAntalya() {
+  const mFarHill = basic(PAL.hillFar), mHill = basic(PAL.hillNear), mCity = basic(PAL.city), mCityFar = basic(PAL.cityFar);
+  const mTower = basic(PAL.tower), mCliff = basic(0xc99e6e), mSand = basic(0xeedcb2), mSnow = basic(0xf6f8fb), mFoam = basic(0xf2fbff);
+  farClouds();
+  farRidges(mFarHill, mHill, mCityFar, [40, 14, 10, 5]);
+  // Toroslar: önceki sırtın ardından yükselen sivri, düzensiz zirveler; tepeleri karlı
+  const peaks = [];
+  for (let x = -700, y = 70; x <= 700; x += rand(10, 22)) { y = Math.max(46, Math.min(104, y + rand(-13, 13) + (78 - y) * 0.15)); peaks.push([x, y]); }
+  const mtn = new THREE.Shape(); mtn.moveTo(-700, -5); for (const [x, y] of peaks) mtn.lineTo(x, y); mtn.lineTo(700, -5);
+  add(new THREE.ShapeGeometry(mtn), basic(0xb4c0d0), 0, 0, -490);
+  // kar: zirve ile düzensiz kar sınırı arasında şerit; sınırın altında kalan zirvede alan sıfır (tek parça Shape üçgenlenemiyor, dörtgenler elle)
+  const SNOW = 80, line = peaks.map(([, y]) => Math.min(y, SNOW + rand(-5, 5))), sv = [];
+  for (let i = 0; i < peaks.length - 1; i++) {
+    const [x0, t0] = peaks[i], [x1, t1] = peaks[i + 1], b0 = line[i], b1 = line[i + 1];
+    if (t0 <= b0 && t1 <= b1) continue;
+    sv.push(x0, b0, 0, x1, b1, 0, x1, t1, 0, x0, b0, 0, x1, t1, 0, x0, t0, 0);
+  }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sv, 3)); sg.computeVertexNormals();
+  add(sg, mSnow, 0, 0, -489);
+  farHaze(-480, 40, 0.75); farHaze(-450, 16); farHaze(-415, 10, 0.6);
+  // falez: şehrin oturduğu dik kayalık; solda Konyaaltı'na inip kumsala döner, Kaleiçi limanında çentik
+  const cliffY = x => (x < -230 ? 1.2 : x < -180 ? 1.2 + (x + 230) / 50 * 11 : 12.2 + Math.sin(x * 0.07) * 0.6 + rand(-0.4, 0.4)) - (x > -30 && x < 50 ? 7 : 0);
+  const cl = new THREE.Shape(); cl.moveTo(-620, -5);
+  for (let x = -620; x <= 620; x += 4) cl.lineTo(x, cliffY(x));
+  cl.lineTo(620, -5);
+  add(new THREE.ShapeGeometry(cl), mCliff, 0, 0, -384);
+  add(new THREE.BoxGeometry(420, 1.4, 2), mSand, -420, 0.5, -383); // Konyaaltı kumsalı
+  const dots = [], cols = [];
+  for (let x = -600; x < -240; x += rand(3, 7)) { dots.push(x, 2.4, -382); const c = new THREE.Color(pick([0xe5484d, 0x2f7fd6, 0xf2b22c, 0xffffff, 0x2e9c6a])); cols.push(c.r, c.g, c.b); } // şemsiyeler
+  const ug = new THREE.BufferGeometry(); ug.setAttribute('position', new THREE.Float32BufferAttribute(dots, 3)); ug.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  far.add(new THREE.Points(ug, new THREE.PointsMaterial({ size: 2.6, vertexColors: true, fog: false, sizeAttenuation: true })));
+  // falezin üstünde beyaz apartmanlar (arkada Lara otelleri yüksek), Kaleiçi'nde alçak kırmızı damlar
+  farSkyline(mCityFar, -396, 8, 26, 10);
+  farSkyline(mCity, -389, 3, 12, 10);
+  // Yivli Minare: yivli tuğla gövde, şerefe, kurşun külah
+  const yx = 8, yb = cliffY(yx) + 2;
+  add(new THREE.CylinderGeometry(1.7, 2.1, 30, 16), mTower, yx, yb + 15, -386);
+  add(new THREE.CylinderGeometry(2.6, 1.8, 1.4, 16), mTower, yx, yb + 25, -386);
+  add(new THREE.CylinderGeometry(1.3, 1.5, 4, 12), mTower, yx, yb + 32, -386);
+  add(new THREE.ConeGeometry(1.5, 5, 12), mCityFar, yx, yb + 36.5, -386);
+  // Hıdırlık Kulesi: falez ucunda yuvarlak taş kule
+  add(new THREE.CylinderGeometry(6, 6.6, 9, 18), mTower, 64, cliffY(64) + 4.5, -383);
+  add(new THREE.CylinderGeometry(4, 4.2, 6, 16), mTower, 64, cliffY(64) + 12, -383);
+  // Kaleiçi limanı: suda gulet direkleri
+  for (let x = -24; x < 46; x += rand(5, 9)) { add(new THREE.BoxGeometry(6, 1.4, 2), mCity, x, 0.7, -380); add(new THREE.CylinderGeometry(0.12, 0.12, rand(8, 12), 4), mCity, x, 6, -380); }
+  // Düden şelalesi: falezden denize dökülen beyaz perde, dibinde köpük
+  const dx = 190, dy = cliffY(dx);
+  add(new THREE.PlaneGeometry(14, dy), mFoam, dx, dy / 2, -382.5);
+  for (let i = 0; i < 5; i++) add(new THREE.SphereGeometry(rand(2, 3.4), 10, 6), mFoam, dx + rand(-8, 8), 0.3, -381);
+  // palmiyeler falez boyunca
+  const palms = new Kit();
+  for (let x = -420; x < 460; x += rand(10, 26)) {
+    const y0 = cliffY(x), h = rand(6, 9), lean = rand(-0.12, 0.12), tx = x + Math.sin(lean) * h;
+    palms.add(new THREE.CylinderGeometry(0.28, 0.45, h, 5), 0, x + Math.sin(lean) * h / 2, y0 + h / 2, 0, 0, 0, -lean);
+    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2 + rand(-0.3, 0.3); palms.add(new THREE.ConeGeometry(0.5, 4.2, 3), 0, tx + Math.cos(a) * 1.7, y0 + h - 0.5, Math.sin(a) * 1.7, Math.sin(a) * 1.9, 0, -Math.cos(a) * 1.9); }
+  }
+  add(palms.build(), mHill, 0, 0, -384.5);
+  const glowTex = glow();
+  farLights(160, -300, 560, 12, 24, -390, glowTex);
+  farShipsBuild();
+}
+
 // şehir değişince uzak dekor baştan kurulur (yalnız menüde, uçuşta asla). Renkler İstanbul'un üstüne yazılır.
 const BASE_PAL = { ...PAL };
 const CITY_PAL = {
@@ -386,9 +449,14 @@ const CITY_PAL = {
     hillFar: 0xcbb79c, hillNear: 0xab9877, city: 0x9a8e93, cityFar: 0xb4a9ab, bridge: 0x8fa2b8, tower: 0xa58a78,
     cloud: 0xfff2de, cloud2: 0xf2d8c4, hemiSky: 0xfff0dc, hemiGround: 0x587aa0, sunLight: 0xffd6a6,
   },
-  antalya: {},
+  antalya: { // Akdeniz öğleden sonrası: derin mavi gök, berrak açık turkuaz sığ su, mavi-gri Toroslar, krem falezler
+    skyTop: 0x3f8ad6, skyMid: 0x8cc6ee, skyLow: 0xd9f0f5, horizon: 0xf6f1de, fog: 0xdcecf0, sun: 0xfffbe8,
+    seaDeep: 0x0a78a6, seaShallow: 0x5fe6dc, seaSky: 0xdaf6f8, seaFar: 0xa9dfe8,
+    hillFar: 0xa9b7c6, hillNear: 0x8b9c88, city: 0xa99e93, cityFar: 0xc4bdb6, bridge: 0x9fb6c6, tower: 0xa86a52,
+    cloud: 0xffffff, cloud2: 0xeaf2f8, hemiSky: 0xf2f8ff, hemiGround: 0x4f8fa8, sunLight: 0xfff0d0,
+  },
 };
-const FAR = { istanbul: buildIstanbul, izmir: buildIzmir };
+const FAR = { istanbul: buildIstanbul, izmir: buildIzmir, antalya: buildAntalya };
 let farCity = null;
 export function setCityLook(id) {
   if (id === farCity) return;

@@ -16,7 +16,7 @@ export const CITIES = [
       ['Alsancak', 2850, "Alsancak'a", 170], ['Bayraklı', 3950, "Bayraklı'ya", 240], ['Karşıyaka', 5250, "Karşıyaka'ya", 340], ['Bostanlı', 7200, "Bostanlı'ya", 1000]],
   },
   {
-    id: 'antalya', name: 'Antalya', routeKey: 'simit-martisi-route-antalya', bait: 'simit', end: 'Antalya kıyısını baştan sona uçtun!', after: 'Yakında', soon: true, // hazır olunca: after: "İzmir'i bitirince açılır"
+    id: 'antalya', name: 'Antalya', routeKey: 'simit-martisi-route-antalya', bait: 'simit', end: 'Antalya kıyısını baştan sona uçtun!', after: "İzmir'i bitirince açılır",
     stops: [['Konyaaltı', 0, "Konyaaltı'na", 0], ['Kaleiçi', 500, "Kaleiçi'ne", 50], ['Mermerli', 1200, "Mermerli'ye", 90], ['Karaalioğlu', 2050, "Karaalioğlu'na", 140],
       ['Falez', 3050, "Falez'e", 210], ['Lara', 4200, "Lara'ya", 300], ['Düden', 5550, "Düden'e", 420], ['Kundu', 7800, "Kundu'ya", 1500]],
   },
