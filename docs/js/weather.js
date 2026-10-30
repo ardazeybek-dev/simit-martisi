@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { rand, canvasTex } from './util.js';
-import { scene } from './scene.js';
+import { scene, MOBILE } from './scene.js';
 
 // ---------------- hava: gerçek takvime göre ----------------
 // Kış (Ara-Şub) kar, sonbahar (Eyl-Kas) çoğunlukla yağmur, ara sıra sis; ilkbahar/yaz çoğunlukla açık.
@@ -17,7 +17,7 @@ export function pickWeather() {
 
 // parçacıklar kameranın önündeki bir kutuda döner; düşen tane alttan çıkınca üste, geride kalınca öne sarılır
 const BOX = { x: 26, y: 22, z0: -70, z1: 6 };
-const RAIN_N = 700, SNOW_N = 900;
+const RAIN_N = MOBILE ? 300 : 700, SNOW_N = MOBILE ? 400 : 900;
 const rainPos = new Float32Array(RAIN_N * 6);
 const rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
 const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xe4ecf7, transparent: true, opacity: 0.45, depthWrite: false }));

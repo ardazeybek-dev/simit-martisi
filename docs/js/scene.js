@@ -469,7 +469,7 @@ export function setCityLook(id) {
 }
 
 // ---------------- deniz (GPU'da dalga, Fresnel + güneş parıltısı) ----------------
-const WATER_W = 300, WATER_D = 420, SEG_X = 90, SEG_Z = 130;
+const WATER_W = 300, WATER_D = 420, SEG_X = MOBILE ? 60 : 90, SEG_Z = MOBILE ? 84 : 130; // telefonda daha seyrek su ağı
 export const CELL = WATER_D / SEG_Z;
 // Dalga argümanları küçük tutulur: p suyun merkezine göre yerel (uOrigin), fazlar (k·origin + ω·t) CPU'da 2π'ye sarılır.
 // Dünya koordinatı Boğaz boyunca on binlere çıkar; telefon GPU'su o büyüklükte sin()'i bozuk hesaplar (su kumlanır).

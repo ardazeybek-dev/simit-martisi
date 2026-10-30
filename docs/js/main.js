@@ -271,7 +271,7 @@ function spawnTurn(tn) {
     scene.add(c); decor.push({ mesh: c, z, ph: Math.random() * 6 });
   }
   const d = difficulty();
-  if (d > 1.2 && Math.random() < 0.3 + d * 0.1) { // zorlaştıkça viraj içinde de bir rakip
+  if (!MOBILE && d > 1.2 && Math.random() < 0.3 + d * 0.1) { // zorlaştıkça viraj içinde de bir rakip (telefonda yok: eğik kamerada görülmüyor)
     const z = tn.z0 - len * rand(0.25, 0.75);
     addRival(z, lineX(z) - tn.dir * 2, rand(0.7, 1.4), 'grey');
   }
@@ -1617,11 +1617,22 @@ function resume() {
 }
 let cdShown = 0, shownSign = 0;
 
-// ---------------- girdi: tek parmak, ekranın X konumu = martının hedefi ----------------
+// ---------------- girdi ----------------
+// Fare: ekranın X konumu = martının hedefi. Dokunmatik: göreli sürükleme — parmak nereye konursa konsun martı
+// sıçramaz, yalnızca kaydırılan kadar gider; bırakınca olduğu yerde kalır. Alttaki çubuk (#pad) konumu gösterir.
+// Ayar: PAD_GAIN (çubuğun yarı genişliği kadar kaydırma × PAD_GAIN = şeridin yarısı)
+const PAD_GAIN = 1.15;
+let padId = -1, padX0 = 0, padTx0 = 0;
 function steerFromX(clientX) {
-  // ekranın ortadaki %80'i tüm şeridi kapsar → başparmağın kenara uzanması gerekmez
-  // kenara doğru biraz daha yaslanmak virajda savrulmayı yener
-  tx = clamp((clientX / innerWidth - 0.5) / 0.4, -1, 1) * EDGE;
+  // ekranın ortadaki %80'i tüm şeridi kapsar → kenara doğru biraz daha yaslanmak virajda savrulmayı yener
+  setTx(clamp((clientX / innerWidth - 0.5) / 0.4, -1, 1) * EDGE);
+}
+function steerDrag(clientX) {
+  const half = Math.max(80, $('pad').offsetWidth / 2);
+  setTx(clamp(padTx0 + ((clientX - padX0) / half) * EDGE * PAD_GAIN, -EDGE, EDGE));
+}
+function setTx(v) {
+  tx = v;
   if (tutT > 0) {
     const side = Math.sign(tx) * (Math.abs(tx) > 2 ? 1 : 0);
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
@@ -1631,11 +1642,19 @@ const menuModal = () => !$('achPanel').classList.contains('hidden') || !$('upPan
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
-  if (state === 'play' && !isUi(e)) steerFromX(e.clientX);
+  if ((state !== 'play' && state !== 'countdown') || isUi(e)) return;
+  if (e.pointerType === 'mouse') { if (state === 'play') steerFromX(e.clientX); return; }
+  padId = e.pointerId; padX0 = e.clientX; padTx0 = tx; // yeni parmak: o anki konumdan devam
 });
 addEventListener('pointermove', e => {
-  if (state === 'play' && (e.pointerType === 'mouse' || e.buttons || e.pressure > 0)) steerFromX(e.clientX);
+  if (state === 'countdown' && e.pointerId === padId) { padX0 = e.clientX; padTx0 = tx; return; } // geri sayımda kayan parmak kalkışta sıçratmasın
+  if (state !== 'play') return;
+  if (e.pointerType === 'mouse') steerFromX(e.clientX);
+  else if (e.pointerId === padId) steerDrag(e.clientX);
 });
+const padUp = e => { if (e.pointerId === padId) padId = -1; };
+addEventListener('pointerup', padUp);
+addEventListener('pointercancel', padUp);
 $('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e)) startGame(); });
 addEventListener('keydown', e => {
   keys[e.code] = true;
@@ -1743,7 +1762,7 @@ const DPR = Math.min(2, devicePixelRatio || 1);
 // Uçuşta yalnızca çözünürlük değişir. Gölgeyi açıp kapamak bütün shader'ları yeniden derletir (telefonda saniyelerce donma):
 // o yüzden gölge kararı bekletilir, menüye ya da oyun sonuna dönünce uygulanır.
 // Telefon orta kaliteden başlar, çözünürlük basamakları daha dar: en düşükte de bulanıklaşmasın.
-const PR = MOBILE ? [1.3, 1.5, 1.75] : [1.15, 1.5, 2];
+const PR = MOBILE ? [1, 1.2, 1.5] : [1.15, 1.5, 2];
 let shadowWant = true;
 let quality = 2, qFrames = 0, qTime = 0, fpsSmooth = 60, qWarm = 4, qGood = 0, qMax = 2;
 // ?q=0|1|2 kaliteyi sabitler (otomatik ayar kapanır) — ölçüm ve test için
@@ -1764,6 +1783,18 @@ function applyShadows() {
   try { renderer.compile(scene, camera); } catch (e) {}
 }
 
+// dokunmatik kaydırma çubuğu: yalnız uçuşta görünür, topuz martının hedefini (tx) gösterir
+let padOn = false, padK = 2;
+function padTick() {
+  const on = MOBILE && (state === 'play' || state === 'countdown');
+  if (on !== padOn) { padOn = on; show('pad', on); }
+  if (!on) return;
+  const k = Math.round((tx / EDGE) * 1000) / 1000;
+  if (k === padK) return;
+  padK = k; $('padKnob').style.left = `${50 + clamp(k, -1, 1) * 50}%`;
+  $('pad').classList.toggle('held', padId >= 0);
+}
+
 // ---------------- döngü ----------------
 const clock = new THREE.Clock();
 let t = 0;
@@ -1780,12 +1811,13 @@ function frame() {
     if (qTime > 2.5) {
       const f = qFrames / qTime;
       if (qLock >= 0) {}
-      else if (f < 42 && quality > 0) { if (qGood < 0) qMax = quality - 1; setQuality(quality - 1); qGood = 0; }
+      else if (f < (MOBILE ? 50 : 42) && quality > 0) { if (qGood < 0) qMax = quality - 1; setQuality(quality - 1); qGood = 0; }
       else if (f > 56 && quality < qMax && ++qGood >= 4) { setQuality(quality + 1); qGood = -1; } // -1: yeni çıkıldı
       else if (f <= 56 && qGood > 0) qGood = 0;
       qFrames = 0; qTime = 0;
     }
   } else if (state !== 'play') { qFrames = 0; qTime = 0; }
+  padTick();
   if (state === 'paused') { renderer.render(scene, camera); return; }
 
   // hit-stop: simülasyon donar, kamera sarsıntısı ve arayüz sürer
@@ -1817,7 +1849,7 @@ function frame() {
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)
     const cur = turns.find(u => g.z < u.z0 && g.z > u.z1);
     lean = damp(lean, cur ? cur.dir : 0, 3, dt);
-    push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH;
+    push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH * (MOBILE ? 0.55 : 1); // telefonda savrulma hafif: başparmakla düzeltmek zor
     if (state === 'play') weatherTick(dt);
     const txl = EDGE; // martı vapur küpeştesinin içinde kalır: kapalı salonun dışından dolaşılamaz
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 17 * dt, -txl, txl);
@@ -2354,7 +2386,7 @@ function resize() {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
-setQuality(qLock >= 0 ? qLock : MOBILE ? 1 : 2);
+setQuality(qLock >= 0 ? qLock : MOBILE ? 0 : 2); // telefon en düşükten başlar, akıcıysa kendisi yükselir
 // telefon belleği sıkışınca GPU bağlamı düşebilir (siyah ya da bozuk ekran): uçuşu durdur, geri gelince sayfayı tazele
 renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); if (state === 'play') pause(); });
 renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());

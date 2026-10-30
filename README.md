@@ -12,7 +12,7 @@ while dodging funnels, flag masts, kites and rival gulls.
 
 | Device | Steer | Other |
 |---|---|---|
-| Phone | Slide your finger left / right (the middle 80% of the screen covers the whole lane) | Pause button top right |
+| Phone | Drag anywhere left / right: the gull moves by how far you drag, never jumps to where you touch, and stays put when you let go; the slider at the bottom shows its position | Pause button top right |
 | Desktop | Move the mouse, or ← → / A D | `P` / `Esc` pause, `M` sound on/off, `Space` start |
 
 The game pauses itself when the tab or app goes to the background and resumes with a 3-2-1 countdown.
