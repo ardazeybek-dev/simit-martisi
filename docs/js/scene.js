@@ -439,6 +439,42 @@ function buildAntalya() {
   farShipsBuild();
 }
 
+// Uzak dekor yüzlerce küçük parçadan kurulur (her biri ayrı çizim çağrısı: telefonu en çok yoran şey).
+// Kurulduktan sonra aynı malzemeyi paylaşan opak, sabit parçalar tek gövdede birleşir; kayan gemiler (farShips) ayrı kalır.
+function mergeFar() {
+  far.updateMatrixWorld(true);
+  const inv = far.matrixWorld.clone().invert(), groups = new Map(), moving = new Set();
+  for (const s of farShips) s.traverse(o => moving.add(o));
+  far.traverse(o => {
+    if (!o.isMesh || moving.has(o) || o.material.transparent || Array.isArray(o.material) || o.renderOrder) return;
+    if (!groups.has(o.material)) groups.set(o.material, []);
+    groups.get(o.material).push(o);
+  });
+  const m4 = new THREE.Matrix4();
+  for (const [mat, list] of groups) {
+    if (list.length < 2) continue;
+    const names = mat.map ? ['position', 'uv'] : ['position'];
+    if (mat.vertexColors) names.push('color');
+    const parts = [];
+    for (const o of list) {
+      if (names.some(n => !o.geometry.attributes[n])) continue;
+      const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(m4.multiplyMatrices(inv, o.matrixWorld));
+      parts.push({ o, g });
+    }
+    if (parts.length < 2) continue;
+    const merged = new THREE.BufferGeometry();
+    for (const n of names) {
+      const size = parts[0].g.attributes[n].itemSize, arr = new Float32Array(parts.reduce((t, p) => t + p.g.attributes[n].count * size, 0));
+      let off = 0;
+      for (const p of parts) { const a = p.g.attributes[n]; for (let i = 0; i < a.count; i++) for (let k = 0; k < size; k++) arr[off++] = a.array[i * size + k]; }
+      merged.setAttribute(n, new THREE.BufferAttribute(arr, size));
+    }
+    merged.computeBoundingSphere();
+    for (const p of parts) { p.g.dispose(); p.o.geometry.dispose(); p.o.removeFromParent(); }
+    far.add(new THREE.Mesh(merged, mat));
+  }
+}
+
 // şehir değişince uzak dekor baştan kurulur (yalnız menüde, uçuşta asla). Renkler İstanbul'un üstüne yazılır.
 const BASE_PAL = { ...PAL };
 const CITY_PAL = {
@@ -465,6 +501,7 @@ export function setCityLook(id) {
   far.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
   far.clear(); farMats.length = 0; farShips.length = 0;
   (FAR[id] || FAR.istanbul)();
+  mergeFar();
   hemi.groundColor.setHex(PAL.hemiGround); sunLight.color.setHex(PAL.sunLight);
 }
 

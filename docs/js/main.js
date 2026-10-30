@@ -11,6 +11,7 @@ import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRu
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
+const SIMIT_VIEW = 140; // telefonda bundan uzaktaki simitler çizilmez
 const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.5, COMBO_T = 1.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 // şerit vapur kadar geniş (gövde ±4, küpeştenin biraz dışı). Çarpışma payları: engeller affedici (kutu görünenden dar),
 // simit ve güçlendirme cömert (yakından geçmek yeter)
@@ -209,9 +210,9 @@ function spawnGap(first, fixLen) {
     }
     // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
     if (d > 0.9 && len > 34 && Math.random() < 0.18 + d * 0.05) {
-      const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.2, 0.32);
+      const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
       const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b);
-      const o = { x: xa + side * 60 * k, z, hw: 1.9, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false };
+      const o = { x: xa + side * 60 * k, z, hw: 1.25, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // hw: martı yüksekliğinde iki yelkenin toplam genişliği
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
     }
     // yunus sürüsü: önce suda yalnız yüzgeçleri görünür; martı yaklaşınca sırayla koridoru yandan atlayarak keser.
@@ -821,8 +822,8 @@ const ups = { magnet: 0, shield: 0, double: 0 };
 { const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
 const dur = k => POWER[k].dur * (1 + ups[k] * 0.25);
 let best = +store.get(KEY_BEST, 0) || 0;
-// simit cüzdanı: kapılan sekiz simitte (32 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
-const WALLET_RATE = 8;
+// simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
+const WALLET_RATE = 12;
 let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
@@ -1356,17 +1357,17 @@ function renderMenuBadges() {
 // Kalıcı; her biri üç kademe (bronz, gümüş, altın). Sayaçlar her uçuşun sonunda (showOver) toplanır,
 // rekor ve en uzak iskele eski kayıtlardan gelir: önceden oynayan sıfırdan başlamaz. Ödül panelden alınır, uçuşta bildirim yok.
 const ACH = [
-  { id: 'simit', name: 'Simit avcısı', text: 'Toplam {n} simit kap', n: [100, 1000, 5000] },
-  { id: 'gold', name: 'Altın göz', text: 'Toplam {n} altın simit kap', n: [10, 50, 200] },
+  { id: 'simit', name: 'Simit avcısı', text: 'Toplam {n} simit kap', n: [10000, 50000, 200000] },
+  { id: 'gold', name: 'Altın göz', text: 'Toplam {n} altın simit kap', n: [1000, 5000, 20000] },
   { id: 'maxDist', name: 'Boğaz yolcusu', text: 'Bir uçuşta {n} m uç', n: [1000, 3000, 6800] },
-  { id: 'maxScore', name: 'Rekortmen', text: 'Bir uçuşta {n} puan yap', n: [2000, 6000, 15000] },
-  { id: 'maxCombo', name: 'Seri ustası', text: '{n} simitlik seri yap', n: [15, 30, 50] },
-  { id: 'steal', name: 'Hınzır martı', text: 'Yolcuların elinden toplam {n} simit kap', n: [50, 300, 1000] },
-  { id: 'near', name: 'Kıl payı', text: 'Toplam {n} kez kıl payı geç', n: [30, 150, 500] },
-  { id: 'turn', name: 'Viraj ustası', text: 'Toplam {n} kusursuz viraj al', n: [10, 50, 200] },
-  { id: 'dolphin', name: 'Yunus dostu', text: 'Toplam {n} yunusun üstünden geç', n: [10, 60, 200] },
-  { id: 'bridge', name: 'Köprü altı', text: 'Toplam {n} kez köprü altından geç', n: [3, 15, 50] },
-  { id: 'runs', name: 'Sadık martı', text: '{n} kez uç', n: [10, 50, 200] },
+  { id: 'maxScore', name: 'Rekortmen', text: 'Bir uçuşta {n} puan yap', n: [50000, 150000, 500000] },
+  { id: 'maxCombo', name: 'Seri ustası', text: '{n} simitlik seri yap', n: [100, 250, 500] },
+  { id: 'steal', name: 'Hınzır martı', text: 'Yolcuların elinden toplam {n} simit kap', n: [3000, 10000, 30000] },
+  { id: 'near', name: 'Kıl payı', text: 'Toplam {n} kez kıl payı geç', n: [300, 1500, 5000] },
+  { id: 'turn', name: 'Viraj ustası', text: 'Toplam {n} kusursuz viraj al', n: [1000, 3000, 10000] },
+  { id: 'dolphin', name: 'Yunus dostu', text: 'Toplam {n} yunusun üstünden geç', n: [100, 600, 2000] },
+  { id: 'bridge', name: 'Köprü altı', text: 'Toplam {n} kez köprü altından geç', n: [30, 150, 500] },
+  { id: 'runs', name: 'Sadık martı', text: '{n} kez uç', n: [100, 500, 2000] },
   { id: 'owned', name: 'Moda martı', text: '{n} kostüm al', n: [3, 8, 17] },
 ];
 const ACH_R = [25, 75, 200];
@@ -1466,17 +1467,17 @@ const visit = Object.assign({ last: '', streak: 0, best: 0, days: 0 }, store.get
   const today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
   if (visit.last !== today) { visit.streak = visit.last === dayKey(y) ? visit.streak + 1 : 1; visit.days++; visit.best = Math.max(visit.best, visit.streak); visit.last = today; store.set(KEY_VISIT, visit); }
 }
-const kLab = n => (n >= 1000 ? `${n / 1000}k` : `${n}`);
+const kLab = n => (n >= 1e6 ? `${n / 1e6}M` : n >= 1000 ? `${n / 1000}k` : `${n}`);
 const fam = (f, icon, list, text, v, lab = kLab) => list.map(([n, name]) => ({ id: f + n, fam: f, icon, n, name, text, v, lab: lab(n) }));
 const BADGES = [
-  ...fam('km', 'i-pin', [[1, 'Kanat açtı'], [10, 'Uzun yol'], [100, 'Boğaz aşığı'], [1000, 'Kıtalar arası'], [10000, 'Efsane kanat']], 'Toplam {n} km uç', () => (ach.st.distTot || 0) / 1000, n => `${kLab(n)} km`),
+  ...fam('km', 'i-pin', [[1000, 'Kanat açtı'], [2500, 'Uzun yol'], [5000, 'Boğaz aşığı'], [10000, 'Kıtalar arası'], [25000, 'Efsane kanat']], 'Toplam {n} km uç', () => (ach.st.distTot || 0) / 1000, n => `${kLab(n)} km`),
   ...fam('day', 'i-gift', [[3, 'Üç gün'], [7, 'Bir hafta'], [30, 'Bir ay'], [80, 'Vazgeçmez'], [365, 'Bir yıl']], '{n} gün art arda gir', () => visit.best, n => `${n} ${tr('gün')}`),
-  ...fam('run', 'i-play', [[100, 'Yüz uçuş'], [1000, 'Bin uçuş']], '{n} kez uç', () => ach.st.runs || 0),
-  ...fam('fish', 'i-fish', [[10, 'Balıkçı'], [100, 'Balık reisi']], 'Toplam {n} balık yakala', () => ach.st.fish || 0),
-  ...fam('sim', 'i-simit', [[10000, 'Simit sevdalısı'], [100000, 'Simit sarayı']], 'Toplam {n} simit kap', () => ach.st.simit || 0),
+  ...fam('run', 'i-play', [[1000, 'Bin uçuş'], [10000, 'On bin uçuş']], '{n} kez uç', () => ach.st.runs || 0),
+  ...fam('fish', 'i-fish', [[100, 'Balıkçı'], [1000, 'Balık reisi']], 'Toplam {n} balık yakala', () => ach.st.fish || 0),
+  ...fam('sim', 'i-simit', [[100000, 'Simit sevdalısı'], [1000000, 'Simit sarayı']], 'Toplam {n} simit kap', () => ach.st.simit || 0),
   ...CITIES.filter(c => !c.soon).map(c => ({ id: 'city-' + c.id, fam: 'city', icon: 'i-trophy', n: 1, name: c.name, text: c.end, lab: c.name, v: () => (routeOf(c) === c.stops.length - 1 ? 1 : 0) })),
   ...[['rain', 'i-drop', 'Yağmur kuşu', 'Yağmurda bir uçuşta {n} m uç'], ['snow', 'i-snow', 'Kar tanesi', 'Karda bir uçuşta {n} m uç'], ['fog', 'i-fog', 'Sis kaptanı', 'Siste bir uçuşta {n} m uç']]
-    .map(([w, icon, name, text]) => ({ id: 'wx-' + w, fam: 'wx', icon, n: 500, name, text, lab: '500 m', v: () => ach.st['wx_' + w] || 0 })),
+    .map(([w, icon, name, text]) => ({ id: 'wx-' + w, fam: 'wx', icon, n: 2000, name, text, lab: '2000 m', v: () => ach.st['wx_' + w] || 0 })),
 ];
 ach.bseen ||= [];
 const badgeOn = b => b.v() >= b.n;
@@ -1575,7 +1576,7 @@ function updateHud() {
   }
 }
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
-const mult = () => Math.min(5, 1 + Math.floor(Math.sqrt(combo / 3)));
+const mult = () => Math.min(5, 1 + Math.floor(combo / 12)); // x2: 12, x3: 24, x4: 36, x5: 48 simit
 function renderPowers() {
   ui.powers.textContent = '';
   for (const k of Object.keys(pw)) {
@@ -1762,7 +1763,7 @@ const DPR = Math.min(2, devicePixelRatio || 1);
 // Uçuşta yalnızca çözünürlük değişir. Gölgeyi açıp kapamak bütün shader'ları yeniden derletir (telefonda saniyelerce donma):
 // o yüzden gölge kararı bekletilir, menüye ya da oyun sonuna dönünce uygulanır.
 // Telefon orta kaliteden başlar, çözünürlük basamakları daha dar: en düşükte de bulanıklaşmasın.
-const PR = MOBILE ? [1, 1.2, 1.5] : [1.15, 1.5, 2];
+const PR = MOBILE ? [1.3, 1.5, 1.75] : [1.15, 1.5, 2];
 let shadowWant = true;
 let quality = 2, qFrames = 0, qTime = 0, fpsSmooth = 60, qWarm = 4, qGood = 0, qMax = 2;
 // ?q=0|1|2 kaliteyi sabitler (otomatik ayar kapanır) — ölçüm ve test için
@@ -1811,7 +1812,7 @@ function frame() {
     if (qTime > 2.5) {
       const f = qFrames / qTime;
       if (qLock >= 0) {}
-      else if (f < (MOBILE ? 50 : 42) && quality > 0) { if (qGood < 0) qMax = quality - 1; setQuality(quality - 1); qGood = 0; }
+      else if (f < 42 && quality > 0) { if (qGood < 0) qMax = quality - 1; setQuality(quality - 1); qGood = 0; }
       else if (f > 56 && quality < qMax && ++qGood >= 4) { setQuality(quality + 1); qGood = -1; } // -1: yeni çıkıldı
       else if (f <= 56 && qGood > 0) qGood = 0;
       qFrames = 0; qTime = 0;
@@ -1850,6 +1851,7 @@ function frame() {
     const cur = turns.find(u => g.z < u.z0 && g.z > u.z1);
     lean = damp(lean, cur ? cur.dir : 0, 3, dt);
     push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH * (MOBILE ? 0.55 : 1); // telefonda savrulma hafif: başparmakla düzeltmek zor
+    // savrulma, viraj içine yaslandıkça söner: içe tam yaslanan martı tepe noktasındaki simitlere ulaşır
     if (state === 'play') weatherTick(dt);
     const txl = EDGE; // martı vapur küpeştesinin içinde kalır: kapalı salonun dışından dolaşılamaz
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 17 * dt, -txl, txl);
@@ -1858,7 +1860,7 @@ function frame() {
     if (cur) heading += cur.k * dz * bendOn; else heading *= Math.exp(-dt / 30); // ufuk, düzlükte yavaşça toparlanır
     // kritik sönümlü yay: hızlı ama yumuşak takip (çevik: engelden son anda kaçılabilsin)
     // alt adımlar (en çok 1/60 sn): kare hızı düşen telefonda sert yay titremesin
-    const k = 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push + (state === 'play' ? wind * 0.32 + imbatW + fallsW : 0), -EDGE, EDGE);
+    const k = 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * 0.32 + imbatW + fallsW : 0), -EDGE, EDGE);
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (weather === 'snow' && warmth < 0.25 && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
@@ -2102,6 +2104,7 @@ function frame() {
       if (Math.random() < fishCatch) catchFish(f); else slipFish(f);
     }
   }
+  if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }
   for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
   updateFx(dt);
 
@@ -2386,7 +2389,7 @@ function resize() {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
-setQuality(qLock >= 0 ? qLock : MOBILE ? 0 : 2); // telefon en düşükten başlar, akıcıysa kendisi yükselir
+setQuality(qLock >= 0 ? qLock : MOBILE ? 1 : 2);
 // telefon belleği sıkışınca GPU bağlamı düşebilir (siyah ya da bozuk ekran): uçuşu durdur, geri gelince sayfayı tazele
 renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); if (state === 'play') pause(); });
 renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
