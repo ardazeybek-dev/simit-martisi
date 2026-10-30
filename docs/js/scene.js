@@ -116,9 +116,24 @@ export const far = new THREE.Group();
 scene.add(far);
 const farMats = []; // hava değişince uzak dekor sis tonuna çekilir
 export const farShips = []; // ufukta ağır ağır kayan gemi siluetleri (main.js kaydırır)
-// uzak dekor yardımcıları: tek renk, sissiz; hava tonu farMats üzerinden gelir
-const basic = (c, o = {}) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false, ...o }); m.userData.base = c; farMats.push(m); return m; };
-const add = (geo, m, x, y, z, parent = far) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
+// uzak dekor yardımcıları: sissiz, hava tonu farMats üzerinden gelir. Köşe tonu (shade) rengi çarpar:
+// su hizasında koyu, yukarı açılır; yandan vuran ışıkla kubbe ve kule yuvarlak görünür (düz karton kesik değil, 2.5D)
+const basic = (c, o = {}) => { const m = new THREE.MeshBasicMaterial({ color: c, fog: false, vertexColors: true, ...o }); m.userData.base = c; farMats.push(m); return m; };
+const _n = new THREE.Vector3(), SIDE_L = new THREE.Vector3(-0.7, 0.5, 0.3).normalize();
+function shade(geo, y0) {
+  const p = geo.attributes.position, n = geo.attributes.normal, c = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) {
+    const h = Math.min(1, Math.max(0, (y0 + p.getY(i)) / 40)), lit = n ? Math.max(0, _n.fromBufferAttribute(n, i).dot(SIDE_L)) : 0.5;
+    c[i * 3] = c[i * 3 + 1] = c[i * 3 + 2] = (0.76 + 0.24 * h) * (0.84 + 0.24 * lit);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
+}
+const add = (geo, m, x, y, z, parent = far) => { if (m.vertexColors) shade(geo, y); const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); parent.add(o); return o; };
+// su hizasında sis bandı: siluetlerin eteği ufka karışır, arka katman öndekinden soluk kalır
+function farHaze(z, h, a = 0.85) {
+  const tex = canvasTex(4, 64, (g) => { const r = g.createLinearGradient(0, 0, 0, 64); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(1, `rgba(255,255,255,${a})`); g.fillStyle = r; g.fillRect(0, 0, 4, 64); });
+  add(new THREE.PlaneGeometry(1500, h), basic(PAL.fog, { map: tex, transparent: true, depthWrite: false, vertexColors: false }), 0, h / 2 - 1, z);
+}
 const ridge = (z, y0, amp, m, seed) => {
   const sh = new THREE.Shape(); sh.moveTo(-700, -10);
   for (let x = -700; x <= 700; x += 20) sh.lineTo(x, y0 + Math.sin(x * 0.011 + seed) * amp + Math.sin(x * 0.031 + seed * 2) * amp * 0.4);
@@ -199,10 +214,12 @@ function buildIstanbul() {
 
   farClouds();
 
-  // Anadolu yakası tepeleri: iki kat, sis rengine yakın
+  // Anadolu yakası tepeleri: iki kat, sis rengine yakın; aralarında ve eteklerinde sis
   farRidges(mFarHill, mHill, mCityFar);
+  farHaze(-450, 16); farHaze(-415, 10, 0.7);
 
-  // tarihi yarımada silüeti
+  // tarihi yarımada silüeti: arkada soluk, yüksek; önde koyu, alçak sıra
+  farSkyline(mCityFar, -404, 8, 22);
   farSkyline(mCity, -390, 5, 16);
 
   // cami: kubbe + yarım kubbeler + şerefeli minareler
@@ -254,7 +271,7 @@ function buildIstanbul() {
   for (const [a, b, ya, yb] of [[-245, bx0, deck, top], [bx0, bx1, top, top], [bx1, 15, top, deck]]) {
     const mid = (a + b) / 2, low = (a === bx0 ? deck + 3 : (ya + yb) / 2 - 6);
     const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(a, ya, bz), new THREE.Vector3(mid, a === bx0 ? 2 * low - top : low, bz), new THREE.Vector3(b, yb, bz));
-    far.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 30, 0.35, 4), bm));
+    add(new THREE.TubeGeometry(curve, 30, 0.35, 4), bm, 0, 0, 0);
     for (let k = 1; k < 14; k++) {
       const p = curve.getPoint(k / 14);
       if (p.y - deck < 1) continue;
@@ -288,6 +305,7 @@ function buildIzmir() {
   farClouds();
   // Yamanlar ve Kadifekale: Boğaz'dan yüksek, sarı-zeytin tepeler
   farRidges(mFarHill, mHill, mCityFar, [30, 13, 12, 7]);
+  farHaze(-450, 18); farHaze(-412, 10, 0.7);
   // Kadifekale: şehrin arkasındaki tepede surlar
   const kx = -190, kz = -415;
   const hill = new THREE.Shape(); hill.moveTo(-110, -5);
@@ -302,7 +320,8 @@ function buildIzmir() {
   }
   for (const x of [-34, -12, 14, 34]) { const y = 26 * Math.cos((x / 110) * Math.PI / 2) ** 1.4; wall.add(new THREE.BoxGeometry(5, 8, 4), 0, x, y + 3.5, 0); }
   add(wall.build(), mTower, kx, 0, kz + 3);
-  // alçak kıyı şehri (Konak, Alsancak)
+  // alçak kıyı şehri (Konak, Alsancak): arkada soluk ikinci sıra
+  farSkyline(mCityFar, -402, 6, 16);
   farSkyline(mCity, -392, 3, 11);
   // Bayraklı kuleleri: körfezin sağında cam gökdelenler
   const bay = new Kit();

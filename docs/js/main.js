@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
+import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex } from './util.js';
 import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
@@ -751,22 +751,27 @@ function placeMarks() {
   if (vs && !vs.won && vs.d >= 60 && vs.city === city.id) addMark(vs.d, fmt(vs.s), '#2f7fd6', 'vs');
 }
 // ana menü arka sahnesi: şehrin tanıdık yerleri martının gerisinde onunla ilerler; uçuş başlayınca gizlenir
+// üç katman (ön kıyı, orta yamaç, arka karşı kıyı) salınımı farklı oranda izler: ön çok kayar, arka gök gibi neredeyse durur (2.5D)
 const titleSets = {};
+const TITLE_LAYERS = { near: 0.12, mid: 0.28, far: 0.5 };
 function updateTitleSet(gz) {
   for (const id in titleSets) titleSets[id].visible = false;
   if (state !== 'title' || !TITLE_SETS[city.id]) return;
-  let m = titleSets[city.id];
-  if (!m) {
-    const geo = TITLE_SETS[city.id](); geo.computeBoundingBox();
-    const bb = geo.boundingBox; geo.translate(-(bb.min.x + bb.max.x) / 2, 0, -bb.min.z); // ortası x=0, ön kenarı z=0
-    m = titleSets[city.id] = new THREE.Mesh(geo, vcMat); m.scale.setScalar(TITLE_SCALE); scene.add(m);
-    if (city.maiden) { const k = makeMaiden(); k.position.set(46, 0, -34); k.rotation.y = -Math.PI / 2 - 0.35; m.add(k); m.userData.crowd = k; } // İstanbul: önde Kız Kulesi, terastakiler el sallar
+  let set = titleSets[city.id];
+  if (!set) {
+    const geos = TITLE_SETS[city.id]();
+    set = titleSets[city.id] = new THREE.Group(); scene.add(set);
+    for (const k in TITLE_LAYERS) { const m = new THREE.Mesh(geos[k], softMat); m.scale.setScalar(TITLE_SCALE); m.userData.follow = TITLE_LAYERS[k]; set.add(m); set.userData[k] = m; }
+    if (city.maiden) { const k = makeMaiden(); k.position.set(46, 0, -34); k.rotation.y = -Math.PI / 2 - 0.35; set.userData.near.add(k); set.userData.crowd = k; } // İstanbul: önde Kız Kulesi, terastakiler el sallar
   }
-  if (m.userData.crowd) animCrowd(m.userData.crowd, t);
-  // vitrin kamerası martıya önden bakar ve yavaşça salınır: sahne kameranın o anki doğrultusunda martının arkasına oturur,
-  // salınımın ancak üçte birini izler: uzak manzara gibi yavaşça kayar, kameranın peşinden gelmez
-  const a = TITLE_A + (titleCamA - TITLE_A) * 0.3;
-  m.visible = true; m.rotation.y = a - Math.PI; m.position.set(-Math.sin(a) * TITLE_D, 0, gz - Math.cos(a) * TITLE_D);
+  if (set.userData.crowd) animCrowd(set.userData.crowd, t);
+  // vitrin kamerası martıya önden bakar ve yavaşça salınır: her katman kameranın doğrultusunda martının arkasına oturur,
+  // salınımın yalnız bir kısmını izler: uzak manzara gibi kayar, kameranın peşinden gelmez
+  set.visible = true;
+  for (const m of set.children) {
+    const a = TITLE_A + (titleCamA - TITLE_A) * m.userData.follow;
+    m.rotation.y = a - Math.PI; m.position.set(-Math.sin(a) * TITLE_D, 0, gz - Math.cos(a) * TITLE_D);
+  }
 }
 const TITLE_A = Math.PI - 0.5, TITLE_D = 88, TITLE_SCALE = 0.4;
 let titleCamA = TITLE_A;
