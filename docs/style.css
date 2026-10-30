@@ -298,6 +298,11 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .board-tier small { display: block; font-weight: 600; opacity: .75; }
 .rank-line { display: table; margin: 5px auto 0; padding: 3px 12px 2px; border-radius: 99px; background: rgba(58, 167, 255, .12); color: #bfe3ff; font-size: 14px; font-weight: 700; }
 .rank-line:empty, .route-line:empty { display: none; }
+.vs-pill { padding: 5px 14px 4px; border-radius: 99px; background: rgba(47, 127, 214, .85); color: #fff; font-size: 14.5px; font-weight: 800;
+  box-shadow: 0 3px 0 rgba(27, 24, 56, .35); animation: vsPulse 2.4s ease-in-out infinite; }
+@keyframes vsPulse { 50% { transform: scale(1.04); } }
+.vs-line { margin: 0 0 10px; padding: 6px 12px 5px; border-radius: 12px; background: rgba(47, 127, 214, .18); color: #cfe6ff; font-size: 14.5px; font-weight: 800; text-align: center; }
+.vs-line.won { background: rgba(255, 194, 58, .2); color: var(--gold); }
 .vols { margin: 16px 0 0; display: grid; gap: 8px; }
 .vol { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 14px;
   background: rgba(255, 255, 255, .06); border: 1px solid var(--line); font-size: 17px; font-weight: 700; }

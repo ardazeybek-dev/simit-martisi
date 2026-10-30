@@ -51,8 +51,21 @@ function useCity(c) {
   STOPS = c.stops.map(([name, m, to, gift]) => ({ name, m: Math.round(m * STOP_K), to, gift }));
   setCityLook(c.id); setBait(c.bait);
 }
+// meydan okuma: paylaşılan link #c=puan-metre-şehir taşır. Açan kişi başlıkta hedefi görür, o şehirde arkadaşının düştüğü metrede
+// suda mavi bayraklı bir şamandıra durur. Geçilene kadar saklanır; yeni link eskisinin yerini alır.
+const KEY_VS = 'simit-martisi-vs';
+let vs = null, vsNew = false;
+{ const v = store.get(KEY_VS, null);
+  if (v && v.s > 0) vs = { s: Math.min(9999999, v.s | 0), d: Math.min(99999, v.d | 0), city: cityOf(v.city).id, won: !!v.won };
+  const m = /^#c=(\d{1,7})-(\d{1,6})-([a-z]{2,12})$/.exec(location.hash);
+  if (m && +m[1] > 0) {
+    const c = cityOf(m[3]), ok = c.id === m[3] && cityOpen(c);
+    vs = { s: +m[1], d: ok ? +m[2] : 0, city: ok ? c.id : 'istanbul', won: false }; vsNew = ok; store.set(KEY_VS, vs);
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  }
+}
 { // ?city=izmir → kilit olsa da o şehir (deneme için)
-  const q = cityOf(new URLSearchParams(location.search).get('city') || store.get(KEY_CITY, 'istanbul'));
+  const q = cityOf(new URLSearchParams(location.search).get('city') || (vsNew && vs.city) || store.get(KEY_CITY, 'istanbul'));
   useCity(cityOpen(q) || new URLSearchParams(location.search).has('city') ? q : CITIES[0]);
 }
 let newStop = 0; // bu uçuşta ilk kez varılan en uzak iskele (oyun sonu için)
@@ -687,8 +700,51 @@ function resetWorld(newWeather = true) {
   if (newWeather) { weather = pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
-  generate(-280);
+  generate(-280); placeMarks();
   camera.position.set(0, FLY_Y + 5.4, 13.5);
+}
+// suda bayraklı şamandıralar: altın olan en uzun uçuşun, mavi olan meydan okuyan arkadaşının metresi. Şeridin dışında durur, çarpmaz.
+// Yanından geçmek: kendi rekorunda ses ve parıltı, arkadaşınınkinde ayrıca küçük bonus ve konfeti.
+let marks = [];
+const markMats = new Map(), MARK_POLE = new THREE.CylinderGeometry(0.08, 0.08, 6.6, 6), MARK_FLAG = new THREE.PlaneGeometry(2.6, 1.3), markPole = new THREE.MeshBasicMaterial({ color: 0xf3efe6 });
+function markMat(text, bg) {
+  const k = text + bg;
+  if (!markMats.has(k)) markMats.set(k, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, map: canvasTex(256, 128, (g, w, h) => {
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#fff8e8'; g.lineWidth = 8; g.strokeRect(6, 6, w - 12, h - 12);
+    g.fillStyle = '#fff8e8'; g.font = '800 56px "Baloo 2", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(text, w / 2, h / 2 + 4, w - 34);
+  }) }));
+  return markMats.get(k);
+}
+function addMark(m, text, bg, kind) {
+  const side = kind === 'vs' ? -1 : 1, x = side * (LANE + 2.4), z = -2 * m, g = new THREE.Group();
+  const b = new THREE.Mesh(BUOY, vcMat); b.scale.setScalar(1.35); g.add(b);
+  const p = new THREE.Mesh(MARK_POLE, markPole); p.position.y = 3.7; g.add(p);
+  const f = new THREE.Mesh(MARK_FLAG, markMat(text, bg)); f.position.set(side * 1.3, 6.3, 0); g.add(f);
+  g.position.set(x, 0, z); scene.add(g);
+  marks.push({ g, f, x, z, kind, passed: false });
+}
+function placeMarks() {
+  for (const k of marks) scene.remove(k.g);
+  marks = [];
+  const own = Math.floor(((store.get(KEY_ACH, {}) || {}).st || {}).maxDist || 0);
+  if (own >= 150) addMark(own, tr('Rekor'), '#d9952a', 'own');
+  if (vs && !vs.won && vs.d >= 60 && vs.city === city.id) addMark(vs.d, fmt(vs.s), '#2f7fd6', 'vs');
+}
+function updateMarks(gz) {
+  for (const k of marks) {
+    k.g.position.y = waveAt(k.x, k.z, t) * 0.6;
+    k.f.rotation.y = Math.sin(t * 2.3 + k.x) * 0.2;
+    if (!k.passed && state === 'play' && gz < k.z) { k.passed = true; passMark(k); }
+  }
+}
+function passMark(k) {
+  const p = tmp2.set(k.x, 6.3, k.z);
+  if (k.kind === 'vs') {
+    points += 50 * mult(); flapBurst = 1; trauma = Math.min(1, trauma + 0.2);
+    sfx.record(); vibrate([20, 30, 20]); confetti(); sparkle(p, 44, 0x6fb8ff, 7, 1);
+  } else { sfx.near(); vibrate(15); sparkle(p, 30, 0xffd36b, 6, 0.8); }
 }
 
 // ---------------- arayüz ----------------
@@ -736,6 +792,8 @@ function showTitle() {
   $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
   $('titleBest').textContent = best ? `${tr('Rekor')} ${fmt(best)}` : tr('İlk uçuşun!');
+  show('vsPill', !!vs && !vs.won);
+  if (vs && !vs.won) $('vsPill').textContent = tr('Bir arkadaşın {s} puan yaptı. Geçebilir misin?').replace('{s}', fmt(vs.s));
   audio.music(true);
   // günün ilk açılışında ödül kendiliğinden gelir; alınmadan geçilirse her oyun sonunda yeniden açılmaz (menüdeki nokta kalır)
   if (!tutorialPending && !dailyAuto && dailyState().ready) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; openDaily(); } }, 700);
@@ -802,6 +860,13 @@ function showOver() {
   { // haftalık sıra: bu uçuş sıranı yükselttiyse eski sırayı da göster
     const wk = recordRun(final), now = rankOf(wk.best), was = wk.before > 0 ? rankOf(wk.before) : 0;
     $('overRank').textContent = tr('Haftalık sıran: {r}').replace('{r}', '#' + fmt(now)) + (was && now < was ? `  ▲ ${fmt(was - now)}` : '');
+  }
+  { // meydan okuma: arkadaşını geçtin mi, kaç puan kaldı
+    const el = $('overVs'), beat = !!vs && !vs.won && final > vs.s;
+    show('overVs', !!vs && (!vs.won || beat)); el.classList.toggle('won', beat);
+    if (beat) { vs.won = true; store.set(KEY_VS, vs); el.textContent = tr('Arkadaşını geçtin! Şimdi sıra onda.'); }
+    else if (vs && !vs.won) el.textContent = tr('Arkadaşını geçmene {n} puan kaldı').replace('{n}', fmt(vs.s - final + 1));
+    shareWon = beat; shareLbl = tr(beat ? 'Rövanş iste' : 'Meydan oku'); $('shareBtn').textContent = shareLbl;
   }
   const achBefore = achReady(), bdgBefore = badgesGot(); achRecord();
   if (!revives) countMission('runs');
@@ -1432,12 +1497,14 @@ onBtn('quitBtn', () => { audio.resume(); showTitle(); });
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 onBtn('soundBtn', () => { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); });
+// paylaşılan link meydan okumadır: açan kişi bu puanı ve metreyi hedef olarak görür
+let shareLbl = '', shareWon = false;
 onBtn('shareBtn', async () => {
-  const text = tr('Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?').replace('{s}', fmt(total())).replace('{n}', fmt(Math.floor(simitCount)));
-  const url = location.href.split('#')[0].split('?')[0];
+  const text = tr(shareWon ? 'Simit Martısı\'nda seni {s} puanla geçtim! Rövanş?' : 'Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?').replace('{s}', fmt(total())).replace('{n}', fmt(Math.floor(simitCount)));
+  const url = location.href.split('#')[0].split('?')[0] + `#c=${total()}-${Math.floor(dist)}-${city.id}`;
   try {
     if (navigator.share) await navigator.share({ title: document.title, text, url });
-    else { await navigator.clipboard.writeText(`${text} ${url}`); $('shareBtn').textContent = tr('Kopyalandı'); setTimeout(() => ($('shareBtn').textContent = tr('Paylaş')), 1800); }
+    else { await navigator.clipboard.writeText(`${text} ${url}`); $('shareBtn').textContent = tr('Kopyalandı'); setTimeout(() => ($('shareBtn').textContent = shareLbl || tr('Paylaş')), 1800); }
   } catch (e) {}
 });
 for (const el of document.querySelectorAll('[data-toggle]')) {
@@ -1733,7 +1800,7 @@ function frame() {
       c.m.position.y = c.y + Math.max(0, Math.sin(t * 6.5 + c.ph)) * 0.35; c.m.rotation.z = Math.sin(t * 3 + c.ph) * 0.1;
     }
   }
-  animLand(g.z); updateFlocks(dt, g.z);
+  animLand(g.z); updateFlocks(dt, g.z); updateMarks(g.z);
   for (const s of farShips) { s.position.x += s.userData.v * dt; if (Math.abs(s.position.x) > 320) s.position.x = -Math.sign(s.position.x) * 300; }
   for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar
     c.o.x = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k;
@@ -2120,6 +2187,7 @@ window.__game = {
   get city() { return city.id; },
   get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
   setCity(id) { useCity(cityOf(id)); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },
+  get marks() { return marks.map(k => ({ kind: k.kind, m: -k.z / 2, passed: k.passed })); }, get vs() { return vs && { ...vs }; },
   get route() { return { next: STOPS[stopI] ? STOPS[stopI].name : null, at: stopM[stopI] ?? null, dist, z: gull.position.z, piers: piers.map(p => ({ i: p.i, ahead: +(gull.position.z - p.z).toFixed(1) })) }; },
   warp: m => { dist = m; gull.position.z = -2 * m; }, // deneme: uçuşu ileri sar
   get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },

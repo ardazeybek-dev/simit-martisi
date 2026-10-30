@@ -651,6 +651,12 @@
     ["Kap bakalım!", "Go for it!", "Hol ihn dir!", "¡A por él!"],
     ["Bol susamlısından!", "Extra sesame for you!", "Mit extra Sesam!", "¡Con extra de sésamo!"],
     ["Hoş geldin martı!", "Welcome aboard, gull!", "Willkommen an Bord, Möwe!", "¡Bienvenida a bordo, gaviota!"],
+    ["Bir arkadaşın {s} puan yaptı. Geçebilir misin?", "A friend scored {s}. Can you beat it?", "Ein Freund hat {s} Punkte. Schaffst du mehr?", "Un amigo hizo {s} puntos. ¿Puedes superarlo?"],
+    ["Arkadaşını geçtin! Şimdi sıra onda.", "You beat your friend! Their turn now.", "Du hast deinen Freund geschlagen! Jetzt ist er dran.", "¡Superaste a tu amigo! Ahora le toca a él."],
+    ["Arkadaşını geçmene {n} puan kaldı", "{n} points to beat your friend", "Noch {n} Punkte bis zu deinem Freund", "Te faltan {n} puntos para superar a tu amigo"],
+    ["Rövanş iste", "Ask for a rematch", "Revanche fordern", "Pedir la revancha"],
+    ["Meydan oku", "Challenge a friend", "Freund herausfordern", "Reta a un amigo"],
+    ["Simit Martısı'nda seni {s} puanla geçtim! Rövanş?", "I beat you with {s} points in Simit Seagull! Rematch?", "Ich habe dich in Simit-Möwe mit {s} Punkten geschlagen! Revanche?", "¡Te gané con {s} puntos en Gaviota Simit! ¿Revancha?"],
   ];
   MORE.forEach(function (r) { EN[r[0]] = r[1]; DE[r[0]] = r[2]; ES[r[0]] = r[3]; });
   var TABLES = { en: EN, de: DE, es: ES };
