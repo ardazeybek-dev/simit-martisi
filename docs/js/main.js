@@ -764,11 +764,11 @@ function updateTitleSet(gz) {
   }
   if (m.userData.crowd) animCrowd(m.userData.crowd, t);
   // vitrin kamerası martıya önden bakar ve yavaşça salınır: sahne kameranın o anki doğrultusunda martının arkasına oturur,
-  // salınımın beşte birini geride bırakır (hafif paralaks, kadrajdan kaçmaz)
-  const a = TITLE_A + (titleCamA - TITLE_A) * 0.8;
+  // salınımın ancak üçte birini izler: uzak manzara gibi yavaşça kayar, kameranın peşinden gelmez
+  const a = TITLE_A + (titleCamA - TITLE_A) * 0.3;
   m.visible = true; m.rotation.y = a - Math.PI; m.position.set(-Math.sin(a) * TITLE_D, 0, gz - Math.cos(a) * TITLE_D);
 }
-const TITLE_A = Math.PI - 0.5, TITLE_D = 64, TITLE_SCALE = 0.5;
+const TITLE_A = Math.PI - 0.5, TITLE_D = 88, TITLE_SCALE = 0.4;
 let titleCamA = TITLE_A;
 function updateMarks(gz) {
   for (const k of marks) {
