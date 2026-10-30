@@ -198,8 +198,9 @@ function spawnGap(first, fixLen) {
     addSimit(x, FLY_Y, z, !first && Math.random() < 0.035);
   }
   if (!first) {
-    const n = d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.7 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.4 ? 1 : 0) : 2 + (Math.random() < late() * 0.35 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
-    for (let i = 0; i < n; i++) addRival(z0 - rand(10, len - 6), rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+    const camp = campT > 3 ? campSide : 0;
+    const n = camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.7 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.4 ? 1 : 0) : 2 + (Math.random() < late() * 0.35 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
+    for (let i = 0; i < n; i++) addRival(z0 - rand(10, len - 6), camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
     if (d > 1.3 && Math.random() < 0.2 + d * 0.06) {
       const nk = d > 3 && Math.random() < 0.4 ? 2 : 1;
       for (let i = 0; i < nk; i++) {
@@ -814,6 +815,7 @@ function deckUnder(x, z) {
 let state = 'loading';
 let speed = 15, playT = 0, points = 0, simitCount = 0, goldCount = 0, combo = 0, bestCombo = 0, comboT = 0, dist = 0;
 let crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flapPh = 0, flapPow = 0.5, flapBurst = 0;
+let campT = 0, campSide = 0; // kenara yapışan martı: o kenara rakip gönderilir (her köşe eşit zor)
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
 const pw = { magnet: 0, shield: 0, double: 0 };
 // güçlendirme yükseltmeleri: simitle alınır, her seviye süreyi tabanın %25'i kadar uzatır (Subway Surfers usulü)
@@ -991,9 +993,10 @@ function startGame() {
   if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
   audio.unlock();
   sfx.click();
-  refillMissions();
+  misPending = false; refillMissions();
   achRun = {}; saidRun.clear();
-  for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; } // oyun sonunda çubuk buradan dolar
+  for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; } // görevler panelinde çubuk buradan dolar
+  misPending = true;
   resetWorld(state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
@@ -1053,7 +1056,6 @@ function showOver() {
   const achBefore = achReady(), bdgBefore = badgesGot(); achRecord();
   if (!revives) countMission('runs');
   checkMissions(); store.set(KEY_MIS, missions); bank();
-  renderMissions($('overMis'), true);
   { const n = achReady() - achBefore, nb = badgesGot() - bdgBefore; show('overAch', n > 0 || nb > 0);
     const part = (k, s) => (k > 0 ? `${tr(s)}${k > 1 ? ' ×' + k : ''}` : '');
     $('overAch').innerHTML = `<svg><use href="#i-medal"/></svg>${[part(n, 'Yeni başarım!'), part(nb, 'Yeni rozet!')].filter(Boolean).join(' · ')}`; }
@@ -1174,7 +1176,7 @@ const priceOf = c => (c.id === dealToday() ? Math.round((c.price * 0.6) / 10) * 
 let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan (önizlenen) kostüm
 function openWardrobe() {
   if (state !== 'title') return;
-  dressing = true; cosSel = null; $('wardNote').textContent = tr('Dokun, martında dene; beğenirsen al.');
+  dressing = true; cosSel = null; $('wardNote').textContent = `${tr('Dokun, martında dene; beğenirsen al.')} 😊`;
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'settings']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe');
 }
@@ -1229,7 +1231,7 @@ function costumeAction() {
     wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]);
     look.on = withItem(look.on, c);
     sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
-    $('wardNote').textContent = `${tr(c.name)} ✓`;
+    $('wardNote').textContent = `${tr(c.name)} ✓ 😊`;
   } else if (look.on.includes(c.id)) {
     look.on = look.on.filter(id => id !== c.id); sfx.click();
   } else {
@@ -1262,7 +1264,7 @@ function buyUp(k, el) {
   if (lv >= UP_COST.length) return;
   if (wallet < cost) { sfx.click(); bump(el, 'shake'); $('upNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(cost - wallet)}`; return; }
   wallet -= cost; ups[k]++; store.set(KEY_WALLET, wallet); store.set(KEY_UP, ups);
-  sfx.power(); vibrate([20, 30, 20]); $('upNote').textContent = tr('Güçlendirmeler daha uzun sürer.');
+  sfx.power(); vibrate([20, 30, 20]); $('upNote').textContent = `${tr('Güçlendirmeler daha uzun sürer.')} 😊`;
   renderUps(); $('titleWallet').textContent = fmt(wallet);
   bump($('ups').children[Object.keys(ups).indexOf(k)], 'bump');
 }
@@ -1304,7 +1306,9 @@ function newMission(d, lv) {
   return { k: d.k, n: Math.min(d.cap || Infinity, niceN(d.n[i] * Math.min(3, 1 + lv * 0.15))), r: Math.round(d.r[i] * Math.min(2, 1 + lv * 0.1)), p: 0, done: false };
 }
 const misAllDone = () => missions.length > 0 && missions.every(m => m.done);
+let misPending = false; // uçuştaki ilerleme henüz görevler panelinde gösterilmedi
 function refillMissions() {
+  if (misPending && misAllDone()) return; // biten set panelde görülmeden yenilenmesin
   const today = dayKey();
   if (misLv.day !== today) { misLv.day = today; misLv.sets = 0; if (!misAllDone()) missions = []; }
   if (misAllDone() && misLv.sets < MIS_SETS) { misLv.lv++; missions = []; }
@@ -1316,8 +1320,8 @@ function refillMissions() {
   store.set(KEY_MIS, missions); store.set(KEY_MISLV, misLv);
 }
 function misNote() {
-  if (misAllDone() && misLv.sets >= MIS_SETS) return tr('Bugünlük görevler bitti. Yenileri yarın!');
-  return `${tr('Set')} ${misLv.lv + 1} · ${tr('Üçünü bitir, sıradaki set gelsin (biraz daha zor, biraz daha çok simit).')}`;
+  if (misAllDone() && misLv.sets >= MIS_SETS) return `${tr('Bugünlük görevler bitti. Yenileri yarın!')} 😊`;
+  return `${tr('Set')} ${misLv.lv + 1} · ${tr('Üçünü bitir, sıradaki set gelsin')} (${tr('ve biraz daha simit')} 😊)`;
 }
 function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k === k) m.p = (m.p || 0) + n; }
 function checkMissions() {
@@ -1345,6 +1349,29 @@ function renderMissions(box, fill = false) {
       if (now) setTimeout(() => { d.classList.add('done', 'just'); sfx.gold(); vibrate(15); }, 850);
     }, 900 + i * 350);
   });
+}
+// görevler paneli: son uçuşun ilerlemesi burada dolar, biten görevin üstü çizilir, ödülü cüzdana tık tık sayılır
+function openMissions() {
+  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + m.r, 0) : 0;
+  renderMissions($('titleMis'), fill);
+  $('misWallet').textContent = fmt(wallet - gain);
+  if (!fill) return;
+  misPending = false;
+  if (gain) setTimeout(() => {
+    const from = wallet - gain, t0 = performance.now(), d = Math.min(1400, 400 + gain * 8);
+    let last = from;
+    const step = now => {
+      const k = Math.min(1, (now - t0) / d), v = Math.round(from + gain * (1 - Math.pow(1 - k, 2)));
+      if (v !== last) { last = v; $('misWallet').textContent = fmt(v); if (v % 3 === 0) sfx.click(); }
+      if (k < 1) requestAnimationFrame(step); else bump($('misWallet').parentNode);
+    };
+    requestAnimationFrame(step);
+  }, 1900);
+  if (misAllDone()) setTimeout(() => { // set bitti: biraz bekle, sıradaki set gelsin
+    refillMissions();
+    if (!$('missionsPanel').classList.contains('hidden')) renderMissions($('titleMis'));
+    renderMenuBadges(); $('titleWallet').textContent = fmt(wallet);
+  }, 4200);
 }
 // menüdeki rozetler: biten görev sayısı, alınmamış günlük ödül
 function renderMenuBadges() {
@@ -1442,7 +1469,7 @@ function openDaily() {
     el.querySelector('span').textContent = `${tr('Gün')} ${i + 1}`;
     box.appendChild(el);
   });
-  $('dailyNote').textContent = tr(d.ready ? 'Her gün uğra, ödül büyüsün. Bir gün kaçırırsan baştan başlar.' : 'Bugünün ödülünü aldın. Yarın yine gel!');
+  $('dailyNote').textContent = `${tr(d.ready ? 'Her gün uğra, ödül büyüsün. Bir gün kaçırırsan baştan başlar.' : 'Bugünün ödülünü aldın. Yarın yine gel!')} 😊`;
   $('claimBtn').textContent = tr(d.ready ? 'Al' : 'Tamam');
   show('dailyPanel');
 }
@@ -1498,7 +1525,7 @@ function renderBadges() {
 }
 function badgeInfo(b) {
   const el = $('badgeInfo');
-  if (!b) { el.textContent = tr('Bir rozete dokun, nasıl kazanılır gör.'); return; }
+  if (!b) { el.textContent = `${tr('Bir rozete dokun, nasıl kazanılır gör.')} 😊`; return; }
   const v = b.v(), on = v >= b.n, cur = b.fam === 'km' ? (Math.floor(Math.min(v, b.n) * 10) / 10).toLocaleString(window.I18N.lang) : fmt(Math.floor(Math.min(v, b.n)));
   el.innerHTML = '<b></b><small></small>';
   el.querySelector('b').textContent = tr(b.name);
@@ -1546,7 +1573,7 @@ function revive() {
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
   ui.combo.classList.remove('on'); renderPowers(); updateHud();
   sfx.power(); audio.music(true); audio.duck(false);
-  state = 'countdown'; countdown = 3; cdShown = 0; show('countdown');
+  state = 'countdown'; countdown = 1.5; cdShown = 0; show('countdown');
 }
 function confetti() {
   const box = $('confetti'); box.textContent = '';
@@ -1576,7 +1603,7 @@ function updateHud() {
   }
 }
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
-const mult = () => Math.min(5, 1 + Math.floor(combo / 12)); // x2: 12, x3: 24, x4: 36, x5: 48 simit
+const mult = () => Math.min(5, 1 + Math.floor(combo / 16)); // x2: 16, x3: 32, x4: 48, x5: 64 simit
 function renderPowers() {
   ui.powers.textContent = '';
   for (const k of Object.keys(pw)) {
@@ -1613,7 +1640,7 @@ function pause() {
 function resume() {
   if (state !== 'paused') return;
   show('pause', false); audio.resume();
-  state = 'countdown'; countdown = 3; cdShown = 0;
+  state = 'countdown'; countdown = 1.5; cdShown = 0;
   show('countdown');
 }
 let cdShown = 0, shownSign = 0;
@@ -1622,7 +1649,7 @@ let cdShown = 0, shownSign = 0;
 // Fare: ekranın X konumu = martının hedefi. Dokunmatik: göreli sürükleme — parmak nereye konursa konsun martı
 // sıçramaz, yalnızca kaydırılan kadar gider; bırakınca olduğu yerde kalır. Alttaki çubuk (#pad) konumu gösterir.
 // Ayar: PAD_GAIN (çubuğun yarı genişliği kadar kaydırma × PAD_GAIN = şeridin yarısı)
-const PAD_GAIN = 1.15;
+const PAD_GAIN = 1.6;
 let padId = -1, padX0 = 0, padTx0 = 0;
 function steerFromX(clientX) {
   // ekranın ortadaki %80'i tüm şeridi kapsar → kenara doğru biraz daha yaslanmak virajda savrulmayı yener
@@ -1677,13 +1704,13 @@ onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') startGame(); });
 onBtn('cityPrev', () => stepCity(-1));
 onBtn('cityNext', () => stepCity(1));
-onBtn('missionsBtn', () => { renderMissions($('titleMis')); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
+onBtn('missionsBtn', () => { openMissions(); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
 onBtn('achBtn', () => openAch());
 onBtn('closeAch', () => show('achPanel', false));
 onBtn('tabAch', () => achTab('ach'));
 onBtn('tabBdg', () => achTab('bdg'));
-onBtn('upsBtn', () => { $('upNote').textContent = tr('Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.'); renderUps(); show('upPanel'); });
+onBtn('upsBtn', () => { $('upNote').textContent = `${tr('Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.')} 😊`; renderUps(); show('upPanel'); });
 onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
 onBtn('dailyBtn', () => openDaily());
 onBtn('boardBtn', () => { renderBoard(); show('boardPanel'); });
@@ -1784,13 +1811,13 @@ function applyShadows() {
   try { renderer.compile(scene, camera); } catch (e) {}
 }
 
-// dokunmatik kaydırma çubuğu: yalnız uçuşta görünür, topuz martının hedefini (tx) gösterir
+// dokunmatik kaydırma çubuğu: yalnız uçuşta görünür, topuz martının kendisini gösterir (rüzgâr, viraj savrulması dahil)
 let padOn = false, padK = 2;
 function padTick() {
   const on = MOBILE && (state === 'play' || state === 'countdown');
   if (on !== padOn) { padOn = on; show('pad', on); }
   if (!on) return;
-  const k = Math.round((tx / EDGE) * 1000) / 1000;
+  const k = Math.round((gull.position.x / EDGE) * 1000) / 1000;
   if (k === padK) return;
   padK = k; $('padKnob').style.left = `${50 + clamp(k, -1, 1) * 50}%`;
   $('pad').classList.toggle('held', padId >= 0);
@@ -1853,6 +1880,7 @@ function frame() {
     push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH * (MOBILE ? 0.55 : 1); // telefonda savrulma hafif: başparmakla düzeltmek zor
     // savrulma, viraj içine yaslandıkça söner: içe tam yaslanan martı tepe noktasındaki simitlere ulaşır
     if (state === 'play') weatherTick(dt);
+    if (state === 'play') { const sd = Math.abs(g.x) > 2.6 ? Math.sign(g.x) : 0; if (sd && sd === campSide) campT += dt; else { campSide = sd; campT = 0; } }
     const txl = EDGE; // martı vapur küpeştesinin içinde kalır: kapalı salonun dışından dolaşılamaz
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 17 * dt, -txl, txl);
     if (keys.ArrowRight || keys.KeyD) tx = clamp(tx + 17 * dt, -txl, txl);
@@ -2223,7 +2251,7 @@ function line(list) {
 let shoutT = 0;
 function shout(p, s, cheer) {
   const now = performance.now();
-  if (now - shoutT < 2200) return; // balonlar seyrek: ekranı doldurmasın
+  if (now - shoutT < 3500) return; // balonlar seyrek: ekranı doldurmasın
   const say = cheer ? line(CHEERS) || line(SHOUTS.genel) : line(SHOUTS[p.kind] || SHOUTS.amca) || line(SHOUTS.genel);
   if (!say) return; // bu uçuşta söylenecek söz kalmadı
   shoutT = now;

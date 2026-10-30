@@ -95,7 +95,7 @@
 
 <div id="tutorial" class="hidden">
   <div class="tut-track"><svg class="tut-hand"><use href="#i-hand"/></svg></div>
-  <p><b>Parmağını sağa sola kaydır</b><br>Martı parmağını takip eder</p>
+  <p><b>Parmağını sağa sola kaydır</b><br>Martı parmağını takip eder <span>😊</span></p>
 </div>
 
 <section id="title" class="screen hidden">
@@ -137,6 +137,7 @@
 <section id="missionsPanel" class="screen modal hidden">
   <div class="card">
     <h2>Görevler</h2>
+    <p class="mis-wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="misWallet">0</b></p>
     <div class="missions" id="titleMis"></div>
     <p class="fine" id="misNote"></p>
     <button class="btn primary" id="closeMissions">Tamam</button>
@@ -149,7 +150,7 @@
     <div class="tabs"><button class="tab on" id="tabAch">Başarımlar</button><button class="tab" id="tabBdg">Rozetler<i class="badge hidden" id="bdgBadge"></i></button></div>
     <div class="achs" id="achList"></div>
     <div class="bdgs hidden" id="bdgBox"><div class="bdg-count" id="badgeCount"></div><div class="bdg-grid" id="badgeGrid"></div><p class="bdg-info" id="badgeInfo"></p></div>
-    <p class="fine" id="achFine">Her başarımın bronz, gümüş ve altın kademesi var; kademeyi geçince ödülünü buradan al.</p>
+    <p class="fine" id="achFine">Her başarımın bronz, gümüş ve altın kademesi var; kademeyi geçince ödülünü buradan al. <span>😊</span></p>
     <button class="btn primary" id="closeAch">Tamam</button>
   </div>
 </section>
@@ -195,11 +196,9 @@
   <div class="card">
     <h2>Duraklatıldı</h2>
     <button class="btn primary" id="resumeBtn">Devam et</button>
-    <div class="vols">
-      <label class="vol"><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></label>
-      <label class="vol"><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></label>
-    </div>
     <div class="toggles">
+      <button class="toggle" data-toggle="music"><span>Müzik</span><i></i></button>
+      <button class="toggle" data-toggle="sfx"><span>Ses efektleri</span><i></i></button>
       <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
     <button class="link" id="quitBtn">Ana menü</button>
@@ -253,7 +252,6 @@
       <p class="vs-line hidden" id="overVs"></p>
       <p class="earn" id="overEarn"></p>
       <p class="ach-line hidden" id="overAch"></p>
-      <div class="missions" id="overMis"></div>
     </div>
     <div class="actions">
       <button class="btn primary hidden" id="reviveBtn"><svg class="ad-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="3"/><path d="M17.5 10.2l4-2.4v8.4l-4-2.4z"/></svg><svg class="sh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z"/></svg><span id="reviveLbl">İkinci şans</span></button>

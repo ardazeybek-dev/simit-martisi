@@ -161,7 +161,7 @@ export function popText(text, worldPos, cls = '') {
   el.className = 'pop ' + cls; el.textContent = text;
   el.style.left = `${(v3.x * 0.5 + 0.5) * innerWidth}px`; el.style.top = `${(-v3.y * 0.5 + 0.5) * innerHeight}px`;
   popLayer.appendChild(el);
-  setTimeout(() => el.remove(), 750);
+  setTimeout(() => el.remove(), 550);
 }
 export function clearFx() {
   popLayer.textContent = '';

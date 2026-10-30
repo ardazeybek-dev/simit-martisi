@@ -38,9 +38,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 
 /* ---------- yolcu lafı (simidi kapılınca) ---------- */
 #pops { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
-.pop.shout { position: absolute; white-space: nowrap; font-size: 14px; font-weight: 700; color: var(--ink); background: var(--cream);
-  padding: 3px 10px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0, 0, 0, .22);
-  transform: translate(-50%, -50%); animation: shout .7s cubic-bezier(.2, .9, .3, 1) forwards; will-change: transform, opacity; }
+.pop.shout { position: absolute; white-space: nowrap; font-size: 11px; font-weight: 700; color: var(--ink); background: var(--cream);
+  padding: 2px 7px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+  transform: translate(-50%, -50%); animation: shout .5s cubic-bezier(.2, .9, .3, 1) forwards; will-change: transform, opacity; }
 .pop.shout::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px;
   border: 5px solid transparent; border-bottom: 0; border-top-color: var(--cream); }
 .pop.shout.cheer { background: #ffe9a8; }
@@ -387,7 +387,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .mis.just .mis-r { animation: misGain .9s ease-out; }
 @keyframes misDone { 40% { transform: scale(1.06); background: rgba(43, 179, 163, .2); border-radius: 10px; } }
 @keyframes misGain { 30% { transform: scale(1.5) translateY(-4px); color: #fff3b0; } }
-.mis.done .mis-t { color: #7fe3d6; }
+.mis.done .mis-t { color: #7fe3d6; text-decoration: line-through; text-decoration-thickness: 2px; }
+.mis-wallet { display: flex; justify-content: center; align-items: center; gap: 6px; margin: -4px 0 12px; font-size: 20px; font-weight: 800; color: var(--gold); }
+.mis-wallet .ico { width: 22px; height: 22px; }
 .mis.done .mis-t::before { content: "✓ "; font-weight: 800; }
 .mis.done .mis-bar b { background: var(--teal); }
 
