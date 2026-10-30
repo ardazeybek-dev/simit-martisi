@@ -1176,7 +1176,7 @@ const priceOf = c => (c.id === dealToday() ? Math.round((c.price * 0.6) / 10) * 
 let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan (önizlenen) kostüm
 function openWardrobe() {
   if (state !== 'title') return;
-  dressing = true; cosSel = null; $('wardNote').textContent = `${tr('Dokun, martında dene; beğenirsen al.')} 😊`;
+  dressing = true; cosSel = null; $('wardNote').textContent = `${tr('Dokun, martında dene; beğenirsen al.')} :)`;
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'settings']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe');
 }
@@ -1264,7 +1264,7 @@ function buyUp(k, el) {
   if (lv >= UP_COST.length) return;
   if (wallet < cost) { sfx.click(); bump(el, 'shake'); $('upNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(cost - wallet)}`; return; }
   wallet -= cost; ups[k]++; store.set(KEY_WALLET, wallet); store.set(KEY_UP, ups);
-  sfx.power(); vibrate([20, 30, 20]); $('upNote').textContent = `${tr('Güçlendirmeler daha uzun sürer.')} 😊`;
+  sfx.power(); vibrate([20, 30, 20]); $('upNote').textContent = `${tr('Güçlendirmeler daha uzun sürer.')} :)`;
   renderUps(); $('titleWallet').textContent = fmt(wallet);
   bump($('ups').children[Object.keys(ups).indexOf(k)], 'bump');
 }
@@ -1321,7 +1321,7 @@ function refillMissions() {
 }
 function misNote() {
   if (misAllDone() && misLv.sets >= MIS_SETS) return `${tr('Bugünlük görevler bitti. Yenileri yarın!')} 😊`;
-  return `${tr('Set')} ${misLv.lv + 1} · ${tr('Üçünü bitir, sıradaki set gelsin')} (${tr('ve biraz daha simit')} 😊)`;
+  return `${tr('Set')} ${misLv.lv + 1} · ${tr('Üçünü bitir, sıradaki set gelsin')} (${tr('ve biraz daha simit')} :))`;
 }
 function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k === k) m.p = (m.p || 0) + n; }
 function checkMissions() {
@@ -1525,7 +1525,7 @@ function renderBadges() {
 }
 function badgeInfo(b) {
   const el = $('badgeInfo');
-  if (!b) { el.textContent = `${tr('Bir rozete dokun, nasıl kazanılır gör.')} 😊`; return; }
+  if (!b) { el.textContent = `${tr('Bir rozete dokun, nasıl kazanılır gör.')} :)`; return; }
   const v = b.v(), on = v >= b.n, cur = b.fam === 'km' ? (Math.floor(Math.min(v, b.n) * 10) / 10).toLocaleString(window.I18N.lang) : fmt(Math.floor(Math.min(v, b.n)));
   el.innerHTML = '<b></b><small></small>';
   el.querySelector('b').textContent = tr(b.name);
