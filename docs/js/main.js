@@ -3,7 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex } from './uti
 import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
@@ -393,6 +393,63 @@ function updateFalls(dt, gz) {
   fallsLift = damp(fallsLift, on ? FALLS_LIFT : 0, on ? 3 : 1.8, dt);
   fallsW = damp(fallsW, -on * FALLS_PUSH, on ? 3 : 2, dt);
 }
+// ---------------- plaj şemsiyeleri (Antalya) ----------------
+// Şeridin yanında kum dili; ön sıradaki renkli şemsiyelerin altındaki turistler simit parçası atar, suya düşen halka şemsiyenin renginde.
+// Atışlar ikişer gelir (iki ayrı renk, şeridin iki yarısına). Üç renk var; art arda iki çiftte mutlaka ortak bir renk olur.
+// Aynı rengi çift çift izleyen seri yapar: ikinci çiftten itibaren bonus ve o renkte parıltı. Ayar: BEACH_LEN, beachZ aralığı. ?beach → hemen gelir
+const BEACH_SOON = new URLSearchParams(location.search).has('beach');
+const BEACH_LEN = 80;
+const beachRing = BEACH_COLS.map(c => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.75, depthWrite: false }));
+let beaches = [], beachZ = 0, beachId = 0, beachRun = { id: -1, pair: -1, c: -1, n: 0 };
+function spawnBeach() {
+  const z0 = genZ, bz = z0 - BEACH_LEN / 2, side = pick([-1, 1]), id = ++beachId;
+  decor = decor.filter(d => (Math.abs(d.z - bz) < BEACH_LEN / 2 + 6 && d.mesh.position.x * side > 5.5 ? (scene.remove(d.mesh), false) : true)); // kumun üstüne düşen dekor
+  const g = new THREE.Group(); scene.add(g);
+  const sand = makeBeach(BEACH_LEN); sand.position.set(side * 7.4, 0, bz); if (side < 0) sand.rotation.y = Math.PI; g.add(sand);
+  const put = (mesh, x, y, z, ry = 0) => { mesh.position.set(side * x, y, z); mesh.rotation.y = ry; mesh.castShadow = true; g.add(mesh); return mesh; };
+  // arka sıralar: hasır şemsiye, şezlong, güneşlenen
+  for (let z = bz + BEACH_LEN / 2 - 9; z > bz - BEACH_LEN / 2 + 9; z -= rand(4.5, 7)) for (const x of [12.6, 16]) {
+    if (Math.random() < 0.25) continue;
+    const zz = z + rand(-1, 1);
+    put(new THREE.Mesh(umbrellaGeo('straw'), vcMat), x, 0.35, zz);
+    for (const dz of Math.random() < 0.6 ? [-0.6, 0.6] : [0.3]) {
+      put(new THREE.Mesh(SUNBED, vcMat), x + 0.6, 0.3, zz + dz, side > 0 ? 0 : Math.PI).rotation.y += Math.PI / 2;
+      if (Math.random() < 0.6) { const p = makePerson(false, undefined, 'sit'); put(p.mesh, x + 0.6, 0.62, zz + dz, -side * Math.PI / 2); p.mesh.scale.setScalar(0.85); }
+    }
+  }
+  // ön sıra: atış çiftleri
+  const pairs = [];
+  for (let i = 0, tz = z0 - 14; i < 5; i++, tz -= rand(9.5, 12.5)) {
+    const a = (Math.random() * 3) | 0, b = (a + 1 + ((Math.random() * 2) | 0)) % 3, xs = Math.random() < 0.5 ? [rand(-2.8, -0.6), rand(0.6, 2.8)] : [rand(0.6, 2.8), rand(-2.8, -0.6)];
+    const opts = [];
+    for (const [j, c] of [a, b].entries()) {
+      const uz = tz + 3 + j * 2.6;
+      put(new THREE.Mesh(umbrellaGeo(BEACH_COLS[c]), vcMat), 9.8, 0.3, uz - 0.4);
+      const p = makePerson(true); put(p.mesh, 8.9, 0.3, uz, -side * (Math.PI / 2 - 0.4)); // şeride ve gelen martıya döner p.mesh.scale.setScalar(0.9);
+      const bt = { g: p.mesh, side, person: p, tray: [{ visible: true }, { visible: true }], z: uz, hand: 0, thrown: 0 };
+      boats.push(bt);
+      for (const dz of [0, 2.4]) {
+        addThrown(bt, xs[j] + rand(-0.25, 0.25), tz - dz, false);
+        const sm = simits[simits.length - 1]; sm.th.ring.material = beachRing[c]; sm.beach = { id, pair: i, c };
+      }
+      opts.push({ c, x: +xs[j].toFixed(2) });
+    }
+    pairs.push({ z: tz, opts });
+  }
+  beaches.push({ g, z: bz, side, id, pairs });
+  beachZ = bz - BEACH_LEN / 2 - rand(800, 1200);
+  genZ = z0 - BEACH_LEN;
+}
+// plaj serisi: çiftin ilk yakalanan parçası rengi belirler; bir önceki çiftle aynı renkse seri büyür
+function beachCatch(b, m) {
+  if (b.id === beachRun.id && b.pair === beachRun.pair) return;
+  const n = b.id === beachRun.id && b.pair === beachRun.pair + 1 && b.c === beachRun.c ? beachRun.n + 1 : 1;
+  beachRun = { id: b.id, pair: b.pair, c: b.c, n };
+  if (n < 2) return;
+  points += 12 * n * m;
+  sparkle(gull.position, 14 + n * 6, BEACH_COLS[b.c], 4 + n, 0.7, 0.3);
+  if (n >= 3) sfx.gold(); vibrate(12 + n * 3);
+}
 function spawnBridge() {
   const z0 = genZ, bz = z0 - 22, tipY = BRIDGE_Y + 1 + ROD_TIP.y, rz = 2.55 + ROD_TIP.z;
   const g = new THREE.Group(); g.position.z = bz; scene.add(g);
@@ -701,6 +758,8 @@ function clearWorld() {
   pirates = [];
   for (const f of falls) scene.remove(f.g);
   falls = []; fallsLift = 0; fallsW = 0;
+  for (const b of beaches) scene.remove(b.g);
+  beaches = []; beachRun = { id: -1, pair: -1, c: -1, n: 0 };
   for (const p of piers) scene.remove(p.g);
   ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = []; crossers = []; dolphins = []; fishes = []; bridges = []; bins = []; cats = []; piers = [];
   clearFx();
@@ -713,7 +772,7 @@ function generate(limit) {
       if (genZ - pz < 130) { if (genZ - pz > 30) spawnGap(segCount === 0, genZ - pz); else spawnPier(); continue; }
     }
     const tn = turns.find(u => !u.built && u.z0 > genZ - 75); // yaklaşan virajın öncesini düz suyla doldur
-    if (!tn) { segCount % 2 === 0 ? (genZ < bridgeZ ? spawnBridge() : genZ < imbatZ ? spawnImbat() : genZ < pirateZ ? spawnPirate() : genZ < fallsZ ? spawnFalls() : spawnGap(segCount === 0)) : spawnFerry(); segCount++; }
+    if (!tn) { segCount % 2 === 0 ? (genZ < bridgeZ ? spawnBridge() : genZ < imbatZ ? spawnImbat() : genZ < pirateZ ? spawnPirate() : genZ < fallsZ ? spawnFalls() : genZ < beachZ ? spawnBeach() : spawnGap(segCount === 0)) : spawnFerry(); segCount++; }
     else if (genZ - tn.z0 > 30) spawnGap(segCount === 0, genZ - tn.z0);
     else { spawnTurn(tn); if (segCount % 2 === 0) segCount++; }
   }
@@ -732,6 +791,7 @@ function cleanup(z) {
   imbats = imbats.filter(b => (b.z1 > behind ? (scene.remove(b.g), false) : true));
   pirates = pirates.filter(p => (p.z > behind + 10 ? (scene.remove(p.g), false) : true));
   falls = falls.filter(f => (f.zB > behind + 20 ? (scene.remove(f.g), false) : true));
+  beaches = beaches.filter(b => (b.z - BEACH_LEN / 2 > behind + 10 ? (scene.remove(b.g), false) : true));
   piers = piers.filter(p => (p.z > behind + 30 ? (scene.remove(p.g), false) : true));
   bins = bins.filter(b => b.z < behind); cats = cats.filter(c => c.z < behind);
   rivals = rivals.filter(r => (r.mesh.position.z > behind ? (scene.remove(r.mesh), false) : true));
@@ -786,6 +846,7 @@ function resetWorld(newWeather = true) {
   imbatZ = !city.imbat ? -Infinity : IMBAT_SOON ? -90 : -rand(800, 1000); // ilk imbat Göztepe'den sonra
   pirateZ = !city.pirate ? -Infinity : PIRATE_SOON ? -90 : -rand(1050, 1300); // ilk korsan teknesi Kaleiçi'nden sonra
   fallsZ = !city.falls ? -Infinity : FALLS_SOON ? -90 : -rand(1600, 1900); // ilk şelale Mermerli'den önce
+  beachZ = !city.beach ? -Infinity : BEACH_SOON ? -90 : -rand(550, 750); // ilk plaj Konyaaltı açıklarında
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
@@ -2161,6 +2222,7 @@ function takeSimit(s) {
   if (s.person) run.steal++;
   if (s.person && s.person.feeder) run.feed++;
   if (s.th) run.piece++;
+  if (s.beach) beachCatch(s.beach, m);
   if (s.gold) {
     goldCount += q; sfx.gold(); hitStop = 0.06; trauma = Math.min(1, trauma + 0.25); vibrate(20);
     sparkle(tmp.set(s.x, s.y, s.z), 34, 0xffd35a, 6, 0.8, 0.3);
@@ -2301,7 +2363,7 @@ showTitle();
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), makePirateShip().g, makeFalls(), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
+  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), makePirateShip().g, makeFalls(), makeBeach(BEACH_LEN), ...BEACH_COLS.map(c => new THREE.Mesh(umbrellaGeo(c), vcMat)), new THREE.Mesh(umbrellaGeo('straw'), vcMat), new THREE.Mesh(SUNBED, vcMat), ...beachRing.map(mt => new THREE.Mesh(RING, mt)), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
@@ -2333,6 +2395,7 @@ window.__game = {
   warp: m => { dist = m; gull.position.z = -2 * m; }, // deneme: uçuşu ileri sar
   get pirates() { return pirates.map(p => ({ z: p.z, ahead: +(gull.position.z - p.z).toFixed(1), gapX: +p.gapX.toFixed(2), xs: p.os.map(q => +q.o.x.toFixed(2)), thrown: { ...thrownStat } })); },
   get falls() { return { lift: +fallsLift.toFixed(2), w: +fallsW.toFixed(2), y: +gull.position.y.toFixed(2), list: falls.map(f => ({ z: f.z, zA: f.zA, zB: f.zB, dir: f.dir, ahead: +(gull.position.z - f.zA).toFixed(1) })) }; },
+  get beach() { return { run: { ...beachRun }, list: beaches.map(b => ({ id: b.id, side: b.side, ahead: +(gull.position.z - b.z - BEACH_LEN / 2).toFixed(1), pairs: b.pairs })) }; },
   get people() { return { all: people.length, sit: people.filter(p => p.sit).length, feed: people.filter(p => p.feeder).length, hold: people.filter(p => p.simit).length }; },
   get salons() { return ferries.filter(f => f.salon).map(f => ({ x: +f.salon.x.toFixed(2), ahead: +(gull.position.z - f.salon.z).toFixed(1) })); },
   get bins() { return bins.map(b => ({ x: +b.s.x.toFixed(1), ahead: +(gull.position.z - b.z).toFixed(1), u: +b.s.bin.u.toFixed(2), taken: !!b.s.taken })); },

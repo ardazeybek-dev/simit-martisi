@@ -574,6 +574,30 @@ export function makeFalls() {
   return g;
 }
 
+// ---------------- plaj (Antalya) ----------------
+// Şeride paralel uzanan kum dili; ön sırada renkli çizgili şemsiyeler (altındaki turist simit atar), arkada hasır şemsiyeler ve şezlonglar.
+// Kum dili yassı elipsoit: uçları kendiliğinden incelir. Yerel: kıyı çizgisi x=0'a yakın, kum +x'e uzanır; boy z ekseninde.
+export const BEACH_COLS = [0xe5484d, 0x2f7fd6, 0x2e9c6a];
+const umbCache = new Map();
+export function umbrellaGeo(c) { // c: renk ya da 'straw' (hasır)
+  if (umbCache.has(c)) return umbCache.get(c);
+  const k = new Kit().add(new THREE.CylinderGeometry(0.07, 0.07, 3.1, 5), c === 'straw' ? 0x8a6a42 : 0xf4f1e8, 0, 1.55, 0);
+  if (c === 'straw') k.add(new THREE.ConeGeometry(1.9, 1.1, 9), (f) => (f % 2 ? 0xd9b56a : 0xc9a159), 0, 3.25, 0).add(new THREE.CylinderGeometry(1.95, 2.05, 0.3, 9, 1, true), 0xb8904f, 0, 2.65, 0);
+  else k.add(new THREE.ConeGeometry(1.75, 0.8, 12), (f) => ((f >> 1) % 2 ? 0xf8f6f0 : c), 0, 3.2, 0);
+  const g = k.build(); umbCache.set(c, g); return g;
+}
+export const SUNBED = new Kit().add(new THREE.BoxGeometry(0.75, 0.1, 1.9), 0xf4f1e8, 0, 0.35, 0).add(new THREE.BoxGeometry(0.75, 0.1, 0.8), 0xf4f1e8, 0, 0.62, -1.0, -0.6)
+  .add(new THREE.BoxGeometry(0.7, 0.3, 0.06), 0xcfcac0, 0, 0.15, 0.8).add(new THREE.BoxGeometry(0.7, 0.3, 0.06), 0xcfcac0, 0, 0.15, -0.6).build();
+const sandCache = new Map();
+export function makeBeach(len) {
+  if (!sandCache.has(len)) sandCache.set(len, new Kit()
+    .add(new THREE.SphereGeometry(1, 28, 8), 0xcdb58a, 8, -0.12, 0, 0, 0, 0, 9.4, 0.5, len / 2 + 1)                // ıslak kum
+    .add(new THREE.SphereGeometry(1, 28, 8), vert((f, y, x, z) => mixHex(0xf0dfb6, 0xe4cc98, fbm(x * 0.3, z * 0.3))), 8.6, -0.08, 0, 0, 0, 0, 8.4, 0.62, len / 2 - 1)
+    .build());
+  const m = new THREE.Mesh(sandCache.get(len), vcMat); m.receiveShadow = true;
+  return m;
+}
+
 // ---------------- dev yolcu gemisi (uzakta, sağ kıyıda) ----------------
 // Beyaz gövde, kat kat pencere bantları, balkon sıraları, iki kalın baca. Pruva -z.
 // Uzakta olduğu için sis yarı güçte: yoksa ufkun rengine gömülüp şekilsiz bir bloğa döner.
