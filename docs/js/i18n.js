@@ -657,6 +657,8 @@
     ["Rövanş iste", "Ask for a rematch", "Revanche fordern", "Pedir la revancha"],
     ["Meydan oku", "Challenge a friend", "Freund herausfordern", "Reta a un amigo"],
     ["Simit Martısı'nda seni {s} puanla geçtim! Rövanş?", "I beat you with {s} points in Simit Seagull! Rematch?", "Ich habe dich in Simit-Möwe mit {s} Punkten geschlagen! Revanche?", "¡Te gané con {s} puntos en Gaviota Simit! ¿Revancha?"],
+    ["Rövanş?", "Rematch?", "Revanche?", "¿Revancha?"],
+    ["Beni geçebilir misin?", "Can you beat me?", "Schaffst du mehr?", "¿Puedes superarme?"],
   ];
   MORE.forEach(function (r) { EN[r[0]] = r[1]; DE[r[0]] = r[2]; ES[r[0]] = r[3]; });
   var TABLES = { en: EN, de: DE, es: ES };

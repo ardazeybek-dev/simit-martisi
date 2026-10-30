@@ -1497,13 +1497,33 @@ onBtn('quitBtn', () => { audio.resume(); showTitle(); });
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 onBtn('soundBtn', () => { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); });
+// paylaşım kartı: o anki sahnenin karesi üstüne puan, simit, metre ve şehir (1080x1080). Telefonda görsel olarak paylaşılır.
+function scoreCard() {
+  renderer.render(scene, camera); // çizim tamponu korunmuyor: aynı görevde çizip hemen kopyala
+  const S = 1080, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d'), src = renderer.domElement, k = Math.max(S / src.width, S / src.height);
+  g.drawImage(src, (S - src.width * k) / 2, (S - src.height * k) / 2, src.width * k, src.height * k);
+  const sh = g.createLinearGradient(0, 0, 0, S); sh.addColorStop(0, 'rgba(27,24,56,.55)'); sh.addColorStop(0.45, 'rgba(27,24,56,.15)'); sh.addColorStop(1, 'rgba(27,24,56,.85)');
+  g.fillStyle = sh; g.fillRect(0, 0, S, S);
+  const txt = (s, x, y, size, col, w = 800) => { g.font = `${w} ${size}px "Baloo 2", Arial, sans-serif`; g.fillStyle = 'rgba(27,24,56,.55)'; g.fillText(s, x, y + size * 0.07); g.fillStyle = col; g.fillText(s, x, y); };
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  txt(tr('Simit'), S / 2, 120, 104, '#fff4e2'); txt(tr('Martısı'), S / 2, 220, 104, '#f0a04b');
+  txt(fmt(total()), S / 2, 640, 230, '#fff4e2');
+  txt(`${fmt(Math.floor(simitCount))} ${tr('simit')}  ·  ${fmt(Math.floor(dist))} m  ·  ${city.name}`, S / 2, 790, 50, '#f6dcc0', 700);
+  g.fillStyle = '#ffc23a'; const bw = 760, bh = 108; g.beginPath(); g.roundRect((S - bw) / 2, 880, bw, bh, 54); g.fill();
+  g.font = '800 52px "Baloo 2", Arial, sans-serif'; g.fillStyle = '#1b1838'; g.fillText(tr(shareWon ? 'Rövanş?' : 'Beni geçebilir misin?'), S / 2, 936);
+  return new Promise(r => c.toBlob(r, 'image/png'));
+}
 // paylaşılan link meydan okumadır: açan kişi bu puanı ve metreyi hedef olarak görür
 let shareLbl = '', shareWon = false;
 onBtn('shareBtn', async () => {
   const text = tr(shareWon ? 'Simit Martısı\'nda seni {s} puanla geçtim! Rövanş?' : 'Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?').replace('{s}', fmt(total())).replace('{n}', fmt(Math.floor(simitCount)));
   const url = location.href.split('#')[0].split('?')[0] + `#c=${total()}-${Math.floor(dist)}-${city.id}`;
   try {
-    if (navigator.share) await navigator.share({ title: document.title, text, url });
+    let files = null;
+    if (navigator.share && navigator.canShare) { const b = await scoreCard(); const f = b && new File([b], 'simit-martisi.png', { type: 'image/png' }); if (f && navigator.canShare({ files: [f] })) files = [f]; }
+    if (files) await navigator.share({ files, text: `${text} ${url}` }); // görselle paylaşınca bazı uygulamalar url alanını atar: metnin içinde gider
+    else if (navigator.share) await navigator.share({ title: document.title, text, url });
     else { await navigator.clipboard.writeText(`${text} ${url}`); $('shareBtn').textContent = tr('Kopyalandı'); setTimeout(() => ($('shareBtn').textContent = shareLbl || tr('Paylaş')), 1800); }
   } catch (e) {}
 });
