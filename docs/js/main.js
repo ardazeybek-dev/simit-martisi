@@ -11,7 +11,7 @@ import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRu
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
-const FLY_Y = 5.15, LANE = 4.6, COMBO_T = 1.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
+const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.5, COMBO_T = 1.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 // şerit vapur kadar geniş (gövde ±4, küpeştenin biraz dışı). Çarpışma payları: engeller affedici (kutu görünenden dar),
 // simit ve güçlendirme cömert (yakından geçmek yeter)
 const HIT = { obs: 0.12, near: 1.1, rival: 0.6, kiteX: 0.55, kiteZ: 0.38, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
@@ -668,12 +668,12 @@ const ups = { magnet: 0, shield: 0, double: 0 };
 { const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
 const dur = k => POWER[k].dur * (1 + ups[k] * 0.25);
 let best = +store.get(KEY_BEST, 0) || 0;
-// simit cüzdanı: kapılan dört simitte bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
-const WALLET_RATE = 4;
+// simit cüzdanı: kapılan sekiz simitte (32 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
+const WALLET_RATE = 8;
 let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
-let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.3, fishCatch = 0.65, fishEarly = false;
+let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.12, fishCatch = 0.4, fishEarly = false;
 const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 const look = { owned: [], on: [] };
@@ -1440,7 +1440,7 @@ let cdShown = 0, shownSign = 0;
 function steerFromX(clientX) {
   // ekranın ortadaki %80'i tüm şeridi kapsar → başparmağın kenara uzanması gerekmez
   // kenara doğru biraz daha yaslanmak virajda savrulmayı yener
-  tx = clamp((clientX / innerWidth - 0.5) / 0.4, -1.25, 1.25) * LANE;
+  tx = clamp((clientX / innerWidth - 0.5) / 0.4, -1, 1) * EDGE;
   if (tutT > 0) {
     const side = Math.sign(tx) * (Math.abs(tx) > 2 ? 1 : 0);
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
@@ -1638,14 +1638,14 @@ function frame() {
     lean = damp(lean, cur ? cur.dir : 0, 3, dt);
     push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH;
     if (state === 'play') weatherTick(dt);
-    const txl = LANE * 1.25;
+    const txl = EDGE; // martı vapur küpeştesinin içinde kalır: kapalı salonun dışından dolaşılamaz
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 17 * dt, -txl, txl);
     if (keys.ArrowRight || keys.KeyD) tx = clamp(tx + 17 * dt, -txl, txl);
     const dz = speed * dt; g.z -= dz; if (state === 'play') dist += dz / 2;
     if (cur) heading += cur.k * dz * bendOn; else heading *= Math.exp(-dt / 30); // ufuk, düzlükte yavaşça toparlanır
     // kritik sönümlü yay: hızlı ama yumuşak takip (çevik: engelden son anda kaçılabilsin)
     // alt adımlar (en çok 1/60 sn): kare hızı düşen telefonda sert yay titremesin
-    const k = 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push + (state === 'play' ? wind * 0.32 + imbatW : 0), -LANE, LANE);
+    const k = 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push + (state === 'play' ? wind * 0.32 + imbatW : 0), -EDGE, EDGE);
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (weather === 'snow' && warmth < 0.25 && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
