@@ -354,7 +354,7 @@ export function makePerson(hold, look = pick(LOOKS), mode = '') {
 export function warmPeople() {
   const jobs = [];
   for (const L of LOOKS) for (const [h, a, m] of [[true, false, ''], [false, false, ''], [false, true, ''], [false, false, 'sit'], [false, true, 'sit'], [true, false, 'feed']]) jobs.push(() => personGeo(L, h, a, m));
-  jobs.push(() => personGeo(SIMITCI_LOOK, true, false, ''));
+  for (const [h, a] of [[true, false], [false, false], [false, true]]) jobs.push(() => personGeo(SIMITCI_LOOK, h, a, ''));
   const next = () => { for (let i = 0; i < 4 && jobs.length; i++) jobs.shift()(); if (jobs.length) setTimeout(next, 30); };
   setTimeout(next, 300);
 }
