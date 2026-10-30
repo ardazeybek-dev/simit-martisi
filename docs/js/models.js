@@ -494,6 +494,46 @@ export function makeYacht() {
   return g;
 }
 
+// ---------------- korsan teknesi (Antalya) ----------------
+// Turist guleti korsan kılığında: kara gövde, altın bant, kara yelkenler, yüksek kıç köşkü, direkte kurukafa bayrağı. Pruva -z.
+// PIRATE_GATE: yerel z'de engeller [merkez, yarı boy, yarı en, tepe]; ön yelkenle arka yelken arasındaki boşluk martının kapısı (PIRATE_GAP).
+export const PIRATE_GATE = [[-3.1, 1.45, 0.35, 11], [2.65, 1.5, 0.35, 9.6], [5.3, 1.3, 1.45, 6.4]], PIRATE_GAP = -0.25;
+let pirateGeo = null;
+function pirateShipGeo() {
+  if (pirateGeo) return pirateGeo;
+  const k = hullBands(new Kit(), [[0.5, 0x15100c], [0.75, 0x2a1d16], [0.2, 0xc9a227], [0.3, 0x2a1d16]], -0.4, 1.75, 3)
+    .add(new THREE.BoxGeometry(3.2, 0.08, 12), 0x8a5a34, 0, 1.3, 0)
+    .add(new THREE.BoxGeometry(3.1, 4.3, 2.5), (f, y) => (y > 5.2 ? 0xc9a227 : 0x2a1d16), 0, 3.4, 5.3)            // kıç köşkü, üstü altın kenarlı
+    .add(new THREE.BoxGeometry(3.3, 0.18, 2.7), 0xc9a227, 0, 5.6, 5.3)
+    .add(new THREE.CylinderGeometry(0.06, 0.06, 0.8, 4), 0x2a1d16, 0, 6, 6.3)
+    .add(new THREE.SphereGeometry(0.22, 8, 6), 0xffd27a, 0, 6.45, 6.3)                                          // fener
+    .add(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 4), 0x5a4030, 0, 1.6, -8, -(Math.PI / 2 - 0.35))            // cıvadra
+    .add(new THREE.CylinderGeometry(0.12, 0.16, 10, 6), 0x5a4030, 0, 6.2, -4.5)
+    .add(new THREE.CylinderGeometry(0.1, 0.14, 8.6, 6), 0x5a4030, 0, 5.6, 1.2)
+    .add(sailTri(2.9, 7.6), 0x1c1c1c, 0, 2.5, -4.45, 0, Math.PI, 0)                                              // kara yelkenler (direkten kıça uzanır)
+    .add(sailTri(2.85, 6.2), 0x1c1c1c, 0, 2.4, 1.25, 0, Math.PI, 0)
+    .add(new THREE.BoxGeometry(0.04, 1.1, 1.6), 0x111111, 0, 10.4, -3.65)                                       // kurukafa bayrağı
+    ;
+  for (const s of [-1, 1]) {
+    k.add(new THREE.SphereGeometry(0.28, 8, 6), 0xf6f3ea, s * 0.04, 10.5, -3.6, 0, 0, 0, 0.3, 1, 1)
+      .add(new THREE.BoxGeometry(0.05, 0.12, 0.8), 0xf6f3ea, s * 0.04, 10.1, -3.6, 0.6);
+    for (const z of [-3, -0.5, 2]) k.add(new THREE.BoxGeometry(0.1, 0.32, 0.5), 0x0b0806, s * 1.72, 0.6, z);        // top lombozları
+    for (const z of [4.6, 5.9]) k.add(new THREE.BoxGeometry(0.06, 0.6, 0.45), 0xffd27a, s * 1.56, 3.6, z);        // köşk pencereleri
+  }
+  return (pirateGeo = k.build());
+}
+// tayfa: turistler küpeştede el sallar; throwers: güvertede simit tutan iki turist (main.js atış kalıbıyla simit fırlatır)
+export function makePirateShip() {
+  const g = new THREE.Group();
+  const h = new THREE.Mesh(pirateShipGeo(), vcMat); h.castShadow = true; g.add(h);
+  addCrew(g, [[1.1, 1.34, -5.6, 0], [-1.1, 1.34, -2.3, 0.4], [1.0, 1.34, 3.6, -0.3], [-0.9, 1.34, 3.4, 0.2]]);
+  const throwers = [[-1.0, -1.2], [1.0, 0.7]].map(([x, z]) => {
+    const p = makePerson(true); p.mesh.position.set(x, 1.34, z); p.mesh.scale.setScalar(0.85); g.add(p.mesh);
+    return p;
+  });
+  return { g, throwers };
+}
+
 // ---------------- dev yolcu gemisi (uzakta, sağ kıyıda) ----------------
 // Beyaz gövde, kat kat pencere bantları, balkon sıraları, iki kalın baca. Pruva -z.
 // Uzakta olduğu için sis yarı güçte: yoksa ufkun rengine gömülüp şekilsiz bir bloğa döner.
