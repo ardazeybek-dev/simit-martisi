@@ -56,7 +56,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Badges:** a collection tab in the *Başarımlar* panel with 21 badges and no rewards: total distance (1 km up to 10,000 km), days in a row (3 up to 365), flights, fish, simits, finished cities, and a 500 m flight in rain, snow and fog. Newly earned badges glow and are counted on the menu button until you look; tap a badge to see how to earn it.
 - **Quiet screen:** no floating score texts during a flight; bonuses, missions and power-ups land silently in the score and the wallet. Only the *VİRAJ* sign, the pier arrival card, the passengers' short speech bubbles (when you snatch their simit, at most one every couple of seconds) and *Balık!* / *Kaçtı!* when you touch a fish appear. Passengers say something different every time: about 130 lines by passenger type (uncle, grandpa, auntie, young woman, lad, child) plus shared ones, and no line repeats within a flight.
 - **Settings:** music and sound effects volume sliders (also in the pause menu), vibration, and language (Turkish, English, German or Spanish, the browser language by default).
-- **Title screen:** behind the gull a close view of the chosen city glides along with it (İstanbul: Galata Tower over its hillside, a mosque, the quay with a docked ferry; İzmir: the Kordon palms, the clock tower, Yalı mosque, the Asansör, Kadifekale and the Bayraklı towers). It is hidden as soon as the flight starts.
+- **Title screen:** the camera sits at the gull's eye level and the chosen city's skyline stands right behind it, following the camera's slow sway (İstanbul: Galata Tower over its hillside, a mosque, the quay with a docked ferry, the Maiden's Tower with waving visitors in front; İzmir: the Kordon palms, the clock tower, Yalı mosque, the Asansör, Kadifekale and the Bayraklı towers). It is hidden as soon as the flight starts.
 - First launch shows a 3-second swipe tutorial; best score, settings, wallet, outfits and missions are kept in `localStorage`.
 
 ## Tech
@@ -64,7 +64,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - Plain ES modules under `docs/`, no build step; [three.js](https://threejs.org/) 0.160 from jsDelivr via an import map
 - All models are generated in code and merged into vertex-coloured meshes (one draw call per ferry / passenger)
 - Soft pastel sunset sky over clear turquoise water, custom GPU wave shader with fresnel and sun glitter (waves calm down with distance into a hazy far sea), gradient sky dome, Istanbul skyline (Galata Tower, mosques, Bosphorus Bridge, Maiden's Tower)
-- Off-lane scenery: ferries and container ships cruising past in the outer lanes, ship silhouettes drifting along the horizon, flocks of gulls in V formation high in the sky (one instanced mesh, never in your way), anchored fishing boats, sailboats and small yachts whose crews jump and wave as you pass, orange lifebuoys on the hulls, a big cruise ship with a jumping crowd on its top deck and terraces (instanced, a few draw calls), and every 1-2 km a close pass by the Maiden's Tower: a rocky islet with a railed terrace of waving visitors, striped umbrellas, a simit cart, a small lighthouse and a wooden jetty with a moored boat (never on the same bank as a nearby cruise ship)
+- Off-lane scenery: ferries, container ships and tankers cruising past in the outer lanes, big cargo ships and tankers lying at anchor in the haze further out, ship silhouettes (cargo, tanker, ferry, cruise ship) drifting along the horizon, flocks of gulls in V formation high in the sky (one instanced mesh, never in your way), anchored fishing boats, sailboats and small yachts whose crews jump and wave as you pass, orange lifebuoys on the hulls, a big cruise ship with a jumping crowd on its top deck and terraces (instanced, a few draw calls), and every 1-2 km a close pass by the Maiden's Tower: a rocky islet with a railed terrace of waving visitors, striped umbrellas, a simit cart, a small lighthouse and a wooden jetty with a moored boat (never on the same bank as a nearby cruise ship)
 - Pooled instanced particles, smoke sprites, speed lines, camera shake, hit-stop
 - Music and all sound effects are synthesized with the Web Audio API, no audio files: a Hicaz tune with plucked saz strings (Karplus-Strong), kanun tremolo, a ney in the middle section and darbuka in maqsum rhythm; cymbals and fills join in as the flight speeds up
 - Adaptive quality: pixel ratio steps down automatically on slow devices; turning shadows off recompiles every shader, so that switch waits for the menu or the game-over screen instead of freezing a flight. Phones start at medium quality without MSAA and without shadow maps (the gull keeps its blob shadow), and the audio uses a larger buffer, a longer scheduling window and pre-built saz strings
@@ -75,12 +75,11 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 Serve the `docs/` folder over HTTP (ES modules do not load from `file://`):
 
 ```
-cd docs
-python -m http.server 8000
+python serve.py
 ```
 
-Then open http://localhost:8000. An internet connection is needed the first time to load three.js and the font.
-The service worker only registers on https, so local runs are never cached.
+Then open http://localhost:8765. An internet connection is needed the first time to load three.js and the font.
+`serve.py` sends `Cache-Control: no-store`; a plain `python -m http.server` sends no cache headers, so the browser can keep old modules after an edit and you test an older build without noticing. The service worker only registers on https.
 
 Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the old floating simits instead of thrown ones, or `?pal=old` for the earlier deep sunset colours, `?weather=rain|snow|fog|clear` to force the weather, `?bridge` to meet the Galata Bridge right away, `?salon` to give every ferry a glass salon, `?stop` to put the piers very close together (handy for comparing).
 
@@ -128,6 +127,7 @@ docs/
   manifest.webmanifest  PWA manifest
   icons/                app icons (SVG source + rendered PNGs)
   og.png, preview.png   social preview and README image
+serve.py                no-cache local server for docs/
 platform/
   build.py              portal copy of docs/ (see above)
   covers.py             cover images rendered from the title scene

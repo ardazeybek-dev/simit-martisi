@@ -148,15 +148,19 @@ function farShipsBuild() {
       k.add(new THREE.BoxGeometry(70, 3.5, 9), 0, 0, 1.75, 0);
       k.add(new THREE.BoxGeometry(50, 1, 3), 0, -6, 4, 0);
       k.add(new THREE.BoxGeometry(8, 9, 8), 0, 29, 7, 0); k.add(new THREE.BoxGeometry(1.8, 5, 1.8), 0, 31, 13.5, 0);
-    } else { // vapur: kısa gövde, ortada baca
+    } else if (kind === 2) { // vapur: kısa gövde, ortada baca
       k.add(new THREE.BoxGeometry(26, 3, 6), 0, 0, 1.5, 0); k.add(new THREE.BoxGeometry(16, 2.4, 5), 0, 0, 4.2, 0);
       k.add(new THREE.CylinderGeometry(1, 1.1, 4, 8), 0, 0, 7, 0);
+    } else { // yolcu gemisi: basamak basamak yükselen katlar, iki baca
+      k.add(new THREE.BoxGeometry(80, 6, 11), 0, 0, 3, 0);
+      for (let i = 0; i < 4; i++) k.add(new THREE.BoxGeometry(62 - i * 9, 2.4, 10), 0, 4 - i * 2, 7.2 + i * 2.4, 0);
+      for (const x of [-8, 4]) k.add(new THREE.CylinderGeometry(1.8, 2.1, 5, 8), 0, x, 18.5, 0);
     }
     return k.build();
   };
-  for (let i = 0; i < 6; i++) {
-    const kind = i % 3, near = i < 2, s = add(silhouette(kind), near ? mShipNear : mShip, rand(-280, 280), 0, near ? rand(-250, -220) : rand(-330, -280));
-    s.scale.setScalar(near ? 0.75 : 0.6); if (Math.random() < 0.5) s.rotation.y = Math.PI;
+  for (let i = 0; i < 10; i++) {
+    const kind = i % 4, near = i < 4, s = add(silhouette(kind), near ? mShipNear : mShip, rand(-300, 300), 0, near ? rand(-255, -215) : rand(-335, -280));
+    s.scale.setScalar(near ? rand(0.95, 1.2) : rand(0.75, 0.95)); if (Math.random() < 0.5) s.rotation.y = Math.PI;
     s.userData.v = (Math.random() < 0.5 ? -1 : 1) * rand(1.5, 3.5);
     farShips.push(s);
   }

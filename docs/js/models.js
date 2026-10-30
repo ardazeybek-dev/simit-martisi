@@ -767,6 +767,30 @@ export function cargoGeo(ci) {
   k.add(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), 0xf3efe6, 0, 12, -16.5);       // anten direği
   return (cargoCache[ci] = k.build());
 }
+// tanker: alçak, uzun koyu gövde, güvertede boru hattı ve manifold, kıçta yüksek beyaz köprüüstü
+const TANKER_COLS = [0x8a2f2a, 0x2a3f5a, 0x3d4a3a];
+const tankerCache = [];
+export function tankerGeo(ci) {
+  if (tankerCache[ci]) return tankerCache[ci];
+  const k = new Kit(), L = 58, W = 8.5;
+  const sh = new THREE.Shape(); sh.moveTo(-W / 2, L / 2); sh.lineTo(-W / 2, -L / 2 + 8); sh.quadraticCurveTo(-W / 2, -L / 2, 0, -L / 2 - 3);
+  sh.quadraticCurveTo(W / 2, -L / 2, W / 2, -L / 2 + 8); sh.lineTo(W / 2, L / 2); sh.closePath();
+  const layer = (y0, h, col) => { const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 5 }); g.rotateX(-Math.PI / 2); k.add(g, col, 0, y0, 0); };
+  layer(0, 1.4, 0x5a1f1c); layer(1.4, 2.2, TANKER_COLS[ci]); layer(3.6, 0.15, 0xf3efe6);
+  k.add(new THREE.BoxGeometry(W - 0.4, 0.1, L - 4), 0x6f7a6a, 0, 3.7, 0); // güverte
+  for (const x of [-1.2, 0, 1.2]) k.add(new THREE.CylinderGeometry(0.22, 0.22, L - 18, 6), 0xb9b2a4, x, 4.1, -2, Math.PI / 2); // boru hattı
+  for (let z = -16; z < 16; z += 8) k.add(new THREE.BoxGeometry(5.5, 1.2, 0.8), 0xd9d4c8, 0, 4.3, z); // geçitler
+  k.add(new THREE.BoxGeometry(5, 0.8, 1.4), 0xe0a53a, 0, 4.4, 0); // manifold vinci
+  k.add(new THREE.CylinderGeometry(0.15, 0.15, 5, 5), 0xe0a53a, 1.8, 6.4, 0, 0, 0, 0.5);
+  k.add(new THREE.BoxGeometry(W - 0.6, 7, 7), 0xf3efe6, 0, 7.3, L / 2 - 5); // köprüüstü (kıçta)
+  for (const y of [5.6, 7.6, 9.6]) k.add(new THREE.BoxGeometry(W - 0.5, 0.5, 7.05), 0x2b4560, 0, y, L / 2 - 5);
+  k.add(new THREE.BoxGeometry(W + 2.4, 0.25, 2), 0xf3efe6, 0, 10.6, L / 2 - 7.6); // köprü kanatları
+  k.add(new THREE.CylinderGeometry(1.0, 1.15, 3.4, 8), TANKER_COLS[ci], 0, 12.3, L / 2 - 3.2); // baca
+  k.add(new THREE.CylinderGeometry(1.02, 1.02, 0.6, 8), 0x16171c, 0, 13.8, L / 2 - 3.2);
+  k.add(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), 0xf3efe6, 0, 13, L / 2 - 7);
+  k.add(new THREE.CylinderGeometry(0.08, 0.08, 6, 4), 0xf3efe6, 0, 6.6, -L / 2 + 2); // pruva direği
+  return (tankerCache[ci] = k.build());
+}
 
 // ---------------- zıplayan balık ----------------
 // Boğaz istavriti: burun +x, sırtı mavi-yeşil, yanları gümüş. Tek geometri, bütün balıklar paylaşır.
@@ -1153,6 +1177,8 @@ function heartGeo(r) {
   return new THREE.ExtrudeGeometry(s, { depth: 0.03, bevelEnabled: false, curveSegments: 6 });
 }
 // baş merkezi (0, 0.2, −0.72), yarıçap 0.3; gaga −z yönünde
+// gözlük camının merkezi ve açısı: kafa yüzeyine teğet (normal yatayda −z'den 0.9 rad dışa), merkezden 0.36 uzakta
+const EYE_X = 0.27, EYE_Y = 0.31, EYE_Z = -0.93, EYE_RY = 0.9;
 function costumeGeo(id) {
   const k = new Kit();
   if (id === 'fes') {
@@ -1175,16 +1201,16 @@ function costumeGeo(id) {
     k.add(new THREE.OctahedronGeometry(0.05), 0xe5484d, 0, 0.53, -0.94);
     for (const s of [-1, 1]) k.add(new THREE.OctahedronGeometry(0.04), 0x3aa7ff, s * 0.21, 0.53, -0.72);
   } else if (id === 'glasses') {
-    // camlar gözlerin (±0.19, 0.28, −0.86) önünde, yüzün yanlarına yaslı; köprü gaganın üstünden geçer
+    // camlar gözlerin (±0.19, 0.28, −0.86) önünde, kafa küresine teğet ve ondan ~6 cm açıkta (EYE_* ortak); köprü gaganın üstünden geçer
     for (const s of [-1, 1]) {
-      k.add(new THREE.BoxGeometry(0.2, 0.14, 0.035), 0x14161c, s * 0.2, 0.29, -0.93, 0, s * 0.75);
-      k.add(new THREE.BoxGeometry(0.025, 0.025, 0.28), 0x14161c, s * 0.29, 0.31, -0.74);
+      k.add(new THREE.BoxGeometry(0.17, 0.13, 0.035), 0x14161c, s * EYE_X, EYE_Y, EYE_Z, 0, -s * EYE_RY);
+      k.add(new THREE.BoxGeometry(0.025, 0.025, 0.3), 0x14161c, s * 0.335, 0.32, -0.76);
     }
-    k.add(new THREE.BoxGeometry(0.16, 0.03, 0.03), 0x14161c, 0, 0.33, -1.0);
-  } else if (id === 'mustache') { // gaganın üstünde, iki yana kıvrık pala bıyık
+    k.add(new THREE.BoxGeometry(0.44, 0.03, 0.03), 0x14161c, 0, 0.32, -1.02);
+  } else if (id === 'mustache') { // gaganın kökünde, iki yana sarkıp uçta yukarı kıvrılan pala bıyık; hepsi kafa küresinin dışında
     for (const s of [-1, 1]) {
-      k.add(new THREE.CapsuleGeometry(0.05, 0.2, 3, 6), 0x2a1a12, s * 0.13, 0.19, -1.0, 0, 0, -s * 1.3);
-      k.add(new THREE.SphereGeometry(0.055, 6, 4), 0x2a1a12, s * 0.26, 0.26, -0.97);
+      k.add(new THREE.CapsuleGeometry(0.05, 0.2, 3, 6), 0x2a1a12, s * 0.15, 0.12, -1.06, 0, 0, -s * 1.75);
+      k.add(new THREE.CapsuleGeometry(0.04, 0.09, 3, 6), 0x2a1a12, s * 0.3, 0.13, -1.0, 0, -s * 0.5, -s * 0.45);
     }
   } else if (id === 'beanie') { // örgü bere: çizgili kubbe, beyaz ponpon
     k.add(new THREE.SphereGeometry(0.3, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2), (f, y) => ((y * 30) % 2 < 1 ? 0x2f7fd0 : 0x3a93e8), 0, 0.3, -0.72, -0.12, 0, 0, 1.04, 1.05, 1.04);
@@ -1199,10 +1225,10 @@ function costumeGeo(id) {
       k.add(tor, () => (Math.random() < 0.25 ? 0xf6e2b3 : 0xb8642a), x, 0.63, -0.72 + z, Math.PI / 2, ry);
   } else if (id === 'hearts') { // kalpli gözlük: pembe camlar gözlerin önünde
     for (const s of [-1, 1]) {
-      k.add(heartGeo(0.1), 0xff4f8b, s * 0.2, 0.29, -0.95, 0, Math.PI + s * 0.75);
-      k.add(new THREE.BoxGeometry(0.025, 0.025, 0.28), 0xd12f6a, s * 0.29, 0.31, -0.74);
+      k.add(heartGeo(0.095), 0xff4f8b, s * EYE_X, EYE_Y, EYE_Z, 0, Math.PI - s * EYE_RY);
+      k.add(new THREE.BoxGeometry(0.025, 0.025, 0.3), 0xd12f6a, s * 0.335, 0.32, -0.76);
     }
-    k.add(new THREE.BoxGeometry(0.16, 0.03, 0.03), 0xd12f6a, 0, 0.33, -1.0);
+    k.add(new THREE.BoxGeometry(0.44, 0.03, 0.03), 0xd12f6a, 0, 0.32, -1.02);
   } else if (id === 'bowtie') { // papyon: gerdanın önünde iki kanat ve düğüm
     for (const s of [-1, 1]) k.add(new THREE.ConeGeometry(0.1, 0.2, 4), 0xd62f3a, s * 0.1, -0.08, -0.84, 0, 0, s * Math.PI / 2, 1, 1, 0.5);
     k.add(new THREE.SphereGeometry(0.045, 6, 4), 0x9e1b24, 0, -0.08, -0.87);

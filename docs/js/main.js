@@ -3,7 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
@@ -37,7 +37,7 @@ blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 // ---------------- dünya ----------------
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
 let bridgeZ = 0;
-let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, land = [];
+let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, anchorZ = 0, land = [];
 const difficulty = () => clamp(-genZ / 650, 0, 5);
 const late = () => clamp((-genZ - 3250) / 3000, 0, 1); // difficulty tavana vurduktan sonra (~1,6 km → ~3,1 km) yavaşça 0 → 1
 // ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
@@ -563,14 +563,25 @@ function spawnScenery(limit) {
       m.position.set(side * rand(34, 40), 0, sceneryZ - 20); m.rotation.y = side > 0 ? 0 : Math.PI;
       scene.add(m); land.push({ mesh: m, z: sceneryZ - 20, crowd: true });
     }
+    // demir yerindeki büyük gemiler (Boğaz'da, körfezde sıra bekleyen şilepler ve tankerler): sisin içinde, orta uzaklıkta durur.
+    // Kız Kulesi ya da yolcu gemisi o yakada yakınsa çıkmaz
+    if (sceneryZ < anchorZ) {
+      anchorZ = sceneryZ - rand(110, 240);
+      const side = pick([-1, 1]), x = side * rand(88, 122), z = sceneryZ - rand(0, 30);
+      if (!land.some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - z) < 150)) {
+        const tank = Math.random() < 0.45, s = new THREE.Mesh(tank ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat);
+        s.position.set(x, -0.2, z); s.scale.setScalar(rand(1.6, 2.2)); s.rotation.y = rand(-0.5, 0.5) + (Math.random() < 0.5 ? Math.PI : 0);
+        scene.add(s); land.push({ mesh: s, z });
+      }
+    }
     // açıkta seyreden gemiler: dış şeritte karşıdan gelen ya da bizimle giden vapur, daha açıkta şilep. Dokunulmaz, yalnız manzara.
     // Demirli teknelerin (±15-40) dışında kendi şeritleri var; Kız Kulesi, yolcu gemisi ya da başka gemi o yakada yakınsa çıkmaz
-    if (Math.random() < 0.13 && !piers.some(p => Math.abs(p.z - sceneryZ) < 90)) {
-      const big = Math.random() < 0.45, side = pick([-1, 1]), x = side * (big ? rand(66, 84) : rand(50, 57));
+    if (Math.random() < 0.2 && !piers.some(p => Math.abs(p.z - sceneryZ) < 90)) {
+      const big = Math.random() < 0.55, side = pick([-1, 1]), x = side * (big ? rand(66, 84) : rand(50, 57));
       const busy = [...land, ...decor.filter(d => d.vz)].some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - sceneryZ) < 170);
       if (!busy) {
         const g = new THREE.Group();
-        if (big) g.add(new THREE.Mesh(cargoGeo((Math.random() * 3) | 0), vcMat));
+        if (big) g.add(new THREE.Mesh(Math.random() < 0.35 ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat));
         else { const ft = pickFerryType(); g.add(new THREE.Mesh(ferryGeo(pick(ft.lengths), ft.id), vcMat)); const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(0, DECK, 0); g.add(c); }
         const toward = Math.random() < 0.6; // çoğu karşıdan gelir
         g.rotation.y = toward ? 0 : Math.PI; g.position.set(x, 0, sceneryZ);
@@ -695,7 +706,7 @@ const GUST = 6.5, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemede
 const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0 }; // görevler ve başarımlar için uçuş sayaçları
 
 function resetWorld(newWeather = true) {
-  clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = city.maiden ? rand(-500, -300) : -Infinity; cruiseZ = rand(-120, -40);
+  clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = city.maiden ? rand(-500, -300) : -Infinity; cruiseZ = rand(-120, -40); anchorZ = rand(-60, -10);
   bridgeZ = !city.bridges ? -Infinity : BRIDGE_SOON ? -90 : -rand(1150, 1450); // ilk köprü Karaköy'den sonra
   imbatZ = !city.imbat ? -Infinity : IMBAT_SOON ? -90 : -rand(800, 1000); // ilk imbat Göztepe'den sonra
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
@@ -745,9 +756,20 @@ function updateTitleSet(gz) {
   for (const id in titleSets) titleSets[id].visible = false;
   if (state !== 'title' || !TITLE_SETS[city.id]) return;
   let m = titleSets[city.id];
-  if (!m) { m = titleSets[city.id] = new THREE.Mesh(TITLE_SETS[city.id](), vcMat); m.scale.setScalar(0.45); scene.add(m); }
-  m.visible = true; m.position.z = gz + 58; // küçültülüp uzağa: kuleler başlığın iki yanında kadraja sığar
+  if (!m) {
+    const geo = TITLE_SETS[city.id](); geo.computeBoundingBox();
+    const bb = geo.boundingBox; geo.translate(-(bb.min.x + bb.max.x) / 2, 0, -bb.min.z); // ortası x=0, ön kenarı z=0
+    m = titleSets[city.id] = new THREE.Mesh(geo, vcMat); m.scale.setScalar(TITLE_SCALE); scene.add(m);
+    if (city.maiden) { const k = makeMaiden(); k.position.set(46, 0, -34); k.rotation.y = -Math.PI / 2 - 0.35; m.add(k); m.userData.crowd = k; } // İstanbul: önde Kız Kulesi, terastakiler el sallar
+  }
+  if (m.userData.crowd) animCrowd(m.userData.crowd, t);
+  // vitrin kamerası martıya önden bakar ve yavaşça salınır: sahne kameranın o anki doğrultusunda martının arkasına oturur,
+  // salınımın beşte birini geride bırakır (hafif paralaks, kadrajdan kaçmaz)
+  const a = TITLE_A + (titleCamA - TITLE_A) * 0.8;
+  m.visible = true; m.rotation.y = a - Math.PI; m.position.set(-Math.sin(a) * TITLE_D, 0, gz - Math.cos(a) * TITLE_D);
 }
+const TITLE_A = Math.PI - 0.5, TITLE_D = 64, TITLE_SCALE = 0.5;
+let titleCamA = TITLE_A;
 function updateMarks(gz) {
   for (const k of marks) {
     k.g.position.y = waveAt(k.x, k.z, t) * 0.6;
@@ -1931,9 +1953,9 @@ function frame() {
   else if (showcase > 0.001) {
     // oyun kamerasının martıya göre açısından vitrin açısına yay çizerek geç: kamera martının içinden geçmez
     const a0 = Math.atan2(cx - g.x, cz - g.z), r0 = Math.hypot(cx - g.x, cz - g.z);
-    const a1 = Math.PI - 0.5 + Math.sin(t * 0.23) * 0.35 + Math.sin(t * 0.61 + 1) * 0.12, r1 = land ? 7.5 : 9.5;
+    const a1 = (titleCamA = TITLE_A + Math.sin(t * 0.23) * 0.35 + Math.sin(t * 0.61 + 1) * 0.12), r1 = land ? 7.5 : 9.5;
     const k = showcase * showcase * (3 - 2 * showcase), a = a0 + (a1 - a0) * k, r = r0 + (r1 - r0) * k;
-    cx = g.x + Math.sin(a) * r; cz = g.z + Math.cos(a) * r; cy = cy + (FLY_Y + (land ? 1.8 : 2.6) - cy) * k;
+    cx = g.x + Math.sin(a) * r; cz = g.z + Math.cos(a) * r; cy = cy + (FLY_Y + (land ? 0.55 : 0.9) - cy) * k; // göz hizası: ufuk ve şehir martının arkasına düşer
   }
   camera.position.x = damp(camera.position.x, cx, 5, realDt);
   camera.position.y = damp(camera.position.y, cy, 5, realDt);
@@ -1941,7 +1963,7 @@ function frame() {
   if (dressing) camera.lookAt(g.x - (land ? 2.6 : 0), g.y - (land ? 0.1 : 1.6), g.z); // yatayda martı solda, panel sağda
   else if (showcase > 0.001) {
     const k = showcase * showcase * (3 - 2 * showcase);
-    camera.lookAt(g.x * 0.92 + lean * 2.6 + (g.x - g.x * 0.92 - lean * 2.6) * k, FLY_Y - (land ? 0.2 : 0.6) + (g.y + (land ? 0.3 : 0.2) - FLY_Y + (land ? 0.2 : 0.6)) * k, followZ - 12 + (g.z + 12 - followZ) * k);
+    camera.lookAt(g.x * 0.92 + lean * 2.6 + (g.x - g.x * 0.92 - lean * 2.6) * k, FLY_Y - (land ? 0.2 : 0.6) + (g.y + (land ? 0.05 : 0.6) - FLY_Y + (land ? 0.2 : 0.6)) * k, followZ - 12 + (g.z + 12 - followZ) * k);
   }
   else camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - (land ? 0.2 : 0.6), followZ - 12); // virajın içine bak
   camera.rotation.z += gull.rotation.z * 0.06 - lean * 0.13;
@@ -2196,7 +2218,7 @@ showTitle();
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
+  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
