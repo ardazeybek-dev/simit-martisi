@@ -534,6 +534,46 @@ export function makePirateShip() {
   return { g, throwers };
 }
 
+// ---------------- Düden şelalesi (Antalya) ----------------
+// Şeridin kıyısında traverten falez, tepesinden denize dökülen su perdesi, dibinde köpük. Yerel: su yüzü x=0'da, falez +x'e uzanır.
+// main.js dir<0 için grubu y'de çevirir; fallsMat'in dokusunu kaydırarak suyu akıtır.
+export const fallsMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, map: canvasTex(64, 256, (g) => {
+  g.fillStyle = 'rgba(196,232,248,0.93)'; g.fillRect(0, 0, 64, 256);
+  for (let i = 0; i < 90; i++) { // akan köpük çizgileri: yumuşak uçlu, ince
+    const x = Math.random() * 64, y = Math.random() * 256, h = 30 + Math.random() * 80, w = 1 + Math.random() * 2.5;
+    const r = g.createLinearGradient(0, y, 0, y + h); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(0.5, `rgba(255,255,255,${0.5 + Math.random() * 0.5})`); r.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = r; g.fillRect(x, y, w, h); if (y + h > 256) g.fillRect(x, y - 256, w, h);
+  }
+}) });
+fallsMat.map.wrapT = THREE.RepeatWrapping; fallsMat.map.repeat.set(1, 1.5);
+let fallsGeo = null;
+function fallsCliffGeo() {
+  if (fallsGeo) return fallsGeo;
+  const k = new Kit(), rock = vert((f, y, x, z) => mixHex(mixHex(0xd4a46c, 0xa9774a, ramp(0.35, 0.7, fbm(z * 0.6, y * 0.15))), 0x8d6a48, ramp(3, -1, y)));
+  for (const [z, h, dx] of [[-9, 9.5, 0.6], [-4.5, 11, 0.2], [0, 11.5, 0], [4.5, 10.8, 0.3], [9, 9, 0.8]]) {
+    k.add(new THREE.BoxGeometry(9, h + 1, 4.8, 2, 4, 2), rock, 4.5 + dx, h / 2 - 1, z);
+    for (let i = 0; i < 2; i++) k.add(new THREE.IcosahedronGeometry(rand(1.6, 2.3), 1), vert((f, y) => mixHex(0x3f6e2c, 0x6f9a4c, (y - h) / 2)), 3 + dx + rand(0, 4), h + 0.2, z + rand(-1.8, 1.8), 0, 0, 0, 1, 0.55, 1);
+  }
+  for (let z = -10; z <= 10; z += rand(1.6, 2.6)) k.add(new THREE.IcosahedronGeometry(rand(0.8, 1.5), 0), vert((f, y) => mixHex(0x6d5b48, 0xa48765, y)), rand(-0.6, 0.4), 0, z, rand(0, 3), rand(0, 3), 0, 1, 0.6, 1);
+  return (fallsGeo = k.build());
+}
+const FALLS_SHEET = new THREE.PlaneGeometry(1, 1).rotateY(-Math.PI / 2); // -x'e (şeride) bakar
+const FOAM = new THREE.SphereGeometry(1, 10, 6), foamMat = new THREE.MeshBasicMaterial({ color: 0xf4fbff, transparent: true, opacity: 0.85 });
+export function makeFalls() {
+  const g = new THREE.Group();
+  const c = new THREE.Mesh(fallsCliffGeo(), vcMat); c.castShadow = true; g.add(c);
+  for (const [z, w, h] of [[-2.5, 3.2, 10.6], [1.2, 4.2, 11.2], [5.4, 2.4, 10]]) { // üç ayrı su perdesi
+    const s = new THREE.Mesh(FALLS_SHEET, fallsMat); s.position.set(-0.25, h / 2, z); s.scale.set(1, h, w); s.renderOrder = 2; g.add(s);
+  }
+  const foam = [];
+  for (let i = 0; i < 9; i++) {
+    const f = new THREE.Mesh(FOAM, foamMat); f.position.set(rand(-2.4, -0.4), 0.1, rand(-4, 7)); f.scale.set(rand(0.9, 1.6), 0.45, rand(0.9, 1.6)); g.add(f);
+    foam.push({ m: f, ph: Math.random() * 6, s: f.scale.x });
+  }
+  g.userData.foam = foam;
+  return g;
+}
+
 // ---------------- dev yolcu gemisi (uzakta, sağ kıyıda) ----------------
 // Beyaz gövde, kat kat pencere bantları, balkon sıraları, iki kalın baca. Pruva -z.
 // Uzakta olduğu için sis yarı güçte: yoksa ufkun rengine gömülüp şekilsiz bir bloğa döner.
