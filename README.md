@@ -25,7 +25,8 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Score** = simit points + 1 point per 10 m flown.
 - **Lane and hit boxes:** the lane is as wide as a ferry and the gull stays inside the rails, so a glass salon can only be passed through its middle passage and steering is quick, so a late dodge still works. Hazards hit only when you really touch them; rival gulls are clearly smaller than yours. Simits and power-up bubbles are picked up from a generous distance around the gull.
 - **Combo:** catch simits in a row to raise the multiplier; it climbs slowly (x2 at 3, x3 at 12, x4 at 27, x5 at 48) and the chain dies if you go about 1.5 s without a catch. The ring in the HUD shows how long it stays alive.
-- **Simit boats:** on open water, simit sellers in rowboats on both banks break their simits and toss the pieces to you. Each piece is a quarter simit (a quarter of the points and of the wallet value); it arcs over and comes down where a ripple ring marks the water, right as you get there; miss it and it splashes into the sea.
+- **Simit boats:** on open water, simit sellers in rowboats on both banks break their simits and toss the pieces to you. Each piece is a quarter simit (a quarter of the points and of the wallet value); it arcs over and comes down where a ripple ring marks the water, right as you get there; miss it and it splashes into the sea. On ferries and at piers the thrower is often the simit seller himself, next to his glass-cased cart or his tray with a simit pole: the simits on display are scenery and can't be eaten, only the pieces he throws can.
+- **Ferries:** three kinds share the lane width: the classic line ferry (44-58 m, round stern, red band), the short motor ferry (34-38 m, square stern, portholes, blue band, low raked funnel, never a glass salon) and the big ferry (60-64 m, two rows of windows, gold line, bridge wings, lifeboats hanging outside the rails, a wide funnel). Each funnel's hit box matches its shape.
 - **Golden simit:** rare, worth 5x a normal one.
 - **Dolphins:** on open water a pod shows its fins, then leaps across the lane one after another as you arrive. Fly right over the top of a leap for a *Dolphin!* bonus that also refreshes your combo timer. They never hurt you.
 - **Near miss:** brushing past a funnel or mast gives a small bonus.
@@ -63,7 +64,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - Plain ES modules under `docs/`, no build step; [three.js](https://threejs.org/) 0.160 from jsDelivr via an import map
 - All models are generated in code and merged into vertex-coloured meshes (one draw call per ferry / passenger)
 - Soft pastel sunset sky over clear turquoise water, custom GPU wave shader with fresnel and sun glitter (waves calm down with distance into a hazy far sea), gradient sky dome, Istanbul skyline (Galata Tower, mosques, Bosphorus Bridge, Maiden's Tower)
-- Off-lane scenery: ferries and container ships cruising past in the outer lanes, ship silhouettes drifting along the horizon, flocks of gulls in V formation high in the sky (one instanced mesh, never in your way), anchored fishing boats, sailboats and small yachts whose crews jump and wave as you pass, orange lifebuoys on the hulls, a big cruise ship with a jumping crowd on its top deck and terraces (instanced, a few draw calls), and every 1-2 km a close pass by the Maiden's Tower on its islet
+- Off-lane scenery: ferries and container ships cruising past in the outer lanes, ship silhouettes drifting along the horizon, flocks of gulls in V formation high in the sky (one instanced mesh, never in your way), anchored fishing boats, sailboats and small yachts whose crews jump and wave as you pass, orange lifebuoys on the hulls, a big cruise ship with a jumping crowd on its top deck and terraces (instanced, a few draw calls), and every 1-2 km a close pass by the Maiden's Tower: a rocky islet with a railed terrace of waving visitors, striped umbrellas, a simit cart, a small lighthouse and a wooden jetty with a moored boat (never on the same bank as a nearby cruise ship)
 - Pooled instanced particles, smoke sprites, speed lines, camera shake, hit-stop
 - Music and all sound effects are synthesized with the Web Audio API, no audio files: a Hicaz tune with plucked saz strings (Karplus-Strong), kanun tremolo, a ney in the middle section and darbuka in maqsum rhythm; cymbals and fills join in as the flight speeds up
 - Adaptive quality: pixel ratio steps down automatically on slow devices; turning shadows off recompiles every shader, so that switch waits for the menu or the game-over screen instead of freezing a flight. Phones start at medium quality without MSAA and without shadow maps (the gull keeps its blob shadow), and the audio uses a larger buffer, a longer scheduling window and pre-built saz strings
@@ -117,7 +118,7 @@ docs/
   js/i18n.js            language table and translation (classic script, loads before main.js)
   js/main.js            game state, input, spawning, collisions, main loop
   js/scene.js           renderer, camera, lights, sky, per-city skyline and colours, water shader
-  js/models.js          seagull, outfits, simit, passengers, ferry, kite, power-ups
+  js/models.js          seagull, outfits, simit, passengers, ferry types, Maiden's Tower, simit carts, kite, power-ups
   js/fx.js              particles, sparkles, smoke, speed lines, floating texts
   js/audio.js           synthesized music and sound effects
   js/cities.js          cities: pier lines, save keys, pickup type and city-only features (bridges, imbat)
@@ -136,7 +137,7 @@ platform/
 
 ## Pitfalls
 
-- `renderer.info.memory.geometries` keeps climbing during long runs when spawns build new geometry/materials (removing from the scene does not free GPU buffers) → cache them per variant (ferry length, gull type, passenger look) and reuse.
+- `renderer.info.memory.geometries` keeps climbing during long runs when spawns build new geometry/materials (removing from the scene does not free GPU buffers) → cache them per variant (ferry type and length, gull type, passenger look, decor per city bait) and reuse.
 - Script order breaks loading: a `<link rel="modulepreload">` before the import map makes Firefox ignore the map ("bare specifier" error), and the CrazyGames SDK initialised from `<head>` throws `Cannot read properties of null (reading 'appendChild')` → import map first, SDK and adapter at the end of `<body>`; paths must stay relative (`./`, `sw.js`, `icons/...`) since Pages serves from `/simit-martisi/`.
 - Colour traps: merged geometry coloured per triangle by height gives zebra stripes on tall faces → build each colour band as its own extrusion; a colour mixed in by hand after `fog_fragment` in a ShaderMaterial comes out dark and salmon (it is linear, the output is sRGB) → wrap it in `linearToOutputTexel`.
 - Headless browsers render WebGL with SwiftShader at a low frame rate, so quality drops to the lowest level and gameplay runs in slow motion; Playwright WebKit on Windows also stops showing the canvas after any canvas resize → test WebKit with `?q=1`.

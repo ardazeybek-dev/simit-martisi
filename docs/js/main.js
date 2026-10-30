@@ -3,7 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, canvasTex } from './util.js';
 import { MOBILE, renderer, scene, camera, sky, far, farShips, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_LENGTHS, CHIMNEY, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, animCrowd, MAIDEN, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS } from './models.js';
+import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
@@ -362,9 +362,9 @@ function spawnBridge() {
 
 function spawnFerry() {
   const d = difficulty();
-  const L = pick(FERRY_LENGTHS), x0 = 0, zc = genZ - L / 2 - 2; // vapur şeridin tam ortasında: şerit = gövde
+  const ft = pickFerryType(), L = pick(ft.lengths), x0 = 0, zc = genZ - L / 2 - 2; // vapur şeridin tam ortasında: şerit = gövde
   const g = new THREE.Group(); g.position.set(x0, 0, zc); scene.add(g);
-  const hull = new THREE.Mesh(ferryGeo(L), vcMat); hull.castShadow = hull.receiveShadow = true; g.add(hull);
+  const hull = new THREE.Mesh(ferryGeo(L, ft.id), vcMat); hull.castShadow = hull.receiveShadow = true; g.add(hull);
   const wake = new THREE.Mesh(WAKE, wakeMat); wake.rotation.x = -Math.PI / 2; wake.position.set(0, 0.5, L / 2 + 13); g.add(wake);
 
   const zFront = zc - L / 2 - 1.2, zBack = zc + L / 2 + 1.5;
@@ -380,7 +380,7 @@ function spawnFerry() {
 
   // camlı salon: zorlaştıkça bazı vapurlar kapalı salonlu olur; martı ortadaki geçitten geçmek zorunda, içinde simit dizisi
   let salon = null;
-  if (SALON_ALL || (d > 0.4 && Math.random() < 0.38)) { // ?salon → her vapur salonlu (deneme için)
+  if (ft.salon && (SALON_ALL || (d > 0.4 && Math.random() < 0.38))) { // ?salon → her vapur salonlu (deneme için)
     const tx = pick([-0.6, 0, 0.6]), sz = rand(-2, 4), geo = salonGeo(tx);
     const solid = new THREE.Mesh(geo.solid, vcMat); solid.position.z = sz; solid.castShadow = solid.receiveShadow = true; g.add(solid);
     const glass = new THREE.Mesh(geo.glass, glassMat); glass.position.z = sz; glass.renderOrder = 3; g.add(glass);
@@ -394,16 +394,16 @@ function spawnFerry() {
   for (let i = 0; i < nCh; i++) {
     const cx = rand(-2.6, 2.6), cz = -L / 2 + 12 + (i + 0.5) * (L - 16) / nCh + rand(-3, 3);
     if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın
-    const c = new THREE.Mesh(CHIMNEY, vcMat); c.position.set(cx, DECK, cz); c.castShadow = c.receiveShadow = true; g.add(c);
-    obstacle(cx, cz, 0.95, 0.95, DECK + 4.7, 'bacaya');
+    const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(cx, DECK, cz); c.castShadow = c.receiveShadow = true; g.add(c);
+    obstacle(cx, cz, ft.hw, ft.hd, DECK + ft.top, 'bacaya');
     const dark = d > 1.2 && Math.random() < clamp((d - 1) * 0.22, 0, 0.55);
     chims.push({ x: x0 + cx, z: zc + cz, dark, t: Math.random() });
     if (dark) smokes.push({ x: x0 + cx, z0: zc + cz + 1.3, z1: zc + cz + 7.5, hw: 1.6, hit: false });
   }
   // banklar küpeşte boyunca: oturanlar denize bakar, çoğunun elinde çay, simit yok (yem değil, manzara)
   const mine = [];
-  const seat = (px, lz, mode, hold) => {
-    const p = makePerson(hold, undefined, mode); p.mesh.position.set(px, DECK + 0.05, lz);
+  const seat = (px, lz, mode, hold, look) => {
+    const p = makePerson(hold, look, mode); p.mesh.position.set(px, DECK + 0.05, lz);
     if (mode) p.mesh.rotation.y = (px > 0 ? 1 : -1) * Math.PI / 2 + rand(-0.15, 0.15);
     g.add(p.mesh); p.wz = zc + lz; people.push(p); mine.push(p);
     return p;
@@ -460,12 +460,15 @@ function spawnFerry() {
     const s = pick([-1, 1]), lz = rand(-L / 2 + 12, L / 2 - 6);
     if (!blocked.some(b => Math.hypot(b.x - s * 3.35, b.z - lz) < b.r)) { seat(s * 3.35, lz, 'feed', true); blocked.push({ x: s * 3.35, z: lz, r: 1.2 }); }
   }
-  // simit atan yolcu: küpeşteden simidini bölüp parçalarını martının önüne fırlatır (simitçi kayığı gibi). Parçalar güvertenin boş havasına iner
+  // simit atan yolcu: küpeşteden simidini bölüp parçalarını martının önüne fırlatır (simitçi kayığı gibi). Parçalar güvertenin boş havasına iner.
+  // Yarısında atan, simit arabasıyla gezen simitçidir: camlı kasadaki simitler dekor (yenmez), atılan parçalar yenir
   if (d > 0.1 && Math.random() < 0.5) {
     const s = pick([-1, 1]), lz = rand(-L / 2 + 14, L / 2 - 8);
     if (free(s * 3.2, lz, 1.2)) {
-      const p = seat(s * 3.2, lz, '', true); p.thrower = true; p.mesh.rotation.y = -s * 0.5;
+      const vendor = Math.random() < 0.5 && free(s * 2.25, lz, 1.3);
+      const p = seat(s * 3.2, lz, '', true, vendor ? SIMITCI_LOOK : undefined); p.thrower = true; p.mesh.rotation.y = -s * 0.5;
       blocked.push({ x: s * 3.2, z: lz, r: 1.2 });
+      if (vendor) { const cart = makeSimitCart(); cart.position.set(s * 2.25, DECK, lz); g.add(cart); blocked.push({ x: s * 2.25, z: lz, r: 1.3 }); }
       const bt = { g: p.mesh, side: s, person: p, tray: [{ visible: true }, { visible: true }], z: zc + lz, hand: 0, thrown: 0 };
       boats.push(bt);
       let x = rand(-1.5, 1.5);
@@ -546,16 +549,19 @@ function spawnScenery(limit) {
     }
     if (sceneryZ < cruiseZ) {
       cruiseZ = sceneryZ - rand(380, 700);
-      const c = makeCruise(), flip = Math.random() < 0.5;
-      c.position.set(rand(62, 88), 0, sceneryZ - 40); c.scale.setScalar(rand(1.4, 1.7)); c.rotation.y = rand(-0.25, 0.25) + (flip ? Math.PI : 0);
-      c.userData.face = flip ? Math.PI / 2 : -Math.PI / 2; // yolcular koridora (martıya) dönük
-      scene.add(c); land.push({ mesh: c, z: sceneryZ - 40, crowd: true });
+      if (!land.some(l => l.mesh.position.x > 30 && l.mesh.position.x < 45 && Math.abs(l.z - sceneryZ) < 220)) { // Kız Kulesi bu yakadaysa gemi çıkmaz
+        const c = makeCruise(), flip = Math.random() < 0.5;
+        c.position.set(rand(62, 88), 0, sceneryZ - 40); c.scale.setScalar(rand(1.4, 1.7)); c.rotation.y = rand(-0.25, 0.25) + (flip ? Math.PI : 0);
+        c.userData.face = flip ? Math.PI / 2 : -Math.PI / 2; // yolcular koridora (martıya) dönük
+        scene.add(c); land.push({ mesh: c, z: sceneryZ - 40, crowd: true });
+      }
     }
     if (sceneryZ < maidenZ) {
       maidenZ = sceneryZ - rand(1100, 1700);
-      const m = new THREE.Mesh(MAIDEN, vcMat), side = pick([-1, 1]);
-      m.position.set(side * rand(34, 40), 0, sceneryZ - 20); m.rotation.y = side > 0 ? 0 : Math.PI; m.castShadow = true;
-      scene.add(m); land.push({ mesh: m, z: sceneryZ - 20 });
+      const ship = land.find(l => l.crowd && l.mesh.position.x > 50 && Math.abs(l.z - sceneryZ) < 220); // yolcu gemisi yakınsa öbür yakaya
+      const m = makeMaiden(), side = ship ? -1 : pick([-1, 1]);
+      m.position.set(side * rand(34, 40), 0, sceneryZ - 20); m.rotation.y = side > 0 ? 0 : Math.PI;
+      scene.add(m); land.push({ mesh: m, z: sceneryZ - 20, crowd: true });
     }
     // açıkta seyreden gemiler: dış şeritte karşıdan gelen ya da bizimle giden vapur, daha açıkta şilep. Dokunulmaz, yalnız manzara.
     // Demirli teknelerin (±15-40) dışında kendi şeritleri var; Kız Kulesi, yolcu gemisi ya da başka gemi o yakada yakınsa çıkmaz
@@ -565,7 +571,7 @@ function spawnScenery(limit) {
       if (!busy) {
         const g = new THREE.Group();
         if (big) g.add(new THREE.Mesh(cargoGeo((Math.random() * 3) | 0), vcMat));
-        else { g.add(new THREE.Mesh(ferryGeo(pick(FERRY_LENGTHS)), vcMat)); const c = new THREE.Mesh(CHIMNEY, vcMat); c.position.set(0, DECK, 0); g.add(c); }
+        else { const ft = pickFerryType(); g.add(new THREE.Mesh(ferryGeo(pick(ft.lengths), ft.id), vcMat)); const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(0, DECK, 0); g.add(c); }
         const toward = Math.random() < 0.6; // çoğu karşıdan gelir
         g.rotation.y = toward ? 0 : Math.PI; g.position.set(x, 0, sceneryZ);
         scene.add(g); decor.push({ mesh: g, z: sceneryZ, ph: Math.random() * 6, calm: true, vz: (toward ? 1 : -1) * rand(3, 6) });
@@ -587,7 +593,8 @@ function spawnPier() {
   b.position.x = side * (last ? 16 : 17); b.rotation.y = side > 0 ? 0 : Math.PI; g.add(b);
   const throwers = [];
   if (!last) for (let k = 0, n = 3 + ((Math.random() * 3) | 0); k < n; k++) { // iskelede martıyı bekleyenler; ilk ikisi simit atar
-    const p = makePerson(k < 2); p.mesh.position.set(side * (17 - rand(5.2, 8.4)), 1.28, k < 2 ? -2 - k * 3 : rand(-4.5, 4.5)); p.mesh.rotation.y = -side * Math.PI / 2 + rand(-0.4, 0.4); g.add(p.mesh);
+    const p = makePerson(k < 2, k === 0 ? SIMITCI_LOOK : undefined); p.mesh.position.set(side * (17 - rand(5.2, 8.4)), 1.28, k < 2 ? -2 - k * 3 : rand(-3, 4.5)); p.mesh.rotation.y = -side * Math.PI / 2 + rand(-0.4, 0.4); g.add(p.mesh);
+    if (k === 0) { const st = makeSimitStand(); st.position.set(p.mesh.position.x + side * 0.4, 1.28, -3.4); st.scale.setScalar(1.15); g.add(st); } // simitçinin tablası (dekor)
     if (k < 2) { const bt = { g: b, person: p, tray: [{ visible: true }, { visible: true }, { visible: true }], z: gz, hand: 0, thrown: 0 }; boats.push(bt); throwers.push(bt); }
   }
   const gx = rand(-2.4, 2.4);
@@ -2189,7 +2196,7 @@ showTitle();
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat));
+  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });

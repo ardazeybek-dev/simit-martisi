@@ -113,14 +113,16 @@ export function flapGull(g, phase, power, glide = 0.12) {
 }
 
 // ---------------- simit ----------------
+// yemin boyası: [halka yarıçapı, kalınlık, yüz rengi]. Dekor simitler de aynı boyayla kendi kalıplarına gömülür
+const PAINT = {
+  simit: [0.32, 0.13, () => { const r = Math.random(); return r < 0.2 ? 0xf6e2b3 : r < 0.55 ? 0xb8642a : r < 0.8 ? 0xc97835 : 0x9c4f1f; }], // susam, kızarmış, koyu
+  gevrek: [0.34, 0.1, () => { const r = Math.random(); return r < 0.34 ? 0xf3dcaa : r < 0.6 ? 0x9a4a1c : r < 0.85 ? 0xb05a26 : 0x7c3814; }],
+};
+let baitKind = 'simit';
 // Tek geometri: üst yüzler kızarmış, alt yüzler koyu, rastgele yüzler susam
 function simitGeo() {
-  const tor = new THREE.TorusGeometry(0.32, 0.13, 9, 22);
-  return new Kit().add(tor, (f, y) => {
-    const r = Math.random();
-    if (r < 0.2) return 0xf6e2b3; // susam
-    return r < 0.55 ? 0xb8642a : r < 0.8 ? 0xc97835 : 0x9c4f1f;
-  }).build();
+  const [r, t, col] = PAINT.simit;
+  return new Kit().add(new THREE.TorusGeometry(r, t, 9, 22), col).build();
 }
 // simit parçası: halkanın üçte biri, kırık uçları içi açık hamur rengi
 function pieceGeo() {
@@ -134,8 +136,8 @@ function pieceGeo() {
 }
 // İzmir gevreği: daha ince, daha koyu, susamı bol
 function gevrekGeo() {
-  const tor = new THREE.TorusGeometry(0.34, 0.1, 9, 22);
-  return new Kit().add(tor, () => { const r = Math.random(); return r < 0.34 ? 0xf3dcaa : r < 0.6 ? 0x9a4a1c : r < 0.85 ? 0xb05a26 : 0x7c3814; }).build();
+  const [r, t, col] = PAINT.gevrek;
+  return new Kit().add(new THREE.TorusGeometry(r, t, 9, 22), col).build();
 }
 function gevrekPieceGeo() {
   const arc = new THREE.TorusGeometry(0.34, 0.1, 8, 8, Math.PI * 0.7);
@@ -145,7 +147,51 @@ function gevrekPieceGeo() {
 }
 const BAIT = { simit: [simitGeo(), pieceGeo()], gevrek: [gevrekGeo(), gevrekPieceGeo()] };
 // şehrin yemi: bundan sonra yaratılan simitler bu geometriyi alır (dünya her uçuşta baştan kurulur)
-export function setBait(kind) { [GEO.simit, GEO.piece] = BAIT[kind] || BAIT.simit; }
+export function setBait(kind) { baitKind = BAIT[kind] ? kind : 'simit'; [GEO.simit, GEO.piece] = BAIT[baitKind]; }
+// ---------------- dekor simitleri (yenmez) ----------------
+// Kalıba gömülü, hareketsiz simitler: simit arabasının camlı kasasında, simitçi tablasında, sırıkta.
+// simits[]'e hiç girmezler; şeride düşenler uçuş yüksekliğinin altında kalır. Kalıplar şehrin yemine göre bir kez üretilir.
+const decorCache = new Map();
+const decorGeo = (name, build) => { const key = name + '|' + baitKind; if (!decorCache.has(key)) decorCache.set(key, build()); return decorCache.get(key); };
+const decorSimit = (k, x, y, z, rx = 0, ry = 0, rz = 0, s = 0.72) => { const [r, t, col] = PAINT[baitKind]; k.add(new THREE.TorusGeometry(r, t, 6, 14), col, x, y, z, rx, ry, rz, s); };
+// simit arabası: kırmızı kasa, iki teker, itme kolu, tepesinde camlı vitrin (içinde dizili simitler), çizgili tente. Boy 1.9: vapur güvertesinde uçuş yüksekliğinin altında
+function simitCartGeo() {
+  const k = new Kit(), gk = new Kit(), red = 0xc8352e, wood = 0x8a6242;
+  k.add(new THREE.BoxGeometry(1.0, 0.62, 1.6), red, 0, 0.66, 0);
+  k.add(new THREE.BoxGeometry(1.06, 0.08, 1.66), 0xf3efe6, 0, 0.99, 0); // tezgâh kenarı
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.33, 0.33, 0.08, 12), 0x2a2a30, s * 0.55, 0.33, 0.3, 0, 0, Math.PI / 2);
+  k.add(new THREE.CylinderGeometry(0.05, 0.05, 0.6, 5), 0x3a3a40, 0, 0.18, -0.6); // ön ayak
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.03, 0.03, 0.75, 5), wood, s * 0.35, 1.0, 1.05, -0.9); // itme kolu
+  k.add(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 5), wood, 0, 1.33, 1.38, 0, 0, Math.PI / 2);
+  // vitrin çerçevesi + cam
+  for (const x of [-0.46, 0.46]) for (const z of [-0.74, 0.74]) k.add(new THREE.BoxGeometry(0.05, 0.62, 0.05), 0xf3efe6, x, 1.34, z);
+  k.add(new THREE.BoxGeometry(0.98, 0.05, 1.54), 0xf3efe6, 0, 1.66, 0);
+  gk.add(new THREE.BoxGeometry(0.92, 0.6, 1.48), 0xffffff, 0, 1.34, 0);
+  // içerde: üç sütun halinde üst üste simit
+  for (const z of [-0.45, 0, 0.45]) for (let i = 0; i < 4; i++) decorSimit(k, rand(-0.04, 0.04), 1.08 + i * 0.12, z + rand(-0.04, 0.04), -Math.PI / 2, 0, 0, 0.62);
+  // çizgili tente
+  for (let i = 0; i < 6; i++) k.add(new THREE.BoxGeometry(1.2, 0.05, 0.3), i % 2 ? 0xf3efe6 : red, 0, 1.86 - Math.abs(i - 2.5) * 0.03, -0.75 + i * 0.3);
+  for (const x of [-0.5, 0.5]) k.add(new THREE.CylinderGeometry(0.025, 0.025, 0.2, 4), 0xf3efe6, x, 1.76, 0);
+  return { solid: k.build(), glass: gk.build() };
+}
+export function makeSimitCart() {
+  const geo = decorGeo('cart', simitCartGeo), g = new THREE.Group();
+  const s = new THREE.Mesh(geo.solid, vcMat); s.castShadow = true; g.add(s);
+  const gl = new THREE.Mesh(geo.glass, glassMat); gl.renderOrder = 3; g.add(gl);
+  return g;
+}
+// simitçi tablası: X ayaklı sehpa, yuvarlak tepsi, tepsinin ortasında simit dizili sırık
+function simitStandGeo() {
+  const k = new Kit(), wood = 0x8a6242;
+  for (const ry of [Math.PI / 4, -Math.PI / 4]) for (const rz of [0.42, -0.42]) k.add(new THREE.CylinderGeometry(0.035, 0.035, 1.0, 5), wood, 0, 0.45, 0, 0, ry, rz);
+  k.add(new THREE.CylinderGeometry(0.62, 0.58, 0.07, 14), 0xc9a26a, 0, 0.92, 0);
+  k.add(new THREE.TorusGeometry(0.6, 0.03, 4, 16), 0xa8743e, 0, 0.96, 0, Math.PI / 2);
+  for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; decorSimit(k, Math.sin(a) * 0.36, 1.0, Math.cos(a) * 0.36, -Math.PI / 2 + rand(-0.15, 0.15), 0, 0, 0.6); }
+  k.add(new THREE.CylinderGeometry(0.03, 0.03, 1.5, 5), wood, 0, 1.7, 0); // sırık
+  for (let i = 0; i < 8; i++) decorSimit(k, 0, 1.08 + i * 0.13, 0, -Math.PI / 2 + rand(-0.12, 0.12), 0, rand(-0.12, 0.12), 0.56);
+  return k.build();
+}
+export function makeSimitStand() { const m = new THREE.Mesh(decorGeo('stand', simitStandGeo), vcMat); m.castShadow = true; return m; }
 export const GEO = {
   simit: BAIT.simit[0],
   piece: BAIT.simit[1],
@@ -289,7 +335,7 @@ const LOOKS = Array.from({ length: 40 }, (_, id) => {
   }
   return L;
 });
-const SIMITCI_LOOK = { id: 'simitci', shirt: 0xf2efe6, pants: 0x262c3a, skin: 0xd49b74, hair: 1, hat: 'kasket', hatCol: 0x3b3b3b, scarf: true, scarfCol: 0xc8352e, pose: 'down' };
+export const SIMITCI_LOOK = { id: 'simitci', shirt: 0xf2efe6, pants: 0x262c3a, skin: 0xd49b74, hair: 1, hat: 'kasket', hatCol: 0x3b3b3b, scarf: true, scarfCol: 0xc8352e, pose: 'down' };
 // simidin elde durduğu yer (yolcunun yerel ekseninde)
 const SIMIT_AT = { '': [0.34, 2.56, 0], feed: [0.3, 2.3, 0.66] };
 export function makePerson(hold, look = pick(LOOKS), mode = '') {
@@ -537,22 +583,91 @@ export function animCrowd(g, t) {
 }
 
 // ---------------- Kız Kulesi (yakın, kıyıdan geçerken) ----------------
-export const MAIDEN = (() => {
-  const k = new Kit();
-  k.add(new THREE.DodecahedronGeometry(9, 0), (f, y) => (y > 0.5 ? 0xb7a58f : 0x8d7f70), 0, -3.5, 0, 0, 0, 0, 1.25, 0.5, 1);
-  k.add(new THREE.BoxGeometry(14, 0.5, 10), 0xd8cdb8, 0, 1.2, 0);
+// Kayalık adacık, korkuluklu teras (koridora bakan -x yakası), şemsiyeli masalar, küçük fener, sandallı ahşap iskele.
+// Terastakiler yolcu gemisindeki gibi el sallayıp zıplar; köşede simit arabası ve simitçi (dekor, yenmez).
+const MAIDEN_TOP = 1.45;
+const MAIDEN = (() => {
+  const k = new Kit(), rock = (f, y) => (y > 0.2 ? 0xb7a58f : 0x8d7f70), stone = 0xd8cdb8, rail = 0xf3efe6;
+  k.add(new THREE.DodecahedronGeometry(9, 0), rock, -1, -3.5, 0, 0, 0, 0, 1.5, 0.5, 1.25);
+  for (const [x, z, r, sy] of [[-13, -8, 2.6, 0.5], [-14, 7.5, 2, 0.45], [9, 9, 2.8, 0.55], [12, -2, 2.2, 0.5], [-4, 11, 2.4, 0.4], [3, -11, 2.2, 0.45], [10, -8, 3, 0.6]])
+    k.add(new THREE.DodecahedronGeometry(r, 0), rock, x, -0.2, z, rand(0, 3), rand(0, 3), 0, 1.2, sy, 1);
+  k.add(new THREE.BoxGeometry(20, 0.5, 13), stone, -2, 1.2, 0); // teras
+  k.add(new THREE.BoxGeometry(20.3, 0.25, 13.3), 0xb9ad98, -2, 0.85, 0);
+  // korkuluk: dikmeler ve iki kat lata
+  const ex = [-11.85, 7.85], ez = 6.35;
+  for (const x of ex) for (let z = -ez; z <= ez + 0.01; z += ez / 4.5) k.add(new THREE.BoxGeometry(0.1, 0.9, 0.1), rail, x, MAIDEN_TOP + 0.45, z);
+  for (const z of [-ez, ez]) for (let x = ex[0]; x <= ex[1] + 0.01; x += (ex[1] - ex[0]) / 13) k.add(new THREE.BoxGeometry(0.1, 0.9, 0.1), rail, x, MAIDEN_TOP + 0.45, z);
+  for (const y of [MAIDEN_TOP + 0.5, MAIDEN_TOP + 0.9]) {
+    for (const x of ex) k.add(new THREE.BoxGeometry(0.08, 0.07, ez * 2), rail, x, y, 0);
+    for (const z of [-ez, ez]) k.add(new THREE.BoxGeometry(ex[1] - ex[0], 0.07, 0.08), rail, (ex[0] + ex[1]) / 2, y, z);
+  }
+  // şemsiyeli masalar (kırmızı-beyaz dilimli)
+  for (const z of [-4.6, -0.2, 4.4]) {
+    const x = -9.6;
+    k.add(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 5), 0xe8e2d6, x, MAIDEN_TOP + 1.25, z);
+    k.add(new THREE.ConeGeometry(1.45, 0.65, 8), (f) => (f % 2 ? 0xf3efe6 : 0xc8352e), x, MAIDEN_TOP + 2.55, z);
+    k.add(new THREE.CylinderGeometry(0.55, 0.55, 0.06, 10), 0xf3efe6, x, MAIDEN_TOP + 0.75, z);
+    for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.4, 0.45, 0.4), 0x8a6242, x + s * 0.85, MAIDEN_TOP + 0.22, z);
+  }
+  for (const z of [-ez + 0.35, ez - 0.35]) { // fener direkleri
+    k.add(new THREE.CylinderGeometry(0.07, 0.09, 3.2, 6), 0x2a2f38, -11.5, MAIDEN_TOP + 1.6, z);
+    k.add(new THREE.SphereGeometry(0.28, 8, 6), 0xfff0b8, -11.5, MAIDEN_TOP + 3.3, z);
+  }
+  // küçük fener: kayalığın ucunda kırmızı bantlı beyaz kule
+  k.add(new THREE.CylinderGeometry(1.1, 1.3, 1, 10), stone, 10, 1, -8);
+  k.add(new THREE.CylinderGeometry(0.6, 0.78, 3.6, 10), (f, y) => (y > 3.6 && y < 4.3 ? 0xc8352e : 0xf6f3ea), 10, 3.3, -8);
+  k.add(new THREE.CylinderGeometry(0.85, 0.85, 0.12, 10), 0x2a2f38, 10, 5.15, -8);
+  k.add(new THREE.CylinderGeometry(0.48, 0.48, 0.7, 8), 0xffe58a, 10, 5.55, -8);
+  k.add(new THREE.ConeGeometry(0.62, 0.6, 8), 0xc8352e, 10, 6.2, -8);
+  // ahşap iskele ve bağlı sandal
+  k.add(new THREE.BoxGeometry(5.4, 0.22, 2), 0x8a6242, -14.6, 0.95, 4.4);
+  for (const x of [-12.6, -14.6, -16.9]) for (const z of [3.5, 5.3]) k.add(new THREE.CylinderGeometry(0.16, 0.16, 2, 6), 0x5b4130, x, 0.1, z);
+  k.add(new THREE.BoxGeometry(1.5, 0.55, 3.6), (f, y) => (y > 0.45 ? 0xf3efe6 : 0x3a7fc2), -15.2, 0.35, 7.1);
+  k.add(new THREE.ConeGeometry(0.75, 1.2, 4), 0x3a7fc2, -15.2, 0.35, 5.0, -Math.PI / 2, Math.PI / 4, 0, 1, 1, 0.55);
+  k.add(new THREE.BoxGeometry(1.2, 0.08, 2.8), 0xa8774a, -15.2, 0.6, 7.2);
+  // bina
   k.add(new THREE.BoxGeometry(10, 4.5, 7), 0xf6eee0, -1.5, 3.6, 0.5);
   k.add(new THREE.BoxGeometry(10.3, 0.4, 7.3), 0xcfa58c, -1.5, 5.95, 0.5);
   for (let i = 0; i < 4; i++) k.add(new THREE.BoxGeometry(0.9, 1.4, 0.1), 0x5f7fa8, -5 + i * 2.3, 3.8, 4.06);
+  for (const z of [-1.8, 2.8]) k.add(new THREE.BoxGeometry(0.1, 1.4, 0.9), 0x5f7fa8, -6.55, 3.8, z);
+  k.add(new THREE.BoxGeometry(0.1, 2.2, 1.3), 0x6b4a33, -6.55, MAIDEN_TOP + 1.1, 0.5); // teras kapısı
   k.add(new THREE.CylinderGeometry(2, 2.2, 12, 10), 0xf6eee0, 3.5, 7, -0.5);
   k.add(new THREE.CylinderGeometry(2.35, 2.35, 0.5, 10), 0xcfa58c, 3.5, 10.5, -0.5);
   k.add(new THREE.CylinderGeometry(1.6, 1.6, 2.4, 10), 0xf6eee0, 3.5, 12.9, -0.5);
   for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; k.add(new THREE.BoxGeometry(0.5, 1, 0.1), 0x5f7fa8, 3.5 + Math.sin(a) * 1.62, 12.9, -0.5 + Math.cos(a) * 1.62, 0, a); }
   k.add(new THREE.ConeGeometry(2, 3.4, 10), 0x8fa9c4, 3.5, 15.8, -0.5);
   k.add(new THREE.CylinderGeometry(0.06, 0.06, 1.6, 4), 0xd9b24a, 3.5, 18.2, -0.5);
-  k.add(new THREE.BoxGeometry(0.5, 0.5, 0.5), 0xe30a17, 4, 18.6, -0.5); // bayrak
+  k.add(new THREE.BoxGeometry(0.04, 0.6, 0.95), 0xe30a17, 3.5, 18.6, -0.02); // bayrak
   return k.build();
 })();
+const MAIDEN_SPOTS = (() => {
+  const out = [];
+  for (let n = 0; out.length < 13 && n < 200; n++) {
+    const x = rand(-11.3, -7.1), z = rand(-5.9, 5.9);
+    if ([-4.6, -0.2, 4.4].some(uz => Math.hypot(x + 9.6, z - uz) < 1.3) || (x > -9.3 && z < -4)) continue; // masalar, araba köşesi
+    if (out.some(([ox, , oz]) => Math.hypot(ox - x, oz - z) < 1.1)) continue;
+    out.push([x, MAIDEN_TOP + 0.15, z]);
+  }
+  out.push([-15.8, 1.2, 4.2], [-13.5, 1.2, 4.6]); // iskelede
+  return out;
+})();
+export function makeMaiden() {
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(MAIDEN, vcMat); m.castShadow = true; g.add(m);
+  const crowd = [];
+  CROWD_GEOS.forEach((geo, c) => {
+    const spots = MAIDEN_SPOTS.filter((_, i) => i % CROWD_GEOS.length === c);
+    const im = new THREE.InstancedMesh(geo, vcMat, spots.length);
+    im.frustumCulled = false;
+    g.add(im);
+    crowd.push({ im, spots: spots.map(([x, y, z]) => ({ x, y, z, ph: Math.random() * 6, ry: rand(-0.6, 0.6) })) });
+  });
+  g.userData.crowd = crowd;
+  animCrowd(g, 0);
+  const cart = makeSimitCart(); cart.position.set(-7.7, MAIDEN_TOP, -5.3); cart.rotation.y = Math.PI / 2; cart.scale.setScalar(1.4); g.add(cart);
+  const v = makePerson(false, SIMITCI_LOOK); v.mesh.position.set(-6.3, MAIDEN_TOP, -5.3); v.mesh.rotation.y = -Math.PI / 2; v.mesh.scale.setScalar(1.4); g.add(v.mesh);
+  return g;
+}
 
 // ---------------- hat iskeleleri ----------------
 // İskele binası: krem duvar, kiremit çatı, saat kulesi, suya uzanan ahşap iskele. Ön yüz -x'e (koridora) bakar; sol kıyıda Math.PI döndürülür.
@@ -777,26 +892,50 @@ export function salonGeo(tx) {
   salonCache.set(tx, out);
   return out;
 }
-export const FERRY_LENGTHS = [44, 49, 54, 58];
+// Vapur çeşitleri. Genişlik hep ±4: şerit = gövde, martı küpeşte içinde kalır (main.js EDGE). Boy, pruva/kıç, bantlar, pencere sırası, köşk ve baca değişir.
+// Baş -z'de (vapur da martı da -z'ye gider); her tip gövdenin uçlarını aynı yerde bitirir: baş -L/2-1.2, kıç L/2+1.5.
+const FERRY_STYLE = {
+  hat: { bottom: [0.95, 0x1b2738], stripe: 0xc8352e },    // klasik hat vapuru: sivri yuvarlak kıç, tek pencere bandı
+  motor: { bottom: [0.95, 0x22262e], stripe: 0x2f6fb4 },  // kısa motor: küt baş, ayna kıç, lomboz pencereler, mavi bant
+  buyuk: { bottom: [0.7, 0x1b2738], stripe: 0xc8352e },   // büyük vapur: iki sıra pencere, altın yaldız şerit, köprü kanatları, filikalar
+};
 const ferryCache = new Map();
-export function ferryGeo(L) {
-  if (ferryCache.has(L)) return ferryCache.get(L);
-  const k = new Kit();
+export function ferryGeo(L, type = 'hat') {
+  const key = type + L;
+  if (ferryCache.has(key)) return ferryCache.get(key);
+  const k = new Kit(), S = FERRY_STYLE[type];
   const sh = new THREE.Shape();
-  sh.moveTo(-4, -L / 2 + 3); sh.quadraticCurveTo(-4, -L / 2, -1.5, -L / 2 - 1.2); sh.lineTo(1.5, -L / 2 - 1.2); sh.quadraticCurveTo(4, -L / 2, 4, -L / 2 + 3);
-  sh.lineTo(4, L / 2 - 7); sh.quadraticCurveTo(3.4, L / 2 - 1, 0, L / 2 + 1.5); sh.quadraticCurveTo(-3.4, L / 2 - 1, -4, L / 2 - 7); sh.closePath();
-  // gövde katmanları: altı lacivert, ortası beyaz, üstte kırmızı şerit (her biri ayrı kalıp → renk şeritleri düz)
+  if (type === 'motor') {
+    sh.moveTo(-4, -L / 2 + 2); sh.quadraticCurveTo(-4, -L / 2 - 0.6, -2.2, -L / 2 - 1.2); sh.lineTo(2.2, -L / 2 - 1.2); sh.quadraticCurveTo(4, -L / 2 - 0.6, 4, -L / 2 + 2);
+    sh.lineTo(4, L / 2 - 1.5); sh.quadraticCurveTo(4, L / 2 + 1.5, 2.6, L / 2 + 1.5); sh.lineTo(-2.6, L / 2 + 1.5); sh.quadraticCurveTo(-4, L / 2 + 1.5, -4, L / 2 - 1.5); sh.closePath();
+  } else {
+    sh.moveTo(-4, -L / 2 + 3); sh.quadraticCurveTo(-4, -L / 2, -1.5, -L / 2 - 1.2); sh.lineTo(1.5, -L / 2 - 1.2); sh.quadraticCurveTo(4, -L / 2, 4, -L / 2 + 3);
+    sh.lineTo(4, L / 2 - 7); sh.quadraticCurveTo(3.4, L / 2 - 1, 0, L / 2 + 1.5); sh.quadraticCurveTo(-3.4, L / 2 - 1, -4, L / 2 - 7); sh.closePath();
+  }
+  // gövde katmanları: altı koyu, ortası beyaz, üstte renkli şerit (her biri ayrı kalıp → renk şeritleri düz)
   const layer = (y0, h, col, grow = 1) => {
     const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 6 });
     g.rotateX(-Math.PI / 2);
     k.add(g, col, 0, y0, 0, 0, 0, 0, grow, 1, 1 + (grow - 1) * 0.3);
   };
-  layer(0, 0.95, 0x1b2738);
-  layer(0.95, DECK - 0.95, 0xf3efe6);
-  layer(2.05, 0.22, 0xc8352e, 1.012);
-  // pencere bandı
-  k.add(new THREE.BoxGeometry(8.04, 0.5, L - 16), 0x2b4560, 0, 1.5, 1.5);
-  for (let z = -L / 2 + 9; z < L / 2 - 8; z += 1.6) for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.02, 0.5, 0.16), 0xf3efe6, s * 4.03, 1.5, z);
+  const [bh, bc] = S.bottom;
+  layer(0, bh, bc);
+  layer(bh, DECK - bh, 0xf3efe6);
+  layer(2.05, 0.22, S.stripe, 1.012);
+  if (type === 'buyuk') layer(1.93, 0.07, 0xd9b24a, 1.008);
+  // pencereler: bant + dikmeler; motorda tek tek lomboz
+  if (type === 'motor') {
+    for (let z = -L / 2 + 6; z < L / 2 - 4; z += 1.9) for (const s of [-1, 1]) {
+      k.add(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 10), 0xf3efe6, s * 4.01, 1.55, z, 0, 0, Math.PI / 2);
+      k.add(new THREE.CylinderGeometry(0.15, 0.15, 0.07, 10), 0x2b4560, s * 4.02, 1.55, z, 0, 0, Math.PI / 2);
+    }
+  } else {
+    for (const y of type === 'buyuk' ? [1.07, 1.62] : [1.5]) {
+      const h = type === 'buyuk' ? 0.36 : 0.5;
+      k.add(new THREE.BoxGeometry(8.04, h, L - 16), 0x2b4560, 0, y, 1.5);
+      for (let z = -L / 2 + 9; z < L / 2 - 8; z += 1.6) for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.02, h, 0.16), 0xf3efe6, s * 4.03, y, z);
+    }
+  }
   // güverte, korkuluk
   k.add(new THREE.BoxGeometry(7.6, 0.06, L - 7), 0xa8774a, 0, DECK + 0.02, 0.8);
   for (let z = -L / 2 + 5; z < L / 2 - 5; z += 1.2) k.add(new THREE.BoxGeometry(7.65, 0.04, 0.06), 0x94673e, 0, DECK + 0.055, z);
@@ -805,13 +944,31 @@ export function ferryGeo(L) {
     for (let z = -L / 2 + 5; z < L / 2 - 4; z += 2.2) k.add(new THREE.BoxGeometry(0.05, 0.75, 0.05), 0xf3efe6, s * 3.85, DECK + 0.38, z);
     for (const z of [-L / 4, L / 4]) k.add(new THREE.TorusGeometry(0.34, 0.1, 5, 10), (f) => (f % 6 < 3 ? 0xf07b22 : 0xffffff), s * 4.08, 1.35, z, 0, Math.PI / 2);
   }
-  // kaptan köşkü
-  const bz = -L / 2 + 6;
-  k.add(new THREE.BoxGeometry(3.8, 1.5, 3.2), 0xf3efe6, 0, DECK + 0.75, bz);
-  k.add(new THREE.BoxGeometry(3.84, 0.5, 3.24), 0x2b4560, 0, DECK + 1.05, bz);
-  k.add(new THREE.BoxGeometry(4.2, 0.12, 3.6), 0xc8352e, 0, DECK + 1.56, bz);
+  // kaptan köşkü (uçuş yüksekliğinin altında)
+  if (type === 'motor') {
+    const bz = -L / 2 + 5;
+    k.add(new THREE.BoxGeometry(3.2, 1.3, 2.6), 0xf3efe6, 0, DECK + 0.65, bz);
+    k.add(new THREE.BoxGeometry(3.24, 0.45, 2.64), 0x2b4560, 0, DECK + 0.95, bz);
+    k.add(new THREE.BoxGeometry(3.5, 0.12, 2.9), S.stripe, 0, DECK + 1.36, bz);
+    for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.3, 0.3, 0.9, 8), 0xf3efe6, s * 3.2, DECK + 0.32, -L / 2 + 8.5, Math.PI / 2); // can salı kapları
+  } else {
+    const bz = -L / 2 + 6;
+    k.add(new THREE.BoxGeometry(3.8, 1.5, 3.2), 0xf3efe6, 0, DECK + 0.75, bz);
+    k.add(new THREE.BoxGeometry(3.84, 0.5, 3.24), 0x2b4560, 0, DECK + 1.05, bz);
+    k.add(new THREE.BoxGeometry(4.2, 0.12, 3.6), S.stripe, 0, DECK + 1.56, bz);
+    if (type === 'buyuk') {
+      k.add(new THREE.BoxGeometry(8.4, 0.1, 1.1), 0xf3efe6, 0, DECK + 1.5, bz + 0.6); // köprü kanatları
+      for (const s of [-1, 1]) {
+        k.add(new THREE.BoxGeometry(0.06, 0.5, 1.1), 0xf3efe6, s * 4.15, DECK + 1.75, bz + 0.6);
+        for (const z of [-L / 2 + 16, L / 2 - 14]) { // küpeştenin dışında asılı turuncu filikalar
+          k.add(new THREE.BoxGeometry(0.9, 0.5, 3.6), (f, y) => (y > DECK + 1.05 ? 0xf3efe6 : 0xf07b22), s * 4.55, DECK + 0.85, z);
+          for (const dz of [-1.4, 1.4]) k.add(new THREE.BoxGeometry(0.08, 1.4, 0.08), 0x8a8f99, s * 4.15, DECK + 1.0, z + dz, 0, 0, s * 0.35);
+        }
+      }
+    }
+  }
   const geo = k.build();
-  ferryCache.set(L, geo);
+  ferryCache.set(key, geo);
   return geo;
 }
 export function chimneyGeo() {
@@ -823,6 +980,23 @@ export function chimneyGeo() {
     .build();
 }
 export const CHIMNEY = chimneyGeo();
+// tip tanımları: chim kalıbı ile çarpma kutusu (hw, hd, top) birebir eşleşir; salon: camlı salon gelebilir mi
+export const FERRY_TYPES = [
+  { id: 'hat', w: 0.55, lengths: [44, 49, 54, 58], chim: CHIMNEY, hw: 0.95, hd: 0.95, top: 4.7, salon: true },
+  { id: 'motor', w: 0.25, lengths: [34, 38], hw: 0.75, hd: 1.15, top: 3.6, salon: false,
+    chim: new Kit() // kısa, oval, kıça yatık baca
+      .add(new THREE.CylinderGeometry(0.6, 0.7, 3.0, 12), 0xf3efe6, 0, 1.5, 0, 0.15, 0, 0, 1, 1, 1.3)
+      .add(new THREE.CylinderGeometry(0.58, 0.6, 0.45, 12), 0x2f6fb4, 0, 2.55, 0.2, 0.15, 0, 0, 1, 1, 1.3)
+      .add(new THREE.CylinderGeometry(0.57, 0.57, 0.5, 12), 0x16171c, 0, 3.15, 0.27, 0.15, 0, 0, 1, 1, 1.3).build() },
+  { id: 'buyuk', w: 0.2, lengths: [60, 64], hw: 1.12, hd: 1.12, top: 5.1, salon: true,
+    chim: new Kit() // geniş baca: lacivert bant, altın yaldız, siyah ağız
+      .add(new THREE.CylinderGeometry(1.0, 1.12, 5.0, 16), 0xf3efe6, 0, 2.5, 0)
+      .add(new THREE.CylinderGeometry(1.02, 1.04, 0.6, 16), 0x1d3c78, 0, 3.55, 0)
+      .add(new THREE.CylinderGeometry(1.03, 1.03, 0.12, 16), 0xd9b24a, 0, 3.95, 0)
+      .add(new THREE.CylinderGeometry(1.01, 1.01, 0.9, 16), 0x16171c, 0, 4.6, 0)
+      .add(new THREE.CylinderGeometry(0.82, 0.82, 0.1, 16), 0x050507, 0, 5.06, 0).build() },
+];
+export function pickFerryType() { let r = Math.random(); for (const t of FERRY_TYPES) if ((r -= t.w) < 0) return t; return FERRY_TYPES[0]; }
 export const MAST = new Kit().add(new THREE.CylinderGeometry(0.1, 0.14, 6.8, 6), 0xf3efe6, 0, 3.4, 0).add(new THREE.SphereGeometry(0.16, 6, 4), 0xffd34d, 0, 6.85, 0).build();
 const flagTex = canvasTex(96, 64, (g, w, h) => {
   g.fillStyle = '#e30a17'; g.fillRect(0, 0, w, h);
