@@ -16,7 +16,7 @@ export const audio = {
       try { AC = new Ctx({ latencyHint: MOBILE ? 'playback' : 'interactive' }); } catch (e) { AC = new Ctx(); }
       const comp = AC.createDynamicsCompressor();
       comp.threshold.value = -14; comp.ratio.value = 4;
-      master = AC.createGain(); master.gain.value = 0.8;
+      master = AC.createGain(); master.gain.value = 0.65; // genel ses: telefonda yüksek ve yorucuydu
       master.connect(comp); comp.connect(AC.destination);
       sfxBus = AC.createGain(); sfxBus.connect(master);
       musicFilter = AC.createBiquadFilter(); musicFilter.type = 'lowpass'; musicFilter.frequency.value = 9000;
@@ -54,7 +54,7 @@ function apply() {
   const sv = opts.sfx ? opts.sfxVol * opts.sfxVol : 0, mv = opts.music && musicOn ? opts.musicVol * opts.musicVol : 0; // kare: kulak daha doğal duyar
   sfxBus.gain.setTargetAtTime(sv, t, 0.02);
   ambBus.gain.setTargetAtTime(0.9 * sv, t, 0.2);
-  musicBus.gain.setTargetAtTime(0.5 * mv, t, 0.15);
+  musicBus.gain.setTargetAtTime(0.3 * mv, t, 0.15); // müzik arka planda kalsın (eskiden 0.5)
 }
 
 function env(g, t, a, peak, dec) {
@@ -109,14 +109,14 @@ export const sfx = {
     for (const fr of [110, 165, 220.5]) { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; o.connect(f); o.start(t); o.stop(t + 1.6); }
     f.connect(g); g.connect(sfxBus);
   },
-  catch(n, tier = 0) { // ritmik "çıt": her simitte bir basamak çıkar; tier (çarpan x1-x5) verilirse perde çarpan basamağının
-    // tabanından beş notada tırmanıp başa döner. Pes ve yumuşak: x1'de 392 Hz (sol), en tiz nota yalnızca x5'te (~880 Hz).
-    const step = tier ? [0, 2, 4, 5, 7][Math.min(tier, 5) - 1] + [0, 2, 3, 5, 7][(n - 1) % 5]
-      : [0, 2, 4, 5, 7, 9, 12][Math.min(n - 1, 6)];
+  catch(n, tier = 0) { // simit "tın"ı: n = art arda kaç simit. Perde her simitte sırayla ama yavaş yükselir (karekök eğrisi,
+    // yarım tonlarla): ilk simitlerde adım adım, sonra seyrekleşir; en tiz nota (+12) ancak 180'de, x5'te. Kaçırınca n=1: baştan.
+    // tier verilmezse (oyun sonu sayacı gibi) kısa merdiven.
+    const step = tier ? Math.round(12 * Math.sqrt(Math.min(Math.max(n, 1), 180) / 180)) : [0, 2, 4, 5, 7, 9, 12][Math.min(n - 1, 6)];
     const f = 392 * Math.pow(2, step / 12);
-    hiss(0.04, 0.08, 2200, 'highpass');
-    tone('triangle', f, 0.15, 0.15);
-    tone('sine', f * 2, 0.08, 0.025, { when: 0.02 });
+    tone('sine', f, 0.14, 0.12);
+    tone('triangle', f * 2, 0.06, 0.018, { when: 0.01 });
+    hiss(0.03, 0.025, 2400, 'highpass');
   },
   gold() {
     [0, 4, 7, 12, 16].forEach((s, i) => tone('triangle', 880 * Math.pow(2, s / 12), 0.22, 0.12, { when: i * 0.045 }));

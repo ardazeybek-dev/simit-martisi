@@ -202,12 +202,63 @@ export const goldMat = new THREE.MeshStandardMaterial({ color: 0xffc23a, emissiv
 export function makeSimitPiece(gold = false) {
   const m = new THREE.Mesh(GEO.piece, gold ? goldMat : vcMat);
   m.scale.setScalar(1.25);
-  return m;
+  return batched(m);
 }
 export function makeSimit(gold = false) {
   const m = new THREE.Mesh(GEO.simit, gold ? goldMat : vcMat);
   m.castShadow = false;
-  return m;
+  return batched(m);
+}
+
+// ---------------- toplu çizim (telefon akıcılığı) ----------------
+// Telefonda kasmanın asıl sebebi karedeki çizim çağrısı sayısıydı: 100'den fazla simit, onlarca yolcu, tabela, tekne parçası
+// her biri ayrı çiziliyordu (~300 çağrı). Nesneler oyunda aynen yaşar (konum, görünürlük, kime bağlı oldukları); ortak
+// vcMat ya da altın malzemeyle çizilenler kameranın görmediği katmana alınır ve her kare syncBatches() görünür olanların
+// dünya matrisini geometri+malzeme başına tek InstancedMesh'e yazar. Görüntü aynıdır, çağrı sayısı yarının altına iner.
+// Malzemesi başka bir şeye değişen parça kendiliğinden normal çizime döner. Dünya matrisleri burada karede bir kez hesaplanır.
+const BATCH_LAYER = 1, BATCH_MASK = 1 << BATCH_LAYER, batches = new Map(), instMats = new Map(), _frus = new THREE.Frustum(), _pv = new THREE.Matrix4(), _sph = new THREE.Sphere();
+const BATCH_MATS = new Set([vcMat, goldMat]);
+function batched(m) { return m; } // (eski kayıt; artık sahnede kendiliğinden bulunur)
+// aynı malzeme Mesh ve InstancedMesh'te ortak kullanılmasın (her geçişte shader yeniden seçilir): çoklanan için kopya
+const instMat = mat => instMats.get(mat) || (instMats.set(mat, mat.clone()), instMats.get(mat));
+export function syncBatches(scene, camera) {
+  scene.matrixWorldAutoUpdate = false; // render bir daha hesaplamasın
+  scene.updateMatrixWorld();
+  if (camera) { camera.updateMatrixWorld(); _frus.setFromProjectionMatrix(_pv.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)); }
+  for (const b of batches.values()) b.n = 0;
+  scene.traverseVisible(o => {
+    if (!o.isMesh || o.isInstancedMesh) return;
+    // aynalanmış (negatif ölçekli) parça toplu çizimde ters yüzle görünmez olur: three.js onu tek başına çizerken düzeltir
+    if (!BATCH_MATS.has(o.material) || o.matrixWorld.determinant() < 0) { if (o.layers.mask === BATCH_MASK) o.layers.set(0); return; }
+    if (o.layers.mask !== BATCH_MASK) o.layers.set(BATCH_LAYER);
+    if (camera) { // kamera dışı: çizme (gölge düşürebilsin diye küre biraz büyük)
+      const g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+      _sph.copy(g.boundingSphere).applyMatrix4(o.matrixWorld); _sph.radius *= 1.3;
+      if (!_frus.intersectsSphere(_sph)) return;
+    }
+    const key = o.geometry.id + ':' + o.material.id;
+    let b = batches.get(key);
+    if (!b || b.n >= b.cap) b = growBatch(scene, key, o, b);
+    o.matrixWorld.toArray(b.im.instanceMatrix.array, b.n * 16); b.n++;
+    if (o.castShadow) b.im.castShadow = true;
+    if (o.receiveShadow) b.im.receiveShadow = true;
+  });
+  for (const [key, b] of batches) {
+    b.im.count = b.n; b.im.visible = b.n > 0;
+    if (b.n) { // yalnızca kullanılan kısım GPU'ya gider (tampon iki katına büyüyerek ayrılıyor)
+      b.idle = 0; const im = b.im.instanceMatrix; im.clearUpdateRanges(); im.addUpdateRange(0, b.n * 16); im.needsUpdate = true;
+      if (b.im.parent !== scene) scene.add(b.im);
+    }
+    else if (++b.idle > 600) { scene.remove(b.im); b.im.dispose(); batches.delete(key); } // uzun süre kullanılmayan
+  }
+}
+function growBatch(scene, key, m, old) {
+  const cap = old ? old.cap * 2 : 16, im = new THREE.InstancedMesh(m.geometry, instMat(m.material), cap);
+  im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.frustumCulled = false;
+  if (old) { im.instanceMatrix.array.set(old.im.instanceMatrix.array); scene.remove(old.im); old.im.dispose(); }
+  const b = { im, cap, n: old ? old.n : 0, idle: 0 };
+  batches.set(key, b); scene.add(im);
+  return b;
 }
 
 // ---------------- yolcu ----------------
@@ -609,6 +660,10 @@ cruiseMat.onBeforeCompile = function (sh) {
 #endif`);
 };
 cruiseMat.customProgramCacheKey = () => 'cruise';
+// Aynı malzeme hem Mesh hem InstancedMesh'te kullanılınca three.js her geçişte shader'ı yeniden seçer (getParameters + anahtar
+// dizgisi: her kare yüzlerce çağrı ve çöp → telefonda düzenli takılma). Çoklanan parçalar birebir aynı görünen kopyayı kullanır.
+const cruiseInstMat = cruiseMat.clone(); cruiseInstMat.onBeforeCompile = cruiseMat.onBeforeCompile; cruiseInstMat.customProgramCacheKey = () => 'cruise-inst';
+const vcInstMat = vcMat.clone();
 export const CRUISE = (() => {
   const k = new Kit(), L = 96;
   const hull = new THREE.Shape(); hull.moveTo(-7, -L / 2 + 6); hull.quadraticCurveTo(-7, -L / 2 - 2, 0, -L / 2 - 6); hull.quadraticCurveTo(7, -L / 2 - 2, 7, -L / 2 + 6);
@@ -664,7 +719,7 @@ export function makeCruise() {
   const crowd = [];
   CROWD_GEOS.forEach((geo, c) => {
     const spots = CROWD_SPOTS.filter((_, i) => i % CROWD_GEOS.length === c);
-    const im = new THREE.InstancedMesh(geo, cruiseMat, spots.length);
+    const im = new THREE.InstancedMesh(geo, cruiseInstMat, spots.length);
     im.frustumCulled = false; // örnekler gövdenin üstüne yayılıyor; sınır küresi tek kişilik kalır
     g.add(im);
     crowd.push({ im, spots: spots.map(([x, y, z]) => ({ x, y, z, ph: Math.random() * 6, ry: rand(-0.6, 0.6) })) });
@@ -761,7 +816,7 @@ export function makeMaiden() {
   const crowd = [];
   CROWD_GEOS.forEach((geo, c) => {
     const spots = MAIDEN_SPOTS.filter((_, i) => i % CROWD_GEOS.length === c);
-    const im = new THREE.InstancedMesh(geo, vcMat, spots.length);
+    const im = new THREE.InstancedMesh(geo, vcInstMat, spots.length);
     im.frustumCulled = false;
     g.add(im);
     crowd.push({ im, spots: spots.map(([x, y, z]) => ({ x, y, z, ph: Math.random() * 6, ry: rand(-0.6, 0.6) })) });

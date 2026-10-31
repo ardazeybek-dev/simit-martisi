@@ -21,7 +21,8 @@ export const SUN_DIR = new THREE.Vector3(-0.17, 0.11, -0.98).normalize();
 
 export const MOBILE = matchMedia('(pointer: coarse)').matches; // telefon/tablet: daha ucuz gölge, kalite merdiveni farklı (main.js)
 // telefonda MSAA kapalı: yüksek piksel yoğunluğunda kenar zaten ince, MSAA ise dolum maliyetini katlar
-export const renderer = new THREE.WebGLRenderer({ antialias: !MOBILE, powerPreference: 'high-performance' });
+// telefonda da MSAA: karo tabanlı telefon GPU'larında ucuz; kapalıyken hızlı virajlarda kenarlar titreşip pikselli görünüyordu
+export const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;

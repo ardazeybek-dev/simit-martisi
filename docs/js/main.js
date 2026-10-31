@@ -3,7 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex } from './uti
 import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
+import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, myBest, rewardFor, paidKey, markPaid } from './board.js';
@@ -695,7 +695,7 @@ function spawnFerry() {
   for (const p of mine) {
     if (!p.simit || p.thrower) continue;
     const gold = goldRoll(0.02);
-    if (gold) p.simit.material = makeSimit(true).material;
+    if (gold) p.simit.material = goldMat;
     p.simit.getWorldPosition(tmp);
     simits.push({ mesh: p.simit, x: tmp.x, y: tmp.y, z: tmp.z, person: p, gold });
   }
@@ -1012,9 +1012,17 @@ const ui = {
 };
 let shownFish = -1, shownScore = -1, shownSimit = -1, shownDist = -1, shownMult = 0, shownStop = -1, shownLeft = -1;
 function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
-function bump(el, cls = 'bump') { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+// animasyonu yeniden başlat: sınıfı bu kare kaldır, sonraki kare ekle. (Eskiden void el.offsetWidth ile düzen anında, zorla
+// hesaplanıyordu: her simitte uçuşun ortasında senkron reflow → telefonda takılma.)
+function bump(el, cls = 'bump') {
+  if (!el) return;
+  el.classList.remove(cls);
+  if (el._bumpRaf) cancelAnimationFrame(el._bumpRaf);
+  el._bumpRaf = requestAnimationFrame(() => { el._bumpRaf = 0; el.classList.add(cls); });
+}
 const total = () => points + Math.floor(dist / 10);
-const fmt = n => n.toLocaleString(window.I18N.locale);
+// sayı biçimleyici bir kez kurulur: toLocaleString her çağrıda yeni Intl nesnesi kurar (HUD her kare çağırıyor)
+const NF = new Intl.NumberFormat(window.I18N.locale), fmt = n => NF.format(n);
 
 // hat: oyun sonunda tek satır, ana menüde nokta nokta harita + hedef cümlesi
 const toStop = (i, n) => tr('{to} {n} m kaldı').replace('{to}', STOPS[i].to).replace('{s}', STOPS[i].name).replace('{n}', fmt(n));
@@ -1910,7 +1918,7 @@ onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 // paylaşım kartı: o anki sahnenin karesi üstüne puan, simit, metre ve şehir (1080x1080). Telefonda görsel olarak paylaşılır.
 function scoreCard() {
-  renderer.render(scene, camera); // çizim tamponu korunmuyor: aynı görevde çizip hemen kopyala
+  syncBatches(scene, camera); renderer.render(scene, camera); // çizim tamponu korunmuyor: aynı görevde çizip hemen kopyala
   const S = 1080, c = document.createElement('canvas'); c.width = c.height = S;
   const g = c.getContext('2d'), src = renderer.domElement, k = Math.max(S / src.width, S / src.height);
   g.drawImage(src, (S - src.width * k) / 2, (S - src.height * k) / 2, src.width * k, src.height * k);
@@ -1977,7 +1985,9 @@ const DPR = Math.min(2, devicePixelRatio || 1);
 // Uçuşta yalnızca çözünürlük değişir. Gölgeyi açıp kapamak bütün shader'ları yeniden derletir (telefonda saniyelerce donma):
 // o yüzden gölge kararı bekletilir, menüye ya da oyun sonuna dönünce uygulanır.
 // Telefon orta kaliteden başlar, çözünürlük basamakları daha dar: en düşükte de bulanıklaşmasın.
-const PR = MOBILE ? [1.3, 1.5, 1.75] : [1.15, 1.5, 2];
+// telefonda en düşük kalite bile keskin kalsın: 1.3'te görüntü hızlı geçişlerde bulanık/pikselli ("sansürlü") görünüyordu.
+// Kasmanın asıl sebebi çizim çağrısıydı (simitler toplu çizilince yarıya indi), çözünürlük değil.
+const PR = MOBILE ? [1.5, 1.6, 1.75] : [1.15, 1.5, 2];
 let shadowWant = true;
 let quality = 2, qFrames = 0, qTime = 0, fpsSmooth = 60, qWarm = 4, qGood = 0, qMax = 2;
 // ?q=0|1|2 kaliteyi sabitler (otomatik ayar kapanır) — ölçüm ve test için
@@ -1995,7 +2005,7 @@ function applyShadows() {
   if (renderer.shadowMap.enabled === shadowWant) return;
   renderer.shadowMap.enabled = shadowWant; sunLight.castShadow = shadowWant;
   scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => (m.needsUpdate = true)); });
-  try { renderer.compile(scene, camera); } catch (e) {}
+  syncBatches(scene); try { renderer.compile(scene, camera); } catch (e) {} // kamera elemesi yok: hepsi derlensin
 }
 
 // dokunmatik kaydırma çubuğu: yalnız uçuşta görünür, topuz parmağın verdiği hedefi gösterir (rüzgârla titremez, bırakınca yerinde kalır)
@@ -2033,7 +2043,7 @@ function frame() {
     }
   } else if (state !== 'play') { qFrames = 0; qTime = 0; }
   padTick();
-  if (state === 'paused') { renderer.render(scene, camera); return; }
+  if (state === 'paused') { syncBatches(scene, camera); renderer.render(scene, camera); return; }
 
   // hit-stop: simülasyon donar, kamera sarsıntısı ve arayüz sürer
   let dt = realDt;
@@ -2416,6 +2426,7 @@ function frame() {
     tickPowers();
   }
 
+  syncBatches(scene, camera); // simitler: tek InstancedMesh (models.js)
   renderer.render(scene, camera);
   if (firstFrame) { firstFrame = false; const l = $('loader'); l.classList.add('done'); setTimeout(() => l.remove(), 700); warmPeople(); }
 }
@@ -2455,12 +2466,15 @@ function shout(p, s, cheer) {
 // kapılan simit, martının ekrandaki yerinden HUD'daki simit sayacına uçar (seyrekleştirilmiş: telefonda DOM yükü olmasın)
 const coinV = new THREE.Vector3();
 let coinT = 0;
+const coinRect = {}; addEventListener('resize', () => { for (const k in coinRect) delete coinRect[k]; });
 function coinFly(gold, sel = '.sub .ico', icon = 'i-simit') {
   const now = performance.now(), ico = () => document.querySelector(sel);
   if (!gold && icon === 'i-simit' && now - coinT < 140) return;
   if (icon === 'i-simit') coinT = now;
   coinV.copy(gull.position).project(camera);
-  const x = (coinV.x * 0.5 + 0.5) * innerWidth, y = (-coinV.y * 0.5 + 0.5) * innerHeight, r = ico().getBoundingClientRect();
+  // hedef ikonun yeri önbellekte: her simitte getBoundingClientRect düzeni zorla hesaplatırdı (boyut değişince sıfırlanır)
+  const x = (coinV.x * 0.5 + 0.5) * innerWidth, y = (-coinV.y * 0.5 + 0.5) * innerHeight, r = coinRect[sel] || ico().getBoundingClientRect();
+  if (r.width > 0) coinRect[sel] = r; // gizliyken ölçülen boş kutu saklanmaz
   const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   el.setAttribute('class', 'coin-fly' + (gold ? ' gold' : '')); el.innerHTML = `<use href="#${icon}"/>`;
   el.style.transform = `translate(${x}px, ${y}px)`;
@@ -2624,13 +2638,13 @@ addEventListener('online', () => sync());
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), makePirateShip().g, makeFalls(), makeBeach(BEACH_LEN), ...BEACH_COLS.map(c => new THREE.Mesh(umbrellaGeo(c), vcMat)), new THREE.Mesh(umbrellaGeo('straw'), vcMat), new THREE.Mesh(SUNBED, vcMat), ...beachRing.map(mt => new THREE.Mesh(RING, mt)), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
+  warm.add(makeKite(), makeSimit(true), makeSimit(), makeSimitPiece(), makeSimitPiece(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), makePirateShip().g, makeFalls(), makeBeach(BEACH_LEN), ...BEACH_COLS.map(c => new THREE.Mesh(umbrellaGeo(c), vcMat)), new THREE.Mesh(umbrellaGeo('straw'), vcMat), new THREE.Mesh(SUNBED, vcMat), ...beachRing.map(mt => new THREE.Mesh(RING, mt)), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
   flats.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
   updateFx(0);
-  try { renderer.compile(scene, camera); } catch (e) {}
+  syncBatches(scene); try { renderer.compile(scene, camera); } catch (e) {} // kamera elemesi yok: hepsi derlensin
   scene.remove(warm);
 }
 requestAnimationFrame(frame);
@@ -2665,6 +2679,6 @@ window.__game = {
   get dolphins() { return dolphins.map(f => ({ ax: +f.ax.toFixed(1), x: +f.mesh.position.x.toFixed(1), y: +f.mesh.position.y.toFixed(1), u: +f.u.toFixed(2), got: f.got, ahead: +(gull.position.z - f.z).toFixed(1) })); },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
-  get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; },
+  get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; }, get renderer() { return renderer; }, get scene() { return scene; },
   pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = dur(k); renderPowers(); }, get ups() { return { ...ups }; }, setGod: (b) => (god = !!b), setQuality,
 };
