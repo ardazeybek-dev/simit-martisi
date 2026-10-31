@@ -4,6 +4,7 @@
 (function () {
   'use strict';
   var EN = {
+    "Martı adın": "Your gull name", "Haftalık sıralamada bu adla görünürsün.": "This is how you appear on the weekly leaderboard.", "En az 2 harf yaz.": "Use at least 2 letters.", "Kaydet": "Save", "Sonra": "Later", "Adını yaz": "Type your name", "Ad seç": "Pick a name", "Yükleniyor…": "Loading…", "Bağlantı yok": "No connection", "Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.": "The leaderboard could not load. Try again once you are online.", "Henüz kimse uçmadı. İlk sen ol!": "Nobody has flown yet. Be the first!", "Sıralamaya girmek için ad seç": "Pick a name to join the leaderboard", "Haftalık en iyin: {s}": "Weekly best: {s}", "{p} puan daha → {r}. sıra": "{p} more points → #{r}", "Uç, sıralamaya gir: ilk 3 hafta sonu 300, 200, 100 simit kazanır": "Fly to join the board: the top 3 win 300, 200 and 100 simits at week end", "{n} oyuncu": "{n} players", "Arkadaşlarını çağır": "Invite friends", "Simit Martısı haftalık sıralamasında benimle yarış!": "Race me on the Simit Seagull weekly leaderboard!",
     "Günün fırsatı": "Deal of the day",
     // index.html
     'Martı ısınıyor…': 'Warming up the seagull…', 'Martısı': 'Seagull', 'Simitleri kap': 'Grab the simits',
@@ -86,6 +87,7 @@
   };
   // DE / ES: aynı anahtarlar; {to} yalnız Türkçede (yönelme ekli iskele adı), diğer diller {s} kullanır
   var DE = {
+    "Martı adın": "Dein Möwenname", "Haftalık sıralamada bu adla görünürsün.": "So erscheinst du in der Wochenrangliste.", "En az 2 harf yaz.": "Mindestens 2 Buchstaben.", "Kaydet": "Speichern", "Sonra": "Später", "Adını yaz": "Namen eingeben", "Ad seç": "Name wählen", "Yükleniyor…": "Lädt…", "Bağlantı yok": "Keine Verbindung", "Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.": "Die Rangliste konnte nicht geladen werden. Versuch es wieder, sobald du online bist.", "Henüz kimse uçmadı. İlk sen ol!": "Noch niemand ist geflogen. Sei der Erste!", "Sıralamaya girmek için ad seç": "Wähle einen Namen für die Rangliste", "Haftalık en iyin: {s}": "Wochenbestwert: {s}", "{p} puan daha → {r}. sıra": "{p} Punkte mehr → Platz {r}", "Uç, sıralamaya gir: ilk 3 hafta sonu 300, 200, 100 simit kazanır": "Flieg in die Rangliste: Die Top 3 gewinnen am Wochenende 300, 200 und 100 Simits", "{n} oyuncu": "{n} Spieler", "Arkadaşlarını çağır": "Freunde einladen", "Simit Martısı haftalık sıralamasında benimle yarış!": "Flieg gegen mich in der Simit-Möwe-Wochenrangliste!",
     "Günün fırsatı": "Tagesangebot",
     "Martı ısınıyor…": "Möwe wärmt sich auf…",
     "Martısı": "Möwe",
@@ -335,6 +337,7 @@
     "Simit Martısı'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?": "Ich hab in Simit-Möwe {s} Punkte geholt und {n} Simits geschnappt! Schaffst du mehr?",
   };
   var ES = {
+    "Martı adın": "Tu nombre de gaviota", "Haftalık sıralamada bu adla görünürsün.": "Así aparecerás en la clasificación semanal.", "En az 2 harf yaz.": "Usa al menos 2 letras.", "Kaydet": "Guardar", "Sonra": "Luego", "Adını yaz": "Escribe tu nombre", "Ad seç": "Elige un nombre", "Yükleniyor…": "Cargando…", "Bağlantı yok": "Sin conexión", "Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.": "No se pudo cargar la clasificación. Inténtalo de nuevo cuando tengas conexión.", "Henüz kimse uçmadı. İlk sen ol!": "Nadie ha volado aún. ¡Sé el primero!", "Sıralamaya girmek için ad seç": "Elige un nombre para entrar en la clasificación", "Haftalık en iyin: {s}": "Mejor de la semana: {s}", "{p} puan daha → {r}. sıra": "{p} puntos más → puesto {r}", "Uç, sıralamaya gir: ilk 3 hafta sonu 300, 200, 100 simit kazanır": "Vuela y entra: el top 3 gana 300, 200 y 100 simits al final de la semana", "{n} oyuncu": "{n} jugadores", "Arkadaşlarını çağır": "Invitar amigos", "Simit Martısı haftalık sıralamasında benimle yarış!": "¡Compite conmigo en la clasificación semanal de Gaviota Simit!",
     "Günün fırsatı": "Oferta del día",
     "Martı ısınıyor…": "La gaviota calienta…",
     "Martısı": "Gaviota",

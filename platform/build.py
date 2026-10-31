@@ -59,7 +59,7 @@ def patch_main(js):
               "PF.bind({ mute(on) { audio.setForced(on); }, pauseInput(on) { adLock = !!on; } });\n", "helpers")
 
     # gameplay events
-    js = sub1(js, "function showTitle() {\n  state = 'title';", "function showTitle() {\n  PF.gameplayStop();\n  state = 'title';", "home event")
+    js = sub1(js, "function showTitle() {\n", "function showTitle() {\n  PF.gameplayStop();\n", "home event")
     js = sub1(js, "function startGame() {\n", "function startGame() {\n  if (adLock) return;\n", "start lock")
     js = sub1(js, "  resetWorld(state !== 'title'); state = 'play';\n", "  resetWorld(state !== 'title'); state = 'play'; PF.gameplayStart();\n", "start event")
     js = sub1(js, "  state = 'dead'; cause = why;", "  PF.gameplayStop();\n  state = 'dead'; cause = why;", "stop event")
@@ -107,6 +107,7 @@ def patch_html(html, target):
     # end of body: the SDK appends to document.body during init
     html = sub1(html, '<script type="module" src="js/main.js"></script>\n',
                 SDK_TAG[target] + '\n<script src="platform.js"></script>\n<script type="module" src="js/main.js"></script>\n', "scripts")
+    html = sub1(html, '<button class="side-btn m-board" id="boardBtn">', '<button class="side-btn m-board" id="boardBtn" style="display:none">', "board")
     html = sub1(html, '<button class="btn ghost" id="shareBtn">', '<button class="btn ghost" id="shareBtn" style="display:none">', "share")
     sw = re.search(r"<script>\n  // modül yüklenemezse.*?</script>\n", html, re.S)
     if not sw:
@@ -118,6 +119,12 @@ def patch_html(html, target):
         " m.textContent = PF.t('Oyun yüklenemedi. Bağlantını kontrol edip sayfayı yenile.'); }, 15000);\n"
         "</script>\n"))  # classic script: runs before the deferred main.js module
     return html
+
+
+def patch_net(js):
+    # portals: no outside requests, so no shared leaderboard (net.js stays off, the board button is hidden)
+    js = re.sub(r"^const SB_URL = '[^']*';", "const SB_URL = '';", js, count=1, flags=re.M)
+    return re.sub(r"^const SB_KEY = '[^']*';", "const SB_KEY = '';", js, count=1, flags=re.M)
 
 
 def check_urls(out):
@@ -145,7 +152,7 @@ def build(target, zip_dir):
     (out / "style.css").write_text(FONT_CSS + (DOCS / "style.css").read_text("utf-8"), "utf-8")
     for f in (DOCS / "js").glob("*.js"):
         js = f.read_text("utf-8")
-        js = {"main.js": patch_main, "audio.js": patch_audio}.get(f.name, lambda s: s)(js)
+        js = {"main.js": patch_main, "audio.js": patch_audio, "net.js": patch_net}.get(f.name, lambda s: s)(js)
         (out / "js" / f.name).write_text(js, "utf-8")
     (out / "index.html").write_text(patch_html((DOCS / "index.html").read_text("utf-8"), target), "utf-8")
     (out / "platform.js").write_text((SRC / "platform.js").read_text("utf-8").replace("__TARGET__", target), "utf-8")

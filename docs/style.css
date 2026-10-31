@@ -306,6 +306,19 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .board li.me { background: var(--teal); color: #fff; }
 .board li.me em { color: #fff; }
 .board li.gap { display: block; background: none; text-align: center; padding: 0; opacity: .45; line-height: 1; }
+.board li.msg { padding: 14px 8px; font-size: 14px; font-weight: 600; line-height: 1.4; opacity: .7; }
+.board-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; }
+.board-acts .btn { font-size: 15px; padding: 10px 8px 9px; white-space: normal; overflow: hidden; text-overflow: ellipsis; }
+.name-chip { position: absolute; left: 50%; top: 52px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; max-width: 46vw;
+  height: 32px; padding: 0 12px; border-radius: 12px; background: var(--glass); border: 1px solid var(--line); font-size: 14px; font-weight: 800; pointer-events: auto; }
+.name-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.name-chip .ico { width: 14px; height: 14px; flex: none; opacity: .7; }
+.name-chip:active { transform: translateX(-50%) scale(.95); }
+.name-input { touch-action: manipulation; display: block; width: 100%; margin: 0 0 8px; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line); background: rgba(255, 255, 255, .08);
+  color: var(--cream); font: inherit; font-size: 22px; font-weight: 800; text-align: center; outline: none; user-select: text; -webkit-user-select: text; }
+.name-input:focus { border-color: var(--simit); }
+.name-input::placeholder { color: var(--cream); opacity: .35; }
+.fine.err { color: var(--red); opacity: 1; margin: 0 0 10px; }
 .board-tier { font-size: 14px; font-weight: 700; line-height: 1.45; margin: 4px 0 12px; }
 .board-tier small { display: block; font-weight: 600; opacity: .75; }
 .rank-line { display: table; margin: 5px auto 0; padding: 3px 12px 2px; border-radius: 99px; background: rgba(58, 167, 255, .12); color: #bfe3ff; font-size: 14px; font-weight: 700; }

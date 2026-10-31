@@ -54,7 +54,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Fish:** the second currency. Fish are rare: now and then one splashes on open water (one is guaranteed in the first open water after about 300 m) and leap up to the gull's height as you arrive. Touch one and you may catch it (about 40%: a fish for the wallet, a small bonus, a fresh combo timer and a *Balık!* bubble) or it slips away (*Kaçtı!*). Fish pay for revives; the 7th day of the daily reward streak also gives one.
 - **Challenge a friend:** the share button on the game-over screen sends a link carrying your score and distance (on phones together with a 1080x1080 picture of the flight). Whoever opens it sees *A friend scored N* on the title screen, and in that city a blue flag buoy with your score floats beside the lane at the metre where you crashed; flying past it pays a small bonus. The game-over screen tells them how many points are missing or that they won, and the button turns into *Ask for a rematch*. A challenge stays until it is beaten; a new link replaces it.
 - **Record buoy:** a golden flag buoy marks your longest flight so far (from 150 m on); passing it chimes.
-- **Weekly leaderboard:** about 1.2 million players (offline: bots seeded by the week, so everyone sees the same table) with names and flags from 20 countries. Bot scores grow through the week, so holding your rank means flying again. Your weekly best sets your rank; the game-over screen shows it and how far you climbed. When the week ends you get simits by your final rank (top 100: 1,000, top 1,000: 500, top 10,000: 250, top 100,000: 100, top 50%: 40, otherwise 15). The panel tells you how many points the next tier needs.
+- **Weekly leaderboard:** a real table shared by every player. After the first flight the game asks for a gull name (2-16 characters, changeable from the chip under your best score or from the board). Each flight sends your score; the server keeps your best of the week (weeks start Monday 00:00 Istanbul time) and the game-over screen shows your rank and how far you climbed. The board lists the top 50, your own row and how many points the player above you is ahead. When the week ends you get simits by your final rank (1st: 300, 2nd: 200, 3rd: 100, anyone else on the board: 25), offered once on the title screen. Offline the game plays as usual, keeps your weekly best and sends the score when the connection is back; "Invite friends" shares the game link.
 - **Missions:** come in sets of three ("catch 30 simits in one flight", "5 close calls", "fly under the bridge twice"...). A finished mission pays simits right away; when all three are done the next set arrives once you have seen them finish in the *Görevler* panel, about 15% harder and paying about 10% more each set (capped at what one flight allows). At most three sets a day; a new day also replaces a set you got stuck on. The game-over screen stays uncluttered: open *Görevler* from the title screen to watch the bars fill up from where the flight started, finished missions get crossed out and their simits tick up into the wallet. The menu badge counts new missions and clears once you open the panel.
 - **Achievements:** twelve long-term goals (total simits, golden simits, longest flight, best score, streak, snatched simits, close calls, perfect turns, dolphins, bridges, flights, outfits), each with bronze, silver and gold tiers paying 25 / 75 / 200 simits, claimed in the *Başarımlar* panel. Your earlier best score and furthest pier count from the start.
 - **Badges:** a collection tab in the *Başarımlar* panel with 21 badges and no rewards: total distance (1 km up to 10,000 km), days in a row (3 up to 365), flights, fish, simits, finished cities, and a 500 m flight in rain, snow and fog. Newly earned badges glow and are counted on the menu button until you look; tap a badge to see how to earn it.
@@ -90,7 +90,23 @@ Append `?turn=0` to fly a straight Bosphorus without turns, `?throw=0` for the o
 
 Append `?q=0`, `?q=1` or `?q=2` to the URL to lock the quality level (low / medium / high) and turn off automatic adjustment.
 
-No environment variables are needed.
+No environment variables are needed: the leaderboard backend address and its publishable key sit in `docs/js/net.js` (`SB_URL`, `SB_KEY`).
+
+## Leaderboard backend (Supabase)
+
+A free Supabase project holds two tables, `players` and `scores`. Both are closed to the client (RLS on, no policies, privileges revoked); the game only calls four `security definer` functions over `POST /rest/v1/rpc/<name>` with the publishable key:
+
+| function | does |
+|---|---|
+| `register(p_name, p_cc)` | creates a player, returns `{ id, secret, name }` (kept in localStorage `simit-martisi-profile`) |
+| `rename(p_id, p_secret, p_name)` | changes the name |
+| `submit_score(p_id, p_secret, p_score, p_dist, p_city)` | keeps the weekly best, returns this week's rank |
+| `get_board(p_id)` | `{ week, ends, total, top[50], me, prev }`; `prev` is last week's rank for the reward |
+
+To set up a new project: run `supabase/schema.sql` once in the SQL Editor, then put the project URL and the publishable key into `docs/js/net.js`. The secret / service_role key never goes into the client or the repo. Names are trimmed and limited on the server too.
+
+- A free project that gets no requests for about a week is paused by Supabase; the board then says "No connection" for everyone → restore the project from the dashboard.
+- To remove a cheating or rude player: `delete from players where id = '...';` in the SQL Editor (their scores go with it).
 
 ## Portal build (CrazyGames)
 
@@ -104,7 +120,7 @@ python platform/covers.py <out_dir>      # 1920x1080, 800x1200 and 800x800 cover
 
 The portal copy:
 - loads three.js and the Baloo 2 font from `platform/vendor/` (portals reject absolute URLs),
-- drops the service worker, manifest, social meta tags and the share button,
+- drops the service worker, manifest, social meta tags, the share button and the leaderboard (no outside requests: `net.js` gets an empty backend address, the board button is hidden),
 - calls the CrazyGames SDK v3: loading and gameplay events, `happytime` on a new best, a rewarded ad for the second chance (granted only on `adFinished`; on error the player sees "No ad available"), a midgame ad on "play again" after 60 s of play (never on the title screen: no ads behind menu buttons; skipped when a second chance was just offered), audio muted during ads and when the portal asks for it.
 
 Without the SDK (ad blocker, local run) every portal call is a no-op and the game plays normally.
@@ -126,13 +142,15 @@ docs/
   js/fx.js              particles, sparkles, smoke, speed lines, floating texts
   js/audio.js           synthesized music and sound effects
   js/cities.js          cities: pier lines, save keys, pickup type and city-only features (bridges, imbat, pirate boat, falls, beach)
-  js/board.js           weekly leaderboard: seeded bot players, flags, rank from score, end-of-week rewards
+  js/board.js           flags, local weekly best, end-of-week reward amounts
+  js/net.js             leaderboard client: name, score submit, board fetch (Supabase RPC, 5 s timeout, offline-safe)
   js/util.js            helpers, mesh merging, safe localStorage
   sw.js                 service worker (bump VERSION on every release)
   manifest.webmanifest  PWA manifest
   icons/                app icons (SVG source + rendered PNGs)
   og.png, preview.png   social preview and README image
 serve.py                no-cache local server for docs/
+supabase/schema.sql     leaderboard tables and RPC functions
 platform/
   build.py              portal copy of docs/ (see above)
   covers.py             cover images rendered from the title scene

@@ -6,7 +6,8 @@ import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
-import { week, rankOf, totalPlayers, bot, flag, tierOf, TIERS, scoreAt, recordRun, myBest, pendingReward, markPaid } from './board.js';
+import { flag, recordRun, myBest, rewardFor, paidKey, markPaid } from './board.js';
+import { netOn, myName, setName, validName, ccOf, sync, submitScore, fetchBoard } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -1040,8 +1041,9 @@ function showTitle() {
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
+  show('profileBtn', !tutorialPending && netOn()); renderNameChip();
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap();
-  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false);
+  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false); show('profilePanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
   $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
@@ -1051,7 +1053,8 @@ function showTitle() {
   if (vs && !vs.won) $('vsPill').textContent = tr('Bir arkadaşın {s} puan yaptı. Geçebilir misin?').replace('{s}', fmt(vs.s));
   audio.music(true);
   // günün ilk açılışında ödül kendiliğinden gelir; alınmadan geçilirse her oyun sonunda yeniden açılmaz (menüdeki nokta kalır)
-  if (!tutorialPending && !dailyAuto && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); openDaily(); } }, 700);
+  if (!tutorialPending && !nameAsked && netOn() && !myName()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal() && !myName()) { nameAsked = true; openProfile(); } }, 700);
+  else if (!tutorialPending && !dailyAuto && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); openDaily(); } }, 700);
   else if (!tutorialPending && !leagueAuto) setTimeout(() => state === 'title' && !dressing && !menuModal() && offerLeague(), 700); // biten haftanın sıralama ödülü
 }
 function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görünür ama uçulmaz
@@ -1071,7 +1074,7 @@ function startGame() {
   resetWorld(state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'settings']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'profilePanel', 'settings']) show(id, false);
   shownScore = shownSimit = shownDist = shownFish = -1; shownMult = 0;
   ui.combo.classList.remove('on');
   renderPowers();
@@ -1113,9 +1116,14 @@ function showOver() {
   renderRouteLine();
   $('overBest').textContent = isBest ? tr('Önceki rekoru geçtin') : `${tr('Rekor')} ${fmt(best)}`;
   $('newRecord').classList.toggle('hidden', !isBest);
-  { // haftalık sıra: bu uçuş sıranı yükselttiyse eski sırayı da göster
-    const wk = recordRun(final), now = rankOf(wk.best), was = wk.before > 0 ? rankOf(wk.before) : 0;
-    $('overRank').textContent = tr('Haftalık sıran: {r}').replace('{r}', '#' + fmt(now)) + (was && now < was ? `  ▲ ${fmt(was - now)}` : '');
+  { // haftalık sıra: sunucudan gelir; gelene kadar (ya da ağ yoksa) cihazdaki haftalık en iyi görünür
+    const wk = recordRun(final), el = $('overRank'), seq = ++overSeq, was = myRank;
+    el.textContent = netOn() && !myName() ? tr('Sıralamaya girmek için ad seç') : tr('Haftalık en iyin: {s}').replace('{s}', fmt(wk.best));
+    submitScore(final, Math.floor(dist), city.id).then(r => {
+      if (!r || seq !== overSeq || state !== 'over') return;
+      myRank = r;
+      el.textContent = tr('Haftalık sıran: {r}').replace('{r}', '#' + fmt(r)) + (was && r < was ? `  ▲ ${fmt(was - r)}` : '');
+    });
   }
   { // meydan okuma: arkadaşını geçtin mi, kaç puan kaldı
     const el = $('overVs'), beat = !!vs && !vs.won && final > vs.s;
@@ -1166,51 +1174,67 @@ function earnFlow(gain) {
   };
   if (gain > 0) requestAnimationFrame(step); else n.firstChild.nodeValue = '+0 ';
 }
-// ---------------- haftalık sıralama (board.js) ----------------
-const tierName = (lim, total) => (lim < 1 ? tr('ilk %50') : `${tr('ilk')} ${fmt(lim)}`);
-function renderBoard() {
-  const w = week(), total = totalPlayers(w), mb = myBest(), me = mb > 0 ? rankOf(mb, w) : 0;
-  const d = Math.floor(w.left / 864e5), h = Math.floor(w.left / 36e5) % 24;
-  $('boardInfo').textContent = tr('{n} oyuncu · bitmesine {d}g {h}s').replace('{n}', fmt(total)).replace('{d}', d).replace('{h}', h);
-  // ilk beş + oyuncunun üstündeki ve altındaki üçer kişi; oyuncu kendi sırasına girer, alttakiler bir aşağı kayar
-  const ranks = [1, 2, 3, 4, 5];
-  if (me) for (let r = Math.max(1, me - 3); r <= Math.min(total, me + 3); r++) if (!ranks.includes(r)) ranks.push(r);
-  if (me && !ranks.includes(me)) ranks.push(me);
-  ranks.sort((a, b) => a - b);
-  const li = (r, img, name, score, cls = '') => `<li class="${cls}"><b>#${fmt(r)}</b><img src="${img}" alt=""><span>${name}</span><em>${fmt(score)}</em></li>`;
-  const meCC = { tr: 'TR', de: 'DE', es: 'ES' }[window.I18N.lang] || 'GB';
-  let html = '', prev = 0;
-  for (const r of ranks) {
-    if (r > prev + 1) html += '<li class="gap">⋮</li>';
-    if (me && r === me) html += li(r, flag(meCC), tr('Sen'), mb, 'me');
-    else { const b = bot(me && r > me ? r - 1 : r, w); html += li(r, flag(b.cc), b.name, b.score, r <= 3 ? 'top' : ''); }
-    prev = r;
-  }
-  if (!me) html += `<li class="gap">⋮</li><li class="me"><b>—</b><img src="${flag(meCC)}" alt=""><span>${tr('Sen')}</span><em>${tr('Henüz uçmadın')}</em></li>`;
+// ---------------- haftalık sıralama (net.js: gerçek oyuncular) ----------------
+let boardCache = null, boardSeq = 0, overSeq = 0, myRank = 0, nameAsked = false;
+const esc = v => String(v).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+const refreshBoard = () => fetchBoard().then(b => { if (b) { boardCache = b; if (b.me) myRank = b.me.rank; } return b; });
+function boardMsg(info, line, tier = '') {
+  $('boardInfo').textContent = info;
+  $('boardList').innerHTML = line ? `<li class="gap msg">${line}</li>` : '';
+  $('boardTier').innerHTML = tier;
+}
+async function renderBoard() {
+  const seq = ++boardSeq, mb = myBest(), bestLine = mb > 0 ? tr('Haftalık en iyin: {s}').replace('{s}', fmt(mb)) : '';
+  $('boardName').textContent = myName() ? `${myName()} ✎` : tr('Ad seç');
+  boardMsg(tr('Yükleniyor…'), '');
+  const b = netOn() ? await refreshBoard() : null;
+  if (seq !== boardSeq) return;
+  if (!b) return boardMsg(tr('Bağlantı yok'), tr('Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.'), bestLine);
+  const left = Math.max(0, b.ends - Date.now()), d = Math.floor(left / 864e5), h = Math.floor(left / 36e5) % 24;
+  $('boardInfo').textContent = tr('{n} oyuncu · bitmesine {d}g {h}s').replace('{n}', fmt(b.total)).replace('{d}', d).replace('{h}', h);
+  const li = (r, cc, name, score, cls = '') => `<li class="${cls}"><b>${r ? '#' + fmt(r) : '—'}</b><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`;
+  const top = b.top || [], me = b.me;
+  let html = top.map(t => li(t.rank, t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '')).join('');
+  if (!top.length) html = `<li class="gap msg">${tr('Henüz kimse uçmadı. İlk sen ol!')}</li>`;
+  if (me && !top.some(t => t.me)) html += `<li class="gap">⋮</li>` + li(me.rank, ccOf(), myName(), fmt(me.score), 'me');
+  if (!me) html += li(0, ccOf(), myName() || tr('Sen'), tr('Henüz uçmadın'), 'me');
   const list = $('boardList'); list.innerHTML = html;
   const meEl = list.querySelector('.me'); if (meEl) setTimeout(() => meEl.scrollIntoView({ block: 'nearest' }), 0);
-  // ödül: şu anki basamak ve bir üstüne kaç puan kaldığı
-  const cur = tierOf(me || total, total), i = TIERS.findIndex(([l]) => l === cur.lim), up = i < 0 ? TIERS[TIERS.length - 1] : TIERS[i - 1];
-  let t = tr('Hafta sonu ödülün: {r} simit').replace('{r}', fmt(cur.reward));
-  if (up) {
-    const lim = up[0] < 1 ? Math.floor(total * up[0]) : up[0], need = Math.max(1, scoreAt(lim, w) - mb + 1);
-    t += `<small>${tr('{p} puan daha → {t}: {r} simit').replace('{p}', fmt(need)).replace('{t}', tierName(up[0], total)).replace('{r}', fmt(up[1]))}</small>`;
-  }
+  // ödül: şu anki sıranın hafta sonu ödülü ve bir üstteki oyuncuya kaç puan kaldığı
+  let t = '';
+  if (me) {
+    t = tr('Hafta sonu ödülün: {r} simit').replace('{r}', fmt(rewardFor(me.rank)));
+    const up = me.rank > 1 && (top.find(x => x.rank === me.rank - 1) || top[Math.min(2, top.length - 1)]);
+    if (up && up.score >= me.score) t += `<small>${tr('{p} puan daha → {r}. sıra').replace('{p}', fmt(up.score - me.score + 1)).replace('{r}', fmt(up.rank))}</small>`;
+  } else t = !myName() ? tr('Sıralamaya girmek için ad seç') : tr('Uç, sıralamaya gir: ilk 3 hafta sonu 300, 200, 100 simit kazanır');
   $('boardTier').innerHTML = t;
 }
-let leagueKey = '';
-function offerLeague() { // geçen haftanın ödülü bekliyorsa ana menüde bir kez sorulur
-  const p = pendingReward();
-  if (!p || !$('dailyPanel').classList.contains('hidden')) return;
-  leagueKey = p.key; leagueAuto = true;
-  $('leagueNote').textContent = tr('Geçen haftayı {r}. sırada bitirdin!').replace('{r}', fmt(p.rank)) + ` (${tierName(p.lim, p.total)})`;
-  $('leagueReward').textContent = `+${fmt(p.reward)}`;
+let leagueKey = '', leagueGift = 0;
+function offerLeague() { // geçen hafta tabloda yer aldıysa ödül ana menüde bir kez sorulur
+  const p = boardCache && boardCache.prev;
+  if (!p || p.week === paidKey() || !$('dailyPanel').classList.contains('hidden')) return;
+  leagueKey = p.week; leagueGift = rewardFor(p.rank); leagueAuto = true;
+  $('leagueNote').textContent = tr('Geçen haftayı {r}. sırada bitirdin!').replace('{r}', fmt(p.rank)) + ` (${tr('{n} oyuncu').replace('{n}', fmt(p.total))})`;
+  $('leagueReward').textContent = `+${fmt(leagueGift)}`;
   show('leaguePanel');
 }
 function claimLeague() {
-  const p = pendingReward();
-  if (p && p.key === leagueKey) { wallet += p.reward; store.set(KEY_WALLET, wallet); markPaid(p.key); sfx.gold(); vibrate([20, 30, 20]); $('titleWallet').textContent = fmt(wallet); }
+  if (leagueKey && leagueKey !== paidKey()) { wallet += leagueGift; store.set(KEY_WALLET, wallet); markPaid(leagueKey); sfx.gold(); vibrate([20, 30, 20]); $('titleWallet').textContent = fmt(wallet); }
   show('leaguePanel', false);
+}
+// ---------------- profil: ad ----------------
+function renderNameChip() { $('profileName').textContent = myName() || tr('Ad seç'); }
+function openProfile() {
+  const inp = $('nameInput');
+  inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false);
+  show('profilePanel');
+  setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
+}
+function saveName() {
+  const v = $('nameInput').value;
+  if (!validName(v)) { show('nameErr'); vibrate(40); return; }
+  setName(v); $('nameInput').blur(); show('profilePanel', false); renderNameChip(); sfx.gold();
+  if (!$('boardPanel').classList.contains('hidden')) renderBoard();
 }
 
 // ---------------- cüzdan ve kostümler ----------------
@@ -1241,7 +1265,7 @@ let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan 
 function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; cosSel = null; $('wardNote').textContent = `${tr('Dokun, martında dene; beğenirsen al.')} :)`;
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'settings']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'profilePanel', 'settings']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe');
 }
 function closeWardrobe() {
@@ -1733,7 +1757,7 @@ function setTx(v) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
-const menuModal = () => !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('leaguePanel').classList.contains('hidden');
+const menuModal = () => !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('leaguePanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -1753,6 +1777,7 @@ addEventListener('pointerup', padUp);
 addEventListener('pointercancel', padUp);
 $('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e) && !menuModal()) startGame(); });
 addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); saveName(); } else if (e.code === 'Escape') show('profilePanel', false); return; }
   keys[e.code] = true;
   if (dressing) { if (e.code === 'Escape') closeWardrobe(); return; }
   if (e.code === 'KeyM') { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); }
@@ -1784,6 +1809,17 @@ onBtn('dailyBtn', () => openDaily());
 onBtn('boardBtn', () => { renderBoard(); show('boardPanel'); });
 onBtn('closeBoard', () => show('boardPanel', false));
 onBtn('leagueClaim', () => claimLeague());
+onBtn('profileBtn', () => openProfile());
+onBtn('boardName', () => openProfile());
+onBtn('saveName', () => saveName());
+onBtn('skipName', () => show('profilePanel', false));
+onBtn('inviteBtn', async () => {
+  const text = tr('Simit Martısı haftalık sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];
+  try {
+    if (navigator.share) await navigator.share({ title: document.title, text, url });
+    else { await navigator.clipboard.writeText(`${text} ${url}`); const b = $('inviteBtn'), l = b.textContent; b.textContent = tr('Kopyalandı'); setTimeout(() => (b.textContent = l), 1800); }
+  } catch (e) {}
+});
 onBtn('claimBtn', () => claimDaily());
 onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('cosAct', () => costumeAction());
@@ -2501,6 +2537,9 @@ renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault
 renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
 
 showTitle();
+// sunucu: profil ve bekleyen skor gönderilir, geçen haftanın sırası gelince ödül menüde sorulur
+if (netOn()) refreshBoard().then(() => { if (state === 'title' && !tutorialPending && !leagueAuto && !dressing && !menuModal()) offerLeague(); });
+addEventListener('online', () => sync());
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
