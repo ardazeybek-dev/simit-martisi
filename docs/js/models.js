@@ -202,7 +202,14 @@ export const GEO = {
   bubble: new THREE.IcosahedronGeometry(0.85, 2),
   blob: new THREE.CircleGeometry(1, 20),
 };
-export const goldMat = new THREE.MeshStandardMaterial({ color: 0xffc23a, emissive: 0xc77a00, emissiveIntensity: 0.55, metalness: 0.6, roughness: 0.3, flatShading: true });
+// altın simit: düz sarı leke değil, simidin kendi dokusu (susam, kızarık yer) altın tonlarına çevrilir; az ışıma, biraz metal
+export const goldMat = new THREE.MeshStandardMaterial({ vertexColors: true, emissive: 0x8a5600, emissiveIntensity: 0.45, metalness: 0.35, roughness: 0.38, flatShading: true });
+goldMat.onBeforeCompile = sh => {
+  sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+    float gl = smoothstep(0.03, 0.75, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114)));
+    diffuseColor.rgb = mix(vec3(0.80, 0.48, 0.06), vec3(1.0, 0.92, 0.55), gl);`);
+};
+goldMat.customProgramCacheKey = () => 'gold-simit';
 export function makeSimitPiece(gold = false) {
   const m = new THREE.Mesh(GEO.piece, gold ? goldMat : vcMat);
   m.scale.setScalar(1.25);
@@ -224,7 +231,7 @@ const BATCH_LAYER = 1, BATCH_MASK = 1 << BATCH_LAYER, batches = new Map(), instM
 const BATCH_MATS = new Set([vcMat, goldMat]);
 function batched(m) { return m; } // (eski kayıt; artık sahnede kendiliğinden bulunur)
 // aynı malzeme Mesh ve InstancedMesh'te ortak kullanılmasın (her geçişte shader yeniden seçilir): çoklanan için kopya
-const instMat = mat => instMats.get(mat) || (instMats.set(mat, mat.clone()), instMats.get(mat));
+const instMat = mat => instMats.get(mat) || (instMats.set(mat, Object.assign(mat.clone(), { onBeforeCompile: mat.onBeforeCompile, customProgramCacheKey: mat.customProgramCacheKey })), instMats.get(mat));
 export function syncBatches(scene, camera) {
   scene.matrixWorldAutoUpdate = false; // render bir daha hesaplamasın
   scene.updateMatrixWorld();

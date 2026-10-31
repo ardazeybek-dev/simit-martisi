@@ -7,7 +7,7 @@ import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryG
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, myBest, rewardFor, paidKey, markPaid } from './board.js';
-import { netOn, myName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, fetchBoard } from './net.js';
+import { netOn, myName, shownName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, fetchBoard } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -169,7 +169,7 @@ function trailTick(dt, on, m, life) {
 const GLINT_MAX = 12, glintPos = new Float32Array(GLINT_MAX * 3);
 const glintGeo = new THREE.BufferGeometry(); glintGeo.setAttribute('position', new THREE.BufferAttribute(glintPos, 3).setUsage(THREE.DynamicDrawUsage));
 const glintMat = new THREE.PointsMaterial({
-  color: 0xffe7a0, size: 2.6, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+  color: 0xffe7a0, size: 1.5, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
   map: canvasTex(64, 64, (g) => {
     const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.18, 'rgba(255,240,190,.75)'); r.addColorStop(1, 'rgba(255,200,90,0)');
     g.fillStyle = r; g.fillRect(0, 0, 64, 64);
@@ -191,7 +191,7 @@ function glintTick(dt, list, gz) {
   if (!n) return;
   glintGeo.attributes.position.needsUpdate = true;
   glintPh += dt * (4.3 + Math.sin(glintPh * 0.37) * 1.4); // düzensiz nabız: tekdüze yanıp sönmez
-  glintMat.size = 2.3 + Math.sin(glintPh) * 0.5 + Math.sin(glintPh * 2.71) * 0.3;
+  glintMat.size = 1.4 + Math.sin(glintPh) * 0.3 + Math.sin(glintPh * 2.71) * 0.15;
 }
 
 const wakeMat = new THREE.MeshBasicMaterial({
@@ -1143,9 +1143,8 @@ function showTitle() {
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
-  show('profileBtn', !tutorialPending && netOn()); renderNameChip();
+  show('profileBtn', !tutorialPending); renderNameChip(); renderMode();
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap(); renderRank();
-  document.querySelector('.lvl-card').classList.toggle('hidden', tutorialPending);
   show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false); show('profilePanel', false); show('dayRunPanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
@@ -1228,11 +1227,12 @@ function showOver() {
     const d = dayRun(), dayBest = final > d.best, gift = d.done ? 0 : dayGift(d.streak);
     store.set(KEY_DAYRUN, { day: dayKey(), best: Math.max(d.best, final), streak: d.streak, runs: d.runs + (revives ? 0 : 1) }); // ikinci şans aynı uçuş: bir kez sayılır
     if (gift) { wallet += gift; store.set(KEY_WALLET, wallet); }
+    recordRun(final); submitScore(final, Math.floor(dist), city.id); // günün uçuşu da haftalık sıralamaya girer
     $('overBest').textContent = dayBest && d.done ? tr('Günün en iyisini geçtin') : `${tr('Günün en iyin')} ${fmt(Math.max(d.best, final))}`;
     $('overRank').innerHTML = `${tr(dayRule.name)} · ${tr('{n} gün seri').replace('{n}', fmt(d.streak))}` + (gift ? ` · +${fmt(gift)} <svg class="ico"><use href="#i-simit"/></svg>` : '');
   } else { // haftalık sıra: sunucudan gelir; gelene kadar (ya da ağ yoksa) cihazdaki haftalık en iyi görünür
     const wk = recordRun(final), el = $('overRank'), seq = ++overSeq, was = myRank;
-    el.textContent = netOn() && !myName() ? tr('Sıralamaya girmek için ad seç') : tr('Haftalık en iyin: {s}').replace('{s}', fmt(wk.best));
+    el.textContent = tr('Haftalık en iyin: {s}').replace('{s}', fmt(wk.best));
     submitScore(final, Math.floor(dist), city.id).then(r => {
       if (!r || seq !== overSeq || state !== 'over') return;
       myRank = r;
@@ -1319,8 +1319,8 @@ async function renderBoard() {
   const top = b.top || [], me = b.me;
   let html = top.map(t => li(t.rank, t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '')).join('');
   if (!top.length) html = `<li class="gap msg">${tr('Henüz kimse uçmadı. İlk sen ol!')}</li>`;
-  if (me && !top.some(t => t.me)) html += `<li class="gap">⋮</li>` + li(me.rank, ccOf(), myName(), fmt(me.score), 'me');
-  if (!me) html += li(0, ccOf(), myName() || tr('Sen'), tr('Henüz uçmadın'), 'me');
+  if (me && !top.some(t => t.me)) html += `<li class="gap">⋮</li>` + li(me.rank, ccOf(), shownName(), fmt(me.score), 'me');
+  if (!me) html += li(0, ccOf(), shownName() || tr('Sen'), tr('Henüz uçmadın'), 'me');
   const list = $('boardList'); list.innerHTML = html;
   const meEl = list.querySelector('.me'); if (meEl) setTimeout(() => meEl.scrollIntoView({ block: 'nearest' }), 0);
   // ödül: şu anki sıranın hafta sonu ödülü ve bir üstteki oyuncuya kaç puan kaldığı
@@ -1329,7 +1329,7 @@ async function renderBoard() {
     t = tr('Hafta sonu ödülün: {r} simit').replace('{r}', fmt(rewardFor(me.rank)));
     const up = me.rank > 1 && (top.find(x => x.rank === me.rank - 1) || top[Math.min(2, top.length - 1)]);
     if (up && up.score >= me.score) t += `<small>${tr('{p} puan daha → {r}. sıra').replace('{p}', fmt(up.score - me.score + 1)).replace('{r}', fmt(up.rank))}</small>`;
-  } else t = !myName() ? tr('Sıralamaya girmek için ad seç') : tr('Uç, sıralamaya gir: ilk 3 hafta sonu 300, 200, 100 simit kazanır');
+  } else t = tr('Uç, sıralamaya gir: ilk 3 hafta sonu 300, 200, 100 simit kazanır');
   $('boardTier').innerHTML = t;
 }
 let leagueKey = '', leagueGift = 0;
@@ -1346,7 +1346,7 @@ function claimLeague() {
   show('leaguePanel', false);
 }
 // ---------------- profil: ad ----------------
-function renderNameChip() { $('profileName').textContent = myName() || tr('Ad seç'); }
+function renderNameChip() { $('profileName').textContent = myName() || shownName() || tr('Ad seç'); $('profLv').textContent = fmt(rank.lv); }
 function openProfile() {
   const inp = $('nameInput');
   inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false);
@@ -1390,7 +1390,7 @@ function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; cosSel = null; $('wardNote').textContent = `${tr('Dokun, martında dene; beğenirsen al.')} :)`;
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
-  renderWardrobe(); show('title', false); show('wardrobe');
+  renderWardrobe(); show('title', false); show('wardrobe'); podEnter();
 }
 function closeWardrobe() {
   dressing = false; show('wardrobe', false);
@@ -1594,8 +1594,20 @@ function openDayRun() {
   $('drBest').textContent = d.done ? `${tr('Günün en iyin')} ${fmt(d.best)}` : tr('Bugün henüz uçmadın');
   $('drStreak').innerHTML = d.done ? tr('{n} gün seri').replace('{n}', fmt(d.streak))
     : `${tr('{n} gün seri').replace('{n}', fmt(d.streak))} · ${tr('ilk uçuşa')} +${fmt(dayGift(d.streak))} <svg class="ico"><use href="#i-simit"/></svg>`;
-  show('dayRunPanel');
+  renderMode(); show('dayRunPanel');
 }
+// menüdeki mod seçici: Oyna seçili modu başlatır (ileride yeni modlar buraya eklenir)
+const KEY_MODE = 'simit-martisi-mode';
+let playMode = store.get(KEY_MODE, 'classic') === 'daily' ? 'daily' : 'classic';
+function renderMode() {
+  const d = playMode === 'daily';
+  $('modeName').textContent = tr(d ? 'Günün uçuşu' : 'Klasik');
+  $('modeIco').setAttribute('href', d ? '#' + todayRule().icon : '#i-simit');
+  $('modeBtn').classList.toggle('daily', d); $('title').classList.toggle('daily-mode', d);
+  $('modeClassic').classList.toggle('on', !d); $('modeDaily').classList.toggle('on', d);
+}
+function pickMode(m) { playMode = m; store.set(KEY_MODE, m); renderMode(); show('dayRunPanel', false); }
+function playSel() { if (playMode === 'daily') startDaily(); else startGame(); }
 function startDaily() {
   if (state !== 'title') return;
   daily = true; dayRule = todayRule(); daySeed = hash('day', dayKey());
@@ -1607,7 +1619,6 @@ function renderMenuBadges() {
   $('misBadge').textContent = fresh; show('misBadge', fresh > 0);
   show('dailyDot', dailyState().ready || freeSpin());
   if (state === 'title') { renderBoosts(); $('titleWallet').textContent = fmt(wallet); }
-  show('dayRunDot', !dayRun().done);
   const ar = achReady() + badgesNew(); $('achBadge').textContent = ar; show('achBadge', ar > 0); // alınmamış başarım + bakılmamış rozet
 }
 // ---------------- başarımlar ----------------
@@ -2011,7 +2022,7 @@ addEventListener('pointermove', e => {
 const padUp = e => { if (e.pointerId === padId) padId = -1; };
 addEventListener('pointerup', padUp);
 addEventListener('pointercancel', padUp);
-$('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e) && !menuModal()) startGame(); });
+$('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e) && !menuModal()) playSel(); });
 addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); saveName(); } else if (e.code === 'Escape') show('profilePanel', false); return; }
   keys[e.code] = true;
@@ -2019,7 +2030,8 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyM') { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) { if (state === 'play' || state === 'countdown') pause(); else if (state === 'paused') resume(); }
   if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) {
-    if ((state === 'title' && !menuModal()) || (state === 'over' && overLock <= 0)) { e.preventDefault(); startGame(); }
+    if (state === 'title' && !menuModal()) { e.preventDefault(); playSel(); }
+    else if (state === 'over' && overLock <= 0) { e.preventDefault(); startGame(); }
     else if (state === 'paused') { e.preventDefault(); resume(); }
   }
 });
@@ -2030,7 +2042,7 @@ onBtn('homeBtn', () => showTitle());
 onBtn('reviveBtn', () => askRevive());
 onBtn('fishBtn', () => fishRevive());
 onBtn('wardrobeBtn', () => openWardrobe());
-onBtn('playBtn', () => { if (state === 'title') startGame(); });
+onBtn('playBtn', () => { if (state === 'title') playSel(); });
 onBtn('cityPrev', () => stepCity(-1));
 onBtn('cityNext', () => stepCity(1));
 onBtn('missionsBtn', () => { openMissions(); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
@@ -2042,13 +2054,14 @@ onBtn('tabBdg', () => achTab('bdg'));
 onBtn('upsBtn', () => { $('upNote').textContent = `${tr('Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.')} 😊`; renderUps(); show('upPanel'); });
 onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
 onBtn('dailyBtn', () => openDaily());
-onBtn('dayRunBtn', () => openDayRun());
-onBtn('dayRunGo', () => { show('dayRunPanel', false); startDaily(); });
+onBtn('modeBtn', () => openDayRun());
+onBtn('modeClassic', () => pickMode('classic'));
+onBtn('modeDaily', () => pickMode('daily'));
 onBtn('closeDayRun', () => show('dayRunPanel', false));
 onBtn('boardBtn', () => { renderBoard(); show('boardPanel'); });
 onBtn('closeBoard', () => show('boardPanel', false));
 onBtn('leagueClaim', () => claimLeague());
-onBtn('profileBtn', () => openProfile());
+onBtn('profileBtn', () => { show('settings', false); openProfile(); });
 onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
 onBtn('skipName', () => show('profilePanel', false));
@@ -2178,6 +2191,71 @@ function padTick() {
   $('pad').classList.toggle('held', padId >= 0);
 }
 
+
+// ---------------- kostüm podyumu ----------------
+// Kostüm paneli açıkken dünya çizilmez: martı ayrı, sade bir sahnede, ışıklı bir podyumun üstünde yavaşça döner.
+// Oyun mantığı martıyı dünyadaki yerinde sürmeye devam eder; her karede o yer saklanır, çizimden sonra geri konur.
+const pod = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 0.1, 80), on: false, parent: null, yaw: 0.6,
+  home: { p: new THREE.Vector3(), q: new THREE.Quaternion() }, box: new THREE.Box3(), size: new THREE.Vector3(), ctr: new THREE.Vector3() };
+const _podB = new THREE.Box3();
+pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncBatches) burada tek tek çizilir
+{
+  const s = pod.scene;
+  s.background = canvasTex(4, 256, (g) => { const r = g.createLinearGradient(0, 0, 0, 256); r.addColorStop(0, '#2b2160'); r.addColorStop(0.55, '#4a3a8c'); r.addColorStop(1, '#1a1438'); g.fillStyle = r; g.fillRect(0, 0, 4, 256); });
+  s.add(new THREE.HemisphereLight(0xd8d0ff, 0x30285a, 1.1));
+  const front = new THREE.DirectionalLight(0xfff4e6, 1.2); front.position.set(0, 2.5, 6); s.add(front);
+  const spot = (col, x, y, z, I) => { const l = new THREE.SpotLight(col, I, 0, 0.42, 0.55, 0); l.position.set(x, y, z); l.target.position.set(0, 0.9, 0); s.add(l, l.target); return l; };
+  spot(0xffd9a0, 4.5, 6.5, 3.2, 9); // sağdan sıcak ışık
+  spot(0x9fdcff, -4.5, 6, 2.6, 7); // soldan soğuk ışık
+  spot(0xffffff, 0, 5, -5, 5); // arkadan kontur
+  const beam = canvasTex(64, 256, (g) => { const r = g.createLinearGradient(0, 0, 0, 256); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(1, 'rgba(255,255,255,1)'); g.fillStyle = r; g.fillRect(0, 0, 64, 256);
+    const m = g.createLinearGradient(0, 0, 64, 0); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(0.5, 'rgba(0,0,0,0)'); m.addColorStop(1, 'rgba(0,0,0,1)'); g.globalCompositeOperation = 'destination-out'; g.fillStyle = m; g.fillRect(0, 0, 64, 256); });
+  for (const [x, col] of [[3.2, 0xffd9a0], [-3.2, 0x9fdcff]]) { // ışık huzmeleri
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 7.5), new THREE.MeshBasicMaterial({ map: beam, color: col, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    b.position.set(x * 0.55, 3.6, -1.2); b.rotation.z = -Math.sign(x) * 0.42; s.add(b);
+  }
+  const top = new THREE.MeshStandardMaterial({ color: 0x3d3480, roughness: 0.55, metalness: 0.1 });
+  const rim = new THREE.MeshStandardMaterial({ color: 0xffc23a, emissive: 0x7a4a00, emissiveIntensity: 0.5, roughness: 0.35, metalness: 0.5 });
+  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2.05, 0.42, 48), top); p1.position.y = -0.21;
+  const p2 = new THREE.Mesh(new THREE.TorusGeometry(1.95, 0.06, 8, 64), rim); p2.rotation.x = Math.PI / 2;
+  const p3 = new THREE.Mesh(new THREE.CylinderGeometry(2.25, 2.4, 0.3, 48), top); p3.position.y = -0.55;
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(4.2, 48), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    map: canvasTex(128, 128, (g) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,214,140,.55)'); r.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); }) }));
+  glow.rotation.x = -Math.PI / 2; glow.position.y = -0.69;
+  s.add(p1, p2, p3, glow);
+}
+function podEnter() {
+  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6;
+  pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
+}
+function podRestore() { // karenin başında: martı dünyadaki yerine döner, oyun mantığı onu oradan sürer
+  gull.position.copy(pod.home.p); gull.quaternion.copy(pod.home.q);
+  if (gull.parent !== pod.parent && pod.parent) pod.parent.add(gull);
+  if (!dressing) pod.on = false;
+}
+function podDraw(dt) {
+  pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
+  pod.scene.add(gull);
+  pod.yaw += dt * 0.55;
+  gull.position.set(0, 0, 0); gull.rotation.set(0, pod.yaw, 0);
+  flapGull(gull, t * 1.6, 0.1, 0.32); // kanatlar hafif kalkık, nefes alır gibi oynar
+  gull.updateMatrixWorld(true);
+  pod.box.makeEmpty(); // yalnızca görünen parçalar: gizli kostüm parçaları kutuyu şişirip martıyı havaya kaldırmasın
+  gull.traverseVisible(o => { if (!o.isMesh) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); pod.box.union(_podB.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); });
+  pod.box.getSize(pod.size); pod.box.getCenter(pod.ctr);
+  gull.position.set(-pod.ctr.x, -pod.box.min.y + 0.02, -pod.ctr.z); // ayakları podyumda
+  const w = innerWidth, h = innerHeight, land = w > h, cam = pod.cam;
+  cam.aspect = w / h;
+  // martı ekranın boş kısmına: dikeyde üst yarıya, yatayda sol yarıya
+  const span = Math.max(pod.size.x, pod.size.z, 2.4), H = pod.size.y + 0.6;
+  const vis = land ? 0.5 : 0.46, fit = Math.max(H / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * vis), span / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect * (land ? 0.42 : 0.86)));
+  const d = fit * 0.95 + 1;
+  cam.position.set(0, H * 0.55 + d * 0.18, d); cam.lookAt(0, H * 0.45, 0);
+  if (land) cam.setViewOffset(w, h, w * 0.24, 0, w, h); else cam.setViewOffset(w, h, 0, h * 0.24, w, h);
+  cam.updateProjectionMatrix();
+  renderer.render(pod.scene, cam);
+}
+
 // ---------------- döngü ----------------
 const clock = new THREE.Clock();
 let t = 0;
@@ -2187,6 +2265,7 @@ let firstFrame = true;
 function frame() {
   requestAnimationFrame(frame);
   const realDt = Math.min(0.05, clock.getDelta());
+  if (pod.on) podRestore();
   // FPS ölçümü + otomatik kalite
   fpsSmooth = fpsSmooth * 0.95 + (1 / Math.max(realDt, 1e-3)) * 0.05;
   if (state === 'play' && (qWarm -= realDt) < 0) {
@@ -2584,8 +2663,8 @@ function frame() {
     tickPowers();
   }
 
-  syncBatches(scene, camera); // simitler: tek InstancedMesh (models.js)
-  renderer.render(scene, camera);
+  if (dressing) podDraw(realDt); // kostüm podyumu: dünya yerine
+  else { syncBatches(scene, camera); renderer.render(scene, camera); } // simitler: tek InstancedMesh (models.js)
   if (firstFrame) { firstFrame = false; const l = $('loader'); l.classList.add('done'); setTimeout(() => l.remove(), 700); warmPeople(); }
 }
 
@@ -2663,7 +2742,7 @@ function takeSimit(s) {
     chunks.emit(tmp, 7, { speed: 3, life: 0.7, size: 0.075, color: [0xc97835, 0xf6e2b3, 0xb8642a], gravity: 9 });
     vibrate(8);
   }
-  bump(ui.score); coinFly(s.gold);
+  bump(ui.score); // kapılan simit ekranda uçmaz: puan sayacı zıplar, o kadar
   flapBurst = Math.max(flapBurst, 0.4);
   if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; shout(s.person, s, true); }
   else if (s.person) { angry(s.person); if (Math.random() < 0.7) shout(s.person, s); }
@@ -2839,6 +2918,6 @@ window.__game = {
   get dolphins() { return dolphins.map(f => ({ ax: +f.ax.toFixed(1), x: +f.mesh.position.x.toFixed(1), y: +f.mesh.position.y.toFixed(1), u: +f.u.toFixed(2), got: f.got, ahead: +(gull.position.z - f.z).toFixed(1) })); },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
-  get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; }, get renderer() { return renderer; }, get scene() { return scene; },
+  get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; }, get renderer() { return renderer; }, get scene() { return scene; }, get camera() { return camera; }, get glint() { return glint; },
   pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = dur(k); renderPowers(); }, get ups() { return { ...ups }; }, setGod: (b) => (god = !!b), setQuality,
 };

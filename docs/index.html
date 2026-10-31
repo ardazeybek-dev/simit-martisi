@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.40.1">
+<meta name="app-version" content="2.41.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -105,10 +105,8 @@
     <div class="stat-col">
       <div class="stat-card"><svg class="ico"><use href="#i-simit"/></svg><b id="titleWallet">0</b></div>
       <div class="stat-card fish"><svg class="ico"><use href="#i-fish"/></svg><b id="titleFish">0</b></div>
-      <div class="stat-card lvl-card"><b class="lvl-n" id="lvlN">1</b><span class="lvl-m"><small id="lvlName"></small><span class="lvl-bar"><i id="lvlFill"></i></span></span></div>
     </div>
     <div class="stat-card best"><svg class="ico"><use href="#i-trophy"/></svg><span id="titleBest"></span></div>
-    <button id="profileBtn" class="name-chip hidden" aria-label="Martı adın"><span id="profileName"></span><svg class="ico"><use href="#i-pen"/></svg></button>
     <span class="grow"></span>
     <button id="settingsBtn" class="icon-btn" aria-label="Ayarlar"><svg><use href="#i-gear"/></svg></button>
   </div>
@@ -120,7 +118,6 @@
     <button class="side-btn" id="wardrobeBtn"><span class="side-ico"><svg><use href="#i-hanger"/></svg></span><span>Kostümler</span></button>
     <button class="side-btn" id="missionsBtn"><span class="side-ico"><svg><use href="#i-list"/></svg></span><span>Görevler</span><i class="badge hidden" id="misBadge"></i></button>
     <button class="side-btn" id="dailyBtn"><span class="side-ico"><svg><use href="#i-gift"/></svg></span><span>Günlük ödül</span><i class="badge dot hidden" id="dailyDot"></i></button>
-    <button class="side-btn" id="dayRunBtn"><span class="side-ico"><svg><use href="#i-sun"/></svg></span><span>Günün uçuşu</span><i class="badge dot hidden" id="dayRunDot"></i></button>
   </nav>
   <nav class="menu-side right">
     <button class="side-btn m-ach" id="achBtn"><span class="side-ico"><svg><use href="#i-medal"/></svg></span><span>Başarımlar</span><i class="badge hidden" id="achBadge"></i></button>
@@ -131,7 +128,10 @@
     <div class="vs-pill hidden" id="vsPill"></div>
     <div class="city-pick no-steer" id="cityPick"><button id="cityPrev" class="city-arrow" aria-label="Önceki şehir">‹</button><b id="cityName">İstanbul</b><button id="cityNext" class="city-arrow" aria-label="Sonraki şehir">›</button></div>
     <div class="route-map no-steer"><div id="routeMap" class="dots"></div><p id="routeGoal"></p></div>
-    <button class="play-btn" id="playBtn"><svg><use href="#i-play"/></svg><span>Oyna</span></button>
+    <div class="play-row">
+      <button class="mode-btn" id="modeBtn" aria-label="Mod seç"><svg class="mode-ico"><use id="modeIco" href="#i-simit"/></svg><span class="mode-txt"><small>Mod</small><b id="modeName">Klasik</b></span></button>
+      <button class="play-btn" id="playBtn"><svg><use href="#i-play"/></svg><span>Oyna</span></button>
+    </div>
     <div class="tap">ya da ekrana dokun</div>
     <div class="legend">
       <span><i class="dot ok"></i>Simitleri kap</span>
@@ -185,7 +185,9 @@
 
 <section id="profilePanel" class="screen modal hidden">
   <div class="card">
-    <h2>Martı adın</h2>
+    <h2>Profil</h2>
+    <div class="prof-lvl"><b class="lvl-n" id="lvlN">1</b><span class="lvl-m"><small id="lvlName"></small><span class="lvl-bar"><i id="lvlFill"></i></span></span></div>
+    <p class="prof-h">Martı adın</p>
     <p class="fine">Haftalık sıralamada bu adla görünürsün.</p>
     <input id="nameInput" class="name-input" type="text" maxlength="16" autocomplete="nickname" autocapitalize="words" enterkeyhint="done" spellcheck="false">
     <p class="fine err hidden" id="nameErr">En az 2 harf yaz.</p>
@@ -228,12 +230,13 @@
 
 <section id="dayRunPanel" class="screen modal hidden">
   <div class="card">
-    <h2>Günün uçuşu</h2>
-    <p class="fine">Bugün herkes aynı rotayı uçar. Her gün yeni bir kural.</p>
-    <div class="dr-rule"><svg class="dr-i"><use id="drIcon" href="#i-sun"/></svg><b id="drRule"></b><small id="drText"></small></div>
-    <p class="dr-best" id="drBest"></p>
-    <p class="dr-streak" id="drStreak"></p>
-    <button class="btn primary" id="dayRunGo">Uç</button>
+    <h2>Mod seç</h2>
+    <div class="modes">
+      <button class="mode-card" id="modeClassic"><span class="mode-head"><svg class="dr-i"><use href="#i-simit"/></svg><b>Klasik</b><i class="mode-on">Seçili</i></span><small>Şehrini seç, iskeleden iskeleye uç.</small></button>
+      <button class="mode-card daily" id="modeDaily"><span class="mode-head"><svg class="dr-i"><use href="#i-sun"/></svg><b>Günün uçuşu</b><i class="mode-on">Seçili</i></span><small>Bugün herkes aynı rotayı uçar. Her gün yeni bir kural.</small>
+        <span class="dr-rule"><svg class="dr-i"><use id="drIcon" href="#i-sun"/></svg><b id="drRule"></b><small id="drText"></small></span>
+        <span class="dr-best" id="drBest"></span><span class="dr-streak" id="drStreak"></span></button>
+    </div>
     <button class="link" id="closeDayRun">Kapat</button>
   </div>
 </section>
@@ -256,6 +259,7 @@
 <section id="settings" class="screen modal hidden">
   <div class="card">
     <h2>Ayarlar</h2>
+    <button class="profile-row hidden" id="profileBtn" aria-label="Profil"><span class="prof-mini" id="profLv">1</span><span class="prof-txt"><small>Profil</small><b id="profileName"></b></span><svg class="ico"><use href="#i-pen"/></svg></button>
 <div class="vols">
       <div class="vol"><button class="vol-ico" data-mute="music" aria-label="Müzik"><svg><use href="#i-sound"/></svg></button><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></div>
       <div class="vol"><button class="vol-ico" data-mute="sfx" aria-label="Ses efektleri"><svg><use href="#i-sound"/></svg></button><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></div>

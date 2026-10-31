@@ -44,7 +44,13 @@ const BADN = BAD.map(norm);
 export const rudeName = s => { const n = norm(s); return BADN.some(w => n.includes(w)) || /(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici)/.test(n); };
 
 export const profile = () => store.get(KEY_PROFILE, null) || {};
+// ad seçmeyen de sıralamaya girer: cihaza bir kez "Martı 4821" gibi bir ad verilir; oyuncu ad seçince sunucudaki ad da değişir
+function autoName(p) {
+  if (!p.auto) { p.auto = 'Martı ' + (1000 + Math.floor(Math.random() * 9000)); store.set(KEY_PROFILE, p); }
+  return p.auto;
+}
 export const myName = () => profile().name || '';
+export const shownName = () => { const p = profile(); return p.name || p.srv || p.auto || ''; }; // sıralamada görünen ad (seçilmediyse otomatik)
 const myCC = () => {
   const l = (navigator.languages && navigator.languages[0]) || navigator.language || '', m = l.match(/-([A-Za-z]{2})$/);
   return (m ? m[1] : { tr: 'TR', de: 'DE', es: 'ES' }[(window.I18N && window.I18N.lang) || 'tr'] || 'GB').toUpperCase();
@@ -66,17 +72,17 @@ let syncing = null, lastRank = null;
 export function sync() { // profil + bekleyen skor; aynı anda tek çalışır
   if (!syncing) syncing = (async () => {
     const p = profile();
-    if (!p.name || !netOn()) return false;
+    if (!netOn()) return false;
     if (!p.id) {
-      const r = await rpc('register', { p_name: p.name, p_cc: p.cc || myCC() });
-      if (r === REJECT) { p.name = ''; store.set(KEY_PROFILE, p); return false; } // sunucu adı kabul etmedi: menüde yeniden sorulur
+      const r = await rpc('register', { p_name: p.name || autoName(p), p_cc: p.cc || myCC() });
+      if (r === REJECT) { if (p.name) p.name = ''; else p.auto = ''; store.set(KEY_PROFILE, p); return false; } // sunucu adı kabul etmedi: menüde yeniden sorulur
       if (!r || !r.id) return false;
-      Object.assign(p, { id: r.id, secret: r.secret, name: r.name, srv: r.name, dirty: false });
+      Object.assign(p, { id: r.id, secret: r.secret, srv: r.name, dirty: false }, p.name ? { name: r.name } : {});
       store.set(KEY_PROFILE, p);
     } else if (p.dirty) {
       const n = await rpc('rename', { p_id: p.id, p_secret: p.secret, p_name: p.name });
       if (n === null) return false;
-      if (n === REJECT) { p.name = p.srv || ''; p.dirty = false; store.set(KEY_PROFILE, p); }
+      if (n === REJECT) { p.name = p.srv === p.auto ? '' : p.srv || ''; p.dirty = false; store.set(KEY_PROFILE, p); }
       else { p.name = p.srv = n; p.dirty = false; store.set(KEY_PROFILE, p); }
     }
     const q = store.get(KEY_PENDING, null);
@@ -100,7 +106,7 @@ const weekKey = (now = Date.now()) => { const d = new Date(now); d.setDate(d.get
 let runP = null;
 export function startRun() {
   runP = (async () => {
-    if (!netOn() || !myName()) return null;
+    if (!netOn()) return null;
     await sync();
     const p = profile();
     if (!p.id) return null;

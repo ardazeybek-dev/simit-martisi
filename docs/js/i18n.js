@@ -775,6 +775,12 @@
     ["Simit Martısı'nda seni {s} puanla geçtim! Rövanş?", "I beat you with {s} points in Simit Seagull! Rematch?", "Ich habe dich in Simit-Möwe mit {s} Punkten geschlagen! Revanche?", "¡Te gané con {s} puntos en Gaviota Simit! ¿Revancha?"],
     ["Rövanş?", "Rematch?", "Revanche?", "¿Revancha?"],
     ["Beni geçebilir misin?", "Can you beat me?", "Schaffst du mehr?", "¿Puedes superarme?"],
+    ["Mod", "Mode", "Modus", "Modo"],
+    ["Mod seç", "Pick a mode", "Modus wählen", "Elige modo"],
+    ["Klasik", "Classic", "Klassisch", "Clásico"],
+    ["Seçili", "Selected", "Ausgewählt", "Elegido"],
+    ["Şehrini seç, iskeleden iskeleye uç.", "Pick your city and fly from pier to pier.", "Wähle deine Stadt und fliege von Anleger zu Anleger.", "Elige tu ciudad y vuela de muelle en muelle."],
+    ["Profil", "Profile", "Profil", "Perfil"],
   ];
   MORE.forEach(function (r) { EN[r[0]] = r[1]; DE[r[0]] = r[2]; ES[r[0]] = r[3]; });
   var TABLES = { en: EN, de: DE, es: ES };
