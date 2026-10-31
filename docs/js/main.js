@@ -208,7 +208,9 @@ const WAKE = new THREE.PlaneGeometry(6.5, 26);
 
 // altın simit nadir: rastgele altın çıkan her yer bu oranla çarpılır (iskele kapısı ve şelale tepesi her zaman altın)
 const GOLD_RATE = 0.35, goldRoll = p => Math.random() < p * GOLD_RATE * (ruleOn('gold') ? 2 : 1);
+let genLog = null; // deneme: __game.genLog(true) → üretilen simit/rakip konumları
 function addSimit(x, y, z, gold, piece = false) {
+  if (genLog) genLog.push(`s${x.toFixed(2)},${z.toFixed(1)}${gold ? 'g' : ''}`);
   const m = piece ? makeSimitPiece(gold) : makeSimit(gold); m.position.set(x, y, z); m.rotation.x = 0.25; scene.add(m);
   const s = { mesh: m, x, y, z, free: true, gold, piece };
   simits.push(s); return s;
@@ -241,6 +243,7 @@ function throwVolleys(z0, len, first) {
   }
 }
 function addThrown(bt, cx, cz, gold, ry) { // ry: halkanın yüksekliği (vapur güvertesi); yoksa dalgada
+  if (genLog) genLog.push(`t${cx.toFixed(2)},${cz.toFixed(1)}${gold ? 'g' : ''}`);
   const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); scene.add(m);
   const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); ring.visible = false; scene.add(ring); // iniş yeri sürpriz: halka yalnız plajda görünür
   simits.push({ mesh: m, x: cx, y: FLY_Y, z: cz, free: true, gold, piece: true, th: { bt, cx, cz, T: rand(...THROW_T), H: rand(...THROW_H), u: -1, p0: new THREE.Vector3(), ring, ry } });
@@ -354,6 +357,7 @@ function addRival(z, bx, sw, kind, zMax = Infinity) {
   if (kind === 'red') z -= 18; // hızlı gelir: daha uzaktan başlar
   const r = makeGull(kind); r.scale.setScalar(0.58); r.rotation.y = Math.PI; // oyuncudan belirgin küçük
   r.position.set(bx, FLY_Y, z); scene.add(r);
+  if (genLog) genLog.push(`r${kind}${bx.toFixed(2)},${z.toFixed(1)}`);
   rivals.push({ mesh: r, kind, bx, z, zMax, ph: Math.random() * 6, sw, hit: false, spin: 0, tx: bx, zt: 0, dive: 15 + L * 4 });
 }
 // viraj: açık deniz; simitler dıştan girip içe kıvrılan yarış çizgisinde, tepede altın simit; dış kenarda ok tabelaları
@@ -939,7 +943,7 @@ function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // Uçuşta gösterilmez, yalnız oyun sonunda çubuk dolar; menüde rozet. Ayar: xpNeed, lvGift, RANKS
 const KEY_RANK = 'simit-martisi-rank';
 const RANKS = [[1, 'Yavru martı'], [3, 'Vapur martısı'], [6, 'Simit avcısı'], [10, 'Boğaz kurdu'], [15, 'İskele reisi'], [20, 'Kaptan martı'], [30, 'Efsane martı']];
-const xpNeed = lv => 80 + lv * 40, lvGift = lv => Math.min(150, 10 * lv);
+const xpNeed = lv => 80 + lv * 40, lvGift = lv => Math.min(30, 5 + lv); // seviye ödülü cüzdan gelirini ezmesin: 7 → 30 simit
 const rank = Object.assign({ lv: 1, xp: 0 }, store.get(KEY_RANK, {}) || {});
 const rankName = lv => tr(RANKS.filter(r => lv >= r[0]).pop()[1]);
 let xpGot = 0; // bu uçuştan şimdiye dek yazılan XP (ikinci şansta iki kez sayılmasın)
@@ -1732,6 +1736,7 @@ const SPIN_FISH = 3, SPIN_SIMIT = 2500, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb
 let wheelRot = 0, spinning = false, wheelBuilt = false;
 const KEY_FREESPIN = 'simit-martisi-freespin';
 const freeSpin = () => store.get(KEY_FREESPIN, '') !== dayKey(); // günde bir bedava çevirme
+const FREE_W = [97, 3]; // bedava çevirme yalnız iki dilimde durur: 100 simit (%97) ya da 1 balık (%3); ücretli çarkın ikramiyeleri bedavada yok
 function buildWheel() {
   if (wheelBuilt) return; wheelBuilt = true;
   const n = WHEEL.length, a = (Math.PI * 2) / n, pt = (r, t) => `${(Math.sin(t) * r).toFixed(2)} ${(-Math.cos(t) * r).toFixed(2)}`;
@@ -1771,6 +1776,7 @@ function spinWheel(pay) {
   if (pay === 'free') store.set(KEY_FREESPIN, dayKey()); else if (pay === 'f') setFish(fish - SPIN_FISH); else wallet -= SPIN_SIMIT;
   let x = Math.random() * WHEEL.reduce((s, w) => s + w[2], 0), i = 0;
   while ((x -= WHEEL[i][2]) > 0) i++;
+  if (pay === 'free') i = Math.random() * (FREE_W[0] + FREE_W[1]) < FREE_W[0] ? 0 : 1; // dilim 0: 100 simit, dilim 1: 1 balık
   const [k, v] = WHEEL[i];
   if (k === 'f') setFish(fish + v); else wallet += v;
   store.set(KEY_WALLET, wallet);
@@ -2799,6 +2805,7 @@ requestAnimationFrame(frame);
 window.__game = {
   get state() { return state; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, setCombo: n => { combo = n; comboT = COMBO_T; }, get powers() { return { ...pw }; },
+  genLog: on => { const l = genLog; genLog = on ? [] : null; return l; },
   get wallet() { return wallet; }, get rank() { return { ...rank }; }, addXp, get boosts() { return [...boostSel]; }, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revives > 0; }, revive: () => askRevive(),

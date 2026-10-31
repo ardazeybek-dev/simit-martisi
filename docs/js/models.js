@@ -880,7 +880,8 @@ export const GATE_POSTS = (() => {
 })();
 const BOARD = new THREE.PlaneGeometry(16.4, 2.6);
 const gateMats = new Map(); // durak başına bir kez: tekrar varışta aynı doku
-export function makeStopGate(name) {
+export function makeStopGate(...a) { return pureCall(makeStopGate_, a); }
+function makeStopGate_(name) {
   if (!gateMats.has(name)) gateMats.set(name, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, map: canvasTex(512, 82, (g, w, h) => {
     g.fillStyle = '#1d3c78'; g.fillRect(0, 0, w, h);
     g.strokeStyle = '#f6f3ea'; g.lineWidth = 5; g.strokeRect(7, 7, w - 14, h - 14);
