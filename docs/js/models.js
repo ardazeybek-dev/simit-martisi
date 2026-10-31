@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { Kit, vcMat, rand, pick, canvasTex } from './util.js';
+// önbelleğe giren geometri kurulurken dünya tohumuna dokunulmaz: günün uçuşunda önbellek dolu ya da boş olsa da rota aynı kalır
+const RND0 = Math.random;
+function pureCall(fn, a) { const r = Math.random; Math.random = RND0; try { return fn(...a); } finally { Math.random = r; } }
 
 // ---------------- martı ----------------
 // Gövde tek geometri; her kanat iki eklemli (kol + el) ki çırpış dalga gibi aksın.
@@ -42,7 +45,8 @@ const GULL_PAL = {
   mint: { body: 0xdcfff2, head: 0xecfff8, wing: 0x5cc9a7, tip: 0x1f5e4e, beak: 0xf4b52a, eye: 0x111111 },
   ice: { body: 0xeaf6ff, head: 0xf6fbff, wing: 0x8fc9ef, tip: 0x2f6f9f, beak: 0xbfe6ff, eye: 0x2a6fd6 },
 };
-function gullGeos(type) {
+function gullGeos(...a) { return pureCall(gullGeos_, a); }
+function gullGeos_(type) {
   if (gullGeoCache[type]) return gullGeoCache[type];
   const C = GULL_PAL[type] || GULL_PAL.player;
   const k = new Kit();
@@ -152,7 +156,7 @@ export function setBait(kind) { baitKind = BAIT[kind] ? kind : 'simit'; [GEO.sim
 // Kalıba gömülü, hareketsiz simitler: simit arabasının camlı kasasında, simitçi tablasında, sırıkta.
 // simits[]'e hiç girmezler; şeride düşenler uçuş yüksekliğinin altında kalır. Kalıplar şehrin yemine göre bir kez üretilir.
 const decorCache = new Map();
-const decorGeo = (name, build) => { const key = name + '|' + baitKind; if (!decorCache.has(key)) decorCache.set(key, build()); return decorCache.get(key); };
+const decorGeo = (name, build) => { const key = name + '|' + baitKind; if (!decorCache.has(key)) decorCache.set(key, pureCall(build, [])); return decorCache.get(key); };
 const decorSimit = (k, x, y, z, rx = 0, ry = 0, rz = 0, s = 0.72) => { const [r, t, col] = PAINT[baitKind]; k.add(new THREE.TorusGeometry(r, t, 6, 14), col, x, y, z, rx, ry, rz, s); };
 // simit arabası: kırmızı kasa, iki teker, itme kolu, tepesinde camlı vitrin (içinde dizili simitler), çizgili tente. Boy 1.9: vapur güvertesinde uçuş yüksekliğinin altında
 function simitCartGeo() {
@@ -271,7 +275,8 @@ const HATS = ['', 'kasket', 'bere', 'hasir', 'esarp', 'fes', 'kep'];
 const HAT_COLS = [0x3b3b3b, 0xc8352e, 0x3a6ea5, 0xe8d8a8, 0x7d5ba6, 0x4f9d69, 0xe89bb0];
 const personCache = new Map();
 // mode: '' ayakta · 'sit' bankta oturur, denize bakar (elinde çay ya da boş) · 'feed' küpeşteye yaslanmış, simidi martıya uzatır
-function personGeo(L, hold, angry, mode = '') {
+function personGeo(...a) { return pureCall(personGeo_, a); }
+function personGeo_(L, hold, angry, mode = '') {
   const key = L.id + '|' + hold + '|' + angry + '|' + mode;
   if (personCache.has(key)) return personCache.get(key);
   const k = new Kit(), sit = mode === 'sit', dy = sit ? -0.32 : 0;
@@ -470,7 +475,8 @@ export function makeSimitBoat(side) {
 // Koridorun dışında demirli; kamaralı, direkli, oltalı balıkçı. Renk çiftleri pastel.
 const FISH_COLS = [[0xf3efe6, 0x5fa8d3, 0xe07a5f], [0xf3efe6, 0x4f9d69, 0xe3b23c], [0x8fc3d9, 0xf3efe6, 0xd9544f], [0xf6e7c8, 0x3a6ea5, 0xc8352e]];
 const fishCache = [];
-function fishingBoatGeo(ci) {
+function fishingBoatGeo(...a) { return pureCall(fishingBoatGeo_, a); }
+function fishingBoatGeo_(ci) {
   if (fishCache[ci]) return fishCache[ci];
   const [hullC, band, roof] = FISH_COLS[ci];
   const k = hullBands(new Kit(), [[0.4, 0x2b3a4c], [0.5, hullC], [0.22, band]], -0.3, 1.7, 1.9)
@@ -509,7 +515,8 @@ function sailTri(w, h) {
   const g = new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: false }); g.rotateY(Math.PI / 2); // yelken y-z düzleminde, +z'ye uzanır
   return g;
 }
-export function sailboatGeo(ci) {
+export function sailboatGeo(...a) { return pureCall(sailboatGeo_, a); }
+function sailboatGeo_(ci) {
   if (sailCache[ci]) return sailCache[ci];
   const [hullC, band, sail] = SAIL_COLS[ci];
   const k = hullBands(new Kit(), [[0.35, 0x2b3a4c], [0.45, hullC], [0.16, band]], -0.3, 1.25, 1.35)
@@ -630,7 +637,8 @@ export function makeFalls() {
 // Kum dili yassı elipsoit: uçları kendiliğinden incelir. Yerel: kıyı çizgisi x=0'a yakın, kum +x'e uzanır; boy z ekseninde.
 export const BEACH_COLS = [0xe5484d, 0x2f7fd6, 0x2e9c6a];
 const umbCache = new Map();
-export function umbrellaGeo(c) { // c: renk ya da 'straw' (hasır)
+export function umbrellaGeo(...a) { return pureCall(umbrellaGeo_, a); }
+function umbrellaGeo_(c) { // c: renk ya da 'straw' (hasır)
   if (umbCache.has(c)) return umbCache.get(c);
   const k = new Kit().add(new THREE.CylinderGeometry(0.07, 0.07, 3.1, 5), c === 'straw' ? 0x8a6a42 : 0xf4f1e8, 0, 1.55, 0);
   if (c === 'straw') k.add(new THREE.ConeGeometry(1.9, 1.1, 9), (f) => (f % 2 ? 0xd9b56a : 0xc9a159), 0, 3.25, 0).add(new THREE.CylinderGeometry(1.95, 2.05, 0.3, 9, 1, true), 0xb8904f, 0, 2.65, 0);
@@ -640,7 +648,8 @@ export function umbrellaGeo(c) { // c: renk ya da 'straw' (hasır)
 export const SUNBED = new Kit().add(new THREE.BoxGeometry(0.75, 0.1, 1.9), 0xf4f1e8, 0, 0.35, 0).add(new THREE.BoxGeometry(0.75, 0.1, 0.8), 0xf4f1e8, 0, 0.62, -1.0, -0.6)
   .add(new THREE.BoxGeometry(0.7, 0.3, 0.06), 0xcfcac0, 0, 0.15, 0.8).add(new THREE.BoxGeometry(0.7, 0.3, 0.06), 0xcfcac0, 0, 0.15, -0.6).build();
 const sandCache = new Map();
-export function makeBeach(len) {
+export function makeBeach(...a) { return pureCall(makeBeach_, a); }
+function makeBeach_(len) {
   if (!sandCache.has(len)) sandCache.set(len, new Kit()
     .add(new THREE.SphereGeometry(1, 28, 8), 0xcdb58a, 8, -0.12, 0, 0, 0, 0, 9.4, 0.5, len / 2 + 1)                // ıslak kum
     .add(new THREE.SphereGeometry(1, 28, 8), vert((f, y, x, z) => mixHex(0xf0dfb6, 0xe4cc98, fbm(x * 0.3, z * 0.3))), 8.6, -0.08, 0, 0, 0, 0, 8.4, 0.62, len / 2 - 1)
@@ -908,7 +917,8 @@ export const DOLPHIN = (() => {
 const CARGO_COLS = [0x7a2a26, 0x24425e, 0x2f5d3a];
 const BOX_COLS = [0xc8352e, 0x2f6f9f, 0xe0a53a, 0x4f9d69, 0xd9d4c8, 0x7a4a8f, 0xe07a5f];
 const cargoCache = [];
-export function cargoGeo(ci) {
+export function cargoGeo(...a) { return pureCall(cargoGeo_, a); }
+function cargoGeo_(ci) {
   if (cargoCache[ci]) return cargoCache[ci];
   const k = new Kit(), L = 46, W = 7.5;
   const sh = new THREE.Shape(); sh.moveTo(-W / 2, L / 2); sh.lineTo(-W / 2, -L / 2 + 7); sh.quadraticCurveTo(-W / 2, -L / 2, 0, -L / 2 - 2.5);
@@ -929,7 +939,8 @@ export function cargoGeo(ci) {
 // tanker: alçak, uzun koyu gövde, güvertede boru hattı ve manifold, kıçta yüksek beyaz köprüüstü
 const TANKER_COLS = [0x8a2f2a, 0x2a3f5a, 0x3d4a3a];
 const tankerCache = [];
-export function tankerGeo(ci) {
+export function tankerGeo(...a) { return pureCall(tankerGeo_, a); }
+function tankerGeo_(ci) {
   if (tankerCache[ci]) return tankerCache[ci];
   const k = new Kit(), L = 58, W = 8.5;
   const sh = new THREE.Shape(); sh.moveTo(-W / 2, L / 2); sh.lineTo(-W / 2, -L / 2 + 8); sh.quadraticCurveTo(-W / 2, -L / 2, 0, -L / 2 - 3);
@@ -1056,7 +1067,8 @@ export const DECK = 2.6;
 export const SALON_LEN = 14, SALON_GAP = 2.6, SALON_TOP = DECK + 4.3;
 export const glassMat = new THREE.MeshStandardMaterial({ color: 0xa8dcf0, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.4, depthWrite: false, side: THREE.DoubleSide });
 const salonCache = new Map();
-export function salonGeo(tx) {
+export function salonGeo(...a) { return pureCall(salonGeo_, a); }
+function salonGeo_(tx) {
   if (salonCache.has(tx)) return salonCache.get(tx);
   const k = new Kit(), gk = new Kit(), Lz = SALON_LEN;
   for (const [a, b] of [[-3.9, tx - SALON_GAP], [tx + SALON_GAP, 3.9]]) {
@@ -1083,7 +1095,8 @@ const FERRY_STYLE = {
   buyuk: { bottom: [0.7, 0x1b2738], stripe: 0xc8352e },   // büyük vapur: iki sıra pencere, altın yaldız şerit, köprü kanatları, filikalar
 };
 const ferryCache = new Map();
-export function ferryGeo(L, type = 'hat') {
+export function ferryGeo(...a) { return pureCall(ferryGeo_, a); }
+function ferryGeo_(L, type = 'hat') {
   const key = type + L;
   if (ferryCache.has(key)) return ferryCache.get(key);
   const k = new Kit(), S = FERRY_STYLE[type];
@@ -1198,7 +1211,8 @@ const kiteCache = [];
 const KITE_BOW = new THREE.PlaneGeometry(0.34, 0.16);
 const KITE_LINE = new THREE.CylinderGeometry(0.015, 0.015, 7, 3);
 const kiteLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
-function kiteAssets(ci) {
+function kiteAssets(...a) { return pureCall(kiteAssets_, a); }
+function kiteAssets_(ci) {
   if (kiteCache[ci]) return kiteCache[ci];
   const [a, b] = KITE_COLS[ci];
   const k = new Kit();

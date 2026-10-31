@@ -61,7 +61,7 @@ def patch_main(js):
     # gameplay events
     js = sub1(js, "function showTitle() {\n", "function showTitle() {\n  PF.gameplayStop();\n", "home event")
     js = sub1(js, "function startGame() {\n", "function startGame() {\n  if (adLock) return;\n", "start lock")
-    js = sub1(js, "  resetWorld(state !== 'title'); state = 'play';\n", "  resetWorld(state !== 'title'); state = 'play'; PF.gameplayStart();\n", "start event")
+    js = sub1(js, "  resetWorld(daily || state !== 'title'); state = 'play';\n", "  resetWorld(daily || state !== 'title'); state = 'play'; PF.gameplayStart();\n", "start event")
     js = sub1(js, "  state = 'dead'; cause = why;", "  PF.gameplayStop();\n  state = 'dead'; cause = why;", "stop event")
     # CrazyGames: no gameplayStop when the tab is hidden, only for a real pause
     js = sub1(js, "  state = 'paused'; show('pause'); show('countdown', false);\n",

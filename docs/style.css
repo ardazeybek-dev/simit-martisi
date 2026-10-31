@@ -178,7 +178,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .stat-card .ico { width: 24px; height: 24px; }
 .stat-card.best { font-size: 15px; color: var(--gold); }
 .stat-card.best span { color: var(--cream); }
-.menu-side { position: absolute; left: calc(14px + var(--sal)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; }
+.menu-side { position: absolute; left: calc(14px + var(--sal)); top: 46%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; }
 .side-btn { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 78px; font-size: 13px; font-weight: 800;
   text-shadow: 0 2px 6px rgba(0, 0, 0, .55); transition: transform .1s; }
 .side-btn:active { transform: scale(.92); }
@@ -188,6 +188,49 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .side-btn:nth-child(3) .side-ico { background: linear-gradient(#ff9fa2, var(--red)); box-shadow: 0 5px 0 #9c2328, 0 10px 20px rgba(0, 0, 0, .3); color: #fff4e2; }
 .side-btn:nth-child(4) .side-ico { background: linear-gradient(#a8dcff, var(--blue)); box-shadow: 0 5px 0 #1f6aa8, 0 10px 20px rgba(0, 0, 0, .3); color: #fff4e2; }
 .side-ico svg { width: 32px; height: 32px; }
+/* günün uçuşu paneli */
+.dr-rule { display: grid; justify-items: center; gap: 4px; margin: 6px 0 12px; padding: 12px 14px; border-radius: 18px; background: rgba(255, 194, 58, .12); border: 1px solid rgba(255, 194, 58, .35); }
+.dr-i { width: 40px; height: 40px; color: var(--gold); }
+.dr-rule b { font-size: 24px; color: var(--gold); line-height: 1.1; }
+.dr-rule small { font-size: 14.5px; font-weight: 700; color: var(--cream-2); }
+.dr-best { margin: 0 0 4px; font-weight: 800; font-size: 16px; }
+.dr-streak { margin: 0 0 14px; font-weight: 700; font-size: 14.5px; color: var(--cream-2); display: flex; justify-content: center; align-items: center; gap: 4px; flex-wrap: wrap; }
+.dr-streak .ico, .rank-line .ico { width: 17px; height: 17px; vertical-align: -3px; }
+/* rütbe rozeti, oyun sonu XP ve sıradaki kostüm çubuğu */
+.lvl-card { gap: 8px; padding: 0 12px 0 8px; }
+.lvl-n { display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 4px; border-radius: 9px; background: linear-gradient(#a8dcff, var(--blue)); color: #fff; font-size: 16px; box-shadow: 0 2px 0 #1f6aa8; }
+.lvl-m { display: grid; gap: 4px; text-align: left; }
+.lvl-m small { font-size: 12.5px; font-weight: 800; line-height: 1; color: var(--cream-2); white-space: nowrap; }
+.lvl-bar { display: block; width: 86px; height: 6px; border-radius: 9px; background: rgba(255, 255, 255, .14); overflow: hidden; }
+.lvl-bar i { display: block; height: 100%; border-radius: 9px; background: var(--blue); transform-origin: left; transform: scaleX(0); transition: transform .9s cubic-bezier(.3, .8, .3, 1); }
+.xp-line { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; font-weight: 800; font-size: 14.5px; }
+.xp-line:empty { display: none; }
+.xp-line .lvl-bar { width: 120px; height: 8px; }
+.xp-line small { color: #bfe3ff; font-weight: 800; font-size: 14px; }
+.xp-line em { flex-basis: 100%; font-style: normal; color: var(--gold); display: inline-flex; justify-content: center; align-items: center; gap: 4px; }
+.xp-line em.popin { animation: popin .6s cubic-bezier(.2, 1.8, .4, 1); }
+.xp-line .ico, .next-line .ico { width: 17px; height: 17px; }
+.next-line { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; margin: 2px 0 8px; font-size: 13.5px; font-weight: 700; color: var(--cream-2); }
+.next-line b { color: var(--cream); }
+.next-line .lvl-bar { width: 90px; }
+.next-line .lvl-bar i { background: var(--gold); transition: none; }
+/* menüde tek uçuşluk güçlendirici seçimi */
+.boosts { display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
+.boost-h { margin: 14px 0 8px; font-weight: 800; font-size: 14.5px; color: var(--cream-2); }
+.boost { display: flex; align-items: center; gap: 5px; height: 40px; padding: 0 10px 0 5px; border-radius: 14px; background: var(--glass); border: 1.5px solid var(--line); color: var(--cream); transition: transform .1s; }
+.boost:active { transform: scale(.94); }
+.boost-i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--c); }
+.boost-i svg { width: 19px; height: 19px; }
+.boost small { display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 800; color: var(--gold); }
+.boost small .ico { width: 16px; height: 16px; }
+.boost.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 30%, rgba(27, 24, 56, .5)); }
+.boost.on small { color: var(--cream); font-size: 16px; }
+.boost.poor { opacity: .5; }
+.boost.shake, .btn.shake { animation: shake .35s; }
+.free-spin { width: 100%; margin-bottom: 8px; }
+#saveStreak { width: 100%; margin-bottom: 8px; display: inline-flex; justify-content: center; align-items: center; gap: 4px; }
+#saveStreak.hidden { display: none; }
+#saveStreak .ico { width: 18px; height: 18px; }
 .menu-side.right { left: auto; right: calc(14px + var(--sar)); }
 .side-btn.m-ach .side-ico { background: linear-gradient(#fff0a8, var(--gold)); box-shadow: 0 5px 0 #b07a12, 0 10px 20px rgba(0, 0, 0, .3); }
 .side-btn.m-board .side-ico { background: linear-gradient(#a8dcff, var(--blue)); box-shadow: 0 5px 0 #1f6aa8, 0 10px 20px rgba(0, 0, 0, .3); color: #fff4e2; }
@@ -461,6 +504,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 
 /* yatay telefon: logo ve kartlar sığsın */
 @media (max-height: 500px) {
+  .stat-col { flex-direction: row; } /* yatay telefon: cüzdan, balık, rütbe tek satırda; sol menüyle çakışmasın */
+  .lvl-m small { display: none; }
+  .lvl-card .lvl-bar { width: 44px; }
   .logo h1 span { font-size: 40px; }
   .play-btn { height: 58px; font-size: 30px; width: 230px; }
   .side-ico { width: 46px; height: 46px; }
