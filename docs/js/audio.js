@@ -109,8 +109,10 @@ export const sfx = {
     for (const fr of [110, 165, 220.5]) { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; o.connect(f); o.start(t); o.stop(t + 1.6); }
     f.connect(g); g.connect(sfxBus);
   },
-  catch(n) { // ritmik yükselen "çıt": kombo arttıkça perde çıkar
-    const step = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21][Math.min(n - 1, 9)];
+  catch(n, tier = 0) { // ritmik yükselen "çıt": her simitte bir basamak çıkar; tier (çarpan x1-x5) verilirse perde
+    // çarpan basamağının tabanından başlayıp beş notada tırmanır ve başa döner. En tiz notalar yalnızca x5'te çalar.
+    const step = tier ? [0, 2, 4, 7, 12][Math.min(tier, 5) - 1] + [0, 2, 4, 5, 7][(n - 1) % 5]
+      : [0, 2, 4, 7, 9, 12, 14, 16, 19, 21][Math.min(n - 1, 9)];
     const f = 660 * Math.pow(2, step / 12);
     hiss(0.05, 0.18, 2600, 'highpass');
     tone('triangle', f, 0.16, 0.16);

@@ -37,7 +37,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Turns:** the Bosphorus bends every 15-25 seconds, sometimes in an S. Red chevron boards and a *VİRAJ* sign warn you first. Inside a turn the wind pushes the gull outward, so lean toward the inside: the simits trace the racing line with a golden one at the apex. Catch most of the line for a *Perfect turn* bonus and a slingshot burst of speed.
 - **Power-ups** (floating bubbles): Magnet pulls simits (even out of passengers' hands), Shield absorbs one hit, 2x doubles all points.
   Upgrade them with simits in the *Güçlendir* panel: five levels each (300 up to 4,000 simits a level), every level adds a quarter of the base time.
-- **Hazards:** funnels, flag masts, kites, rival gulls. Dark funnel smoke does not kill you but breaks your combo.
+- **Hazards:** funnels, flag masts, kites, rival gulls. Dark funnel smoke makes the gull cough and blurs the edges of the screen for a moment; it does not break your combo.
   - Hazards stay sparse early on: rival gulls come one at a time from about 200 m, red ones after Karaköy, blue ones after Beşiktaş; the first Galata Bridge comes after Karaköy.
   - Rival colour tells you how it flies: *grey* glides side to side, *red* dives straight at you from further out, *blue* zigzags at random.
 - **Passengers:** big-headed, round-eyed and rosy-cheeked; uncles, grandpas, aunties, young women and lads, each with their own outfit; snatch a simit and they get angry. The decks are kept sparse: most of the few who stand hold a simit (snatch it, they get angry); a handful sit on benches looking out to sea with a glass of tea and no simit. A *feeder* at the rail holds a simit out for you: take it and they cheer and pay a bonus. On some ferries a passenger at the rail breaks their simit and throws the pieces into the air over the deck, like the simit boats do; a ring on the deck marks where each piece comes down.
@@ -54,7 +54,7 @@ The game pauses itself when the tab or app goes to the background and resumes wi
 - **Fish:** the second currency. Fish are rare: now and then one splashes on open water (one is guaranteed in the first open water after about 300 m) and leap up to the gull's height as you arrive. Touch one and you may catch it (about 40%: a fish for the wallet, a small bonus, a fresh combo timer and a *Balık!* bubble) or it slips away (*Kaçtı!*). Fish pay for revives; the 7th day of the daily reward streak also gives one.
 - **Challenge a friend:** the share button on the game-over screen sends a link carrying your score and distance (on phones together with a 1080x1080 picture of the flight). Whoever opens it sees *A friend scored N* on the title screen, and in that city a blue flag buoy with your score floats beside the lane at the metre where you crashed; flying past it pays a small bonus. The game-over screen tells them how many points are missing or that they won, and the button turns into *Ask for a rematch*. A challenge stays until it is beaten; a new link replaces it.
 - **Record buoy:** a golden flag buoy marks your longest flight so far (from 150 m on); passing it chimes.
-- **Weekly leaderboard:** a real table shared by every player. After the first flight the game asks for a gull name (2-16 characters, changeable from the chip under your best score or from the board). Each flight sends your score; the server keeps your best of the week (weeks start Monday 00:00 Istanbul time) and the game-over screen shows your rank and how far you climbed. The board lists the top 50, your own row and how many points the player above you is ahead. When the week ends you get simits by your final rank (1st: 300, 2nd: 200, 3rd: 100, anyone else on the board: 25), offered once on the title screen. Offline the game plays as usual, keeps your weekly best and sends the score when the connection is back; "Invite friends" shares the game link.
+- **Weekly leaderboard:** a real table shared by every player. After the first flight the game asks for a gull name (2-16 characters, changeable from the chip under your best score or from the board). Each flight sends your score; the server keeps your best of the week (weeks start Monday 00:00 Istanbul time) and the game-over screen shows your rank and how far you climbed. The board lists the top 50, your own row and how many points the player above you is ahead. When the week ends you get simits by your final rank (1st: 300, 2nd: 200, 3rd: 100, anyone else on the board: 25), offered once on the title screen. Offline the game plays as usual and keeps your weekly best on the device; a flight that started online but ended offline is sent when the connection is back, a flight started offline stays off the board; "Invite friends" shares the game link.
 - **Missions:** come in sets of three ("catch 30 simits in one flight", "5 close calls", "fly under the bridge twice"...). A finished mission pays simits right away; when all three are done the next set arrives once you have seen them finish in the *Görevler* panel, about 15% harder and paying about 10% more each set (capped at what one flight allows). At most three sets a day; a new day also replaces a set you got stuck on. The game-over screen stays uncluttered: open *Görevler* from the title screen to watch the bars fill up from where the flight started, finished missions get crossed out and their simits tick up into the wallet. The menu badge counts new missions and clears once you open the panel.
 - **Achievements:** twelve long-term goals (total simits, golden simits, longest flight, best score, streak, snatched simits, close calls, perfect turns, dolphins, bridges, flights, outfits), each with bronze, silver and gold tiers paying 25 / 75 / 200 simits, claimed in the *Başarımlar* panel. Your earlier best score and furthest pier count from the start.
 - **Badges:** a collection tab in the *Başarımlar* panel with 21 badges and no rewards: total distance (1 km up to 10,000 km), days in a row (3 up to 365), flights, fish, simits, finished cities, and a 500 m flight in rain, snow and fog. Newly earned badges glow and are counted on the menu button until you look; tap a badge to see how to earn it.
@@ -94,19 +94,24 @@ No environment variables are needed: the leaderboard backend address and its pub
 
 ## Leaderboard backend (Supabase)
 
-A free Supabase project holds two tables, `players` and `scores`. Both are closed to the client (RLS on, no policies, privileges revoked); the game only calls four `security definer` functions over `POST /rest/v1/rpc/<name>` with the publishable key:
+A free Supabase project holds three tables, `players`, `scores` and `runs`. All are closed to the client (RLS on, no policies, privileges revoked); the game only calls five `security definer` functions over `POST /rest/v1/rpc/<name>` with the publishable key:
 
 | function | does |
 |---|---|
 | `register(p_name, p_cc)` | creates a player, returns `{ id, secret, name }` (kept in localStorage `simit-martisi-profile`) |
 | `rename(p_id, p_secret, p_name)` | changes the name |
-| `submit_score(p_id, p_secret, p_score, p_dist, p_city)` | keeps the weekly best, returns this week's rank |
+| `start_run(p_id, p_secret)` | called when a flight starts, returns a run id (one per 2 s per player) |
+| `submit_score(p_id, p_secret, p_run, p_score, p_dist, p_city)` | keeps the weekly best, returns this week's rank |
 | `get_board(p_id)` | `{ week, ends, total, top[50], me, prev }`; `prev` is last week's rank for the reward |
 
-To set up a new project: run `supabase/schema.sql` once in the SQL Editor, then put the project URL and the publishable key into `docs/js/net.js`. The secret / service_role key never goes into the client or the repo. Names are trimmed and limited on the server too.
+Cheat and name guards (server side, so a hand-made request cannot skip them):
+- A score is checked against the seconds `t` since its run started: distance ≤ 30·t + 50 m (top speed is about 27 m/s) and score minus distance/10 ≤ 200·t + 500. An invincible autopilot that catches everything averages about 90 points/s (best 10 s: about 190), so real players never reach the cap. A flight started offline has no run id and stays out of the board (it still counts for the local weekly best).
+- Names: 2-16 characters, and a blocklist (Turkish, English, German, Spanish) checked after folding `ı→i`, `0→o`, `@→a`, dropping non-letters and repeated letters, so `0r0spu` or `F.U.C.K` are caught. The same list and folding live in `docs/js/net.js` (`BAD`, `norm`) to warn the player at once; change both together.
 
-- A free project that gets no requests for about a week is paused by Supabase; the board then says "No connection" for everyone → restore the project from the dashboard.
-- To remove a cheating or rude player: `delete from players where id = '...';` in the SQL Editor (their scores go with it).
+To set up a new project: run `supabase/schema.sql` in the SQL Editor (it can be run again after edits; existing data stays), then put the project URL and the publishable key into `docs/js/net.js`. The secret / service_role key never goes into the client or the repo.
+
+- A free project that gets no requests for about a week is paused by Supabase → `.github/workflows/keepalive.yml` calls `get_board` once a day. GitHub turns scheduled workflows off after 60 days without commits; if the board ever says "No connection" for everyone, restore the project from the dashboard and re-enable the workflow.
+- To remove a cheating or rude player: `delete from players where id = '...';` in the SQL Editor (their scores and runs go with it).
 
 ## Portal build (CrazyGames)
 
@@ -150,7 +155,8 @@ docs/
   icons/                app icons (SVG source + rendered PNGs)
   og.png, preview.png   social preview and README image
 serve.py                no-cache local server for docs/
-supabase/schema.sql     leaderboard tables and RPC functions
+supabase/schema.sql     leaderboard tables, RPC functions, cheat and name guards
+.github/workflows/      keepalive.yml: daily request so the free Supabase project is not paused
 platform/
   build.py              portal copy of docs/ (see above)
   covers.py             cover images rendered from the title scene

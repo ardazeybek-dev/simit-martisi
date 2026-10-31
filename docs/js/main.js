@@ -7,7 +7,7 @@ import { makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickF
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, myBest, rewardFor, paidKey, markPaid } from './board.js';
-import { netOn, myName, setName, validName, ccOf, sync, submitScore, fetchBoard } from './net.js';
+import { netOn, myName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, fetchBoard } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -113,14 +113,15 @@ trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 4).setUsage(T
 const trail = new THREE.Mesh(trailGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
 trail.frustumCulled = false; trail.visible = false; scene.add(trail);
 let trailK = 0;
-const _tip = new THREE.Vector3(), _tc = new THREE.Color(), TRAIL_WHITE = new THREE.Color(0xffffff), TRAIL_GOLD = new THREE.Color(0xffc94a);
+const _tip = new THREE.Vector3(), _tc = new THREE.Color(), TRAIL_WHITE = new THREE.Color(0xffffff), TRAIL_GOLD = new THREE.Color(0xffe2a8);
 function trailTick(dt, on, m, life) {
-  // hedef görünürlük: x2'de hafif, x5'te dolgun; kombo süresinin son yarısında söner
-  const want = on && m >= 2 ? (0.4 + (m - 2) * 0.13) * Math.min(1, life * 2) : 0;
+  // hedef görünürlük: x2'de hafif, x5'te biraz daha belirgin ama göz yormaz; kombo süresinin son yarısında söner
+  const want = on && m >= 2 ? (0.34 + (m - 2) * 0.055) * Math.min(1, life * 2) : 0;
   trailK = damp(trailK, want, want > trailK ? 4 : 8, dt);
   if (trailK < 0.01) { trail.visible = false; trailHist[0].length = trailHist[1].length = 0; return; }
   trail.visible = true;
-  _tc.copy(TRAIL_WHITE).lerp(TRAIL_GOLD, clamp((m - 2) / 3, 0, 1));
+  // soluk krem-altına yarı yarıya döner; altın martı kostümünde beyaz kalır (tüylerle karışmasın)
+  _tc.copy(TRAIL_WHITE).lerp(TRAIL_GOLD, look.on.includes('golden') ? 0 : clamp((m - 2) / 3, 0, 1) * 0.6);
   gull.updateMatrixWorld(true);
   gull.userData.wings.forEach((w, wi) => {
     const h = trailHist[wi];
@@ -1067,7 +1068,7 @@ function startGame() {
   if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
   audio.unlock();
   sfx.click();
-  misPending = false; refillMissions();
+  misPending = false; refillMissions(); startRun(); // sıralama bileti: skor uçuş süresine göre denetlenir
   achRun = {}; saidRun.clear();
   for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; } // görevler panelinde çubuk buradan dolar
   misPending = true;
@@ -1232,7 +1233,8 @@ function openProfile() {
 }
 function saveName() {
   const v = $('nameInput').value;
-  if (!validName(v)) { show('nameErr'); vibrate(40); return; }
+  const bad = !validName(v) ? 'En az 2 harf yaz.' : rudeName(v) ? 'Bu ad kullanılamaz, başka bir ad seç.' : '';
+  if (bad) { $('nameErr').textContent = tr(bad); show('nameErr'); vibrate(40); return; }
   setName(v); $('nameInput').blur(); show('profilePanel', false); renderNameChip(); sfx.gold();
   if (!$('boardPanel').classList.contains('hidden')) renderBoard();
 }
@@ -2088,8 +2090,7 @@ function frame() {
       for (const k of kites) if (Math.abs(k.g.position.x - g.x) < HIT.kiteX && swept(k.z, HIT.kiteZ)) crash('uçurtmaya');
       for (const s of smokes) {
         if (!s.hit && g.z < s.z1 && g.z > s.z0 && Math.abs(g.x - s.x) < s.hw) {
-          s.hit = true; smokeT = 1.4;
-          if (combo > 0) { combo = 0; comboT = 0; }
+          s.hit = true; smokeT = 1.4; // öksürük ve buğu: kombo bozulmaz
           sfx.cough(); vibrate(30);
         }
       }
@@ -2405,7 +2406,7 @@ function takeSimit(s) {
     sparkle(tmp.set(s.x, s.y, s.z), 34, 0xffd35a, 6, 0.8, 0.3);
     chunks.emit(tmp, 10, { speed: 4, life: 0.8, size: 0.09, color: [0xffd35a, 0xfff0b0], gravity: 8 });
   } else {
-    sfx.catch(combo);
+    sfx.catch(combo, mult());
     sparkle(tmp.set(s.x, s.y, s.z), 8, 0xffe7a8, 3, 0.45, 0.2);
     chunks.emit(tmp, 7, { speed: 3, life: 0.7, size: 0.075, color: [0xc97835, 0xf6e2b3, 0xb8642a], gravity: 9 });
     vibrate(8);

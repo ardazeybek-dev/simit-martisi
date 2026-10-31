@@ -1,0 +1,16 @@
+# Ücretsiz Supabase projesi istek almadığı haftada duraklatılır; sıralama sunucusunu her gün bir kez dürter.
+name: leaderboard keepalive
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: get_board
+        run: |
+          curl -fsS -m 20 -X POST 'https://sznwlsoyssseckgljulb.supabase.co/rest/v1/rpc/get_board' \
+            -H 'apikey: sb_publishable_9L0oBO1uWQKbNaGAfvBBOg_dO8bTWSS' -H 'Content-Type: application/json' -d '{}'
