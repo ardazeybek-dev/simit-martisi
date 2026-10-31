@@ -181,6 +181,8 @@ const wakeMat = new THREE.MeshBasicMaterial({
 });
 const WAKE = new THREE.PlaneGeometry(6.5, 26);
 
+// altın simit nadir: rastgele altın çıkan her yer bu oranla çarpılır (iskele kapısı ve şelale tepesi her zaman altın)
+const GOLD_RATE = 0.35, goldRoll = p => Math.random() < p * GOLD_RATE;
 function addSimit(x, y, z, gold, piece = false) {
   const m = piece ? makeSimitPiece(gold) : makeSimit(gold); m.position.set(x, y, z); m.rotation.x = 0.25; scene.add(m);
   const s = { mesh: m, x, y, z, free: true, gold, piece };
@@ -206,7 +208,7 @@ function throwVolleys(z0, len, first) {
     const bt = { ...b, z: bz, hand: 0, thrown: 0 };
     boats.push(bt); decor.push({ mesh: b.g, z: bz, ph: Math.random() * 6 });
     for (let i = 0; i < n && z > end; i++) {
-      addThrown(bt, x, z, !first && Math.random() < 0.035);
+      addThrown(bt, x, z, !first && goldRoll(0.035));
       z -= rand(2.8, 4.2);
       x = clamp(x + rand(-2, 2), -LANE + 0.8, LANE - 0.8);
     }
@@ -243,7 +245,7 @@ function flySimits(dt) {
       s.y = FLY_Y + v0 * k - 7 * k * k;
       const w = th.ry ?? waveAt(s.x, s.z, t); // güverteye atılan parça tahtaya düşer
       if (s.y < w) {
-        s.taken = true; scene.remove(s.mesh); scene.remove(th.ring); thrownStat.missed++;
+        s.taken = true; scene.remove(s.mesh); scene.remove(th.ring); thrownStat.missed++; if (state === 'play') missSimit();
         chunks.emit(tmp.set(s.x, w + 0.1, s.z), 6, { speed: 2.5, up: 1, life: 0.6, size: 0.09, color: [0xffffff, 0xcfe9f2], gravity: 12, spin: 0.3 });
         continue;
       }
@@ -267,7 +269,7 @@ function spawnGap(first, fixLen) {
   if (THROW_ON && !(first && tutorialPending)) throwVolleys(z0, len, first);
   else for (let z = z0 - 7; z > z0 - len + 5; z -= 3.4) {
     const x = clamp(Math.sin((z0 - z) * 0.09 + ph) * amp, -LANE + 0.5, LANE - 0.5);
-    addSimit(x, FLY_Y, z, !first && Math.random() < 0.035);
+    addSimit(x, FLY_Y, z, !first && goldRoll(0.035));
   }
   if (!first) {
     const camp = campT > 3 ? campSide : 0;
@@ -333,7 +335,7 @@ function addRival(z, bx, sw, kind, zMax = Infinity) {
 function spawnTurn(tn) {
   const z0 = genZ, end = tn.z1 - 6, len = tn.z0 - tn.z1;
   const lineX = z => tn.dir * (-1.2 + 3.8 * Math.sin(Math.PI * clamp((tn.z0 - z) / len, 0, 1)));
-  let apex = false;
+  let apex = Math.random() < 0.5; // tepe altını her virajda değil: yarısında
   for (let z = z0 - 3; z > end + 3; z -= 3.2) {
     const u = (tn.z0 - z) / len, gold = !apex && u > 0.5;
     if (gold) apex = true;
@@ -377,7 +379,7 @@ function spawnImbat() {
   const sims = [], x = rand(-1.5, 1.5);
   for (const dz of [6, 9.4]) addSimit(x, FLY_Y, z0 - dz, false);
   for (let z = z0 - 16; z > z1 + 8; z -= rand(5.5, 8)) {
-    const s = addSimit(clamp(-dir * rand(0.5, 3.4), -LANE + 0.6, LANE - 0.6), FLY_Y, z, Math.random() < 0.06);
+    const s = addSimit(clamp(-dir * rand(0.5, 3.4), -LANE + 0.6, LANE - 0.6), FLY_Y, z, goldRoll(0.06));
     s.vx = dir * rand(2.6, 4); s.spin = dir * rand(3, 6); sims.push(s);
   }
   if (difficulty() > 0.8) addRival(z0 - rand(26, IMBAT_LEN - 18), dir * rand(2.2, 3.2), rand(0.4, 0.9), undefined, z0 - 4); // rüzgâraltında bekleyen martı
@@ -552,7 +554,7 @@ function spawnBridge() {
   const gB = near.length ? pick(near).c : gaps[1].reduce((m, r) => (Math.abs(r.c - gF) < Math.abs(m.c - gF) ? r : m)).c;
   const zF = bz + rz, zB = bz - rz;
   for (const dz of [10, 6.8, 3.6]) addSimit(gF, FLY_Y, zF + dz, false);
-  for (const u of [0.3, 0.7]) addSimit(gF + (gB - gF) * u, FLY_Y, zF - (zF - zB) * u, u > 0.5 && Math.random() < 0.35);
+  for (const u of [0.3, 0.7]) addSimit(gF + (gB - gF) * u, FLY_Y, zF - (zF - zB) * u, u > 0.5 && goldRoll(0.35));
   for (const dz of [3.4, 6.6]) addSimit(gB, FLY_Y, zB - dz, false);
   br.path = { gF: +gF.toFixed(2), gB: +gB.toFixed(2), zF, zB, xs: br.lines.map(l => +l.x.toFixed(2) + (l.o.z > bz ? 'F' : 'B')).join(' ') };
   bridges.push(br);
@@ -586,7 +588,7 @@ function spawnFerry() {
     const glass = new THREE.Mesh(geo.glass, glassMat); glass.position.z = sz; glass.renderOrder = 3; g.add(glass);
     for (const [a, b] of [[-3.9, tx - SALON_GAP], [tx + SALON_GAP, 3.9]]) obstacle((a + b) / 2, sz, (b - a) / 2, SALON_LEN / 2, SALON_TOP, 'cama');
     for (let z = sz - SALON_LEN / 2 - 1; z < sz + SALON_LEN / 2 + 2; z += 2) blocked.push({ x: 0, z, r: 4.6 });
-    for (let z = sz + SALON_LEN / 2 - 1.5; z > sz - SALON_LEN / 2; z -= 2.6) addSimit(x0 + tx, FLY_Y, zc + z, Math.random() < 0.06);
+    for (let z = sz + SALON_LEN / 2 - 1.5; z > sz - SALON_LEN / 2; z -= 2.6) addSimit(x0 + tx, FLY_Y, zc + z, goldRoll(0.06));
     salon = { tx, sz };
   }
   const nCh = 1 + (d > 1 ? 1 : 0) + (d > 2.5 ? 1 : 0);
@@ -692,7 +694,7 @@ function spawnFerry() {
   g.updateMatrixWorld(true);
   for (const p of mine) {
     if (!p.simit || p.thrower) continue;
-    const gold = Math.random() < 0.02;
+    const gold = goldRoll(0.02);
     if (gold) p.simit.material = makeSimit(true).material;
     p.simit.getWorldPosition(tmp);
     simits.push({ mesh: p.simit, x: tmp.x, y: tmp.y, z: tmp.z, person: p, gold });
@@ -891,13 +893,13 @@ let campT = 0, campSide = 0; // kenara yapışan martı: o kenara rakip gönderi
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
 const pw = { magnet: 0, shield: 0, double: 0 };
 // güçlendirme yükseltmeleri: simitle alınır, her seviye süreyi tabanın %25'i kadar uzatır (Subway Surfers usulü)
-const UP_COST = [300, 700, 1400, 2500, 4000];
+const UP_COST = [600, 1500, 3000, 5500, 9000];
 const ups = { magnet: 0, shield: 0, double: 0 };
 { const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
 const dur = k => POWER[k].dur * (1 + ups[k] * 0.25);
 let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
-const WALLET_RATE = 12;
+const WALLET_RATE = 20; // kaç yakalanan simit cüzdana 1 simit eder: para yavaş birikir
 let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
@@ -1241,7 +1243,7 @@ function saveName() {
 
 // ---------------- cüzdan ve kostümler ----------------
 function bank() {
-  const earned = Math.floor((simitCount + goldCount * 4) / WALLET_RATE), gain = earned - banked;
+  const earned = Math.floor((simitCount + goldCount * 3) / WALLET_RATE), gain = earned - banked;
   if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
 }
 // ids: giyili olanlar; kostüm panelinde seçilen parça önizleme olarak üstüne giydirilir
@@ -1364,7 +1366,7 @@ function buyUp(k, el) {
 const MISSIONS = [
   { k: 'simit', text: 'Bir uçuşta {n} simit kap', n: [20, 30, 45, 60], r: [10, 15, 20, 30] },
   { k: 'near', text: 'Bir uçuşta {n} kez kıl payı geç', n: [3, 5, 8], r: [10, 15, 20], cap: 25 },
-  { k: 'gold', text: 'Bir uçuşta {n} altın simit kap', n: [2, 3], r: [15, 25], cap: 6 },
+  { k: 'gold', text: 'Bir uçuşta {n} altın simit kap', n: [1, 2], r: [15, 25], cap: 4 },
   { k: 'dist', text: 'Bir uçuşta {n} m uç', n: [300, 500, 800], r: [10, 15, 25] },
   { k: 'combo', text: '{n} simitlik seri yap', n: [8, 12, 16], r: [10, 15, 20], cap: 40 },
   { k: 'power', text: 'Bir uçuşta {n} güçlendirme topla', n: [2, 3], r: [10, 20], cap: 6 },
@@ -1561,6 +1563,7 @@ function openDaily() {
   });
   $('dailyNote').textContent = `${tr(d.ready ? 'Her gün uğra, ödül büyüsün. Bir gün kaçırırsan baştan başlar.' : 'Bugünün ödülünü aldın. Yarın yine gel!')} 😊`;
   $('claimBtn').textContent = tr(d.ready ? 'Al' : 'Tamam');
+  dailyTab('daily'); $('dlWallet').textContent = fmt(wallet); $('dlFish').textContent = fmt(fish);
   show('dailyPanel');
 }
 function claimDaily() {
@@ -1573,6 +1576,74 @@ function claimDaily() {
     sfx.gold(); vibrate([20, 30, 20]); renderMenuBadges();
   }
   show('dailyPanel', false);
+}
+
+// ---------------- şans çarkı (günlük ödül panelinin ikinci sekmesi) ----------------
+// Balıkla ya da simitle çevrilir; ödül çevirir çevirmez cüzdana yazılır (panel kapansa da kaybolmaz), çark durunca gösterilir.
+// Ayar: WHEEL (tür s=simit / f=balık, miktar, ağırlık), SPIN_FISH, SPIN_SIMIT. Ortalama kazanç bedelin altında: çark kazandırmaz, heyecan verir.
+const WHEEL = [['s', 100, 30], ['f', 1, 14], ['s', 250, 22], ['s', 1000, 7], ['s', 500, 14], ['f', 3, 7], ['s', 2500, 4], ['s', 10000, 2]];
+const SPIN_FISH = 3, SPIN_SIMIT = 2500, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
+let wheelRot = 0, spinning = false, wheelBuilt = false;
+function buildWheel() {
+  if (wheelBuilt) return; wheelBuilt = true;
+  const n = WHEEL.length, a = (Math.PI * 2) / n, pt = (r, t) => `${(Math.sin(t) * r).toFixed(2)} ${(-Math.cos(t) * r).toFixed(2)}`;
+  let h = '<circle r="98" fill="#2a2552" stroke="#fff4e2" stroke-width="3"/>';
+  WHEEL.forEach(([k, v], i) => {
+    const t0 = i * a, t1 = t0 + a, mid = ((t0 + a / 2) * 180) / Math.PI, dark = WHEEL_COL[i] !== '#fff4e2' && WHEEL_COL[i] !== '#ffc23a';
+    h += `<path d="M0 0 L${pt(94, t0)} A94 94 0 0 1 ${pt(94, t1)} Z" fill="${WHEEL_COL[i]}" stroke="#2a2552" stroke-width="1.5"/>`;
+    const lbl = v >= 10000 ? `${v / 1000}K` : fmt(v), col = dark ? '#fff4e2' : '#2a1503';
+    h += `<g transform="rotate(${mid})"><use href="#${k === 'f' ? 'i-fish' : 'i-simit'}" x="-9" y="-86" width="18" height="18"/>`
+      + `<text y="-56" text-anchor="middle" font-size="${lbl.length > 4 ? 15 : 17}" fill="${col}">${lbl}</text></g>`;
+  });
+  for (let i = 0; i < n; i++) h += `<circle cx="${pt(96, i * a).split(' ')[0]}" cy="${pt(96, i * a).split(' ')[1]}" r="2.6" fill="#fff4e2"/>`;
+  $('wheel').innerHTML = `<g id="wheelRot">${h}</g>`;
+}
+function renderWheelUi(msg) {
+  $('dlWallet').textContent = fmt(wallet); $('dlFish').textContent = fmt(fish);
+  $('spinFishCost').textContent = fmt(SPIN_FISH); $('spinSimitCost').textContent = fmt(SPIN_SIMIT);
+  $('spinFish').classList.toggle('poor', fish < SPIN_FISH); $('spinSimit').classList.toggle('poor', wallet < SPIN_SIMIT);
+  $('spinFish').disabled = $('spinSimit').disabled = spinning;
+  if (msg !== undefined) $('wheelNote').innerHTML = msg;
+}
+function dailyTab(t) {
+  const w = t === 'wheel';
+  $('tabDaily').classList.toggle('on', !w); $('tabWheel').classList.toggle('on', w);
+  show('dailyBox', !w); show('wheelBox', w);
+  if (w) { buildWheel(); renderWheelUi(spinning ? undefined : tr('Balıkla ya da simitle çevir, şansını dene!')); }
+}
+function spinWheel(pay) {
+  if (spinning) return;
+  const btn = $(pay === 'f' ? 'spinFish' : 'spinSimit');
+  if (pay === 'f' ? fish < SPIN_FISH : wallet < SPIN_SIMIT) {
+    bump(btn, 'shake'); vibrate(30);
+    return renderWheelUi(tr(pay === 'f' ? 'Yeterli balık yok' : 'Yeterli simit yok'));
+  }
+  if (pay === 'f') setFish(fish - SPIN_FISH); else wallet -= SPIN_SIMIT;
+  let x = Math.random() * WHEEL.reduce((s, w) => s + w[2], 0), i = 0;
+  while ((x -= WHEEL[i][2]) > 0) i++;
+  const [k, v] = WHEEL[i];
+  if (k === 'f') setFish(fish + v); else wallet += v;
+  store.set(KEY_WALLET, wallet);
+  // dilim i'nin ortası iğneye (tepeye) gelsin: birkaç tam tur + dilim içinde küçük sapma
+  const seg = 360 / WHEEL.length, c = i * seg + seg / 2 + rand(-seg * 0.32, seg * 0.32);
+  const from = wheelRot, to = from + 360 * 5 + ((((-c - from) % 360) + 360) % 360), T = 4200, t0 = performance.now();
+  spinning = true; renderWheelUi(tr('Dönüyor…'));
+  $('dlWallet').textContent = fmt(wallet - (k === 's' ? v : 0)); $('dlFish').textContent = fmt(fish - (k === 'f' ? v : 0));
+  let lastTick = Math.floor(from / seg);
+  const step = now => {
+    const u = Math.min(1, (now - t0) / T), e = 1 - Math.pow(1 - u, 3.2);
+    wheelRot = from + (to - from) * e;
+    const g = document.getElementById('wheelRot'); if (g) g.setAttribute('transform', `rotate(${wheelRot.toFixed(2)})`);
+    const tick = Math.floor(wheelRot / seg); if (tick !== lastTick) { lastTick = tick; sfx.click(); }
+    if (u < 1) return requestAnimationFrame(step);
+    wheelRot %= 360; spinning = false;
+    const big = k === 's' && v >= 2500;
+    sfx.gold(); vibrate(big ? [40, 40, 40, 40, 80] : [20, 30, 20]);
+    const what = k === 'f' ? `<b>+${fmt(v)}</b> ${tr('balık')}` : `<b>+${fmt(v)}</b> ${tr('simit')}`;
+    renderWheelUi((v >= 10000 ? `${tr('Büyük ikramiye!')} ` : big ? `${tr('Harika!')} ` : '') + what);
+    $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
+  };
+  requestAnimationFrame(step);
 }
 
 // ---------------- rozet koleksiyonu ----------------
@@ -1693,6 +1764,8 @@ function updateHud() {
   }
 }
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
+// simit kaçırınca seri biter: kombo yalnızca art arda toplanan simitle büyür
+function missSimit() { if (combo > 0) { combo = 0; comboT = 0; } }
 const COMBO_STEPS = [25, 60, 110, 180]; // x2, x3, x4, x5 için art arda simit: x5 ancak çok uzun, hiç kaçırmayan bir seride
 const mult = () => 1 + COMBO_STEPS.filter(n => combo >= n).length;
 function renderPowers() {
@@ -1823,6 +1896,11 @@ onBtn('inviteBtn', async () => {
   } catch (e) {}
 });
 onBtn('claimBtn', () => claimDaily());
+onBtn('tabDaily', () => dailyTab('daily'));
+onBtn('tabWheel', () => dailyTab('wheel'));
+onBtn('spinFish', () => spinWheel('f'));
+onBtn('spinSimit', () => spinWheel('s'));
+onBtn('closeWheel', () => { show('dailyPanel', false); $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); });
 onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('cosAct', () => costumeAction());
 onBtn('pauseBtn', () => pause());
@@ -2039,6 +2117,8 @@ function frame() {
     for (const s of simits) {
       if (s.taken || (s.th && s.th.u < 0) || (s.bin && s.bin.u < 0)) continue; // henüz atılmamış simit tepside / kapalı çöp kutusunda
       const dzs = g.z - s.z;
+      // geride kalan simit = kaçırıldı: seri biter (yolcunun elindeki, çöp kutusundaki ve martının boyunda olmayan sayılmaz; atılan parçalar suya düşünce)
+      if (!s.missed && dzs < -HIT.simZ - 0.4 && !s.pulled && !s.person && !s.bin && !s.th) { s.missed = true; if (state === 'play' && Math.abs(s.y - g.y) < HIT.simY * 1.5) missSimit(); }
       if (magnet && dzs > -2 && dzs < 16 && Math.abs(s.x - g.x) < 7) {
         if (!s.free) { // yolcunun elinden kopar
           s.mesh.getWorldPosition(tmp); s.mesh.removeFromParent(); s.mesh.position.copy(tmp); scene.add(s.mesh);

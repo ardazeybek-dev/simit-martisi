@@ -504,6 +504,22 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 }
 
 /* ---------- rozet koleksiyonu ---------- */
+/* ---------- şans çarkı ---------- */
+.wheel-wrap { position: relative; width: min(72vw, 270px); aspect-ratio: 1; margin: 2px auto 14px; }
+.wheel-wrap svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .35)); }
+.wheel-wrap text { font-family: var(--font); font-weight: 800; }
+.wheel-pin { position: absolute; left: 50%; top: -8px; width: 0; height: 0; transform: translateX(-50%); border: 13px solid transparent; border-top: 24px solid #fff4e2;
+  border-bottom: 0; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .4)); }
+.wheel-hub { position: absolute; left: 50%; top: 50%; width: 18%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 30%, #fff4e2, #f0a04b 60%, #b8642a); box-shadow: 0 3px 8px rgba(0, 0, 0, .4); }
+.wheel-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wheel-btns .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 19px; padding-left: 8px; padding-right: 8px; }
+.wheel-btns .btn .ico { width: 22px; height: 22px; flex: none; }
+.wheel-btns .btn.poor { filter: grayscale(.6) brightness(.8); }
+.wheel-btns .btn:disabled { opacity: .55; }
+#wheelNote { min-height: 2.7em; }
+#wheelNote b { color: var(--gold); font-size: 1.25em; }
+.sheet-head .wallet b + .ico { margin-left: 8px; }
 .tabs { display: flex; gap: 6px; margin: -2px 0 10px; }
 .tab { position: relative; flex: 1; padding: 9px 6px 7px; border-radius: 13px; font: inherit; font-weight: 800; font-size: 15px; color: inherit;
   background: rgba(255, 255, 255, .06); border: 1px solid var(--line); cursor: pointer; }

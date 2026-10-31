@@ -109,14 +109,14 @@ export const sfx = {
     for (const fr of [110, 165, 220.5]) { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; o.connect(f); o.start(t); o.stop(t + 1.6); }
     f.connect(g); g.connect(sfxBus);
   },
-  catch(n, tier = 0) { // ritmik yükselen "çıt": her simitte bir basamak çıkar; tier (çarpan x1-x5) verilirse perde
-    // çarpan basamağının tabanından başlayıp beş notada tırmanır ve başa döner. En tiz notalar yalnızca x5'te çalar.
-    const step = tier ? [0, 2, 4, 7, 12][Math.min(tier, 5) - 1] + [0, 2, 4, 5, 7][(n - 1) % 5]
-      : [0, 2, 4, 7, 9, 12, 14, 16, 19, 21][Math.min(n - 1, 9)];
-    const f = 660 * Math.pow(2, step / 12);
-    hiss(0.05, 0.18, 2600, 'highpass');
-    tone('triangle', f, 0.16, 0.16);
-    tone('sine', f * 2, 0.1, 0.06, { when: 0.02 });
+  catch(n, tier = 0) { // ritmik "çıt": her simitte bir basamak çıkar; tier (çarpan x1-x5) verilirse perde çarpan basamağının
+    // tabanından beş notada tırmanıp başa döner. Pes ve yumuşak: x1'de 392 Hz (sol), en tiz nota yalnızca x5'te (~880 Hz).
+    const step = tier ? [0, 2, 4, 5, 7][Math.min(tier, 5) - 1] + [0, 2, 3, 5, 7][(n - 1) % 5]
+      : [0, 2, 4, 5, 7, 9, 12][Math.min(n - 1, 6)];
+    const f = 392 * Math.pow(2, step / 12);
+    hiss(0.04, 0.08, 2200, 'highpass');
+    tone('triangle', f, 0.15, 0.15);
+    tone('sine', f * 2, 0.08, 0.025, { when: 0.02 });
   },
   gold() {
     [0, 4, 7, 12, 16].forEach((s, i) => tone('triangle', 880 * Math.pow(2, s / 12), 0.22, 0.12, { when: i * 0.045 }));

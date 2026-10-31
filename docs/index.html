@@ -200,10 +200,22 @@
 
 <section id="dailyPanel" class="screen modal hidden">
   <div class="card">
-    <h2>Günlük ödül</h2>
-    <p class="fine" id="dailyNote"></p>
-    <div class="days" id="days"></div>
-    <button class="btn primary" id="claimBtn">Al</button>
+    <div class="sheet-head"><h2>Ödüller</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="dlWallet">0</b><svg class="ico"><use href="#i-fish"/></svg><b id="dlFish">0</b></div></div>
+    <div class="tabs"><button class="tab on" id="tabDaily">Günlük ödül</button><button class="tab" id="tabWheel">Şans çarkı</button></div>
+    <div id="dailyBox">
+      <p class="fine" id="dailyNote"></p>
+      <div class="days" id="days"></div>
+      <button class="btn primary" id="claimBtn">Al</button>
+    </div>
+    <div id="wheelBox" class="hidden">
+      <p class="fine" id="wheelNote"></p>
+      <div class="wheel-wrap"><svg id="wheel" viewBox="-100 -100 200 200" aria-hidden="true"></svg><i class="wheel-pin"></i><b class="wheel-hub"></b></div>
+      <div class="wheel-btns">
+        <button class="btn primary" id="spinFish"><svg class="ico"><use href="#i-fish"/></svg><span id="spinFishCost"></span></button>
+        <button class="btn primary" id="spinSimit"><svg class="ico"><use href="#i-simit"/></svg><span id="spinSimitCost"></span></button>
+      </div>
+      <button class="link" id="closeWheel">Kapat</button>
+    </div>
   </div>
 </section>
 
