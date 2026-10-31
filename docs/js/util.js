@@ -13,7 +13,7 @@ export const store = {
 };
 // tek seferlik sıfırlama: işaret anahtarı yoksa bu cihazdaki bütün kayıtlar (cüzdan, rekor, görev, rozet...) silinir, ayarlar kalır.
 // Herkesi yeniden sıfırdan başlatmak gerekirse RESET_MARK değiştirilir. util.js ilk yüklenen modül: main.js kayıtları okumadan çalışır.
-const RESET_MARK = 'simit-martisi-reset-2026-10';
+const RESET_MARK = 'simit-martisi-reset-2026-10-31';
 try {
   if (!localStorage.getItem(RESET_MARK)) {
     const keep = ['simit-martisi-settings'];
