@@ -12,7 +12,7 @@ while dodging funnels, flag masts, kites and rival gulls.
 
 | Device | Steer | Other |
 |---|---|---|
-| Phone | Drag anywhere left / right: the gull moves by how far you drag, never jumps to where you touch, and stays put when you let go; the slider at the bottom is calm (the gull moves 0.7 of your drag) and its knob shows where you are steering, so wind never shakes it and it stays put when you let go | Pause button top right |
+| Phone | Drag anywhere left / right: the gull moves by how far you drag, never jumps to where you touch, and stays put when you let go; dragging about two thirds of the screen width takes the gull from one rail to the other, pushing past the edge is not counted so turning back starts at once, a second finger never steals the steering, and the slider knob at the bottom shows where you are steering | Pause button top right |
 | Desktop | Move the mouse, or ← → / A D | `P` / `Esc` pause, `M` sound on/off, `Space` start |
 
 The game pauses itself when the tab or app goes to the background and resumes with a 3-2-1 countdown.

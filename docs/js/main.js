@@ -17,7 +17,7 @@ const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.5, COMBO_T = 1.5, SPEED_MAX = 43, GEAR_
 // simit ve güçlendirme cömert (yakından geçmek yeter)
 const HIT = { obs: 0.12, near: 1.1, rival: 0.6, kiteX: 0.55, kiteZ: 0.38, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
-const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_UP = 'simit-martisi-upgrades', KEY_CITY = 'simit-martisi-city', KEY_ACH = 'simit-martisi-ach', KEY_DEAL = 'simit-martisi-deal', KEY_FISH = 'simit-martisi-fish';
+const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_DAILY_AUTO = 'simit-martisi-daily-auto', KEY_UP = 'simit-martisi-upgrades', KEY_CITY = 'simit-martisi-city', KEY_ACH = 'simit-martisi-ach', KEY_DEAL = 'simit-martisi-deal', KEY_FISH = 'simit-martisi-fish';
 
 // ---------------- ayarlar ----------------
 // sfx / music: sessize alma (M tuşu, ses düğmesi); sfxVol / musicVol: Ayarlar'daki kaydırıcılar (0-1)
@@ -980,7 +980,7 @@ function showTitle() {
   if (vs && !vs.won) $('vsPill').textContent = tr('Bir arkadaşın {s} puan yaptı. Geçebilir misin?').replace('{s}', fmt(vs.s));
   audio.music(true);
   // günün ilk açılışında ödül kendiliğinden gelir; alınmadan geçilirse her oyun sonunda yeniden açılmaz (menüdeki nokta kalır)
-  if (!tutorialPending && !dailyAuto && dailyState().ready) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; openDaily(); } }, 700);
+  if (!tutorialPending && !dailyAuto && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); openDaily(); } }, 700);
   else if (!tutorialPending && !leagueAuto) setTimeout(() => state === 'title' && !dressing && !menuModal() && offerLeague(), 700); // biten haftanın sıralama ödülü
 }
 function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görünür ama uçulmaz
@@ -1642,16 +1642,18 @@ let cdShown = 0, shownSign = 0;
 // ---------------- girdi ----------------
 // Fare: ekranın X konumu = martının hedefi. Dokunmatik: göreli sürükleme — parmak nereye konursa konsun martı
 // sıçramaz, yalnızca kaydırılan kadar gider; bırakınca olduğu yerde kalır. Alttaki çubuk (#pad) konumu gösterir.
-// Ayar: PAD_GAIN (çubuğun yarı genişliği kadar kaydırma × PAD_GAIN = şeridin yarısı)
-const PAD_GAIN = 0.7;
-let padId = -1, padX0 = 0, padTx0 = 0;
+// Ayar: PAD_SPAN (şeridin bir ucundan öbürüne gitmek için ekran genişliğinin ne kadarı sürüklenir)
+// Artımlı: her hareket yalnızca kendi farkı kadar kaydırır; kenara dayanınca fazlası birikmez, geri dönüş anında başlar
+const PAD_SPAN = 0.65;
+let padId = -1, padX0 = 0;
 function steerFromX(clientX) {
   // ekranın ortadaki %80'i tüm şeridi kapsar → kenara doğru biraz daha yaslanmak virajda savrulmayı yener
   setTx(clamp((clientX / innerWidth - 0.5) / 0.4, -1, 1) * EDGE);
 }
 function steerDrag(clientX) {
-  const half = Math.max(80, $('pad').offsetWidth / 2);
-  setTx(clamp(padTx0 + ((clientX - padX0) / half) * EDGE * PAD_GAIN, -EDGE, EDGE));
+  const span = Math.max(160, innerWidth * PAD_SPAN);
+  setTx(clamp(tx + ((clientX - padX0) / span) * 2 * EDGE, -EDGE, EDGE));
+  padX0 = clientX;
 }
 function setTx(v) {
   tx = v;
@@ -1666,10 +1668,11 @@ addEventListener('pointerdown', e => {
   audio.unlock();
   if ((state !== 'play' && state !== 'countdown') || isUi(e)) return;
   if (e.pointerType === 'mouse') { if (state === 'play') steerFromX(e.clientX); return; }
-  padId = e.pointerId; padX0 = e.clientX; padTx0 = tx; // yeni parmak: o anki konumdan devam
+  if (padId >= 0 && !e.isPrimary) return; // ikinci parmak, yönlendiren parmağı çalmasın (yeni birincil parmak = öncekiler kalkmış)
+  padId = e.pointerId; padX0 = e.clientX; // yeni parmak: o anki konumdan devam
 });
 addEventListener('pointermove', e => {
-  if (state === 'countdown' && e.pointerId === padId) { padX0 = e.clientX; padTx0 = tx; return; } // geri sayımda kayan parmak kalkışta sıçratmasın
+  if (state === 'countdown' && e.pointerId === padId) { padX0 = e.clientX; return; } // geri sayımda kayan parmak kalkışta sıçratmasın
   if (state !== 'play') return;
   if (e.pointerType === 'mouse') steerFromX(e.clientX);
   else if (e.pointerId === padId) steerDrag(e.clientX);
@@ -1677,7 +1680,7 @@ addEventListener('pointermove', e => {
 const padUp = e => { if (e.pointerId === padId) padId = -1; };
 addEventListener('pointerup', padUp);
 addEventListener('pointercancel', padUp);
-$('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e)) startGame(); });
+$('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e) && !menuModal()) startGame(); });
 addEventListener('keydown', e => {
   keys[e.code] = true;
   if (dressing) { if (e.code === 'Escape') closeWardrobe(); return; }
@@ -1874,7 +1877,7 @@ function frame() {
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)
     const cur = turns.find(u => g.z < u.z0 && g.z > u.z1);
     lean = damp(lean, cur ? cur.dir : 0, 3, dt);
-    push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH * (MOBILE ? 0.55 : 1); // telefonda savrulma hafif: başparmakla düzeltmek zor
+    push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH * (MOBILE ? 0.4 : 1); // telefonda savrulma hafif: başparmakla düzeltmek zor
     // savrulma, viraj içine yaslandıkça söner: içe tam yaslanan martı tepe noktasındaki simitlere ulaşır
     if (state === 'play') weatherTick(dt);
     if (state === 'play') { const sd = Math.abs(g.x) > 2.6 ? Math.sign(g.x) : 0; if (sd && sd === campSide) campT += dt; else { campSide = sd; campT = 0; } }
@@ -1885,7 +1888,7 @@ function frame() {
     if (cur) heading += cur.k * dz * bendOn; else heading *= Math.exp(-dt / 30); // ufuk, düzlükte yavaşça toparlanır
     // kritik sönümlü yay: hızlı ama yumuşak takip (çevik: engelden son anda kaçılabilsin)
     // alt adımlar (en çok 1/60 sn): kare hızı düşen telefonda sert yay titremesin
-    const k = 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * 0.32 + imbatW + fallsW : 0), -EDGE, EDGE);
+    const k = 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) + imbatW + fallsW : 0), -EDGE, EDGE);
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (weather === 'snow' && warmth < 0.25 && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
