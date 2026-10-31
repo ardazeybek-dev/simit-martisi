@@ -96,6 +96,76 @@ function planTurns(limit) {
   }
 }
 
+// ---------------- kombo kanat izi ----------------
+// x2'den itibaren kanat uçlarından ince iz akar; çarpan büyüdükçe belirginleşip altına döner, kombo süresi azalınca solar
+// (HUD'a bakmadan "simit yakala" uyarısı). İki iz tek gövdede: tek çizim çağrısı. Ayar: TRAIL_N (iz uzunluğu, kare), TRAIL_W
+const TRAIL_N = 22, TRAIL_W = 0.09;
+const trailPos = new Float32Array(2 * TRAIL_N * 2 * 3), trailCol = new Float32Array(2 * TRAIL_N * 2 * 4), trailHist = [[], []];
+const trailGeo = new THREE.BufferGeometry();
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3).setUsage(THREE.DynamicDrawUsage));
+trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 4).setUsage(THREE.DynamicDrawUsage));
+{
+  const idx = [];
+  for (let w = 0; w < 2; w++) for (let i = 0; i < TRAIL_N - 1; i++) { const a = (w * TRAIL_N + i) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  trailGeo.setIndex(idx);
+}
+const trail = new THREE.Mesh(trailGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+trail.frustumCulled = false; trail.visible = false; scene.add(trail);
+let trailK = 0;
+const _tip = new THREE.Vector3(), _tc = new THREE.Color(), TRAIL_WHITE = new THREE.Color(0xffffff), TRAIL_GOLD = new THREE.Color(0xffc94a);
+function trailTick(dt, on, m, life) {
+  // hedef görünürlük: x2'de hafif, x5'te dolgun; kombo süresinin son yarısında söner
+  const want = on && m >= 2 ? (0.4 + (m - 2) * 0.13) * Math.min(1, life * 2) : 0;
+  trailK = damp(trailK, want, want > trailK ? 4 : 8, dt);
+  if (trailK < 0.01) { trail.visible = false; trailHist[0].length = trailHist[1].length = 0; return; }
+  trail.visible = true;
+  _tc.copy(TRAIL_WHITE).lerp(TRAIL_GOLD, clamp((m - 2) / 3, 0, 1));
+  gull.updateMatrixWorld(true);
+  gull.userData.wings.forEach((w, wi) => {
+    const h = trailHist[wi];
+    w.hand.localToWorld(_tip.set(0.95, 0, 0));
+    if (h.length && h[0].distanceToSquared(_tip) > 400) h.length = 0; // yeni uçuş / ışınlanma: eski iz sürüklenmesin
+    h.unshift(_tip.clone()); if (h.length > TRAIL_N) h.pop();
+    for (let i = 0; i < TRAIL_N; i++) {
+      const q = h[Math.min(i, h.length - 1)], u = i / (TRAIL_N - 1), wd = TRAIL_W * (1 - u * 0.7), v = (wi * TRAIL_N + i) * 2;
+      trailPos.set([q.x - wd, q.y, q.z, q.x + wd, q.y, q.z], v * 3);
+      const a = trailK * (1 - u) * (1 - u) * (i < h.length ? 1 : 0);
+      trailCol.set([_tc.r, _tc.g, _tc.b, a, _tc.r, _tc.g, _tc.b, a], v * 4);
+    }
+  });
+  trailGeo.attributes.position.needsUpdate = trailGeo.attributes.color.needsUpdate = true;
+}
+
+// ---------------- altın simit ışıltısı ----------------
+// Altın simit uzaktan yıldız gibi parlar: virajın tepe simidi ve altın parçalar önceden seçilir. Hepsi tek Points: tek çizim çağrısı
+const GLINT_MAX = 12, glintPos = new Float32Array(GLINT_MAX * 3);
+const glintGeo = new THREE.BufferGeometry(); glintGeo.setAttribute('position', new THREE.BufferAttribute(glintPos, 3).setUsage(THREE.DynamicDrawUsage));
+const glintMat = new THREE.PointsMaterial({
+  color: 0xffe7a0, size: 2.6, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+  map: canvasTex(64, 64, (g) => {
+    const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.18, 'rgba(255,240,190,.75)'); r.addColorStop(1, 'rgba(255,200,90,0)');
+    g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+    g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(255,250,225,.9)'; // dört kollu yıldız
+    g.beginPath(); g.moveTo(32, 1); g.lineTo(35, 29); g.lineTo(63, 32); g.lineTo(35, 35); g.lineTo(32, 63); g.lineTo(29, 35); g.lineTo(1, 32); g.lineTo(29, 29); g.closePath(); g.fill();
+  }),
+});
+const glint = new THREE.Points(glintGeo, glintMat); glint.frustumCulled = false; scene.add(glint);
+let glintPh = 0;
+function glintTick(dt, list, gz) {
+  let n = 0;
+  for (const s of list) {
+    if (n >= GLINT_MAX) break;
+    if (!s.gold || s.taken || s.pulled || !s.mesh.visible || !s.mesh.parent) continue;
+    s.mesh.getWorldPosition(_tip); if (_tip.z > gz + 1) continue;
+    glintPos.set([_tip.x, _tip.y + 0.05, _tip.z + 0.2], n * 3); n++;
+  }
+  glintGeo.setDrawRange(0, n); glint.visible = n > 0;
+  if (!n) return;
+  glintGeo.attributes.position.needsUpdate = true;
+  glintPh += dt * (4.3 + Math.sin(glintPh * 0.37) * 1.4); // düzensiz nabız: tekdüze yanıp sönmez
+  glintMat.size = 2.3 + Math.sin(glintPh) * 0.5 + Math.sin(glintPh * 2.71) * 0.3;
+}
+
 const wakeMat = new THREE.MeshBasicMaterial({
   transparent: true, depthWrite: false,
   map: canvasTex(64, 128, (g) => {
@@ -2140,6 +2210,8 @@ function frame() {
   }
   if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }
   for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
+  glintTick(dt, simits, gull.position.z);
+  trailTick(dt, state === 'play', mult(), comboT / COMBO_T);
   updateFx(dt);
 
   // ---- kalkan / sis ----
@@ -2445,7 +2517,7 @@ requestAnimationFrame(frame);
 
 window.__game = {
   get state() { return state; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
-  get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, get powers() { return { ...pw }; },
+  get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, setCombo: n => { combo = n; comboT = COMBO_T; }, get powers() { return { ...pw }; },
   get wallet() { return wallet; }, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revives > 0; }, revive: () => askRevive(),
