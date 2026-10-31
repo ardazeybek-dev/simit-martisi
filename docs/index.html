@@ -276,7 +276,15 @@
 <script>
   // modül yüklenemezse (internet yoksa ve önbellek boşsa) kullanıcıya söyle
   setTimeout(function () { var m = document.getElementById('loaderMsg'); if (m && document.getElementById('loader')) m.textContent = I18N.t('Oyun yüklenemedi. Bağlantını kontrol edip sayfayı yenile.'); }, 15000);
-  if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    // yeni sürüm devraldıysa sayfa eski kodla kalmasın: menüdeyse hemen, uçuştaysa ana menüye dönünce yenilenir
+    var hadSw = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadSw) return;
+      if (window.__game && window.__game.state === 'title') location.reload(); else window.__reloadOnTitle = true;
+    });
+  }
 </script>
 </body>
 </html>

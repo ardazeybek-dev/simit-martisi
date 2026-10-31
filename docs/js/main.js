@@ -966,6 +966,7 @@ function renderRouteMap() {
 }
 let dailyAuto = false, leagueAuto = false; // kendiliğinden açılan ödül pencereleri: sayfa açılışında bir kez
 function showTitle() {
+  if (window.__reloadOnTitle) { location.reload(); return; } // yeni sürüm indi: menüye dönerken tazelen
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
