@@ -90,7 +90,8 @@ const RULES = [
 let daily = false, daySeed = 0, dayRule = null, genN = 0, turnN = 0;
 const R0 = Math.random;
 const ruleOn = id => daily && dayRule && dayRule.id === id;
-const todayRule = () => RULES[hash('rule', dayKey()) % RULES.length];
+const RULE_Q = RULES.find(r => r.id === new URLSearchParams(location.search).get('rule')); // ?rule=gold|wind|fog|fast|fish → o kural (deneme için)
+const todayRule = () => RULE_Q || RULES[hash('rule', dayKey()) % RULES.length];
 function seedAt(...k) { Math.random = daily ? seeded(hash(daySeed, ...k)) : R0; } // günün uçuşunda üretim tohumdan
 const dayGift = n => 15 + 5 * Math.min(n - 1, 6); // gün serisi: 15 → 45 simit
 function dayRun() {
@@ -1049,6 +1050,7 @@ function addMark(m, text, bg, kind) {
 function placeMarks() {
   for (const k of marks) scene.remove(k.g);
   marks = [];
+  if (daily) return; // günün uçuşu herkes için aynı: rekor ve arkadaş şamandırası (bonusuyla) yok
   const own = Math.floor(((store.get(KEY_ACH, {}) || {}).st || {}).maxDist || 0);
   if (own >= 150) addMark(own, tr('Rekor'), '#d9952a', 'own');
   if (vs && !vs.won && vs.d >= 60 && vs.city === city.id) addMark(vs.d, fmt(vs.s), '#2f7fd6', 'vs');
@@ -1224,7 +1226,7 @@ function showOver() {
   $('newRecord').classList.toggle('hidden', !isBest);
   if (daily) { // günün uçuşu: kendi günlük en iyisi ve gün serisi; ilk uçuş seri ödülünü verir
     const d = dayRun(), dayBest = final > d.best, gift = d.done ? 0 : dayGift(d.streak);
-    store.set(KEY_DAYRUN, { day: dayKey(), best: Math.max(d.best, final), streak: d.streak, runs: d.runs + 1 });
+    store.set(KEY_DAYRUN, { day: dayKey(), best: Math.max(d.best, final), streak: d.streak, runs: d.runs + (revives ? 0 : 1) }); // ikinci şans aynı uçuş: bir kez sayılır
     if (gift) { wallet += gift; store.set(KEY_WALLET, wallet); }
     $('overBest').textContent = dayBest && d.done ? tr('Günün en iyisini geçtin') : `${tr('Günün en iyin')} ${fmt(Math.max(d.best, final))}`;
     $('overRank').innerHTML = `${tr(dayRule.name)} · ${tr('{n} gün seri').replace('{n}', fmt(d.streak))}` + (gift ? ` · +${fmt(gift)} <svg class="ico"><use href="#i-simit"/></svg>` : '');
@@ -1688,7 +1690,9 @@ function dailyState() {
   const s = store.get(KEY_DAILY, {}) || {}, today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
   if (s.last === today) return { ready: false, streak: s.streak || 1 };
   const streak = s.last === dayKey(y) ? (s.streak || 0) % DAILY.length + 1 : 1;
-  return { ready: true, streak, lost: streak === 1 && daysAgo(s.last) <= 3 && (s.streak || 0) >= 2 ? s.streak : 0 };
+  // kopan seri: 1-2 gün kaçmış ve seri 2-6 gündeyse (7. günden sonra seri zaten 1. güne döner, kurtaracak bir şey yok)
+  const ago = daysAgo(s.last), n = s.streak || 0;
+  return { ready: true, streak, lost: ago >= 2 && ago <= 3 && n >= 2 && n < DAILY.length ? n : 0 };
 }
 function saveStreak() {
   const d = dailyState();
@@ -1723,9 +1727,10 @@ function claimDaily() {
     wallet += r; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(), streak: d.streak });
     if (d.streak === DAILY.length) { setFish(fish + 1); $('titleFish').textContent = fmt(fish); } // haftanın son günü bir balık
     $('titleWallet').textContent = fmt(wallet); bump($('titleWallet').parentNode);
-    sfx.gold(); vibrate([20, 30, 20]); renderMenuBadges();
+    sfx.gold(); vibrate([20, 30, 20]);
   }
   show('dailyPanel', false);
+  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); renderMenuBadges(); // çark sekmesinde kazanılan da menüye yansısın
 }
 
 // ---------------- şans çarkı (günlük ödül panelinin ikinci sekmesi) ----------------
@@ -2708,7 +2713,7 @@ function arrive() {
   const i = stopI++, gain = 25 * i * mult();
   points += gain; if (combo > 0) comboT = COMBO_T;
   const el = $('arrive');
-  $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase(window.I18N.lang === 'tr' ? 'tr' : 'en'); // iskele adları Türkçe kalır
+  $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase('tr'); // iskele adları Türkçe kalır: her dilde BEŞİKTAŞ (i → İ)
   $('arriveSub').textContent = tr(i === STOPS.length - 1 ? city.end : 'İskeleye vardın');
   $('arriveGain').textContent = `+${fmt(gain)}`;
   if (i > farStop) { // ilk kez: iskele haritada açılır, cüzdana hediye
