@@ -136,7 +136,7 @@ trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 4).setUsage(T
   for (let w = 0; w < 2; w++) for (let i = 0; i < TRAIL_N - 1; i++) { const a = (w * TRAIL_N + i) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
   trailGeo.setIndex(idx);
 }
-const trail = new THREE.Mesh(trailGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+const trail = new THREE.Mesh(trailGeo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true, fog: false }));
 trail.frustumCulled = false; trail.visible = false; scene.add(trail);
 let trailK = 0;
 const _tip = new THREE.Vector3(), _tc = new THREE.Color(), TRAIL_WHITE = new THREE.Color(0xffffff), TRAIL_GOLD = new THREE.Color(0xffe2a8);
@@ -2211,7 +2211,7 @@ pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncB
   const beam = canvasTex(64, 256, (g) => { const r = g.createLinearGradient(0, 0, 0, 256); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(1, 'rgba(255,255,255,1)'); g.fillStyle = r; g.fillRect(0, 0, 64, 256);
     const m = g.createLinearGradient(0, 0, 64, 0); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(0.5, 'rgba(0,0,0,0)'); m.addColorStop(1, 'rgba(0,0,0,1)'); g.globalCompositeOperation = 'destination-out'; g.fillStyle = m; g.fillRect(0, 0, 64, 256); });
   for (const [x, col] of [[3.2, 0xffd9a0], [-3.2, 0x9fdcff]]) { // ışık huzmeleri
-    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 7.5), new THREE.MeshBasicMaterial({ map: beam, color: col, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 7.5), new THREE.MeshBasicMaterial({ map: beam, color: col, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, forceSinglePass: true }));
     b.position.set(x * 0.55, 3.6, -1.2); b.rotation.z = -Math.sign(x) * 0.42; s.add(b);
   }
   const top = new THREE.MeshStandardMaterial({ color: 0x3d3480, roughness: 0.55, metalness: 0.1 });
@@ -2921,3 +2921,5 @@ window.__game = {
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; }, get renderer() { return renderer; }, get scene() { return scene; }, get camera() { return camera; }, get glint() { return glint; },
   pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = dur(k); renderPowers(); }, get ups() { return { ...ups }; }, setGod: (b) => (god = !!b), setQuality,
 };
+// ses bağlamı başlık ekranında boşta kurulur (askıda); ilk dokunuş yalnızca açar → kalkış karesi donmaz
+setTimeout(() => (window.requestIdleCallback || (f => f()))(() => audio.prepare(), { timeout: 2000 }), 1200);

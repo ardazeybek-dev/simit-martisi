@@ -602,7 +602,7 @@ export function makePirateShip() {
 // ---------------- Düden şelalesi (Antalya) ----------------
 // Şeridin kıyısında traverten falez, tepesinden denize dökülen su perdesi, dibinde köpük. Yerel: su yüzü x=0'da, falez +x'e uzanır.
 // main.js dir<0 için grubu y'de çevirir; fallsMat'in dokusunu kaydırarak suyu akıtır.
-export const fallsMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, map: canvasTex(64, 256, (g) => {
+export const fallsMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true, map: canvasTex(64, 256, (g) => {
   g.fillStyle = 'rgba(196,232,248,0.93)'; g.fillRect(0, 0, 64, 256);
   for (let i = 0; i < 90; i++) { // akan köpük çizgileri: yumuşak uçlu, ince
     const x = Math.random() * 64, y = Math.random() * 256, h = 30 + Math.random() * 80, w = 1 + Math.random() * 2.5;
@@ -1073,7 +1073,8 @@ export const DECK = 2.6;
 // camlı salon: güvertede iki katlı kapalı salon, ortasından boydan boya geçit (martı içinden uçar).
 // Geçidin iki yanı engel; tavanı cam, içeriden de görünür. tx: geçidin x'i (-0.6, 0, 0.6), SALON_LEN boyunca.
 export const SALON_LEN = 14, SALON_GAP = 2.6, SALON_TOP = DECK + 4.3;
-export const glassMat = new THREE.MeshStandardMaterial({ color: 0xa8dcf0, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.4, depthWrite: false, side: THREE.DoubleSide });
+export const glassMat = new THREE.MeshStandardMaterial({ color: 0xa8dcf0, transparent: true, opacity: 0.32, roughness: 0.08, metalness: 0.4, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true });
+// forceSinglePass: şeffaf çift yüzlü malzemeyi three.js iki geçişte çizip her geçişte needsUpdate yapıyor (her kare shader yeniden seçimi)
 const salonCache = new Map();
 export function salonGeo(...a) { return pureCall(salonGeo_, a); }
 function salonGeo_(tx) {

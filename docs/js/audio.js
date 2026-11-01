@@ -8,9 +8,24 @@ const AHEAD = MOBILE ? 0.5 : 0.25;
 
 export const audio = {
   get ctx() { return AC; },
-  // ilk dokunuşun İÇİNDE çağrılmalı (iOS kilidi)
+  // ses grafiği açılışta boşta kurulur (bağlam askıda başlar): ilk dokunuşta kurmak kalkış karesini ~150 ms donduruyordu
+  prepare() { if (!AC) build(); },
+  // ilk dokunuşun İÇİNDE çağrılmalı (iOS kilidi): askıdaki bağlamı açar; iOS için sessiz bir tampon çalar
   unlock() {
-    if (AC) { if (AC.state !== 'running') AC.resume(); return; }
+    if (!AC) build();
+    if (!AC || AC.state === 'running') return;
+    try { AC.resume(); const s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0); } catch (e) {}
+  },
+  suspend() { if (AC && AC.state === 'running') AC.suspend(); },
+  resume() { if (AC && AC.state !== 'running') AC.resume(); nextNote = 0; },
+  set(o) { Object.assign(opts, o); apply(); },
+  get opts() { return { ...opts }; },
+  setSpeed(k) { intensity = Math.max(0, Math.min(1, k / 1.2)); if (seaFilter) seaFilter.frequency.setTargetAtTime(420 + k * 500, AC.currentTime, 0.4); },
+  music(on) { musicOn = on; apply(); },
+  duck(low) { if (musicFilter) musicFilter.frequency.setTargetAtTime(low ? 500 : 9000, AC.currentTime, low ? 0.08 : 0.6); },
+  tick() { if (AC && musicOn && opts.music) scheduleMusic(); },
+};
+function build() {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       try { AC = new Ctx({ latencyHint: MOBILE ? 'playback' : 'interactive' }); } catch (e) { AC = new Ctx(); }
@@ -33,21 +48,10 @@ export const audio = {
       const lfo = AC.createOscillator(), lfoG = AC.createGain(); lfo.frequency.value = 0.13; lfoG.gain.value = 0.035;
       lfo.connect(lfoG); lfoG.connect(seaGain.gain); lfo.start();
       src.connect(seaFilter); seaFilter.connect(seaGain); seaGain.connect(ambBus); src.start();
-      // iOS: sessiz bir tampon çal, bağlam açılsın
-      const s = AC.createBufferSource(); s.buffer = AC.createBuffer(1, 1, 22050); s.connect(AC.destination); s.start(0);
       apply();
       warmStrings();
     } catch (e) { AC = null; }
-  },
-  suspend() { if (AC && AC.state === 'running') AC.suspend(); },
-  resume() { if (AC && AC.state !== 'running') AC.resume(); nextNote = 0; },
-  set(o) { Object.assign(opts, o); apply(); },
-  get opts() { return { ...opts }; },
-  setSpeed(k) { intensity = Math.max(0, Math.min(1, k / 1.2)); if (seaFilter) seaFilter.frequency.setTargetAtTime(420 + k * 500, AC.currentTime, 0.4); },
-  music(on) { musicOn = on; apply(); },
-  duck(low) { if (musicFilter) musicFilter.frequency.setTargetAtTime(low ? 500 : 9000, AC.currentTime, low ? 0.08 : 0.6); },
-  tick() { if (AC && musicOn && opts.music) scheduleMusic(); },
-};
+}
 function apply() {
   if (!AC) return;
   const t = AC.currentTime;
