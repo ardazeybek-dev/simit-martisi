@@ -2147,7 +2147,14 @@ function syncToggles() {
 }
 syncToggles();
 // sekme arka plana geçince otomatik duraklat
-const stashRun = () => { if (state === 'play' || state === 'paused' || state === 'dead') stashScore(total(), Math.floor(dist), city.id); }; // yarıda kalan uçuşun skoru kaybolmasın
+// otomatik kayıt: yarıda kalan uçuş (sekme gizlendi, sayfa yenilendi/kapandı, tarayıcı çöktü) hiçbir şeyini kaybetmesin.
+// Skor sıralamaya bekleyen olarak, simitler cüzdana, rekor cihaza, başarım sayaçları ve görevler kayda. Hepsi farkla çalışır: uçuş sürerse iki kez sayılmaz
+const stashRun = () => {
+  if (state !== 'play' && state !== 'paused' && state !== 'dead') return;
+  stashScore(total(), Math.floor(dist), city.id); bank(); achRecord(); store.set(KEY_MIS, missions);
+  if (!daily && total() > (+store.get(KEY_BEST, 0) || 0)) store.set(KEY_BEST, total()); // ekrandaki 'yeni rekor' rozeti bozulmasın diye yalnız kayda yazılır
+};
+setInterval(() => { if (state === 'play') stashRun(); }, 10000); // çökme ya da zorla kapatmaya karşı 10 sn'de bir
 document.addEventListener('visibilitychange', () => { if (document.hidden) { pause(); audio.suspend(); stashRun(); } else if (state !== 'paused') audio.resume(); });
 addEventListener('pagehide', () => { pause(); stashRun(); });
 
@@ -2942,6 +2949,7 @@ showTitle();
 // sunucu: profil, bekleyen skor ve (bir kez) cihaz rekoru gönderilir
 if (netOn()) refreshBoard();
 addEventListener('online', () => sync());
+$('appVer').textContent = 'v' + (document.querySelector('meta[name=app-version]')?.content || ''); // ayarlarda sürüm: güncelleme geldi mi görülsün
 setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gönderim, kapanan sayfa) hemen gitsin
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
