@@ -81,6 +81,17 @@ begin
   return n;
 end $$;
 
+-- oyuncu ülkesini profilden seçer (sıralamadaki bayrak)
+create or replace function set_cc(p_id uuid, p_secret uuid, p_cc text) returns text
+language plpgsql security definer set search_path = public as $$
+declare c text := upper(btrim(p_cc));
+begin
+  if c !~ '^[A-Z]{2}$' then raise exception 'bad country'; end if;
+  update players set cc = c where id = p_id and secret = p_secret;
+  if not found then raise exception 'unknown player'; end if;
+  return c;
+end $$;
+
 -- uçuş başı: bilet. Aynı oyuncu 2 sn'de bir bilet alabilir; bir günden eski biletler temizlenir.
 create or replace function start_run(p_id uuid, p_secret uuid) returns uuid
 language plpgsql security definer set search_path = public as $$
@@ -142,8 +153,8 @@ language sql stable security definer set search_path = public as $$
   )
 $$;
 
-revoke all on function register(text, text), rename(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) from public;
-grant execute on function register(text, text), rename(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) to anon, authenticated;
+revoke all on function register(text, text), rename(uuid, uuid, text), set_cc(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) from public;
+grant execute on function register(text, text), rename(uuid, uuid, text), set_cc(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) to anon, authenticated;
 -- yardımcılar dışarıdan çağrılmasın (Supabase yeni fonksiyonlara anon yetkisi verebiliyor)
 revoke all on function sm_week(timestamptz), sm_name(text), sm_norm(text), sm_bad(text) from public, anon, authenticated;
 

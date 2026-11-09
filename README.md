@@ -100,12 +100,13 @@ No environment variables are needed: the leaderboard backend address and its pub
 
 ## Leaderboard backend (Supabase)
 
-A free Supabase project holds three tables, `players`, `scores` and `runs`. All are closed to the client (RLS on, no policies, privileges revoked); the game only calls five `security definer` functions over `POST /rest/v1/rpc/<name>` with the publishable key:
+A free Supabase project holds three tables, `players`, `scores` and `runs`. All are closed to the client (RLS on, no policies, privileges revoked); the game only calls these `security definer` functions over `POST /rest/v1/rpc/<name>` with the publishable key:
 
 | function | does |
 |---|---|
 | `register(p_name, p_cc)` | creates a player, returns `{ id, secret, name }` (kept in localStorage `simit-martisi-profile`) |
 | `rename(p_id, p_secret, p_name)` | changes the name |
+| `set_cc(p_id, p_secret, p_cc)` | changes the country (flag), picked in the profile from the drawn flags in `board.js` (`COUNTRIES`) |
 | `start_run(p_id, p_secret)` | called when a flight starts, returns a run id (one per 2 s per player) |
 | `submit_score(p_id, p_secret, p_run, p_score, p_dist, p_city)` | keeps the best (stored per week), returns the all-time rank |
 | `claim_best(p_id, p_secret, p_score)` | once per player: stores the device record (≤ 30,000) |

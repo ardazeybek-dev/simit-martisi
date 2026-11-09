@@ -359,6 +359,12 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .name-input { touch-action: manipulation; display: block; width: 100%; margin: 0 0 8px; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line); background: rgba(255, 255, 255, .08);
   color: var(--cream); font: inherit; font-size: 22px; font-weight: 800; text-align: center; outline: none; user-select: text; -webkit-user-select: text; }
 .name-input:focus { border-color: var(--simit); }
+.name-row { display: flex; align-items: center; gap: 10px; }
+.name-row .name-input { flex: 1; min-width: 0; }
+.cc-flag { width: 36px; height: 24px; flex: none; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .3); margin-bottom: 8px; }
+.cc-flag.sm { width: 18px; height: 12px; margin: 0 5px 0 0; vertical-align: -1px; border-radius: 2px; }
+.cc-select { appearance: auto; font: inherit; color: var(--cream); }
+.cc-select option { color: #111; background: #fff; }
 .name-input::placeholder { color: var(--cream); opacity: .35; }
 .fine.err { color: var(--red); opacity: 1; margin: 0 0 10px; }
 .board-tier { font-size: 14px; font-weight: 700; line-height: 1.45; margin: 4px 0 12px; }

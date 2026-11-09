@@ -68,6 +68,14 @@ export function setName(name) {
   return true;
 }
 
+// ülke profilden seçilir: yerelde hemen değişir, sunucuya sync ile gider (bağlantı yoksa sonra)
+export function setCountry(cc) {
+  if (!/^[A-Z]{2}$/.test(cc)) return false;
+  const p = profile();
+  if (p.cc !== cc) { p.cc = cc; p.ccDirty = true; store.set(KEY_PROFILE, p); sync(); }
+  return true;
+}
+
 let syncing = null, lastRank = null;
 export function sync() { // profil + bekleyen skor; aynı anda tek çalışır
   if (!syncing) syncing = (async () => {
@@ -77,13 +85,17 @@ export function sync() { // profil + bekleyen skor; aynı anda tek çalışır
       const r = await rpc('register', { p_name: p.name || autoName(p), p_cc: p.cc || myCC() });
       if (r === REJECT) { if (p.name) p.name = ''; else p.auto = ''; store.set(KEY_PROFILE, p); return false; } // sunucu adı kabul etmedi: menüde yeniden sorulur
       if (!r || !r.id) return false;
-      Object.assign(p, { id: r.id, secret: r.secret, srv: r.name, dirty: false }, p.name ? { name: r.name } : {});
+      Object.assign(p, { id: r.id, secret: r.secret, srv: r.name, dirty: false, ccDirty: false }, p.name ? { name: r.name } : {}); // ülke kayıtla birlikte gitti
       store.set(KEY_PROFILE, p);
     } else if (p.dirty) {
       const n = await rpc('rename', { p_id: p.id, p_secret: p.secret, p_name: p.name });
       if (n === null) return false;
       if (n === REJECT) { p.name = p.srv === p.auto ? '' : p.srv || ''; p.dirty = false; store.set(KEY_PROFILE, p); }
       else { p.name = p.srv = n; p.dirty = false; store.set(KEY_PROFILE, p); }
+    }
+    if (p.ccDirty && p.id) {
+      const c = await rpc('set_cc', { p_id: p.id, p_secret: p.secret, p_cc: p.cc });
+      if (c !== null && c !== REJECT) { p.ccDirty = false; store.set(KEY_PROFILE, p); } // reddedilirse yerelde kalır, sonraki sync'te yeniden denenir
     }
     // sıralama kalıcı oldu: bilet gelmeden (ya da çevrimdışı) yapılmış cihaz rekoru sunucuda yoktu → bir kez yüklenir
     const best = +store.get('simit-martisi-best', 0) || 0;

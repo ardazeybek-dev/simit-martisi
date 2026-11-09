@@ -6,8 +6,8 @@ import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
-import { flag, recordRun } from './board.js';
-import { netOn, myName, shownName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc } from './net.js';
+import { flag, recordRun, COUNTRIES } from './board.js';
+import { netOn, myName, shownName, setName, setCountry, validName, rudeName, ccOf, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -1360,7 +1360,7 @@ async function renderBoard() {
   $('boardInfo').textContent = tr('{n} oyuncu').replace('{n}', fmt(b.total)); // kalıcı sıralama: herkesin en iyi skoru, hafta sıfırlanmaz
   const li = (r, cc, name, score, cls = '') => `<li class="${cls}"><b>${r ? '#' + fmt(r) : '—'}</b><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`;
   const top = b.top || [], me = b.me;
-  let html = top.map(t => li(t.rank, t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '')).join('');
+  let html = top.map(t => li(t.rank, t.me ? ccOf() : t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '')).join('');
   if (!top.length) html = `<li class="gap msg">${tr('Henüz kimse uçmadı. İlk sen ol!')}</li>`;
   if (me && !top.some(t => t.me)) html += `<li class="gap">⋮</li>` + li(me.rank, ccOf(), shownName(), fmt(me.score), 'me');
   if (!me) html += li(0, ccOf(), shownName() || tr('Sen'), tr('Henüz uçmadın'), 'me');
@@ -1369,10 +1369,19 @@ async function renderBoard() {
   $('boardTier').innerHTML = '';
 }
 // ---------------- profil: ad ----------------
-function renderNameChip() { $('profileName').textContent = myName() || shownName() || tr('Ad seç'); $('profLv').textContent = fmt(rank.lv); }
+function renderNameChip() { $('profileName').textContent = myName() || shownName() || tr('Ad seç'); $('profileFlag').src = flag(ccOf()); $('profLv').textContent = fmt(rank.lv); }
+// ülke seçici: adlar oyuncunun dilinde, alfabetik; listede olmayan (dilden tahmin edilmiş) ülke de en üstte görünür
+function fillCountries() {
+  const sel = $('ccSelect'), cur = ccOf(), lang = (window.I18N && window.I18N.lang) || 'tr';
+  let dn = null; try { dn = new Intl.DisplayNames([lang, 'en'], { type: 'region' }); } catch (e) {}
+  const name = c => { try { return (dn && dn.of(c)) || c; } catch (e) { return c; } };
+  const list = (COUNTRIES.includes(cur) ? COUNTRIES : [cur, ...COUNTRIES]).map(c => [c, name(c)]).sort((a, b) => a[1].localeCompare(b[1], lang));
+  sel.innerHTML = list.map(([c, n]) => `<option value="${c}">${esc(n)}</option>`).join('');
+  sel.value = cur; $('ccFlag').src = flag(cur);
+}
 function openProfile() {
   const inp = $('nameInput');
-  inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false);
+  inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false); fillCountries();
   show('profilePanel');
   setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
 }
@@ -2121,6 +2130,7 @@ onBtn('closeBoard', () => show('boardPanel', false));
 onBtn('profileBtn', () => { show('settings', false); openProfile(); });
 onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
+$('ccSelect').addEventListener('change', e => { setCountry(e.target.value); $('ccFlag').src = flag(e.target.value); renderNameChip(); if (!$('boardPanel').classList.contains('hidden')) renderBoard(); });
 onBtn('skipName', () => show('profilePanel', false));
 onBtn('inviteBtn', async () => {
   const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];

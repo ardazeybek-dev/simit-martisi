@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.49.4">
+<meta name="app-version" content="2.50.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -184,8 +184,10 @@
     <div class="prof-lvl"><b class="lvl-n" id="lvlN">1</b><span class="lvl-m"><small id="lvlName"></small><span class="lvl-bar"><i id="lvlFill"></i></span></span></div>
     <p class="prof-h">Martı adın</p>
     <p class="fine">Sıralamada bu adla görünürsün.</p>
-    <input id="nameInput" class="name-input" type="text" maxlength="16" autocomplete="nickname" autocapitalize="words" enterkeyhint="done" spellcheck="false">
+    <div class="name-row"><img id="ccFlag" class="cc-flag" alt=""><input id="nameInput" class="name-input" type="text" maxlength="16" autocomplete="nickname" autocapitalize="words" enterkeyhint="done" spellcheck="false"></div>
     <p class="fine err hidden" id="nameErr">En az 2 harf yaz.</p>
+    <p class="prof-h">Ülken</p>
+    <select id="ccSelect" class="name-input cc-select" aria-label="Ülken"></select>
     <button class="btn primary" id="saveName">Kaydet</button>
     <button class="link" id="skipName">Sonra</button>
   </div>
@@ -245,7 +247,7 @@
 <section id="settings" class="screen modal hidden">
   <div class="card">
     <h2>Ayarlar</h2>
-    <button class="profile-row hidden" id="profileBtn" aria-label="Profil"><span class="prof-mini" id="profLv">1</span><span class="prof-txt"><small>Profil</small><b id="profileName"></b></span><svg class="ico"><use href="#i-pen"/></svg></button>
+    <button class="profile-row hidden" id="profileBtn" aria-label="Profil"><span class="prof-mini" id="profLv">1</span><span class="prof-txt"><small>Profil</small><b><img id="profileFlag" class="cc-flag sm" alt=""><span id="profileName"></span></b></span><svg class="ico"><use href="#i-pen"/></svg></button>
 <div class="vols">
       <div class="vol"><button class="vol-ico" data-mute="music" aria-label="Müzik"><svg><use href="#i-sound"/></svg></button><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></div>
       <div class="vol"><button class="vol-ico" data-mute="sfx" aria-label="Ses efektleri"><svg><use href="#i-sound"/></svg></button><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></div>
