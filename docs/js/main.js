@@ -2065,7 +2065,7 @@ onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
 onBtn('skipName', () => show('profilePanel', false));
 onBtn('inviteBtn', async () => {
-  const text = tr('Simit Martısı haftalık sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];
+  const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];
   try {
     if (navigator.share) await navigator.share({ title: document.title, text, url });
     else { await navigator.clipboard.writeText(`${text} ${url}`); const b = $('inviteBtn'), l = b.textContent; b.textContent = tr('Kopyalandı'); setTimeout(() => (b.textContent = l), 1800); }

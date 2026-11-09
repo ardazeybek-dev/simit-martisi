@@ -1,5 +1,5 @@
 // Simit Martısı service worker: oyunu çevrimdışı da açılabilir yapar.
-const VERSION = 'simit-martisi-v2.41.2';
+const VERSION = 'simit-martisi-v2.41.3';
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const CORE = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
@@ -43,7 +43,7 @@ self.addEventListener('fetch', (e) => {
   }
   // kendi dosyalarımız: önce ağ (yeni sürüm hemen gelsin), ağ yoksa önbellek
   if (url.origin === self.location.origin) {
-    e.respondWith(fetch(req).then(res => {
+    e.respondWith(fetch(req.mode === 'navigate' ? req.url : req, { cache: 'no-cache' }) /* HTTP önbelleğini (Pages: 10 dk) doğrula: yeni sürüm ilk açılışta gelsin */.then(res => {
       if (res.ok) { const cp = res.clone(); caches.open(VERSION).then(c => c.put(req, cp)); }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : Response.error()))));
