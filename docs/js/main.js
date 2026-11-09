@@ -6,7 +6,7 @@ import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
-import { flag, recordRun, myBest, rewardFor, paidKey, markPaid } from './board.js';
+import { flag, recordRun, rewardFor, paidKey, markPaid } from './board.js';
 import { netOn, myName, shownName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, fetchBoard } from './net.js';
 
 const $ = id => document.getElementById(id);
@@ -1231,12 +1231,13 @@ function showOver() {
     $('overBest').textContent = dayBest && d.done ? tr('Günün en iyisini geçtin') : `${tr('Günün en iyin')} ${fmt(Math.max(d.best, final))}`;
     $('overRank').innerHTML = `${tr(dayRule.name)} · ${tr('{n} gün seri').replace('{n}', fmt(d.streak))}` + (gift ? ` · +${fmt(gift)} <svg class="ico"><use href="#i-simit"/></svg>` : '');
   } else { // haftalık sıra: sunucudan gelir; gelene kadar (ya da ağ yoksa) cihazdaki haftalık en iyi görünür
-    const wk = recordRun(final), el = $('overRank'), seq = ++overSeq, was = myRank;
-    el.textContent = tr('Haftalık en iyin: {s}').replace('{s}', fmt(wk.best));
+    recordRun(final);
+    const el = $('overRank'), seq = ++overSeq, was = myRank;
+    el.textContent = `${tr('Rekor')} ${fmt(best)}`;
     submitScore(final, Math.floor(dist), city.id).then(r => {
       if (!r || seq !== overSeq || state !== 'over') return;
       myRank = r;
-      el.textContent = tr('Haftalık sıran: {r}').replace('{r}', '#' + fmt(r)) + (was && r < was ? `  ▲ ${fmt(was - r)}` : '');
+      el.textContent = tr('Sıran: {r}').replace('{r}', '#' + fmt(r)) + (was && r < was ? `  ▲ ${fmt(was - r)}` : '');
     });
   }
   { // meydan okuma: arkadaşını geçtin mi, kaç puan kaldı
@@ -1307,14 +1308,13 @@ function boardMsg(info, line, tier = '') {
   $('boardTier').innerHTML = tier;
 }
 async function renderBoard() {
-  const seq = ++boardSeq, mb = myBest(), bestLine = mb > 0 ? tr('Haftalık en iyin: {s}').replace('{s}', fmt(mb)) : '';
+  const seq = ++boardSeq, bestLine = best > 0 ? `${tr('Rekor')} ${fmt(best)}` : '';
   $('boardName').textContent = myName() ? `${myName()} ✎` : tr('Ad seç');
   boardMsg(tr('Yükleniyor…'), '');
   const b = netOn() ? await refreshBoard() : null;
   if (seq !== boardSeq) return;
   if (!b) return boardMsg(tr('Bağlantı yok'), tr('Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.'), bestLine);
-  const left = Math.max(0, b.ends - Date.now()), d = Math.floor(left / 864e5), h = Math.floor(left / 36e5) % 24;
-  $('boardInfo').textContent = tr('{n} oyuncu · bitmesine {d}g {h}s').replace('{n}', fmt(b.total)).replace('{d}', d).replace('{h}', h);
+  $('boardInfo').textContent = tr('{n} oyuncu').replace('{n}', fmt(b.total)); // kalıcı sıralama: herkesin en iyi skoru, hafta sıfırlanmaz
   const li = (r, cc, name, score, cls = '') => `<li class="${cls}"><b>${r ? '#' + fmt(r) : '—'}</b><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`;
   const top = b.top || [], me = b.me;
   let html = top.map(t => li(t.rank, t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '')).join('');
@@ -1323,13 +1323,12 @@ async function renderBoard() {
   if (!me) html += li(0, ccOf(), shownName() || tr('Sen'), tr('Henüz uçmadın'), 'me');
   const list = $('boardList'); list.innerHTML = html;
   const meEl = list.querySelector('.me'); if (meEl) setTimeout(() => meEl.scrollIntoView({ block: 'nearest' }), 0);
-  // ödül: şu anki sıranın hafta sonu ödülü ve bir üstteki oyuncuya kaç puan kaldığı
+  // bir üstteki oyuncuya kaç puan kaldığı
   let t = '';
   if (me) {
-    t = tr('Hafta sonu ödülün: {r} simit').replace('{r}', fmt(rewardFor(me.rank)));
     const up = me.rank > 1 && (top.find(x => x.rank === me.rank - 1) || top[Math.min(2, top.length - 1)]);
     if (up && up.score >= me.score) t += `<small>${tr('{p} puan daha → {r}. sıra').replace('{p}', fmt(up.score - me.score + 1)).replace('{r}', fmt(up.rank))}</small>`;
-  } else t = tr('Uç, sıralamaya gir: ilk 3 hafta sonu 300, 200, 100 simit kazanır');
+  }
   $('boardTier').innerHTML = t;
 }
 let leagueKey = '', leagueGift = 0;

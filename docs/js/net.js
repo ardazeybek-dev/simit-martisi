@@ -85,10 +85,16 @@ export function sync() { // profil + bekleyen skor; aynı anda tek çalışır
       if (n === REJECT) { p.name = p.srv === p.auto ? '' : p.srv || ''; p.dirty = false; store.set(KEY_PROFILE, p); }
       else { p.name = p.srv = n; p.dirty = false; store.set(KEY_PROFILE, p); }
     }
+    // sıralama kalıcı oldu: bilet gelmeden (ya da çevrimdışı) yapılmış cihaz rekoru sunucuda yoktu → bir kez yüklenir
+    const best = +store.get('simit-martisi-best', 0) || 0;
+    if (!p.claimed && best > 0) {
+      const c = await rpc('claim_best', { p_id: p.id, p_secret: p.secret, p_score: best });
+      if (c === null) return false;
+      p.claimed = true; store.set(KEY_PROFILE, p);
+    }
     const q = store.get(KEY_PENDING, null);
     if (q) {
-      if (q.week !== weekKey()) store.set(KEY_PENDING, null); // geçen haftanın skoru bu haftaya yazılmasın
-      else {
+      {
         const r = await rpc('submit_score', { p_id: p.id, p_secret: p.secret, p_run: q.run, p_score: q.score, p_dist: q.dist, p_city: q.city });
         if (r !== null) { if (r !== REJECT) lastRank = r; store.set(KEY_PENDING, null); } // reddedilen skor bırakılır
       }
@@ -117,10 +123,10 @@ export function startRun() {
 
 // uçuş sonu: dönen değer bu haftaki sıra ya da null (ağ yok / ad yok / bilet yok)
 export async function submitScore(score, dist, city) {
-  const run = runP ? await runP : null; runP = null;
+  const run = runP ? await runP : null; // bilet ikinci şansta da geçerli: canlanıp devam eden uçuşun son skoru da gider
   if (!run) return null;
   const q = store.get(KEY_PENDING, null), wk = weekKey();
-  if (!q || q.week !== wk || score > q.score) store.set(KEY_PENDING, { week: wk, run, score, dist, city });
+  if (!q || score > q.score) store.set(KEY_PENDING, { week: wk, run, score, dist, city });
   if (syncing) await syncing; // yarıda kalan eşitleme bu skoru görmemiş olabilir
   lastRank = null;
   return (await sync()) ? lastRank : null;

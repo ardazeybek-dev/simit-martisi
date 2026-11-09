@@ -1,4 +1,4 @@
--- Simit Martısı: oyuncu profili + haftalık sıralama (Supabase / Postgres)
+-- Simit Martısı: oyuncu profili + kalıcı sıralama (herkesin en iyi skoru) (Supabase / Postgres)
 -- Supabase SQL Editor'de bir kez çalıştırılır. Tablolar istemciye kapalıdır (RLS açık, politika yok);
 -- istemci yalnızca aşağıdaki security definer fonksiyonları anon anahtarla çağırır. secret sütunu hiçbir zaman dışarı okunmaz.
 
@@ -93,9 +93,9 @@ begin
   return r;
 end $$;
 
--- haftalık en iyi skor: yalnızca büyükse güncellenir; dönen değer oyuncunun bu haftaki sırası.
--- Akla yatkınlık (biletten beri geçen t saniyeye göre): mesafe ≤ 30·t + 50 (en yüksek hız ~27 m/sn),
--- skor = puan + mesafe/10 ve puan ≤ 200·t + 500 (ölümsüz otomatik pilot: ortalama ~90, en iyi 10 sn ~190 puan/sn).
+-- skor haftanın satırına yazılır (yalnızca büyükse); dönen değer oyuncunun kalıcı sıralamadaki yeri.
+-- Akla yatkınlık (biletten beri geçen t saniyeye göre): mesafe ≤ 40·t + 100 (en yüksek hız ~29 m/sn, sapan dahil),
+-- skor = puan + mesafe/10 ve puan ≤ 600·t + 1500 (otomatik pilot ~90 puan/sn; 2x güçlendirici ve x5 komboyla gerçek uçuşlar 200'ü aşıyordu).
 drop function if exists submit_score(uuid, uuid, int, int, text);
 create or replace function submit_score(p_id uuid, p_secret uuid, p_run uuid, p_score int, p_dist int default 0, p_city text default null) returns int
 language plpgsql security definer set search_path = public as $$
@@ -104,37 +104,45 @@ begin
   if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
   select extract(epoch from now() - started_at) into t from runs where id = p_run and player_id = p_id and started_at > now() - interval '1 day';
   if t is null then raise exception 'unknown run'; end if;
-  if p_score is null or p_score < d / 10 or d > 30 * t + 50 or p_score - d / 10 > 200 * t + 500 then raise exception 'implausible score'; end if;
+  if p_score is null or p_score < d / 10 or d > 40 * t + 100 or p_score - d / 10 > 600 * t + 1500 then raise exception 'implausible score'; end if;
   insert into scores(player_id, week, city, score, dist) values (p_id, w, left(p_city, 16), p_score, d)
   on conflict (player_id, week) do update set score = excluded.score, dist = excluded.dist, city = excluded.city, updated_at = now()
     where scores.score < excluded.score;
-  select score into best from scores where player_id = p_id and week = w;
-  return (select count(*) + 1 from scores where week = w and (score > best or (score = best and updated_at < (select updated_at from scores where player_id = p_id and week = w))));
+  select max(score) into best from scores where player_id = p_id;
+  return (select count(*) + 1 from (select max(score) m from scores group by player_id) x where x.m > best);
 end $$;
 
--- tablo: bu haftanın ilk 50'si, oyuncunun sırası ve geçen haftaki son sırası (ödül için)
+-- sıralama gelmeden / çevrimdışı yapılmış cihaz rekoru: oyuncu başına bir kez, en fazla 30.000 (doğrulanamaz, üst sınırla kabul)
+create or replace function claim_best(p_id uuid, p_secret uuid, p_score int) returns int
+language plpgsql security definer set search_path = public as $$
+declare s int := least(greatest(coalesce(p_score, 0), 0), 30000);
+begin
+  if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
+  if s > 0 then insert into scores(player_id, week, score, dist) values (p_id, date '2000-01-03', s, 0) on conflict (player_id, week) do nothing; end if;
+  return s;
+end $$;
+
+-- tablo: herkesin en iyi skoruyla ilk 50 ve oyuncunun sırası (week/ends/prev eski istemciler için null)
 create or replace function get_board(p_id uuid default null) returns json
 language sql stable security definer set search_path = public as $$
-  with w as (select sm_week() as cur, sm_week() - 7 as prev),
+  with b as (
+    select distinct on (s.player_id) s.player_id, s.score, s.updated_at
+    from scores s order by s.player_id, s.score desc, s.updated_at
+  ),
   ranked as (
-    select s.week, s.player_id, s.score, p.name, p.cc,
-           row_number() over (partition by s.week order by s.score desc, s.updated_at) as rank
-    from scores s join players p on p.id = s.player_id, w
-    where s.week in (w.cur, w.prev)
+    select b.player_id, b.score, p.name, p.cc, row_number() over (order by b.score desc, b.updated_at) as rank
+    from b join players p on p.id = b.player_id
   )
   select json_build_object(
-    'week', (select cur from w),
-    'ends', extract(epoch from (((select cur from w) + 7)::timestamp at time zone 'Europe/Istanbul')) * 1000,
-    'total', (select count(*) from ranked, w where week = w.cur),
+    'week', null, 'ends', null, 'prev', null,
+    'total', (select count(*) from ranked),
     'top', coalesce((select json_agg(json_build_object('rank', rank, 'name', name, 'cc', cc, 'score', score, 'me', player_id = p_id) order by rank)
-                     from ranked, w where week = w.cur and rank <= 50), '[]'::json),
-    'me', (select json_build_object('rank', rank, 'score', score) from ranked, w where week = w.cur and player_id = p_id),
-    'prev', (select json_build_object('week', week, 'rank', rank, 'total', (select count(*) from ranked r2, w where r2.week = w.prev))
-             from ranked, w where week = w.prev and player_id = p_id)
+                     from ranked where rank <= 50), '[]'::json),
+    'me', (select json_build_object('rank', rank, 'score', score) from ranked where player_id = p_id)
   )
 $$;
 
-revoke all on function register(text, text), rename(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid) from public;
-grant execute on function register(text, text), rename(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid) to anon, authenticated;
+revoke all on function register(text, text), rename(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) from public;
+grant execute on function register(text, text), rename(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) to anon, authenticated;
 -- yardımcılar dışarıdan çağrılmasın (Supabase yeni fonksiyonlara anon yetkisi verebiliyor)
 revoke all on function sm_week(timestamptz), sm_name(text), sm_norm(text), sm_bad(text) from public, anon, authenticated;
