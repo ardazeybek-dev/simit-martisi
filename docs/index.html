@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.41.4">
+<meta name="app-version" content="2.42.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -122,7 +122,7 @@
   <nav class="menu-side right">
     <button class="side-btn m-ach" id="achBtn"><span class="side-ico"><svg><use href="#i-medal"/></svg></span><span>Başarımlar</span><i class="badge hidden" id="achBadge"></i></button>
     <button class="side-btn m-board" id="boardBtn"><span class="side-ico"><svg><use href="#i-trophy"/></svg></span><span>Sıralama</span></button>
-    <button class="side-btn m-ups" id="upsBtn"><span class="side-ico"><svg><use href="#i-bolt"/></svg></span><span>Güçlendir</span><i class="badge hidden" id="upsBadge"></i></button>
+    <button class="side-btn m-ups" id="upsBtn"><span class="side-ico"><svg><use href="#i-bolt"/></svg></span><span>Güçlendir</span></button>
   </nav>
   <div class="title-bottom">
     <div class="vs-pill hidden" id="vsPill"></div>
@@ -145,7 +145,6 @@
     <h2>Görevler</h2>
     <p class="mis-wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="misWallet">0</b></p>
     <div class="missions" id="titleMis"></div>
-    <p class="fine" id="misNote"></p>
     <button class="btn primary" id="closeMissions">Tamam</button>
   </div>
 </section>
@@ -156,7 +155,6 @@
     <div class="tabs"><button class="tab on" id="tabAch">Başarımlar</button><button class="tab" id="tabBdg">Rozetler<i class="badge hidden" id="bdgBadge"></i></button></div>
     <div class="achs" id="achList"></div>
     <div class="bdgs hidden" id="bdgBox"><div class="bdg-count" id="badgeCount"></div><div class="bdg-grid" id="badgeGrid"></div><p class="bdg-info" id="badgeInfo"></p></div>
-    <p class="fine" id="achFine">Her başarımın bronz, gümüş ve altın kademesi var; kademeyi geçince ödülünü buradan al. <span>😊</span></p>
     <button class="btn primary" id="closeAch">Tamam</button>
   </div>
 </section>
@@ -165,9 +163,6 @@
   <div class="card">
     <div class="sheet-head"><h2>Güçlendir</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="upWallet">0</b></div></div>
     <div class="ups" id="ups"></div>
-    <p class="boost-h">Sonraki uçuş için</p>
-    <div class="boosts" id="boosts"></div>
-    <p class="fine" id="upNote"></p>
     <button class="btn primary" id="closeUps">Tamam</button>
   </div>
 </section>
@@ -259,7 +254,6 @@
       <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
     <div class="seg"><span>Dil</span><div><button data-lang="tr">Türkçe</button><button data-lang="en">English</button><button data-lang="de">Deutsch</button><button data-lang="es">Español</button></div></div>
-    <p class="fine">Bilgisayarda: fare ya da ← → ile yönlendir, P duraklat, M sesi kapat.</p>
     <button class="btn primary" id="closeSettings">Tamam</button>
   </div>
 </section>

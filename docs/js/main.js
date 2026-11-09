@@ -969,30 +969,6 @@ function renderXp(xp, f0, r) {
   requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = ''; bar.style.transform = `scaleX(${f1})`; }));
   if (r.ups) setTimeout(() => { if (state === 'over') { sfx.record(); vibrate([20, 30, 20]); bump(el.querySelector('em'), 'popin'); } }, 900);
 }
-// ---------- tek uçuşluk güçlendirici: Güçlendir panelinde seçilir, kalkışta simitle ödenir ve uçuş onunla başlar ----------
-// Ayar: BOOST (fiyatlar). Seçim yalnız bir uçuş sürer.
-const BOOST = { shield: 40, magnet: 50, double: 60 };
-const boostSel = new Set();
-const boostSpent = () => [...boostSel].reduce((a, k) => a + BOOST[k], 0);
-function renderBoosts() {
-  const box = $('boosts'); box.textContent = '';
-  for (const k of Object.keys(BOOST)) {
-    const on = boostSel.has(k), b = document.createElement('button');
-    b.className = 'boost' + (on ? ' on' : '') + (!on && wallet - boostSpent() < BOOST[k] ? ' poor' : '');
-    b.style.setProperty('--c', POWER[k].color);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', tr(POWER[k].name));
-    b.innerHTML = `<span class="boost-i">${ICON_SVG[k]}</span><small>${on ? '✓' : `<svg class="ico"><use href="#i-simit"/></svg>${fmt(BOOST[k])}`}</small>`;
-    b.addEventListener('click', e => { e.stopPropagation(); toggleBoost(k, b); });
-    box.appendChild(b);
-  }
-  $('upsBadge').textContent = boostSel.size; show('upsBadge', boostSel.size > 0); // menüde: kaç güçlendiriciyle kalkılacak
-}
-function toggleBoost(k, el) {
-  if (boostSel.has(k)) { boostSel.delete(k); sfx.click(); }
-  else if (wallet - boostSpent() < BOOST[k]) { sfx.click(); bump(el, 'shake'); vibrate(30); return; }
-  else { boostSel.add(k); sfx.power(); vibrate(15); $('upNote').textContent = `${tr('Sonraki uçuşa bununla başlarsın.')} :)`; }
-  renderBoosts();
-}
 const look = { owned: [], on: [] };
 { const l = store.get(KEY_LOOK, {}), ok = id => COSTUMES.some(c => c.id === id);
   look.owned = (Array.isArray(l.owned) ? l.owned : []).filter(ok); look.on = (Array.isArray(l.on) ? l.on : []).filter(id => look.owned.includes(id)); }
@@ -1178,7 +1154,6 @@ function startGame() {
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
   shownScore = shownSimit = shownDist = shownFish = -1; shownMult = 0;
   ui.combo.classList.remove('on');
-  if (boostSel.size) { for (const k of boostSel) if (wallet >= BOOST[k]) { wallet -= BOOST[k]; pw[k] = dur(k); } store.set(KEY_WALLET, wallet); boostSel.clear(); }
   renderPowers();
   if (tutorialPending) startTutorial();
   if (daily) { // kalkışta üstte kısa kart: günün kuralı (iskele kartıyla aynı yer, uçuşta başka yazı yok)
@@ -1373,7 +1348,7 @@ const priceOf = c => (c.id === dealToday() ? Math.round((c.price * 0.6) / 10) * 
 let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan (önizlenen) kostüm
 function openWardrobe() {
   if (state !== 'title') return;
-  dressing = true; cosSel = null; $('wardNote').textContent = `${tr('Dokun, martında dene; beğenirsen al.')} :)`;
+  dressing = true; cosSel = null; $('wardNote').textContent = '';
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe'); podEnter();
 }
@@ -1416,7 +1391,7 @@ function pickCostume(c) {
   sfx.click(); flapBurst = 1;
   sparkle(gull.position, 12, 0xffe7a8, 3, 0.45, 0.25);
   const own = look.owned.includes(c.id);
-  $('wardNote').textContent = own ? tr(c.name) : wallet < priceOf(c) ? `${tr('Yeterli simit yok')}: ${fmt(priceOf(c) - wallet)}` : `${tr(priceOf(c) < c.price ? 'Günün fırsatı' : 'Önizleme')}: ${tr(c.name)}`;
+  $('wardNote').textContent = !own && wallet < priceOf(c) ? `${tr('Yeterli simit yok')}: ${fmt(priceOf(c) - wallet)}` : '';
   renderWardrobe();
 }
 function costumeAction() {
@@ -1428,7 +1403,7 @@ function costumeAction() {
     wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]);
     look.on = withItem(look.on, c);
     sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
-    $('wardNote').textContent = `${tr(c.name)} ✓ 😊`;
+    $('wardNote').textContent = '';
   } else if (look.on.includes(c.id)) {
     look.on = look.on.filter(id => id !== c.id); sfx.click();
   } else {
@@ -1440,7 +1415,7 @@ function costumeAction() {
 }
 // ---------------- güçlendirme yükseltmeleri ----------------
 function renderUps() {
-  $('upWallet').textContent = fmt(wallet); renderBoosts();
+  $('upWallet').textContent = fmt(wallet);
   const box = $('ups'); box.textContent = '';
   for (const k of Object.keys(ups)) {
     const lv = ups[k], max = lv >= UP_COST.length, cost = UP_COST[lv];
@@ -1459,9 +1434,9 @@ function renderUps() {
 function buyUp(k, el) {
   const lv = ups[k], cost = UP_COST[lv];
   if (lv >= UP_COST.length) return;
-  if (wallet < cost) { sfx.click(); bump(el, 'shake'); $('upNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(cost - wallet)}`; return; }
+  if (wallet < cost) { sfx.click(); bump(el, 'shake'); vibrate(30); return; }
   wallet -= cost; ups[k]++; store.set(KEY_WALLET, wallet); store.set(KEY_UP, ups);
-  sfx.power(); vibrate([20, 30, 20]); $('upNote').textContent = `${tr('Güçlendirmeler daha uzun sürer.')} :)`;
+  sfx.power(); vibrate([20, 30, 20]);
   renderUps(); $('titleWallet').textContent = fmt(wallet);
   bump($('ups').children[Object.keys(ups).indexOf(k)], 'bump');
 }
@@ -1516,10 +1491,6 @@ function refillMissions() {
   }
   store.set(KEY_MIS, missions); store.set(KEY_MISLV, misLv);
 }
-function misNote() {
-  if (misAllDone() && misLv.sets >= MIS_SETS) return `${tr('Bugünlük görevler bitti. Yenileri yarın!')} 😊`;
-  return `${tr('Set')} ${misLv.lv + 1} · ${tr('Üçünü bitir, sıradaki set gelsin')} (${tr('ve biraz daha simit')} :))`;
-}
 function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k === k) m.p = (m.p || 0) + n; }
 function checkMissions() {
   for (const m of missions) {
@@ -1533,7 +1504,6 @@ function checkMissions() {
 // fill: oyun sonunda çubuklar uçuştan önceki yerden (m.p0) dolar; bu uçuşta biten görev parlar ve simiti sayılır
 function renderMissions(box, fill = false) {
   box.textContent = '';
-  if ($('misNote')) $('misNote').textContent = misNote();
   missions.forEach((m, i) => {
     const v = Math.min(m.n, misProgress(m)), v0 = fill ? Math.min(v, m.p0 || 0) : v, now = fill && m.done && !m.wasDone;
     const d = document.createElement('div');
@@ -1603,7 +1573,7 @@ function renderMenuBadges() {
   const fresh = missions.filter(m => !m.done && !m.seen).length; // yeni gelen, henüz bakılmamış görevler
   $('misBadge').textContent = fresh; show('misBadge', fresh > 0);
   show('dailyDot', dailyState().ready || freeSpin());
-  if (state === 'title') { renderBoosts(); $('titleWallet').textContent = fmt(wallet); }
+  if (state === 'title') $('titleWallet').textContent = fmt(wallet);
   const ar = achReady() + badgesNew(); $('achBadge').textContent = ar; show('achBadge', ar > 0); // alınmamış başarım + bakılmamış rozet
 }
 // ---------------- başarımlar ----------------
@@ -1709,7 +1679,7 @@ function openDaily() {
     el.querySelector('span').textContent = `${tr('Gün')} ${i + 1}`;
     box.appendChild(el);
   });
-  $('dailyNote').textContent = `${tr(d.ready ? 'Her gün uğra, ödül büyüsün. Bir gün kaçırırsan baştan başlar.' : 'Bugünün ödülünü aldın. Yarın yine gel!')} 😊`;
+  $('dailyNote').textContent = '';
   $('claimBtn').textContent = tr(d.ready ? 'Al' : 'Tamam');
   show('saveStreak', !!d.lost);
   if (d.lost) $('saveStreak').innerHTML = `${tr('Seriyi kurtar')}: ${tr('Gün')} ${fmt(d.lost % DAILY.length + 1)} · <svg class="ico"><use href="#i-simit"/></svg>${fmt(STREAK_SAVE)}`;
@@ -1732,8 +1702,8 @@ function claimDaily() {
 // ---------------- şans çarkı (günlük ödül panelinin ikinci sekmesi) ----------------
 // Balıkla ya da simitle çevrilir; ödül çevirir çevirmez cüzdana yazılır (panel kapansa da kaybolmaz), çark durunca gösterilir.
 // Ayar: WHEEL (tür s=simit / f=balık, miktar, ağırlık), SPIN_FISH, SPIN_SIMIT. Ortalama kazanç bedelin altında: çark kazandırmaz, heyecan verir.
-const WHEEL = [['s', 100, 30], ['f', 1, 14], ['s', 250, 22], ['s', 1000, 7], ['s', 500, 14], ['f', 3, 7], ['s', 2500, 4], ['s', 10000, 2]];
-const SPIN_FISH = 3, SPIN_SIMIT = 2500, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
+const WHEEL = [['s', 100, 30], ['f', 1, 14], ['s', 150, 22], ['s', 500, 7], ['s', 250, 14], ['f', 3, 7], ['s', 1000, 4], ['s', 3000, 2]];
+const SPIN_FISH = 1, SPIN_SIMIT = 300, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
 let wheelRot = 0, spinning = false, wheelBuilt = false;
 const KEY_FREESPIN = 'simit-martisi-freespin';
 const freeSpin = () => store.get(KEY_FREESPIN, '') !== dayKey(); // günde bir bedava çevirme
@@ -1852,7 +1822,7 @@ function badgeInfo(b) {
 function achTab(t) {
   const bd = t === 'bdg';
   $('tabAch').classList.toggle('on', !bd); $('tabBdg').classList.toggle('on', bd);
-  show('achList', !bd); show('achFine', !bd); show('bdgBox', bd);
+  show('achList', !bd); show('bdgBox', bd);
   if (bd) { renderBadges(); ach.bseen = BADGES.filter(badgeOn).map(b => b.id); store.set(KEY_ACH, ach); renderMenuBadges(); }
   const nb = badgesNew(); $('bdgBadge').textContent = nb; show('bdgBadge', nb > 0);
 }
@@ -2036,7 +2006,7 @@ onBtn('achBtn', () => openAch());
 onBtn('closeAch', () => show('achPanel', false));
 onBtn('tabAch', () => achTab('ach'));
 onBtn('tabBdg', () => achTab('bdg'));
-onBtn('upsBtn', () => { $('upNote').textContent = `${tr('Simitle güçlendirmeleri yükselt: her seviye süreyi uzatır.')} 😊`; renderUps(); show('upPanel'); });
+onBtn('upsBtn', () => { renderUps(); show('upPanel'); });
 onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
 onBtn('dailyBtn', () => openDaily());
 onBtn('modeBtn', () => openDayRun());
@@ -2874,7 +2844,7 @@ window.__game = {
   get state() { return state; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, setCombo: n => { combo = n; comboT = COMBO_T; }, get powers() { return { ...pw }; },
   genLog: on => { const l = genLog; genLog = on ? [] : null; return l; },
-  get wallet() { return wallet; }, get rank() { return { ...rank }; }, addXp, get boosts() { return [...boostSel]; }, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },
+  get wallet() { return wallet; }, get rank() { return { ...rank }; }, addXp, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revives > 0; }, revive: () => askRevive(),
   get fish() { return fish; }, setFish, fishRevive, get fishCost() { return fishCost(); }, setFishOdds: (spawn, ok) => { fishSpawn = spawn; fishCatch = ok; },
