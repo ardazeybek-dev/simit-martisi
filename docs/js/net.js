@@ -133,6 +133,9 @@ export async function submitScore(score, dist, city) {
 }
 
 // { week, ends, total, top:[{rank,name,cc,score,me}], me:{rank,score}|null, prev:{week,rank,total}|null } ya da null
+// günlük ödül sunucuda: aynı ağ + aynı tarayıcı günde bir kez alır (kayıtlar silinse de). act: peek | claim | save
+export const dailyRpc = act => rpc('daily', { p_act: act });
+
 export async function fetchBoard() {
   await sync();
   return rpc('get_board', { p_id: profile().id || null });

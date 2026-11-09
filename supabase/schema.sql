@@ -146,3 +146,49 @@ revoke all on function register(text, text), rename(uuid, uuid, text), start_run
 grant execute on function register(text, text), rename(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) to anon, authenticated;
 -- yardımcılar dışarıdan çağrılmasın (Supabase yeni fonksiyonlara anon yetkisi verebiliyor)
 revoke all on function sm_week(timestamptz), sm_name(text), sm_norm(text), sm_bad(text) from public, anon, authenticated;
+
+-- günlük ödül: kayıt cihazda değil sunucuda. Anahtar = ağ adresi + tarayıcı kimliğinin özeti (ham IP saklanmaz).
+-- Yerel kayıt silinip yeniden girilince ödül ikinci kez alınamaz, seri de sıfırlanmaz. Gün İstanbul saatiyle döner.
+-- p_act: 'peek' (durum), 'claim' (bugünün ödülünü al), 'save' (1-2 gün kaçmış seriyi geri al; simit istemcide düşülür)
+create table if not exists daily_claims (
+  k text primary key,
+  last date not null,
+  streak int not null
+);
+alter table daily_claims enable row level security;
+
+create or replace function daily(p_act text default 'peek') returns json
+language plpgsql security definer set search_path = public as $$
+declare
+  h json := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json;
+  ip text := coalesce(h->>'cf-connecting-ip', h->>'x-real-ip', split_part(h->>'x-forwarded-for', ',', 1), '');
+  vk text := md5(trim(ip) || '|' || coalesce(h->>'user-agent', ''));
+  today date := (now() at time zone 'Europe/Istanbul')::date;
+  r daily_claims;
+  nxt int; lost int := 0; ago int;
+begin
+  select * into r from daily_claims d where d.k = vk;
+  if found then
+    ago := today - r.last;
+    nxt := case when ago = 1 then r.streak % 7 + 1 else 1 end;
+    if ago between 2 and 3 and r.streak between 2 and 6 then lost := r.streak; end if;
+  else nxt := 1; end if;
+
+  if p_act = 'claim' then
+    insert into daily_claims as d values (vk, today, nxt)
+      on conflict (k) do update set last = today, streak = nxt where d.last < today
+      returning d.streak into nxt;
+    if found then return json_build_object('claimed', true, 'ready', false, 'streak', nxt); end if;
+    return json_build_object('claimed', false, 'ready', false, 'streak', r.streak);
+  elsif p_act = 'save' then
+    if lost > 0 then
+      update daily_claims d set last = today - 1, streak = lost where d.k = vk;
+      return json_build_object('saved', true, 'ready', true, 'streak', lost % 7 + 1, 'lost', 0);
+    end if;
+    return json_build_object('saved', false, 'ready', not found or r.last < today, 'streak', case when r.last = today then r.streak else nxt end, 'lost', 0);
+  end if;
+  if found and r.last = today then return json_build_object('ready', false, 'streak', r.streak); end if;
+  return json_build_object('ready', true, 'streak', nxt, 'lost', lost);
+end $$;
+revoke all on function daily(text) from public;
+grant execute on function daily(text) to anon, authenticated;

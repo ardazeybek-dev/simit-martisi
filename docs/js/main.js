@@ -7,7 +7,7 @@ import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryG
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun } from './board.js';
-import { netOn, myName, shownName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, fetchBoard } from './net.js';
+import { netOn, myName, shownName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, fetchBoard, dailyRpc } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -37,6 +37,7 @@ const blob = new THREE.Mesh(GEO.blob, new THREE.MeshBasicMaterial({ color: 0x0a1
 blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
 // ---------------- dünya ----------------
+let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
 let bridgeZ = 0;
 let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, anchorZ = 0, land = [];
@@ -244,6 +245,7 @@ function throwVolleys(z0, len, first) {
   }
 }
 function addThrown(bt, cx, cz, gold, ry) { // ry: halkanın yüksekliği (vapur güvertesi); yoksa dalgada
+  if (gold) return addSimit(cx, FLY_Y, cz, true, true); // altın parça atılmaz: yerinde asılı durur, olduğu yerde döner ve parlar
   if (genLog) genLog.push(`t${cx.toFixed(2)},${cz.toFixed(1)}${gold ? 'g' : ''}`);
   const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); scene.add(m);
   const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); ring.visible = false; scene.add(ring); // iniş yeri sürpriz: halka yalnız plajda görünür
@@ -330,7 +332,7 @@ function spawnGap(first, fixLen) {
     }
     // zıplayan balık (nadir): önce suda çırpınır, martı gelince martının yüksekliğine sıçrar.
     // Değersen ya yakalarsın (balık cüzdana) ya da elinden kayar: "Kaçtı!"
-    if (d > 0.15 && len > 30 && (Math.random() < fishSpawn * (ruleOn('fish') ? 3 : 1) || (!fishEarly && genZ < -600))) { // ~300 m'den sonra ilk açık suda mutlaka bir balık
+    if (d > 0.15 && len > 30 && !fishRun && !fishEarly && Math.random() < fishSpawn * (ruleOn('fish') ? 3 : 1)) { // balık nadir: uçuş başına en çok bir balık zıplar
       fishEarly = true;
       const dir = pick([-1, 1]), m = new THREE.Mesh(FISH, vcMat); m.visible = false; m.scale.setScalar(1.35); scene.add(m);
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
@@ -937,7 +939,7 @@ const WALLET_RATE = 20; // kaç yakalanan simit cüzdana 1 simit eder: para yava
 let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
-let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.12, fishCatch = 0.4, fishEarly = false;
+let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.03, fishCatch = 0.3, fishEarly = false;
 const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // martı rütbesi: her uçuşun simiti ve mesafesi XP olur (simit başına 1, 20 m başına 1); her seviye simit ödüller, belli seviyelerde unvan değişir.
@@ -1652,7 +1654,15 @@ const dayKey = (d = new Date()) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.g
 // seri kurtarma: en çok iki gün kaçırıldıysa kopan seri simitle geri alınır (STREAK_SAVE)
 const STREAK_SAVE = 50;
 const daysAgo = k => { const [a, b, c] = String(k).split('-').map(Number); return a ? Math.round((new Date().setHours(0, 0, 0, 0) - new Date(a, b - 1, c)) / 864e5) : 99; };
+// sunucu durumu (varsa) esastır: yerel kayıt silinip yeniden girilince ödül tekrar alınamasın, seri de kaybolmasın
+const srvOk = r => r && !r.rejected && typeof r.streak === 'number';
+function setSrvDaily(r) {
+  srvDaily = { ready: !!r.ready, streak: r.streak, lost: r.lost || 0, day: dayKey() };
+  if (!r.ready) store.set(KEY_DAILY, { last: dayKey(), streak: r.streak }); // yerel kayıt da sunucuya uysun
+}
+dailyRpc('peek').then(r => { if (srvOk(r)) { setSrvDaily(r); if (state === 'title') renderMenuBadges(); } });
 function dailyState() {
+  if (srvDaily && srvDaily.day === dayKey()) return { ready: srvDaily.ready, streak: srvDaily.streak, lost: srvDaily.ready ? srvDaily.lost : 0 };
   const s = store.get(KEY_DAILY, {}) || {}, today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
   if (s.last === today) return { ready: false, streak: s.streak || 1 };
   const streak = s.last === dayKey(y) ? (s.streak || 0) % DAILY.length + 1 : 1;
@@ -1660,10 +1670,14 @@ function dailyState() {
   const ago = daysAgo(s.last), n = s.streak || 0;
   return { ready: true, streak, lost: ago >= 2 && ago <= 3 && n >= 2 && n < DAILY.length ? n : 0 };
 }
-function saveStreak() {
+async function saveStreak() {
   const d = dailyState();
-  if (!d.lost) return;
+  if (!d.lost || dailyBusy) return;
   if (wallet < STREAK_SAVE) { bump($('saveStreak'), 'shake'); vibrate(30); $('dailyNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(STREAK_SAVE - wallet)}`; return; }
+  if (netOn()) {
+    dailyBusy = true; const r = await dailyRpc('save'); dailyBusy = false;
+    if (srvOk(r)) { setSrvDaily(r); if (!r.saved) return openDaily(); }
+  }
   const y = new Date(); y.setDate(y.getDate() - 1);
   wallet -= STREAK_SAVE; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(y), streak: d.lost });
   sfx.power(); vibrate([20, 30, 20]); $('titleWallet').textContent = fmt(wallet);
@@ -1686,8 +1700,19 @@ function openDaily() {
   dailyTab('daily'); $('dlWallet').textContent = fmt(wallet); $('dlFish').textContent = fmt(fish);
   show('dailyPanel');
 }
-function claimDaily() {
+async function claimDaily() {
+  if (dailyBusy) return;
   const d = dailyState();
+  if (d.ready && netOn()) { // sunucu onaylamadan ödül verilmez; sunucuya ulaşılamazsa yerel kayıtla devam
+    dailyBusy = true; $('claimBtn').disabled = true;
+    const r = await dailyRpc('claim');
+    dailyBusy = false; $('claimBtn').disabled = false;
+    if (srvOk(r)) {
+      setSrvDaily({ ready: false, streak: r.streak });
+      if (!r.claimed) { openDaily(); $('dailyNote').textContent = tr('Bugünkü ödülü zaten aldın'); renderMenuBadges(); return; }
+      d.streak = r.streak;
+    }
+  }
   if (d.ready) {
     const r = DAILY[d.streak - 1];
     wallet += r; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(), streak: d.streak });
@@ -2523,7 +2548,7 @@ function frame() {
     if (u > 1.3) f.mesh.visible = false;
     if (!f.done && state === 'play' && u > 0.25 && u < 0.75 && Math.abs(g.x - x) < 1.15 && Math.abs(g.z - f.z) < 1.3 && Math.abs(g.y - y) < 1.3) {
       f.done = true;
-      if (Math.random() < fishCatch) catchFish(f); else slipFish(f);
+      if (!fishRun && Math.random() < fishCatch) catchFish(f); else slipFish(f);
     }
   }
   if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }
