@@ -1559,11 +1559,9 @@ function openDayRun() {
   const r = todayRule(), d = dayRun();
   $('drIcon').setAttribute('href', '#' + r.icon);
   $('drRule').textContent = tr(r.name); $('drText').textContent = tr(r.text);
-  $('drBest').textContent = d.done ? `${tr('Günün en iyin')} ${fmt(d.best)}` : tr('Bugün henüz uçmadın');
+  $('drBest').textContent = d.done ? `${tr('Günün en iyin')} ${fmt(d.best)}` : ''; // uçmadıysa boş: hak zaten görünüyor
   const left = Math.max(0, DAY_RUNS - d.runs);
-  $('drStreak').innerHTML = (d.paid ? tr('{n} gün seri').replace('{n}', fmt(d.streak))
-    : `${tr('{n} gün seri').replace('{n}', fmt(d.streak))} · ${tr('ilk uçuşa')} +${fmt(dayGift(d.streak))} <svg class="ico"><use href="#i-simit"/></svg>`)
-    + (left ? ` · <b>${fmt(left)}/${DAY_RUNS} ${tr('hak')}</b>` : `<br><b>${tr('Bugünkü hakların bitti, yarın yeni mod!')}</b>`);
+  $('drStreak').innerHTML = left ? `<b>${fmt(left)}/${DAY_RUNS} ${tr('hak')}</b>` : `<b>${tr('Bugünkü hakların bitti, yarın yeni mod!')}</b>`;
   renderMode(); show('dayRunPanel');
 }
 // menüdeki mod seçici: Oyna seçili modu başlatır (ileride yeni modlar buraya eklenir)
