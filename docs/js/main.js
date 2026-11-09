@@ -2747,7 +2747,7 @@ const SHOUTS = {
 };
 const saidRun = new Set();
 function line(list) {
-  const fresh = list.filter(s => !saidRun.has(s));
+  const fresh = list.filter(s => s.length <= 18 && !saidRun.has(s)); // kısa sözler: uçarken bir bakışta okunsun
   if (!fresh.length) return '';
   const s = pick(fresh); saidRun.add(s); return s;
 }
@@ -2758,7 +2758,7 @@ function shout(p, s, cheer) {
   const say = cheer ? line(CHEERS) || line(SHOUTS.genel) : line(SHOUTS[p.kind] || SHOUTS.amca) || line(SHOUTS.genel);
   if (!say) return; // bu uçuşta söylenecek söz kalmadı
   shoutT = now;
-  popText(tr(say), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout');
+  popText(tr(say), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout', gull.position);
 }
 // kapılan simit, martının ekrandaki yerinden HUD'daki simit sayacına uçar (seyrekleştirilmiş: telefonda DOM yükü olmasın)
 const coinV = new THREE.Vector3();

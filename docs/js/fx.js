@@ -154,13 +154,15 @@ export function updateFx(dt) {
 // Uçuşta yalnızca simidi kapılan yolcunun lafı yazı olarak çıkar; puan, rüzgâr vb. yazısı yok.
 const v3 = new THREE.Vector3();
 const popLayer = document.getElementById('pops');
-export function popText(text, worldPos, cls = '') {
+export function popText(text, worldPos, cls = '', avoid = null) { // avoid: bu dünya noktasının (martı) üstünde kalsın, önünü kapatmasın
   v3.copy(worldPos).project(camera);
   if (v3.z > 1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05) return;
   const el = document.createElement('div');
   el.className = 'pop ' + cls; el.textContent = text;
   // kenara taşmasın: balon ekranın içinde kalsın
-  el.style.left = `${Math.min(Math.max((v3.x * 0.5 + 0.5) * innerWidth, 80), innerWidth - 80)}px`; el.style.top = `${Math.max((-v3.y * 0.5 + 0.5) * innerHeight, 70)}px`;
+  const x = (v3.x * 0.5 + 0.5) * innerWidth; let y = (-v3.y * 0.5 + 0.5) * innerHeight;
+  if (avoid) { v3.copy(avoid).project(camera); y = Math.min(y, (-v3.y * 0.5 + 0.5) * innerHeight - innerHeight * 0.2); } // martının epey üstünde, ufka doğru
+  el.style.left = `${Math.min(Math.max(x, 90), innerWidth - 90)}px`; el.style.top = `${Math.max(y, innerHeight * 0.22)}px`; // HUD'un altında
   popLayer.appendChild(el);
   setTimeout(() => el.remove(), 1650);
 }
