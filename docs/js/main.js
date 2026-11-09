@@ -7,7 +7,7 @@ import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryG
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun } from './board.js';
-import { netOn, myName, shownName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, fetchBoard, dailyRpc } from './net.js';
+import { netOn, myName, shownName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -1206,7 +1206,7 @@ function showOver() {
   const final = total();
   const isBest = !daily && final > best, prevBest = best;
   if (isBest) { best = final; store.set(KEY_BEST, best); }
-  const msg = { 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!' };
+  const msg = { quit: 'Uçuş bitti', 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!' };
   $('overTitle').textContent = tr(msg[cause] || 'Pat!');
   $('stSimit').textContent = fmt(Math.floor(simitCount)) + (goldCount >= 1 ? ` (+${Math.floor(goldCount)} ${tr('altın')})` : '');
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
@@ -2074,7 +2074,8 @@ onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('cosAct', () => costumeAction());
 onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
-onBtn('quitBtn', () => { audio.resume(); showTitle(); });
+// duraklatmadan çıkış uçuşu bitirir: skor sıralamaya gider, simitler cüzdana, görevler sayılır (eskiden hepsi kayboluyordu)
+onBtn('quitBtn', () => { audio.resume(); show('pause', false); if (total() > 0 && !tutorialPending) { cause = 'quit'; showOver(); show('reviveBtn', false); show('fishBtn', false); } else showTitle(); });
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 // panelin dışına (karartılmış boşluğa) dokunmak paneli kapatır; kendi kapatma düğmesine basılmış gibi, oyun başlamaz
@@ -2139,8 +2140,9 @@ function syncToggles() {
 }
 syncToggles();
 // sekme arka plana geçince otomatik duraklat
-document.addEventListener('visibilitychange', () => { if (document.hidden) { pause(); audio.suspend(); } else if (state !== 'paused') audio.resume(); });
-addEventListener('pagehide', () => pause());
+const stashRun = () => { if (state === 'play' || state === 'paused' || state === 'dead') stashScore(total(), Math.floor(dist), city.id); }; // yarıda kalan uçuşun skoru kaybolmasın
+document.addEventListener('visibilitychange', () => { if (document.hidden) { pause(); audio.suspend(); stashRun(); } else if (state !== 'paused') audio.resume(); });
+addEventListener('pagehide', () => { pause(); stashRun(); });
 
 // ---------------- kalite: zayıf cihazda kendini kısar ----------------
 const DPR = Math.min(2, devicePixelRatio || 1);

@@ -109,16 +109,24 @@ const weekKey = (now = Date.now()) => { const d = new Date(now); d.setDate(d.get
 
 // uçuş başı: sunucudan bilet. Skor bu biletin alındığı andan beri geçen süreye göre denetlenir;
 // bileti olmayan uçuş (ad yok, uçuş başında ağ yok) sıralamaya girmez, yalnızca yerel haftalık en iyiye yazılır.
-let runP = null;
+let runP = null, runId = null; // runId: bu uçuşun bileti (sayfa kapanırken skoru saklamak için eşzamanlı lazım)
 export function startRun() {
+  runId = null;
   runP = (async () => {
     if (!netOn()) return null;
     await sync();
     const p = profile();
     if (!p.id) return null;
     const r = await rpc('start_run', { p_id: p.id, p_secret: p.secret });
-    return typeof r === 'string' ? r : null;
+    return (runId = typeof r === 'string' ? r : null);
   })();
+}
+// uçuş yarıda kalırken (sekme gizlendi, sayfa yenilendi/kapandı): skor bekleyen olarak saklanır, sonraki açılışta sync onu gönderir.
+// Bilet bir gün geçerli; sunucu süreyi biletten sayar, geç gelen skor yine akla yatkın kalır.
+export function stashScore(score, dist, city) {
+  if (!runId || !(score > 0)) return;
+  const q = store.get(KEY_PENDING, null);
+  if (!q || score > q.score) store.set(KEY_PENDING, { week: weekKey(), run: runId, score, dist, city });
 }
 
 // uçuş sonu: dönen değer bu haftaki sıra ya da null (ağ yok / ad yok / bilet yok)
