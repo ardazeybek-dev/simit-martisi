@@ -36,6 +36,16 @@ try {
   }
 } catch (e) {}
 
+// başarımlar sıfırlanır (sayaçlar, alınan ödüller, rozetler); yalnızca rekor mesafe ve puan kalır (rekor şamandırası bundan okunur)
+const ACH_MARK = 'simit-martisi-ach-reset-2026-11-09';
+try {
+  if (!localStorage.getItem(ACH_MARK)) {
+    const a = JSON.parse(localStorage.getItem('simit-martisi-ach') || 'null'), st = (a && a.st) || {};
+    if (a) localStorage.setItem('simit-martisi-ach', JSON.stringify({ st: { maxDist: st.maxDist || 0, maxScore: st.maxScore || 0 }, got: {} }));
+    localStorage.setItem(ACH_MARK, '1');
+  }
+} catch (e) {}
+
 // Kit: birçok parçayı tek bir vertex-renkli geometriye birleştirir → tek draw call
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 const _c = new THREE.Color();
