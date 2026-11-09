@@ -160,10 +160,15 @@ export function popText(text, worldPos, cls = '', avoid = null) { // avoid: bu d
   const el = document.createElement('div');
   el.className = 'pop ' + cls; el.textContent = text;
   // kenara taşmasın: balon ekranın içinde kalsın
-  const x = (v3.x * 0.5 + 0.5) * innerWidth; let y = (-v3.y * 0.5 + 0.5) * innerHeight;
-  if (avoid) { v3.copy(avoid).project(camera); y = Math.min(y, (-v3.y * 0.5 + 0.5) * innerHeight - innerHeight * 0.2); } // martının epey üstünde, ufka doğru
-  el.style.left = `${Math.min(Math.max(x, 90), innerWidth - 90)}px`; el.style.top = `${Math.max(y, innerHeight * 0.22)}px`; // HUD'un altında
-  popLayer.appendChild(el);
+  const x = (v3.x * 0.5 + 0.5) * innerWidth;
+  if (avoid) { // yolcu lafı: ortadaki uçuş yolunu hiç kapatmasın → konuşanın tarafında, ekran kenarına yaslı, HUD'un hemen altında
+    popLayer.appendChild(el);
+    const w = el.offsetWidth, left = x < innerWidth / 2;
+    el.style.left = `${left ? 10 + w / 2 : innerWidth - 10 - w / 2}px`; el.style.top = `${Math.round(innerHeight * 0.27)}px`; // VİRAJ kartının altı, ufkun üstü
+  } else {
+    el.style.left = `${Math.min(Math.max(x, 90), innerWidth - 90)}px`; el.style.top = `${Math.max((-v3.y * 0.5 + 0.5) * innerHeight, innerHeight * 0.22)}px`;
+    popLayer.appendChild(el);
+  }
   setTimeout(() => el.remove(), 1650);
 }
 export function clearFx() {
