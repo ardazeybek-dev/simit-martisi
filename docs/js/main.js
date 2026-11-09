@@ -1132,7 +1132,10 @@ function renderRouteMap() {
 }
 let dailyAuto = false; // kendiliğinden açılan ödül penceresi: sayfa açılışında bir kez
 function showTitle() {
-  if (window.__reloadOnTitle) { location.reload(); return; } // yeni sürüm indi: menüye dönerken tazelen
+  if (window.__reloadOnTitle) { // yeni sürüm indi: menüye dönerken tazelen, ama önce gönderilmekte olan skor gitsin (en çok 3 sn)
+    if (window.__reloading) return; window.__reloading = true;
+    Promise.race([sync(), new Promise(r => setTimeout(r, 3000))]).finally(() => location.reload()); return;
+  }
   if (daily) { daily = false; const c = cityOf(store.get(KEY_CITY, 'istanbul')); useCity(cityOpen(c) ? c : CITIES[0]); }
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions(); gullSize();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
@@ -2935,6 +2938,7 @@ showTitle();
 // sunucu: profil, bekleyen skor ve (bir kez) cihaz rekoru gönderilir
 if (netOn()) refreshBoard();
 addEventListener('online', () => sync());
+setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gönderim, kapanan sayfa) hemen gitsin
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
