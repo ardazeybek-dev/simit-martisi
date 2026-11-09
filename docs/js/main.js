@@ -83,22 +83,33 @@ const PIER_HALF = 36; // iskele kesiti: kapıdan önce ve sonra bu kadar boş su
 const KEY_DAYRUN = 'simit-martisi-dayrun';
 const RULES = [
   { id: 'gold', name: 'Altın saat', text: 'Altın simitler iki kat sık, her virajın tepesinde bir altın.', icon: 'i-simit' },
-  { id: 'wind', name: 'Poyraz', text: 'Sert rüzgâr martıyı yana iter, karşı koy.', icon: 'i-fog' },
-  { id: 'fog', name: 'Sisli sabah', text: 'Boğaz sisli: engeller geç görünür.', icon: 'i-fog' },
   { id: 'fast', name: 'Hızlı vapurlar', text: 'Her şey daha hızlı akar.', icon: 'i-bolt' },
-  { id: 'fish', name: 'Balık bereketi', text: 'Balıklar üç kat sık zıplar.', icon: 'i-fish' },
+  { id: 'chubby', name: 'Tombul martı', text: 'Martı simitleri fazla kaçırdı: kocaman, hantal ama simit kapmada usta.', icon: 'i-simit' },
+  { id: 'giant', name: 'Dev simitler', text: 'Simitler kocaman: her biri iki simit sayılır.', icon: 'i-simit' },
+  { id: 'hiccup', name: 'Hıçkıran martı', text: 'Martı hıçkırık tuttu: arada bir yana sıçrar, toparla.', icon: 'i-bolt' },
 ];
+const DAY_RUNS = 3; // günün uçuşunda günlük hak (ikinci şans hak yemez)
 let daily = false, daySeed = 0, dayRule = null, genN = 0, turnN = 0;
 const R0 = Math.random;
 const ruleOn = id => daily && dayRule && dayRule.id === id;
-const RULE_Q = RULES.find(r => r.id === new URLSearchParams(location.search).get('rule')); // ?rule=gold|wind|fog|fast|fish → o kural (deneme için)
+const RULE_Q = RULES.find(r => r.id === new URLSearchParams(location.search).get('rule')); // ?rule=gold|fast|chubby|giant|hiccup → o kural (deneme için)
 const todayRule = () => RULE_Q || RULES[hash('rule', dayKey()) % RULES.length];
 function seedAt(...k) { Math.random = daily ? seeded(hash(daySeed, ...k)) : R0; } // günün uçuşunda üretim tohumdan
 const dayGift = n => 15 + 5 * Math.min(n - 1, 6); // gün serisi: 15 → 45 simit
 function dayRun() {
   const d = store.get(KEY_DAYRUN, {}) || {}, today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
   const done = d.day === today, streak = done ? d.streak || 1 : d.day === dayKey(y) ? (d.streak || 0) + 1 : 1;
-  return { done, best: done ? d.best || 0 : 0, streak, runs: done ? d.runs || 0 : 0 };
+  return { done, best: done ? d.best || 0 : 0, streak, runs: done ? d.runs || 0 : 0, paid: done ? d.paid ?? true : false }; // paid: seri ödülü bugün verildi
+}
+const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
+// mod boyları: Tombul martı iri ve hantal, Hıçkıran martı hıçkırınca bir an şişer
+const gullBase = () => (ruleOn('chubby') ? 1.2 : 0.95);
+let catchK = 1, obsK = HIT.obs; // simit kapma alanı çarpanı, engel çarpma payı (moda göre)
+function gullSize(puff = 0) {
+  gull.scale.setScalar(gullBase() * (1 + puff * 0.18));
+  const fat = ruleOn('chubby'); // tombul: kanatlar aynı, gövde (ve üstündeki kostümler) şişko
+  if (fat !== gull.userData.fat) { gull.userData.fat = fat; for (const m of [gull.userData.body, ...Object.values(outfit)]) m.scale.set(fat ? 1.45 : 1, fat ? 1.35 : 1, fat ? 1.15 : 1); }
+  catchK = ruleOn('chubby') ? 1.35 : ruleOn('giant') ? 1.3 : 1; obsK = HIT.obs + (ruleOn('chubby') ? 0.25 : 0);
 }
 
 // ---------------- virajlar ----------------
@@ -213,7 +224,7 @@ const GOLD_RATE = 0.35, goldRoll = p => Math.random() < p * GOLD_RATE * (ruleOn(
 let genLog = null; // deneme: __game.genLog(true) → üretilen simit/rakip konumları
 function addSimit(x, y, z, gold, piece = false) {
   if (genLog) genLog.push(`s${x.toFixed(2)},${z.toFixed(1)}${gold ? 'g' : ''}`);
-  const m = piece ? makeSimitPiece(gold) : makeSimit(gold); m.position.set(x, y, z); m.rotation.x = 0.25; scene.add(m);
+  const m = piece ? makeSimitPiece(gold) : makeSimit(gold); m.position.set(x, y, z); m.rotation.x = 0.25; if (ruleOn('giant')) m.scale.multiplyScalar(2); scene.add(m);
   const s = { mesh: m, x, y, z, free: true, gold, piece };
   simits.push(s); return s;
 }
@@ -247,7 +258,7 @@ function throwVolleys(z0, len, first) {
 function addThrown(bt, cx, cz, gold, ry) { // ry: halkanın yüksekliği (vapur güvertesi); yoksa dalgada
   if (gold) return addSimit(cx, FLY_Y, cz, true, true); // altın parça atılmaz: yerinde asılı durur, olduğu yerde döner ve parlar
   if (genLog) genLog.push(`t${cx.toFixed(2)},${cz.toFixed(1)}${gold ? 'g' : ''}`);
-  const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); scene.add(m);
+  const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); if (ruleOn('giant')) m.scale.multiplyScalar(2); scene.add(m);
   const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); ring.visible = false; scene.add(ring); // iniş yeri sürpriz: halka yalnız plajda görünür
   simits.push({ mesh: m, x: cx, y: FLY_Y, z: cz, free: true, gold, piece: true, th: { bt, cx, cz, T: rand(...THROW_T), H: rand(...THROW_H), u: -1, p0: new THREE.Vector3(), ring, ry } });
 }
@@ -926,6 +937,7 @@ let state = 'loading';
 let speed = 15, playT = 0, points = 0, simitCount = 0, goldCount = 0, combo = 0, bestCombo = 0, comboT = 0, dist = 0;
 let crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flapPh = 0, flapPow = 0.5, flapBurst = 0;
 let campT = 0, campSide = 0; // kenara yapışan martı: o kenara rakip gönderilir (her köşe eşit zor)
+let hicT = 0, hicY = 0; // Hıçkıran martı: sonraki hıçkırığa kalan süre, sıçrama yüksekliği
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
 const pw = { magnet: 0, shield: 0, double: 0 };
 // güçlendirme yükseltmeleri: simitle alınır, her seviye süreyi tabanın %25'i kadar uzatır (Subway Surfers usulü)
@@ -1118,7 +1130,7 @@ let dailyAuto = false; // kendiliğinden açılan ödül penceresi: sayfa açıl
 function showTitle() {
   if (window.__reloadOnTitle) { location.reload(); return; } // yeni sürüm indi: menüye dönerken tazelen
   if (daily) { daily = false; const c = cityOf(store.get(KEY_CITY, 'istanbul')); useCity(cityOpen(c) ? c : CITIES[0]); }
-  state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions();
+  state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions(); gullSize();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
   show('profileBtn', !tutorialPending); renderNameChip(); renderMode();
@@ -1146,7 +1158,7 @@ function startGame() {
   if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
   audio.unlock();
   sfx.click();
-  misPending = false; refillMissions(); startRun(); // sıralama bileti: skor uçuş süresine göre denetlenir
+  misPending = false; refillMissions(); startRun(); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
   achRun = {}; saidRun.clear();
   for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; } // görevler panelinde çubuk buradan dolar
   misPending = true;
@@ -1200,12 +1212,12 @@ function showOver() {
   $('overBest').textContent = isBest ? tr('Önceki rekoru geçtin') : `${tr('Rekor')} ${fmt(best)} · ${tr('{n} puan kaldı').replace('{n}', fmt(best - final + 1))}`;
   $('newRecord').classList.toggle('hidden', !isBest);
   if (daily) { // günün uçuşu: kendi günlük en iyisi ve gün serisi; ilk uçuş seri ödülünü verir
-    const d = dayRun(), dayBest = final > d.best, gift = d.done ? 0 : dayGift(d.streak);
-    store.set(KEY_DAYRUN, { day: dayKey(), best: Math.max(d.best, final), streak: d.streak, runs: d.runs + (revives ? 0 : 1) }); // ikinci şans aynı uçuş: bir kez sayılır
+    const d = dayRun(), dayBest = final > d.best, gift = d.paid ? 0 : dayGift(d.streak);
+    store.set(KEY_DAYRUN, { day: dayKey(), best: Math.max(d.best, final), streak: d.streak, runs: Math.max(1, d.runs), paid: true });
     if (gift) { wallet += gift; store.set(KEY_WALLET, wallet); }
     recordRun(final); submitScore(final, Math.floor(dist), city.id); // günün uçuşu da haftalık sıralamaya girer
-    $('overBest').textContent = dayBest && d.done ? tr('Günün en iyisini geçtin') : `${tr('Günün en iyin')} ${fmt(Math.max(d.best, final))}`;
-    $('overRank').innerHTML = `${tr(dayRule.name)} · ${tr('{n} gün seri').replace('{n}', fmt(d.streak))}` + (gift ? ` · +${fmt(gift)} <svg class="ico"><use href="#i-simit"/></svg>` : '');
+    $('overBest').textContent = dayBest && d.best > 0 ? tr('Günün en iyisini geçtin') : `${tr('Günün en iyin')} ${fmt(Math.max(d.best, final))}`;
+    $('overRank').innerHTML = `${tr(dayRule.name)} · ${tr('{n} gün seri').replace('{n}', fmt(d.streak))}` + (gift ? ` · +${fmt(gift)} <svg class="ico"><use href="#i-simit"/></svg>` : '') + ` · ${fmt(dayLeft())}/${DAY_RUNS} ${tr('hak')}`;
   } else { // haftalık sıra: sunucudan gelir; gelene kadar (ya da ağ yoksa) cihazdaki haftalık en iyi görünür
     recordRun(final);
     const el = $('overRank'), seq = ++overSeq, was = myRank;
@@ -1549,8 +1561,10 @@ function openDayRun() {
   $('drIcon').setAttribute('href', '#' + r.icon);
   $('drRule').textContent = tr(r.name); $('drText').textContent = tr(r.text);
   $('drBest').textContent = d.done ? `${tr('Günün en iyin')} ${fmt(d.best)}` : tr('Bugün henüz uçmadın');
-  $('drStreak').innerHTML = d.done ? tr('{n} gün seri').replace('{n}', fmt(d.streak))
-    : `${tr('{n} gün seri').replace('{n}', fmt(d.streak))} · ${tr('ilk uçuşa')} +${fmt(dayGift(d.streak))} <svg class="ico"><use href="#i-simit"/></svg>`;
+  const left = Math.max(0, DAY_RUNS - d.runs);
+  $('drStreak').innerHTML = (d.paid ? tr('{n} gün seri').replace('{n}', fmt(d.streak))
+    : `${tr('{n} gün seri').replace('{n}', fmt(d.streak))} · ${tr('ilk uçuşa')} +${fmt(dayGift(d.streak))} <svg class="ico"><use href="#i-simit"/></svg>`)
+    + (left ? ` · <b>${fmt(left)}/${DAY_RUNS} ${tr('hak')}</b>` : `<br><b>${tr('Bugünkü hakların bitti, yarın yeni mod!')}</b>`);
   renderMode(); show('dayRunPanel');
 }
 // menüdeki mod seçici: Oyna seçili modu başlatır (ileride yeni modlar buraya eklenir)
@@ -1558,7 +1572,9 @@ const KEY_MODE = 'simit-martisi-mode';
 let playMode = store.get(KEY_MODE, 'classic') === 'daily' ? 'daily' : 'classic';
 function renderMode() {
   const d = playMode === 'daily';
-  $('modeName').textContent = tr(d ? 'Günün uçuşu' : 'Klasik');
+  const left = dayLeft();
+  $('modeName').textContent = d ? `${tr('Günün uçuşu')} ${fmt(left)}/${DAY_RUNS}` : tr('Klasik');
+  $('playBtn').classList.toggle('spent', d && !left);
   $('modeIco').setAttribute('href', d ? '#' + todayRule().icon : '#i-simit');
   $('modeBtn').classList.toggle('daily', d); $('title').classList.toggle('daily-mode', d);
   $('modeClassic').classList.toggle('on', !d); $('modeDaily').classList.toggle('on', d);
@@ -1567,6 +1583,9 @@ function pickMode(m) { playMode = m; store.set(KEY_MODE, m); renderMode(); show(
 function playSel() { if (playMode === 'daily') startDaily(); else startGame(); }
 function startDaily() {
   if (state !== 'title') return;
+  const d = dayRun();
+  if (d.runs >= DAY_RUNS) { bump($('playBtn'), 'shake'); vibrate(30); openDayRun(); return; }
+  store.set(KEY_DAYRUN, { day: dayKey(), best: d.best, streak: d.streak, runs: d.runs + 1, paid: d.paid }); // hak kalkışta düşer: yarıda bırakılan uçuş da sayılır
   daily = true; dayRule = todayRule(); daySeed = hash('day', dayKey());
   if (city !== CITIES[0]) useCity(CITIES[0]); // günün uçuşu herkes için İstanbul
   startGame();
@@ -2301,12 +2320,16 @@ function frame() {
     if (cur) heading += cur.k * dz * bendOn; else heading *= Math.exp(-dt / 30); // ufuk, düzlükte yavaşça toparlanır
     // kritik sönümlü yay: hızlı ama yumuşak takip (çevik: engelden son anda kaçılabilsin)
     // alt adımlar (en çok 1/60 sn): kare hızı düşen telefonda sert yay titremesin
-    const k = 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) + imbatW + fallsW : 0), -EDGE, EDGE);
+    if (ruleOn('hiccup') && state === 'play') { // hıçkırık: ani yan sıçrama + zıplama, martı bir an şişer
+      if ((hicT -= dt) <= 0) { hicT = 2 + R0() * 2.5; vx += (R0() < 0.5 ? -1 : 1) * (10 + R0() * 5); hicY = 1; vibrate(15); sfx.click(); }
+      hicY = damp(hicY, 0, 5, dt); gullSize(hicY);
+    }
+    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) + imbatW + fallsW : 0), -EDGE, EDGE);
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (weather === 'snow' && warmth < 0.25 && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
     gull.rotation.x = damp(gull.rotation.x, -0.05 + Math.sin(t * 1.1) * 0.03, 4, dt);
-    g.y = FLY_Y + Math.sin(t * 2.2) * 0.12 + fallsLift;
+    g.y = FLY_Y + Math.sin(t * 2.2) * 0.12 + fallsLift + hicY * 0.7;
     // çırpış: aralıklı patlamalar + dönüşte fazladan; arada süzülme
     if (flapBurst <= 0 && Math.random() < dt * 0.6) flapBurst = rand(0.8, 1.6);
     flapBurst -= dt;
@@ -2357,7 +2380,7 @@ function frame() {
         s.x += (g.x - s.x) * k; s.y += (g.y - s.y) * k; s.z += (g.z - s.z) * k - speed * dt * 0.6;
         s.mesh.position.set(s.x, s.y, s.z);
       }
-      if (Math.abs(s.z - g.z) > HIT.simZ || Math.abs(s.x - g.x) > HIT.simX || Math.abs(s.y - g.y) > HIT.simY) continue;
+      if (Math.abs(s.z - g.z) > HIT.simZ * catchK || Math.abs(s.x - g.x) > HIT.simX * catchK || Math.abs(s.y - g.y) > HIT.simY * catchK) continue;
       s.taken = true;
       if (s.free) scene.remove(s.mesh); else s.mesh.visible = false;
       if (state === 'play') takeSimit(s);
@@ -2375,7 +2398,7 @@ function frame() {
       const swept = (z, h) => g.z < z + h && gz0 > z - h;
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x);
-        if (g.y < o.top && dx < o.hw + HIT.obs && swept(o.z, o.hd + HIT.obs)) crash(o.kind);
+        if (g.y < o.top && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) crash(o.kind);
         else if (!o.passed && g.z < o.z - o.hd) {
           o.passed = true;
           if (dx < o.hw + HIT.near && state === 'play') nearMiss(o.x);
@@ -2702,7 +2725,7 @@ function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1);
   // simit parçası (atılan, çöpten çıkan) çeyrek simittir: puanın ve cüzdana katkısının dörtte biri
-  const q = s.piece ? 0.25 : 1, base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
+  const q = (s.piece ? 0.25 : 1) * (ruleOn('giant') ? 2 : 1), base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
   points += gain; simitCount += q; countMission('simitTotal', q);
   if (s.turn) s.turn.got++;
   if (s.th) thrownStat.caught++;
