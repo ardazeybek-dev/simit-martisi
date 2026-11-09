@@ -1343,12 +1343,12 @@ const slotOf = id => COSTUMES.find(x => x.id === id).slot;
 const withItem = (ids, c) => ids.filter(id => slotOf(id) !== c.slot).concat(c.id); // aynı yuvada (baş, göz, boyun...) tek parça
 applyLook();
 // günün fırsatı: her gün alınmamış kostümlerden biri %40 indirimli; o gün alınınca yenisi ertesi gün gelir
-function dealToday() {
+function dealToday() { // günün indirimi: yalnızca tarihten seçilir (gece 00:00'da değişir); yenilemek, kayıt silinmesi ya da alım onu değiştirmez
   const day = dayKey(), d = store.get(KEY_DEAL, {}) || {};
   if (d.day === day) return d.id;
-  const left = COSTUMES.filter(c => !look.owned.includes(c.id));
-  let h = 0; for (const ch of day) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const id = left.length ? left[h % left.length].id : '';
+  const h = hash('deal', day), n = COSTUMES.length;
+  let id = '';
+  for (let i = 0; i < n; i++) { const c = COSTUMES[(h + i) % n]; if (!look.owned.includes(c.id)) { id = c.id; break; } }
   store.set(KEY_DEAL, { day, id });
   return id;
 }

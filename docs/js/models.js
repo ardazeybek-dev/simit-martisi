@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Kit, vcMat, rand, pick, canvasTex } from './util.js';
+import { Kit, vcMat, softMat, rand, pick, canvasTex } from './util.js';
 // önbelleğe giren geometri kurulurken dünya tohumuna dokunulmaz: günün uçuşunda önbellek dolu ya da boş olsa da rota aynı kalır
 const RND0 = Math.random;
 function pureCall(fn, a) { const r = Math.random; Math.random = RND0; try { return fn(...a); } finally { Math.random = r; } }
@@ -67,9 +67,9 @@ function gullGeos_(type) {
   for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.06, 0.06, 0.3), 0xf08a3a, s * 0.12, -0.3, 0.45);
   const bodyGeo = k.build();
   // kol: gri yüzey + kalın beyaz ön kenar + beyaz arka kenar şeridi
-  const armGeo = new Kit().add(wingShape(0.72, 0.62, 1.15, 0.08), C.wing)
+  const armKit = new Kit().add(wingShape(0.72, 0.62, 1.15, 0.08), C.wing)
     .add(edgeRoll(1.17, 0.085, 0.07), C.body, 0, -0.02, -0.25, 0, -0.126)
-    .add(new THREE.BoxGeometry(1.1, 0.056, 0.09), C.body, 0.57, -0.025, 0.45, 0, -0.04).build();
+    .add(new THREE.BoxGeometry(1.1, 0.056, 0.09), C.body, 0.57, -0.025, 0.45, 0, -0.04);
   const handKit = new Kit().add(wingShape(0.62, 0.3, 0.95, 0.22), C.wing)
     .add(edgeRoll(0.98, 0.07, 0.035), C.body, 0, -0.02, -0.21, 0, -0.35);
   // uç tüyleri: dıştaki dümdüz açılır, içe doğru geriye yatar; ilk ikisinde beyaz "ayna" benek
@@ -78,6 +78,11 @@ function gullGeos_(type) {
     handKit.add(primary(len, 0.15), C.tip, bx, by, bz, 0, ry);
     if (i < 2) handKit.add(new THREE.SphereGeometry(0.045, 5, 3), 0xffffff, bx + Math.cos(ry) * len * 0.72, by + 0.012, bz - Math.sin(ry) * len * 0.72, 0, 0, 0, 1, 0.35, 1);
   }
+  if (type === 'durum') { // dürüm kanadı: marul üstünde kıvrılan koyu sos şeridi
+    for (let i = 0; i < 6; i++) armKit.add(new THREE.BoxGeometry(0.2, 0.02, 0.05), 0x6a1420, 0.1 + i * 0.18, 0.012, 0.08 + Math.sin(i * 1.7) * 0.07, 0, Math.sin(i * 1.7 + 0.8) * 0.5);
+    for (let i = 0; i < 4; i++) handKit.add(new THREE.BoxGeometry(0.18, 0.02, 0.045), 0x6a1420, 0.08 + i * 0.17, 0.012, 0.1 + Math.sin(i * 2.1) * 0.06, 0, Math.sin(i * 2.1 + 0.5) * 0.5);
+  }
+  const armGeo = armKit.build();
   const handGeo = handKit.build();
   return (gullGeoCache[type] = { bodyGeo, armGeo, handGeo });
 }
@@ -1415,47 +1420,48 @@ function featherGeo(id) {
     for (let i = 0; i < 6; i++) { const x = -0.26 + i * 0.104, h = 0.16 + (i % 3) * 0.08;
       k.add(new THREE.ConeGeometry(0.035, h, 4), 0xd8f1ff, x, 0.03 - h / 2, 1.3 - Math.abs(x) * 0.2, Math.PI); }
     plumes(k, 3, 0.65, 0.1, 0x8fd3ff, 0.4);
-  } else if (id === 'durum') { // dürüm: gövde lavaşa sarılı, önde kafanın etrafında marul, et, domates, limon; sırtta sos
-    const lavas = () => (Math.random() < 0.14 ? 0xb5814a : 0xecd9b0); // yanık benekli lavaş
-    k.add(new THREE.CylinderGeometry(0.47, 0.47, 1.25, 16, 3), lavas, 0, 0.0, 0.12, Math.PI / 2, 0, 0, 1.06, 1, 0.9);
-    k.add(new THREE.BoxGeometry(0.98, 0.03, 0.55), lavas, 0.02, 0.36, 0.05, 0, 0.55, 0.12); // çapraz katlanan lavaş kenarı
-    for (let i = 0; i < 14; i++) { // ön ağızda marul yaprakları
-      const a = (i / 14) * Math.PI * 2, r = 0.46;
-      k.add(new THREE.ConeGeometry(0.11, 0.3, 4), i % 2 ? 0x7cc84a : 0x5fae38, Math.cos(a) * r * 1.06, Math.sin(a) * r * 0.9, -0.55, -Math.PI / 2 + 0.2, 0, 0, 1, 1, 0.4);
+  } else if (id === 'durum') { // dürüm: gövde öne doğru açılan lavaş rulosu, üstten sarılan ikinci kat, kafanın etrafında kıvırcık marul yakası,
+    // arasından et, domates, limon; sırtta sos. Kanatlardaki sos şeridi gullGeos'ta
+    const lavas = () => (Math.random() < 0.12 ? 0xc08a52 : Math.random() < 0.5 ? 0xf0dfb8 : 0xe8d3a6); // yanık benekli lavaş
+    k.add(new THREE.CylinderGeometry(0.4, 0.52, 1.3, 32, 4), lavas, 0, 0.0, 0.1, Math.PI / 2, 0, 0, 1.05, 1, 0.92); // arkası dar, önü geniş
+    k.add(new THREE.CylinderGeometry(0.43, 0.56, 1.0, 32, 2, true, -0.4, Math.PI * 1.1), lavas, 0, 0.0, 0.0, Math.PI / 2, 0, 0.5, 1.07, 1, 0.95); // üstten sarılan ikinci kat
+    for (let i = 0; i < 16; i++) { // kıvırcık marul yakası: dışa ve öne açılan yapraklar
+      const a = (i / 16) * Math.PI * 2, r = 0.5;
+      k.add(new THREE.SphereGeometry(0.17, 10, 8), i % 3 ? 0x7cc84a : 0x5fae38, Math.cos(a) * r * 1.05, Math.sin(a) * r * 0.9, -0.62, 0.3 * Math.sin(a), -0.3 * Math.cos(a), a, 1, 0.55, 0.25);
     }
-    for (let i = 0; i < 12; i++) { // arka ağızda marul
-      const a = (i / 12) * Math.PI * 2 + 0.2, r = 0.44;
-      k.add(new THREE.ConeGeometry(0.1, 0.22, 4), i % 2 ? 0x7cc84a : 0x5fae38, Math.cos(a) * r * 1.06, Math.sin(a) * r * 0.9, 0.8, Math.PI / 2 - 0.2, 0, 0, 1, 1, 0.4);
+    for (let i = 0; i < 12; i++) { // arka ağızdan taşan marul
+      const a = (i / 12) * Math.PI * 2 + 0.2, r = 0.38;
+      k.add(new THREE.SphereGeometry(0.13, 8, 6), i % 2 ? 0x7cc84a : 0x5fae38, Math.cos(a) * r * 1.05, Math.sin(a) * r * 0.92, 0.78, 0, 0, a, 1, 0.5, 0.3);
     }
-    for (const [x, y, c, s] of [[-0.3, 0.12, 0x7a3020, 0.14], [0.32, 0.05, 0x7a3020, 0.13], [-0.22, -0.25, 0x8e3f2c, 0.12], [0.26, -0.24, 0xd62f2a, 0.11], [-0.36, -0.06, 0xd62f2a, 0.1], [0.1, -0.33, 0x7a3020, 0.12]])
-      k.add(new THREE.DodecahedronGeometry(s), c, x, y, -0.62); // et ve domates
-    for (const [x, y] of [[-0.3, 0.3], [0.34, -0.12], [0.02, -0.38]]) {
-      k.add(new THREE.CylinderGeometry(0.09, 0.09, 0.03, 10), 0xffe14d, x, y, -0.66, Math.PI / 2 - 0.3, 0.4); // limon dilimi
-      k.add(new THREE.CylinderGeometry(0.06, 0.06, 0.035, 10), 0xfff6c0, x, y, -0.665, Math.PI / 2 - 0.3, 0.4);
+    for (const [x, y, c, sz] of [[-0.3, 0.16, 0x7a3020, 0.13], [0.32, 0.08, 0x7a3020, 0.12], [-0.24, -0.26, 0x8e3f2c, 0.12], [0.27, -0.25, 0xd62f2a, 0.11], [-0.38, -0.04, 0xd62f2a, 0.1], [0.08, -0.36, 0x7a3020, 0.11], [0.38, 0.3, 0xd62f2a, 0.09]])
+      k.add(new THREE.DodecahedronGeometry(sz), c, x, y, -0.64); // et ve domates
+    for (const [x, y] of [[-0.3, 0.32], [0.36, -0.1], [0.0, -0.4]]) {
+      k.add(new THREE.CylinderGeometry(0.09, 0.09, 0.03, 16), 0xffe14d, x, y, -0.69, Math.PI / 2 - 0.3, 0.4); // limon dilimi
+      k.add(new THREE.CylinderGeometry(0.065, 0.065, 0.035, 16), 0xfff6c0, x, y, -0.695, Math.PI / 2 - 0.3, 0.4);
     }
-    for (let i = 0; i < 7; i++) // sırtta zikzak sos
-      k.add(new THREE.BoxGeometry(0.07, 0.03, 0.26), 0x6a1420, (i % 2 ? 0.1 : -0.1), 0.44 - Math.abs(i - 3) * 0.012, -0.35 + i * 0.16, 0, (i % 2 ? 0.7 : -0.7));
+    for (let i = 0; i < 8; i++) // sırtta zikzak sos
+      k.add(new THREE.CapsuleGeometry(0.035, 0.2, 4, 8), 0x6a1420, (i % 2 ? 0.1 : -0.1), 0.47 - Math.abs(i - 3.5) * 0.02, -0.45 + i * 0.15, Math.PI / 2, 0, (i % 2 ? 0.7 : -0.7));
   } else return null;
-  return k.build();
+  return k.build({ smooth: true });
 }
 function costumeGeo_(id) {
   const k = new Kit();
   if (id === 'fes') {
-    k.add(new THREE.CylinderGeometry(0.15, 0.2, 0.27, 12), (f, y) => (y > 0.69 ? 0x9e1b24 : 0xc62a33), 0, 0.57, -0.74, -0.18);
+    k.add(new THREE.CylinderGeometry(0.15, 0.2, 0.27, 28), (f, y) => (y > 0.69 ? 0x9e1b24 : 0xc62a33), 0, 0.57, -0.74, -0.18);
     k.add(new THREE.BoxGeometry(0.025, 0.025, 0.2), 0x1a1a1a, 0, 0.7, -0.62, -0.5);
-    k.add(new THREE.ConeGeometry(0.05, 0.16, 6), 0x1a1a1a, 0, 0.6, -0.53);
+    k.add(new THREE.ConeGeometry(0.05, 0.16, 12), 0x1a1a1a, 0, 0.6, -0.53);
   } else if (id === 'captain') {
-    k.add(new THREE.CylinderGeometry(0.25, 0.25, 0.07, 14), 0x1b2738, 0, 0.5, -0.72);
-    k.add(new THREE.CylinderGeometry(0.27, 0.24, 0.13, 14), 0xf6f4ee, 0, 0.59, -0.72);
-    k.add(new THREE.CylinderGeometry(0.32, 0.29, 0.06, 14), 0xffffff, 0, 0.67, -0.73, -0.08);
-    k.add(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 12, 1, false, Math.PI * 0.5, Math.PI), 0x111111, 0, 0.48, -0.86, 0.3);
+    k.add(new THREE.CylinderGeometry(0.25, 0.25, 0.07, 28), 0x1b2738, 0, 0.5, -0.72);
+    k.add(new THREE.CylinderGeometry(0.27, 0.24, 0.13, 28), 0xf6f4ee, 0, 0.59, -0.72);
+    k.add(new THREE.CylinderGeometry(0.32, 0.29, 0.06, 28), 0xffffff, 0, 0.67, -0.73, -0.08);
+    k.add(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 20, 1, false, Math.PI * 0.5, Math.PI), 0x111111, 0, 0.48, -0.86, 0.3);
     k.add(new THREE.OctahedronGeometry(0.055), 0xffc23a, 0, 0.6, -0.98, 0, 0, 0, 1, 1, 0.5);
   } else if (id === 'crown') {
-    k.add(new THREE.CylinderGeometry(0.22, 0.21, 0.12, 12), 0xf2b22c, 0, 0.53, -0.72);
+    k.add(new THREE.CylinderGeometry(0.22, 0.21, 0.12, 28), 0xf2b22c, 0, 0.53, -0.72);
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2;
-      k.add(new THREE.ConeGeometry(0.06, 0.16, 5), 0xffcb45, Math.sin(a) * 0.18, 0.66, -0.72 + Math.cos(a) * 0.18);
-      k.add(new THREE.SphereGeometry(0.03, 5, 4), 0xfff2b0, Math.sin(a) * 0.18, 0.75, -0.72 + Math.cos(a) * 0.18);
+      k.add(new THREE.ConeGeometry(0.06, 0.16, 10), 0xffcb45, Math.sin(a) * 0.18, 0.66, -0.72 + Math.cos(a) * 0.18);
+      k.add(new THREE.SphereGeometry(0.03, 8, 6), 0xfff2b0, Math.sin(a) * 0.18, 0.75, -0.72 + Math.cos(a) * 0.18);
     }
     k.add(new THREE.OctahedronGeometry(0.05), 0xe5484d, 0, 0.53, -0.94);
     for (const s of [-1, 1]) k.add(new THREE.OctahedronGeometry(0.04), 0x3aa7ff, s * 0.21, 0.53, -0.72);
@@ -1469,18 +1475,18 @@ function costumeGeo_(id) {
     k.add(new THREE.BoxGeometry(0.44, 0.03, 0.03), 0x14161c, 0, 0.32, -1.02);
   } else if (id === 'mustache') { // gaganın kökünde, iki yana sarkıp uçta yukarı kıvrılan pala bıyık; hepsi kafa küresinin dışında
     for (const s of [-1, 1]) {
-      k.add(new THREE.CapsuleGeometry(0.05, 0.2, 3, 6), 0x2a1a12, s * 0.15, 0.12, -1.06, 0, 0, -s * 1.75);
-      k.add(new THREE.CapsuleGeometry(0.04, 0.09, 3, 6), 0x2a1a12, s * 0.3, 0.13, -1.0, 0, -s * 0.5, -s * 0.45);
+      k.add(new THREE.CapsuleGeometry(0.05, 0.2, 6, 12), 0x2a1a12, s * 0.15, 0.12, -1.06, 0, 0, -s * 1.75);
+      k.add(new THREE.CapsuleGeometry(0.04, 0.09, 6, 12), 0x2a1a12, s * 0.3, 0.13, -1.0, 0, -s * 0.5, -s * 0.45);
     }
   } else if (id === 'beanie') { // örgü bere: çizgili kubbe, beyaz ponpon
-    k.add(new THREE.SphereGeometry(0.3, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2), (f, y) => ((y * 30) % 2 < 1 ? 0x2f7fd0 : 0x3a93e8), 0, 0.3, -0.72, -0.12, 0, 0, 1.04, 1.05, 1.04);
-    k.add(new THREE.TorusGeometry(0.29, 0.05, 6, 16), 0xf6f0e4, 0, 0.32, -0.72, Math.PI / 2 - 0.12);
-    k.add(new THREE.SphereGeometry(0.085, 8, 6), 0xffffff, 0, 0.64, -0.68);
+    k.add(new THREE.SphereGeometry(0.3, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), (f, y) => ((y * 30) % 2 < 1 ? 0x2f7fd0 : 0x3a93e8), 0, 0.3, -0.72, -0.12, 0, 0, 1.04, 1.05, 1.04);
+    k.add(new THREE.TorusGeometry(0.29, 0.05, 10, 36), 0xf6f0e4, 0, 0.32, -0.72, Math.PI / 2 - 0.12);
+    k.add(new THREE.SphereGeometry(0.085, 14, 10), 0xffffff, 0, 0.64, -0.68);
   } else if (id === 'tray') { // simitçi tablası: başta tahta tepsi, üstünde simitler
-    k.add(new THREE.TorusGeometry(0.16, 0.045, 6, 12), 0xf6f0e4, 0, 0.5, -0.72, Math.PI / 2); // altındaki bez simit (yastık)
-    k.add(new THREE.CylinderGeometry(0.46, 0.44, 0.05, 18), 0xb57a3c, 0, 0.57, -0.72);
-    k.add(new THREE.TorusGeometry(0.45, 0.025, 4, 22), 0x8a5626, 0, 0.6, -0.72, Math.PI / 2);
-    const tor = new THREE.TorusGeometry(0.1, 0.04, 6, 12);
+    k.add(new THREE.TorusGeometry(0.16, 0.045, 8, 24), 0xf6f0e4, 0, 0.5, -0.72, Math.PI / 2); // altındaki bez simit (yastık)
+    k.add(new THREE.CylinderGeometry(0.46, 0.44, 0.05, 36), 0xb57a3c, 0, 0.57, -0.72);
+    k.add(new THREE.TorusGeometry(0.45, 0.025, 6, 44), 0x8a5626, 0, 0.6, -0.72, Math.PI / 2);
+    const tor = new THREE.TorusGeometry(0.1, 0.04, 8, 20);
     for (const [x, z, ry] of [[0, 0, 0], [0.24, 0.1, 0.6], [-0.22, 0.14, 1.2], [0.1, -0.24, 2], [-0.16, -0.2, 2.6], [0.26, -0.14, 0.3]])
       k.add(tor, () => (Math.random() < 0.25 ? 0xf6e2b3 : 0xb8642a), x, 0.63, -0.72 + z, Math.PI / 2, ry);
   } else if (id === 'hearts') { // kalpli gözlük: pembe camlar gözlerin önünde
@@ -1491,55 +1497,56 @@ function costumeGeo_(id) {
     k.add(new THREE.BoxGeometry(0.44, 0.03, 0.03), 0xd12f6a, 0, 0.32, -1.02);
   } else if (id === 'bowtie') { // papyon: gerdanın önünde iki kanat ve düğüm
     for (const s of [-1, 1]) k.add(new THREE.ConeGeometry(0.1, 0.2, 4), 0xd62f3a, s * 0.1, -0.08, -0.84, 0, 0, s * Math.PI / 2, 1, 1, 0.5);
-    k.add(new THREE.SphereGeometry(0.045, 6, 4), 0x9e1b24, 0, -0.08, -0.87);
+    k.add(new THREE.SphereGeometry(0.045, 10, 8), 0x9e1b24, 0, -0.08, -0.87);
   } else if (id === 'nazar') { // ince kolye, ucunda mavi nazar boncuğu
-    k.add(new THREE.TorusGeometry(0.3, 0.014, 4, 20), 0xffc23a, 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
-    const disc = (r, c, dz) => k.add(new THREE.CylinderGeometry(r, r, 0.03, 14), c, 0, -0.24, -0.56 - dz, Math.PI / 2);
+    k.add(new THREE.TorusGeometry(0.3, 0.014, 6, 36), 0xffc23a, 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
+    const disc = (r, c, dz) => k.add(new THREE.CylinderGeometry(r, r, 0.03, 28), c, 0, -0.24, -0.56 - dz, Math.PI / 2);
     disc(0.1, 0x1f4fbf, 0); disc(0.068, 0xffffff, 0.012); disc(0.045, 0x5fb4ff, 0.024); disc(0.022, 0x111111, 0.036);
   } else if (id === 'pacifier') { // gagaya geçmiş kocaman bebek emziği: mavi kalkan, beyaz düğme, sarkan halka
-    k.add(new THREE.CylinderGeometry(0.24, 0.24, 0.05, 18), 0x7fcfff, 0, 0.14, -1.18, Math.PI / 2, 0, 0, 1, 1, 0.78);
-    k.add(new THREE.SphereGeometry(0.075, 8, 6), 0xffffff, 0, 0.14, -1.23);
-    k.add(new THREE.TorusGeometry(0.13, 0.032, 6, 18), 0xff7fb0, 0, 0.02, -1.25);
+    k.add(new THREE.CylinderGeometry(0.24, 0.24, 0.05, 32), 0x7fcfff, 0, 0.14, -1.18, Math.PI / 2, 0, 0, 1, 1, 0.78);
+    k.add(new THREE.SphereGeometry(0.075, 14, 10), 0xffffff, 0, 0.14, -1.23);
+    k.add(new THREE.TorusGeometry(0.13, 0.032, 10, 28), 0xff7fb0, 0, 0.02, -1.25);
   } else if (id === 'bigglasses') { // kocaman yuvarlak gözlük: kalın kemik çerçeve, büyüteç gibi kocaman görünen gözler
     for (const s of [-1, 1]) {
       const x = s * 0.21, y = 0.33, z = -1.1;
-      k.add(new THREE.CylinderGeometry(0.19, 0.19, 0.015, 20), 0xeaf4ff, x, y, z, Math.PI / 2);
-      k.add(new THREE.TorusGeometry(0.19, 0.035, 6, 22), 0x4a2a16, x, y, z);
-      k.add(new THREE.CylinderGeometry(0.085, 0.085, 0.012, 14), 0x111111, x - s * 0.03, y - 0.02, z - 0.012, Math.PI / 2);
+      k.add(new THREE.CylinderGeometry(0.19, 0.19, 0.015, 32), 0xeaf4ff, x, y, z, Math.PI / 2);
+      k.add(new THREE.TorusGeometry(0.19, 0.035, 10, 36), 0x4a2a16, x, y, z);
+      k.add(new THREE.CylinderGeometry(0.085, 0.085, 0.012, 24), 0x111111, x - s * 0.03, y - 0.02, z - 0.012, Math.PI / 2);
       k.add(new THREE.CylinderGeometry(0.028, 0.028, 0.008, 8), 0xffffff, x - s * 0.005, y + 0.015, z - 0.02, Math.PI / 2);
       k.add(new THREE.BoxGeometry(0.03, 0.03, 0.4), 0x4a2a16, s * 0.39, y, -0.9);
     }
     k.add(new THREE.BoxGeometry(0.06, 0.03, 0.03), 0x4a2a16, 0, 0.36, -1.1);
   } else if (id === 'chef') { // aşçı şapkası: bant ve üstte kabarık bulut
-    k.add(new THREE.CylinderGeometry(0.28, 0.27, 0.24, 16), 0xf3f3ee, 0, 0.6, -0.72);
-    k.add(new THREE.SphereGeometry(0.26, 12, 8), 0xffffff, 0, 0.92, -0.72);
-    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; k.add(new THREE.SphereGeometry(0.16, 8, 6), 0xffffff, Math.sin(a) * 0.2, 0.82, -0.72 + Math.cos(a) * 0.2); }
-  } else if (id === 'tophat') { // dev silindir şapka: başın iki katı boyunda, kırmızı bantlı, hafif yana yatık
-    k.add(new THREE.CylinderGeometry(0.44, 0.44, 0.04, 22), 0x16161c, 0, 0.5, -0.72, 0, 0, 0.12);
-    k.add(new THREE.CylinderGeometry(0.29, 0.27, 0.9, 20), 0x1f1f27, 0.06, 0.96, -0.72, 0, 0, 0.12);
-    k.add(new THREE.CylinderGeometry(0.285, 0.282, 0.12, 20), 0xd23a33, 0.015, 0.59, -0.72, 0, 0, 0.12);
-    k.add(new THREE.CylinderGeometry(0.296, 0.296, 0.03, 20), 0x2c2c36, 0.115, 1.41, -0.72, 0, 0, 0.12);
+    k.add(new THREE.CylinderGeometry(0.28, 0.27, 0.24, 32), 0xf3f3ee, 0, 0.6, -0.72);
+    k.add(new THREE.SphereGeometry(0.26, 20, 14), 0xffffff, 0, 0.92, -0.72);
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; k.add(new THREE.SphereGeometry(0.16, 14, 10), 0xffffff, Math.sin(a) * 0.2, 0.82, -0.72 + Math.cos(a) * 0.2); }
+  } else if (id === 'tophat') { // dev silindir: sihirbaz şapkası gibi dimdik ve uzun; geniş ince siperlik, kırmızı bant, tepesi düz
+    k.add(new THREE.CylinderGeometry(0.47, 0.47, 0.03, 40), 0x121217, 0, 0.5, -0.72);
+    k.add(new THREE.TorusGeometry(0.47, 0.022, 8, 40), 0x121217, 0, 0.51, -0.72, Math.PI / 2); // siperliğin yuvarlak kenarı
+    k.add(new THREE.CylinderGeometry(0.285, 0.285, 1.12, 36), 0x1b1b23, 0, 1.07, -0.72);
+    k.add(new THREE.CylinderGeometry(0.292, 0.292, 0.15, 36), 0xc8262f, 0, 0.6, -0.72); // bant
+    k.add(new THREE.CylinderGeometry(0.288, 0.288, 0.02, 36), 0x2a2a35, 0, 1.635, -0.72); // tepe
   } else if (id === 'simitcrown') { // simit tacı: başın üstünde kocaman susamlı simit, üstünde altın sivri uçlar
-    k.add(new THREE.TorusGeometry(0.36, 0.12, 8, 22), (f, y) => (y > 0.6 ? 0xa4531f : 0xc8793a), 0, 0.56, -0.72, Math.PI / 2);
+    k.add(new THREE.TorusGeometry(0.36, 0.12, 14, 40), (f, y) => (y > 0.6 ? 0xa4531f : 0xc8793a), 0, 0.56, -0.72, Math.PI / 2);
     for (let i = 0; i < 28; i++) { const a = i * 2.39996, r = 0.36 + Math.sin(i * 7.3) * 0.06;
       k.add(new THREE.BoxGeometry(0.03, 0.012, 0.016), 0xfff2c8, Math.sin(a) * r, 0.675, -0.72 + Math.cos(a) * r, 0, a); }
     for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3;
-      k.add(new THREE.ConeGeometry(0.05, 0.16, 5), 0xffcb45, Math.sin(a) * 0.36, 0.76, -0.72 + Math.cos(a) * 0.36);
-      k.add(new THREE.SphereGeometry(0.028, 5, 4), 0xe5484d, Math.sin(a) * 0.36, 0.85, -0.72 + Math.cos(a) * 0.36); }
+      k.add(new THREE.ConeGeometry(0.05, 0.16, 10), 0xffcb45, Math.sin(a) * 0.36, 0.76, -0.72 + Math.cos(a) * 0.36);
+      k.add(new THREE.SphereGeometry(0.028, 8, 6), 0xe5484d, Math.sin(a) * 0.36, 0.85, -0.72 + Math.cos(a) * 0.36); }
   } else if (id === 'scarf') {
-    const ring = new THREE.TorusGeometry(0.3, 0.075, 6, 16);
+    const ring = new THREE.TorusGeometry(0.3, 0.075, 10, 32);
     k.add(ring, (f) => (f % 8 < 4 ? 0xd23a33 : 0xf6f0e4), 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
     const tail = (x, z, ry) => k.add(new THREE.BoxGeometry(0.13, 0.035, 0.42, 1, 1, 4), (f, y) => (f % 8 < 4 ? 0xd23a33 : 0xf6f0e4), x, 0.12, z, -0.25, ry);
     tail(0.2, -0.22, 0.25); tail(0.28, -0.2, 0.5);
   }
-  return k.build();
+  return k.build({ smooth: true });
 }
 // martıya bütün kostümleri gizli olarak takar; { id: mesh } döner
 export function dressGull(gull) {
   const out = {};
   for (const c of COSTUMES) {
     const geo = costumeGeo(c.id); if (!geo) continue; // tüy rengi ayrı (paintGull); süsü varsa o da takılır
-    const m = new THREE.Mesh(geo, vcMat);
+    const m = new THREE.Mesh(geo, softMat); // yumuşak gölge: şapkalar, simitler köşeli durmaz
     m.castShadow = true; m.visible = false;
     gull.add(m); out[c.id] = m;
   }
