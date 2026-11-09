@@ -1712,6 +1712,54 @@ const ferryAt = (k, x, z, ry) => { // iskeleye yanaşmış vapur: beyaz gövde, 
   k.add(new THREE.CylinderGeometry(0.8, 0.9, 3.2, 14), (f, y) => (y > 5.6 ? 0x22262e : 0xf6f3ea), x, 5.6, z);
 };
 const SOFT = { smooth: true };
+// Konak Saat Kulesi: krem mermer sekizgen dört kat, köşelerde ince sütunlar, her yüzde kemerli pencere (çerçeveli),
+// üçüncü katta dört saat kadranı, açık fener katı, kurşun kubbe ve hilalli alem; basamaklı kaide ve dört köşede kubbeli çeşme.
+// Sekizgenler düz gölgeli: yumuşak normal onları yuvarlak silindir gibi gösteriyordu. Başlık sahnesinde 0.4 ölçekle uzaktan okunur.
+function octPrism(rTop, rBot, h) { const g = new THREE.CylinderGeometry(rTop, rBot, h, 8).toNonIndexed(); g.computeVertexNormals(); return g; }
+function archShape(w, h) {
+  const s = new THREE.Shape(); s.moveTo(-w / 2, 0); s.lineTo(w / 2, 0); s.lineTo(w / 2, h - w / 2); s.absarc(0, h - w / 2, w / 2, 0, Math.PI, false); s.lineTo(-w / 2, 0);
+  return new THREE.ShapeGeometry(s, 6);
+}
+function konakTower(k, cx, cy, cz) {
+  const BODY = 0xf4e6c8, TRIM = 0xfffaf0, FRAME = 0xd6b07a, HOLE = 0x5a4434, COL = 0xfff4e2, DARK = 0x2e2926;
+  k.add(octPrism(5.4, 5.9, 0.8), 0xd9ccb0, cx, cy + 0.4, cz, 0, Math.PI / 8);   // basamaklı kaide
+  k.add(octPrism(4.3, 4.6, 0.7), 0xe6dac0, cx, cy + 1.15, cz, 0, Math.PI / 8);
+  const floors = [[3.3, 7, 1.5], [2.8, 6, 9.0], [2.35, 5, 15.6], [1.8, 3.4, 21.2]];
+  floors.forEach(([r, h, y0], fi) => {
+    k.add(octPrism(r * 0.97, r, h), BODY, cx, cy + y0 + h / 2, cz);
+    k.add(octPrism(r + 0.42, r + 0.28, 0.5), TRIM, cx, cy + y0 + h + 0.25, cz);            // kat silmesi
+    k.add(octPrism(r + 0.12, r + 0.12, 0.25), FRAME, cx, cy + y0 + 0.12, cz);             // taban bandı
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; k.add(new THREE.CylinderGeometry(0.15, 0.17, h, 6), COL, cx + Math.sin(a) * r, cy + y0 + h / 2, cz + Math.cos(a) * r); } // köşe sütunları
+    const fw = 2 * r * Math.sin(Math.PI / 8), d = r * Math.cos(Math.PI / 8);
+    for (let i = 0; i < 8; i++) {
+      const a = Math.PI / 8 + (i / 8) * Math.PI * 2, sx = Math.sin(a), sz = Math.cos(a);
+      if (fi === 2 && i % 2 === 0) { // saat kadranı
+        const rc = fw * 0.4, y = cy + y0 + h * 0.52;
+        k.add(new THREE.CircleGeometry(rc + 0.16, 20), DARK, cx + sx * (d + 0.03), y, cz + sz * (d + 0.03), 0, a);
+        k.add(new THREE.CircleGeometry(rc, 20), 0xfffdf6, cx + sx * (d + 0.06), y, cz + sz * (d + 0.06), 0, a);
+        k.add(new THREE.BoxGeometry(0.09, rc * 0.75, 0.02), DARK, cx + sx * (d + 0.08), y + rc * 0.3, cz + sz * (d + 0.08), 0, a);
+        k.add(new THREE.BoxGeometry(0.09, rc * 0.55, 0.02), DARK, cx + sx * (d + 0.08) + Math.cos(a) * rc * 0.2, y - rc * 0.1, cz + sz * (d + 0.08) - Math.sin(a) * rc * 0.2, 0, a, 1.1);
+        continue;
+      }
+      const w = fw * (fi === 3 ? 0.66 : 0.5), ah = h * (fi === 3 ? 0.7 : 0.6), y = cy + y0 + h * (fi === 3 ? 0.12 : 0.2);
+      k.add(archShape(w + 0.3, ah + 0.22), FRAME, cx + sx * (d + 0.03), y - 0.08, cz + sz * (d + 0.03), 0, a);  // kemer çerçevesi
+      k.add(archShape(w, ah), HOLE, cx + sx * (d + 0.06), y, cz + sz * (d + 0.06), 0, a);
+    }
+  });
+  const top = cy + 24.6 + 0.5;
+  k.add(octPrism(1.95, 1.95, 0.5), TRIM, cx, top + 0.25, cz);
+  k.add(new THREE.SphereGeometry(1.75, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0x7d8b9a, cx, top + 0.5, cz, 0, 0, 0, 1, 1.15, 1); // kurşun kubbe
+  k.add(new THREE.CylinderGeometry(0.07, 0.1, 1.2, 6), 0xd9b24a, cx, top + 2.7, cz);
+  k.add(new THREE.SphereGeometry(0.2, 8, 6), 0xd9b24a, cx, top + 2.6, cz);
+  k.add(new THREE.TorusGeometry(0.34, 0.08, 6, 14, Math.PI * 1.35), 0xd9b24a, cx, top + 3.55, cz, 0, Math.PI / 2, Math.PI * 0.82); // hilal
+  for (let i = 0; i < 4; i++) { // köşelerde çeşmeler: sekizgen havuz, ince sütun, küçük kubbe
+    const a = Math.PI / 4 + (i / 4) * Math.PI * 2, x = cx + Math.sin(a) * 5.3, z = cz + Math.cos(a) * 5.3;
+    k.add(octPrism(1.05, 1.15, 0.9), 0xe6dac0, x, cy + 0.45, z);
+    k.add(new THREE.CylinderGeometry(0.85, 0.85, 0.08, 12), 0x7fb6c9, x, cy + 0.92, z);
+    k.add(new THREE.CylinderGeometry(0.14, 0.18, 2.2, 6), COL, x, cy + 1.9, z);
+    k.add(new THREE.SphereGeometry(0.55, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0x8d9aa7, x, cy + 3.0, z);
+  }
+}
 export const TITLE_SETS = {
   istanbul() { // ön: Karaköy rıhtımı, iskele, vapur, kayıklar · orta: Galata yamacı ve kulesi · arka: tarihi yarımada, Süleymaniye, Ayasofya
     const near = new Kit(), mid = new Kit(), far = new Kit();
@@ -1763,17 +1811,8 @@ export const TITLE_SETS = {
     quay(near, -330, 330, 0xddd2ba, 0x56604f, 0xc8bc9f);
     near.add(new THREE.BoxGeometry(660, 0.25, 6), 0x7fa05a, 0, 1.25, 12); // Kordon çimeni
     for (let x = -325; x < 325; x += rand(7, 13)) if (Math.abs(x + 8) > 12 && Math.abs(x - 14) > 8 && Math.abs(x - 70) > 26) palm(near, x, 1.2, rand(9.5, 12.5), rand(7, 10.5));
-    const cx = -8, cz = 9, cy = 1.2; // Konak Saat Kulesi: sekizgen kaide, dört kat, kemerli pencereler, saat kadranları, kurşun kubbe
-    near.add(new THREE.CylinderGeometry(6, 6.4, 1, 8), 0xcfc2a6, cx, cy + 0.5, cz);
-    for (const [r, h, y] of [[3.6, 7, 1], [2.9, 6, 8], [2.3, 5, 14], [1.8, 3.6, 19]]) {
-      near.add(new THREE.CylinderGeometry(r, r + 0.2, h, 8), 0xf0e3c8, cx, cy + y + h / 2, cz);
-      near.add(new THREE.CylinderGeometry(r + 0.55, r + 0.55, 0.45, 8), 0xc98e5a, cx, cy + y + h, cz);
-      for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; near.add(new THREE.PlaneGeometry(r * 0.5, h * 0.5), 0x4b5a72, cx + Math.sin(a) * (r * 0.93 + 0.07), cy + y + h * 0.5, cz + Math.cos(a) * (r * 0.93 + 0.07), 0, a); }
-    }
-    for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) near.add(new THREE.CylinderGeometry(1, 1, 0.12, 20), 0xfdfaf2, cx + Math.sin(a) * 2.8, cy + 11, cz + Math.cos(a) * 2.8, Math.PI / 2, a, 0);
-    near.add(new THREE.SphereGeometry(1.9, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0x8ca3b8, cx, cy + 22.6, cz);
-    near.add(new THREE.CylinderGeometry(0.08, 0.08, 2, 4), 0xd9b24a, cx, cy + 25, cz);
-    for (const dx of [-5, 5]) near.add(new THREE.CylinderGeometry(1.2, 1.5, 1.6, 12), 0xd6c8ab, cx + dx, cy + 0.8, cz - 4); // çeşmeler
+    const cx = -8, cz = 9, cy = 1.2; // Konak Saat Kulesi
+    konakTower(near, cx, cy, cz);
     const my = 14, mz = 10; // Yalı Camii: çinili sekizgen, tek kubbe, tek minare
     near.add(new THREE.CylinderGeometry(4, 4, 5, 8, 4), (f, y) => (y > 4.9 ? 0x5c8fb0 : 0xf3e9d6), my, cy + 2.5, mz);
     near.add(new THREE.SphereGeometry(3.9, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0x9aaabb, my, cy + 5, mz);

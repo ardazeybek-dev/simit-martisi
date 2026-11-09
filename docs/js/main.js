@@ -2339,9 +2339,10 @@ function podDraw(dt) {
   pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
   pod.scene.add(gull);
   if (pod.drag >= 0) { // elle çevirme: kayma kadar döner, hız savrulma için saklanır
-    const k = 7 / Math.max(innerWidth, 320), dy = pod.dx * k; pod.dx = 0; pod.yaw += dy;
-    pod.vel = THREE.MathUtils.lerp(pod.vel, dt > 0 ? THREE.MathUtils.clamp(dy / dt, -12, 12) : 0, 0.5);
-  } else { pod.vel = damp(pod.vel, 0.55, 1.2, dt); pod.yaw += pod.vel * dt; } // bırakınca savrulur, yavaşça kendi dönüşüne iner
+    // piksel başına dönüş telefonda da masaüstündeki gibi sakin: dar ekranda parmak az kayınca martı fırıl fırıl dönmesin
+    const k = 7 / Math.max(innerWidth, 1000), dy = pod.dx * k; pod.dx = 0; pod.yaw += dy;
+    pod.vel = THREE.MathUtils.lerp(pod.vel, dt > 0 ? THREE.MathUtils.clamp(dy / dt, -5, 5) : 0, 0.25);
+  } else { pod.vel = damp(pod.vel, 0.55, 2.2, dt); pod.yaw += pod.vel * dt; } // bırakınca hafif savrulur, çabuk kendi dönüşüne iner
   // çerçeve martının dönmemiş hâlinden ölçülür ve yumuşatılır: döndükçe kutu değişip ekran zıplamasın
   gull.position.set(0, 0, 0); gull.rotation.set(0, 0, 0);
   flapGull(gull, 0, 0, 0.32); // ölçü sabit kanat pozunda: çırpış çerçeveyi oynatmasın
@@ -2992,7 +2993,6 @@ showTitle();
 // sunucu: profil, bekleyen skor ve (bir kez) cihaz rekoru gönderilir
 if (netOn()) refreshBoard();
 addEventListener('online', () => sync());
-$('appVer').textContent = 'v' + (document.querySelector('meta[name=app-version]')?.content || ''); // ayarlarda sürüm: güncelleme geldi mi görülsün
 setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gönderim, kapanan sayfa) hemen gitsin
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
