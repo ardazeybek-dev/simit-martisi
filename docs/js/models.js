@@ -35,9 +35,9 @@ const gullGeoCache = {};
 // pink/night/golden oyuncunun kostüm dolabındaki tüy renkleri
 const GULL_PAL = {
   player: { body: 0xfbfaf6, head: 0xffffff, wing: 0xaab4c0, tip: 0x1b1c22, beak: 0xf4b52a, eye: 0x111111 },
-  grey: { body: 0x6f7682, head: 0x5d6470, wing: 0x474d58, tip: 0x15161a, beak: 0xd9862a, eye: 0xff4a3a },
-  red: { body: 0xd9544f, head: 0xc8453f, wing: 0x9c2f2b, tip: 0x2a1010, beak: 0xffc23a, eye: 0xfff2b0 },
-  blue: { body: 0x5fa8d3, head: 0x4f93c0, wing: 0x2f6f9f, tip: 0x10202e, beak: 0xffc23a, eye: 0xfff2b0 },
+  grey: { body: 0x5b6270, head: 0x4b5260, wing: 0x343944, tip: 0x0c0d10, beak: 0xff9a2a, eye: 0xff4a3a }, // rakipler koyu ve doygun: açık denizde ve gökte seçilsin
+  red: { body: 0xe03a34, head: 0xcc2f2a, wing: 0x8e1d1a, tip: 0x1e0808, beak: 0xffc23a, eye: 0xfff2b0 },
+  blue: { body: 0x2f5fe0, head: 0x284fc4, wing: 0x16358f, tip: 0x060c24, beak: 0xffc23a, eye: 0xfff2b0 }, // deniz turkuazından ayrılan koyu lacivert
   pink: { body: 0xff9cc2, head: 0xffb6d3, wing: 0xe2407f, tip: 0x7d1342, beak: 0xffc23a, eye: 0x111111 }, // flamingo pembesi: beyazla karışmasın
   night: { body: 0x3a3f4c, head: 0x2c303a, wing: 0x1e2129, tip: 0x0a0a0c, beak: 0xffc23a, eye: 0xffe07a },
   golden: { body: 0xffd77a, head: 0xffe39c, wing: 0xe0a53a, tip: 0x8a5a12, beak: 0xff8a3a, eye: 0x111111 },

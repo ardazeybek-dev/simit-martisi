@@ -374,7 +374,7 @@ function addRival(z, bx, sw, kind, zMax = Infinity) {
   const L = late();
   kind = kind || (d > 1.6 && Math.random() < 0.25 + L * 0.2 ? 'red' : d > 2.2 && Math.random() < 0.3 + L * 0.2 ? 'blue' : 'grey'); // renkliler Beşiktaş'tan sonra
   if (kind === 'red') z -= 18; // hızlı gelir: daha uzaktan başlar
-  const r = makeGull(kind); r.scale.setScalar(0.58); r.rotation.y = Math.PI; // oyuncudan belirgin küçük
+  const r = makeGull(kind); r.scale.setScalar(0.72); r.rotation.y = Math.PI; // oyuncudan küçük ama uzaktan seçilsin (çarpma yarıçapı aynı: görüntü biraz bağışlayıcı)
   r.position.set(bx, FLY_Y, z); scene.add(r);
   if (genLog) genLog.push(`r${kind}${bx.toFixed(2)},${z.toFixed(1)}`);
   rivals.push({ mesh: r, kind, bx, z, zMax, ph: Math.random() * 6, sw, hit: false, spin: 0, tx: bx, zt: 0, dive: 15 + L * 4 });
@@ -2718,7 +2718,6 @@ function frame() {
     if (on) {
       ui.comboRing.style.strokeDashoffset = 100 - (comboT / COMBO_T) * 100;
       if (m !== shownMult) { ui.mult.textContent = `x${m}`; if (m > shownMult && m > 1) bump(ui.combo, 'bump'); shownMult = m; }
-      $('comboN').textContent = combo;
     } else if (shownMult !== 0) { shownMult = 0; }
     tickPowers();
   }
