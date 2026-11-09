@@ -968,6 +968,9 @@ let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
 const WALLET_RATE = 20; // kaç yakalanan simit cüzdana 1 simit eder: para yavaş birikir
 let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
+// devreden: 20'ye tamamlanmayan simitler kaybolmaz, sonraki uçuşa geçer (eskiden her uçuşta artan kısım siliniyordu: 39 simit = 1)
+const KEY_CARRY = 'simit-martisi-carry';
+let carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0);
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
 let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.03, fishCatch = 0.3, fishEarly = false;
@@ -1023,7 +1026,7 @@ function resetWorld(newWeather = true) {
   beachZ = !city.beach ? -Infinity : BEACH_SOON ? -90 : -rand(550, 750); // ilk plaj Konyaaltı açıklarında
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
-  speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; combo = 0; bestCombo = 0; comboT = 0; dist = 0;
+  speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = 0;
   for (const k in run) run[k] = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
@@ -1267,7 +1270,7 @@ function showOver() {
   { const n = achReady() - achBefore, nb = badgesGot() - bdgBefore; show('overAch', n > 0 || nb > 0);
     const part = (k, s) => (k > 0 ? `${tr(s)}${k > 1 ? ' ×' + k : ''}` : '');
     $('overAch').innerHTML = `<svg><use href="#i-medal"/></svg>${[part(n, 'Yeni başarım!'), part(nb, 'Yeni rozet!')].filter(Boolean).join(' · ')}`; }
-  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span><small class="earn-rate">${tr('20 simit = 1 · altın 4 sayılır')}</small>`
+  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span><small class="earn-rate">${tr('20 simit = 1 · altın 4 sayılır')} · ${tr('sonraki')} ${Math.floor(+store.get(KEY_CARRY, 0) || 0)}/20</small>`
     + (fishRun ? `<span class="earn-fish">+${fmt(fishRun)} <svg class="ico"><use href="#i-fish"/></svg></span>` : '');
   setTimeout(() => state === 'over' && earnFlow(banked), 700);
   show('over'); show('hud', false); hideTutorial();
@@ -1348,8 +1351,10 @@ function saveName() {
 
 // ---------------- cüzdan ve kostümler ----------------
 function bank() {
-  const earned = Math.floor((simitCount + goldCount * 3) * (perk('golden') ? 1.1 : 1) / WALLET_RATE), gain = earned - banked; // Altın martı: +%10
+  const units = carry0 + (simitCount + goldCount * 3) * (perk('golden') ? 1.1 : 1); // Altın martı: +%10
+  const earned = Math.floor(units / WALLET_RATE), gain = earned - banked;
   if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
+  store.set(KEY_CARRY, Math.round((units - earned * WALLET_RATE) * 100) / 100); // artan kısım sonraki uçuşa
 }
 // ids: giyili olanlar; kostüm panelinde seçilen parça önizleme olarak üstüne giydirilir
 function applyLook(ids = look.on) {
@@ -1382,10 +1387,16 @@ function closeWardrobe() {
   if (cosSel) { cosSel = null; applyLook(); } // satın alınmayan önizleme çıkarılır
   if (state === 'title') { $('titleWallet').textContent = fmt(wallet); renderMenuBadges(); show('title'); }
 }
+// sekmeler: Kıyafet (göz, boyun, yüz), Deri (tüy rengi), Şapka (baş)
+const tabOf = c => (c.slot === 'head' ? 'sapka' : c.slot === 'body' ? 'deri' : 'kiyafet');
+let wardTab = 'kiyafet';
+for (const b of document.querySelectorAll('#wardTabs button')) b.addEventListener('click', e => { e.stopPropagation(); wardTab = b.dataset.tab; sfx.click(); renderWardrobe(); });
 function renderWardrobe() {
   $('walletN').textContent = fmt(wallet);
+  for (const b of document.querySelectorAll('#wardTabs button')) b.classList.toggle('on', b.dataset.tab === wardTab);
   const box = $('costumes'); box.textContent = '';
   for (const c of COSTUMES) {
+    if (tabOf(c) !== wardTab) continue;
     const own = look.owned.includes(c.id), on = look.on.includes(c.id);
     const b = document.createElement('button');
     const price = priceOf(c), deal = !own && price < c.price;
