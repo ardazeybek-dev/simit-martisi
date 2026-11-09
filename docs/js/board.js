@@ -1,6 +1,5 @@
-// ---------------- haftalık sıralama: yerel taraf ----------------
-// Asıl tablo sunucuda (net.js, supabase/schema.sql). Burada: bayrak çizimi, cihazdaki haftalık en iyi (ağ yokken gösterilir)
-// ve geçen haftanın ödülünün alınıp alınmadığı.
+// ---------------- sıralama: yerel taraf ----------------
+// Asıl tablo sunucuda (net.js, supabase/schema.sql). Burada: bayrak çizimi ve cihazdaki haftalık en iyi kaydı.
 import { store } from './util.js';
 
 const KEY = 'simit-martisi-week';
@@ -12,8 +11,6 @@ export function week(now = Date.now()) {
   const s = new Date(start);
   return { key: `${s.getFullYear()}-${s.getMonth() + 1}-${s.getDate()}`, left: end - now };
 }
-// geçen haftanın son sırasına göre ödül
-export const rewardFor = rank => (rank === 1 ? 300 : rank === 2 ? 200 : rank === 3 ? 100 : 25);
 
 // ---------------- bayraklar: emoji bayrak Windows'ta görünmez, küçük tuvalde çizilir ----------------
 const flagCache = {};
@@ -53,7 +50,7 @@ export function flag(cc) {
 }
 
 // ---------------- oyuncunun haftası ----------------
-// kayıt: { key, best, paidKey } · paidKey: ödülü alınmış son hafta (sunucunun hafta tarihi, ör. 2026-10-26)
+// kayıt: { key, best }
 const load = () => store.get(KEY, {}) || {};
 export function myBest() { const s = load(); return s.key === week().key ? s.best | 0 : 0; }
 export function recordRun(score) {
@@ -64,5 +61,3 @@ export function recordRun(score) {
   store.set(KEY, s);
   return { before, best: s.best };
 }
-export const paidKey = () => load().paidKey || '';
-export function markPaid(key) { const s = load(); s.paidKey = key; store.set(KEY, s); }

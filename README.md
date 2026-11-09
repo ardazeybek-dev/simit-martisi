@@ -152,7 +152,7 @@ docs/
   js/fx.js              particles, sparkles, smoke, speed lines, floating texts
   js/audio.js           synthesized music and sound effects
   js/cities.js          cities: pier lines, save keys, pickup type and city-only features (bridges, imbat, pirate boat, falls, beach)
-  js/board.js           flags, local weekly best, end-of-week reward amounts
+  js/board.js           flags, local weekly best
   js/net.js             leaderboard client: name, score submit, board fetch (Supabase RPC, 5 s timeout, offline-safe)
   js/util.js            helpers, mesh merging, safe localStorage
   sw.js                 service worker (bump VERSION on every release)

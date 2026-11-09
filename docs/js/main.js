@@ -6,7 +6,7 @@ import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
-import { flag, recordRun, rewardFor, paidKey, markPaid } from './board.js';
+import { flag, recordRun } from './board.js';
 import { netOn, myName, shownName, setName, validName, rudeName, ccOf, sync, startRun, submitScore, fetchBoard } from './net.js';
 
 const $ = id => document.getElementById(id);
@@ -1136,7 +1136,7 @@ function renderRouteMap() {
   $('routeMap').innerHTML = STOPS.map((s, i) => `<i class="${i <= farStop ? 'got' : i === goal ? 'goal' : ''}" title="${s.name}"></i>`).join('');
   $('routeGoal').innerHTML = done ? tr(city.end) : `${tr('Hedef')}: <b>${STOPS[goal].name}</b> · ${fmt(STOPS[goal].m)} m`;
 }
-let dailyAuto = false, leagueAuto = false; // kendiliğinden açılan ödül pencereleri: sayfa açılışında bir kez
+let dailyAuto = false; // kendiliğinden açılan ödül penceresi: sayfa açılışında bir kez
 function showTitle() {
   if (window.__reloadOnTitle) { location.reload(); return; } // yeni sürüm indi: menüye dönerken tazelen
   if (daily) { daily = false; const c = cityOf(store.get(KEY_CITY, 'istanbul')); useCity(cityOpen(c) ? c : CITIES[0]); }
@@ -1145,7 +1145,7 @@ function showTitle() {
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
   show('profileBtn', !tutorialPending); renderNameChip(); renderMode();
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap(); renderRank();
-  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('leaguePanel', false); show('profilePanel', false); show('dayRunPanel', false);
+  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
   $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
@@ -1157,7 +1157,6 @@ function showTitle() {
   // günün ilk açılışında ödül kendiliğinden gelir; alınmadan geçilirse her oyun sonunda yeniden açılmaz (menüdeki nokta kalır)
   if (!tutorialPending && !nameAsked && netOn() && !myName()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal() && !myName()) { nameAsked = true; openProfile(); } }, 700);
   else if (!tutorialPending && !dailyAuto && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); openDaily(); } }, 700);
-  else if (!tutorialPending && !leagueAuto) setTimeout(() => state === 'title' && !dressing && !menuModal() && offerLeague(), 700); // biten haftanın sıralama ödülü
 }
 function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görünür ama uçulmaz
   if (state !== 'title') return;
@@ -1176,7 +1175,7 @@ function startGame() {
   resetWorld(daily || state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
   shownScore = shownSimit = shownDist = shownFish = -1; shownMult = 0;
   ui.combo.classList.remove('on');
   if (boostSel.size) { for (const k of boostSel) if (wallet >= BOOST[k]) { wallet -= BOOST[k]; pw[k] = dur(k); } store.set(KEY_WALLET, wallet); boostSel.clear(); }
@@ -1331,19 +1330,6 @@ async function renderBoard() {
   }
   $('boardTier').innerHTML = t;
 }
-let leagueKey = '', leagueGift = 0;
-function offerLeague() { // geçen hafta tabloda yer aldıysa ödül ana menüde bir kez sorulur
-  const p = boardCache && boardCache.prev;
-  if (!p || p.week === paidKey() || !$('dailyPanel').classList.contains('hidden')) return;
-  leagueKey = p.week; leagueGift = rewardFor(p.rank); leagueAuto = true;
-  $('leagueNote').textContent = tr('Geçen haftayı {r}. sırada bitirdin!').replace('{r}', fmt(p.rank)) + ` (${tr('{n} oyuncu').replace('{n}', fmt(p.total))})`;
-  $('leagueReward').textContent = `+${fmt(leagueGift)}`;
-  show('leaguePanel');
-}
-function claimLeague() {
-  if (leagueKey && leagueKey !== paidKey()) { wallet += leagueGift; store.set(KEY_WALLET, wallet); markPaid(leagueKey); sfx.gold(); vibrate([20, 30, 20]); $('titleWallet').textContent = fmt(wallet); }
-  show('leaguePanel', false);
-}
 // ---------------- profil: ad ----------------
 function renderNameChip() { $('profileName').textContent = myName() || shownName() || tr('Ad seç'); $('profLv').textContent = fmt(rank.lv); }
 function openProfile() {
@@ -1388,7 +1374,7 @@ let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan 
 function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; cosSel = null; $('wardNote').textContent = `${tr('Dokun, martında dene; beğenirsen al.')} :)`;
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'leaguePanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe'); podEnter();
 }
 function closeWardrobe() {
@@ -2003,7 +1989,7 @@ function setTx(v) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
-const menuModal = () => !$('dayRunPanel').classList.contains('hidden') || !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('leaguePanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden');
+const menuModal = () => !$('dayRunPanel').classList.contains('hidden') || !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -2059,7 +2045,6 @@ onBtn('modeDaily', () => pickMode('daily'));
 onBtn('closeDayRun', () => show('dayRunPanel', false));
 onBtn('boardBtn', () => { renderBoard(); show('boardPanel'); });
 onBtn('closeBoard', () => show('boardPanel', false));
-onBtn('leagueClaim', () => claimLeague());
 onBtn('profileBtn', () => { show('settings', false); openProfile(); });
 onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
@@ -2868,8 +2853,8 @@ renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault
 renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
 
 showTitle();
-// sunucu: profil ve bekleyen skor gönderilir, geçen haftanın sırası gelince ödül menüde sorulur
-if (netOn()) refreshBoard().then(() => { if (state === 'title' && !tutorialPending && !leagueAuto && !dressing && !menuModal()) offerLeague(); });
+// sunucu: profil, bekleyen skor ve (bir kez) cihaz rekoru gönderilir
+if (netOn()) refreshBoard();
 addEventListener('online', () => sync());
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
