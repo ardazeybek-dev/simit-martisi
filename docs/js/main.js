@@ -372,12 +372,33 @@ function spawnGap(first, fixLen) {
   genZ -= len;
 }
 
+// rakip simit yoluna konmaz: martıyla karşılaşacağı yerde (gri/mavi yaklaşırken ~7 m öne kayar, kırmızı dalarak tam z'ye gelir)
+// simidin tam üstünden geçen martı rakibin salınımına değmesin. Kenara kaydırılır; yer yoksa mavi griye döner, salınım daralır, yine yoksa gelmez.
+function rivalClear(z, bx, sw, kind) {
+  const zm = kind === 'red' ? z : z + 7, segs = [];
+  for (const s of simits) {
+    if (s.taken || Math.abs(s.z - zm) > 7) continue;
+    const x2 = s.vx ? clamp(s.x + s.vx * 2, -LANE, LANE) : s.x; // imbatta savrulan gevrek bir aralık süpürür
+    segs.push([Math.min(s.x, x2), Math.max(s.x, x2)]);
+  }
+  if (!segs.length) return { bx, sw, kind };
+  const fits = (x, w) => segs.every(([a, b]) => x + w < a - 1.25 || x - w > b + 1.25);
+  const xs = [];
+  for (let x = -LANE + 0.6; x <= LANE - 0.6; x += 0.1) xs.push(x);
+  xs.sort((a, b) => Math.abs(a - bx) - Math.abs(b - bx));
+  const tries = kind === 'blue' ? [['blue', 2, sw], ['grey', sw, sw], ['grey', 0.3, 0.3]] : kind === 'red' ? [['red', 0.5, sw]] : [['grey', sw, sw], ['grey', 0.3, 0.3]];
+  for (const [k, w, s] of tries) { const x = xs.find(x => fits(x, w)); if (x !== undefined) return { bx: x, sw: s, kind: k }; }
+  return null;
+}
 // rakip martı: rengi davranışını söyler. Gri süzülür; kırmızı hızla üstüne dalar (erken görünür, düz gelir);
 // mavi düzensiz zikzak çizer (her an yön değiştirebilir). Zorluk arttıkça renkliler çoğalır.
 function addRival(z, bx, sw, kind, zMax = Infinity) {
   const d = difficulty();
   const L = late();
   kind = kind || (d > 1.6 && Math.random() < 0.25 + L * 0.2 ? 'red' : d > 2.2 && Math.random() < 0.3 + L * 0.2 ? 'blue' : 'grey'); // renkliler Beşiktaş'tan sonra
+  const c = rivalClear(z, bx, sw, kind);
+  if (!c) return; // simit yolunda yer yok: bu rakip gelmez
+  ({ bx, sw, kind } = c);
   if (kind === 'red') z -= 18; // hızlı gelir: daha uzaktan başlar
   const r = makeGull(kind); r.scale.setScalar(0.72); r.rotation.y = Math.PI; // oyuncudan küçük ama uzaktan seçilsin (çarpma yarıçapı aynı: görüntü biraz bağışlayıcı)
   r.position.set(bx, FLY_Y, z); scene.add(r);
@@ -3011,7 +3032,7 @@ requestAnimationFrame(frame);
 window.__game = {
   get state() { return state; }, get podYaw() { return pod.yaw; }, get podCam() { return pod.cam.position.toArray().map(v => +v.toFixed(3)); }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, setCombo: n => { combo = n; comboT = COMBO_T; }, get powers() { return { ...pw }; },
-  genLog: on => { const l = genLog; genLog = on ? [] : null; return l; },
+  genTo: z => generate(z), genLog: on => { const l = genLog; genLog = on ? [] : null; return l; },
   get wallet() { return wallet; }, get rank() { return { ...rank }; }, addXp, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
   get canRevive() { return state === 'over' && !$('reviveBtn').classList.contains('hidden'); }, get revived() { return revives > 0; }, revive: () => askRevive(),
