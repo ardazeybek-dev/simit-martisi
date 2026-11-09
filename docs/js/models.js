@@ -44,6 +44,7 @@ const GULL_PAL = {
   sunset: { body: 0xffbb85, head: 0xffcf9e, wing: 0x9b5fc0, tip: 0x3d1f5c, beak: 0xffd34d, eye: 0x111111 },
   mint: { body: 0xdcfff2, head: 0xecfff8, wing: 0x5cc9a7, tip: 0x1f5e4e, beak: 0xf4b52a, eye: 0x111111 },
   ice: { body: 0xeaf6ff, head: 0xf6fbff, wing: 0x8fc9ef, tip: 0x2f6f9f, beak: 0xbfe6ff, eye: 0x2a6fd6 },
+  durum: { body: 0xead6ad, head: 0x8e3f2c, wing: 0x7cc84a, tip: 0x6a1420, beak: 0xd9952a, eye: 0x111111 }, // dürüm: kafa et, kanat marul, uçlar sos
 };
 function gullGeos(...a) { return pureCall(gullGeos_, a); }
 function gullGeos_(type) {
@@ -1354,6 +1355,7 @@ export const COSTUMES = [
   { id: 'chef', name: 'Aşçı şapkası', slot: 'head', price: 700 },
   { id: 'tophat', name: 'Dev silindir', slot: 'head', price: 900 },
   { id: 'simitcrown', name: 'Simit tacı', slot: 'head', price: 1500 },
+  { id: 'durum', name: 'Dürüm martı', slot: 'body', price: 1800 },
 ];
 // kalp: gözlük camı ve simge için (x-y düzleminde, ortası 0)
 function heartGeo(r) {
@@ -1413,6 +1415,26 @@ function featherGeo(id) {
     for (let i = 0; i < 6; i++) { const x = -0.26 + i * 0.104, h = 0.16 + (i % 3) * 0.08;
       k.add(new THREE.ConeGeometry(0.035, h, 4), 0xd8f1ff, x, 0.03 - h / 2, 1.3 - Math.abs(x) * 0.2, Math.PI); }
     plumes(k, 3, 0.65, 0.1, 0x8fd3ff, 0.4);
+  } else if (id === 'durum') { // dürüm: gövde lavaşa sarılı, önde kafanın etrafında marul, et, domates, limon; sırtta sos
+    const lavas = () => (Math.random() < 0.14 ? 0xb5814a : 0xecd9b0); // yanık benekli lavaş
+    k.add(new THREE.CylinderGeometry(0.47, 0.47, 1.25, 16, 3), lavas, 0, 0.0, 0.12, Math.PI / 2, 0, 0, 1.06, 1, 0.9);
+    k.add(new THREE.BoxGeometry(0.98, 0.03, 0.55), lavas, 0.02, 0.36, 0.05, 0, 0.55, 0.12); // çapraz katlanan lavaş kenarı
+    for (let i = 0; i < 14; i++) { // ön ağızda marul yaprakları
+      const a = (i / 14) * Math.PI * 2, r = 0.46;
+      k.add(new THREE.ConeGeometry(0.11, 0.3, 4), i % 2 ? 0x7cc84a : 0x5fae38, Math.cos(a) * r * 1.06, Math.sin(a) * r * 0.9, -0.55, -Math.PI / 2 + 0.2, 0, 0, 1, 1, 0.4);
+    }
+    for (let i = 0; i < 12; i++) { // arka ağızda marul
+      const a = (i / 12) * Math.PI * 2 + 0.2, r = 0.44;
+      k.add(new THREE.ConeGeometry(0.1, 0.22, 4), i % 2 ? 0x7cc84a : 0x5fae38, Math.cos(a) * r * 1.06, Math.sin(a) * r * 0.9, 0.8, Math.PI / 2 - 0.2, 0, 0, 1, 1, 0.4);
+    }
+    for (const [x, y, c, s] of [[-0.3, 0.12, 0x7a3020, 0.14], [0.32, 0.05, 0x7a3020, 0.13], [-0.22, -0.25, 0x8e3f2c, 0.12], [0.26, -0.24, 0xd62f2a, 0.11], [-0.36, -0.06, 0xd62f2a, 0.1], [0.1, -0.33, 0x7a3020, 0.12]])
+      k.add(new THREE.DodecahedronGeometry(s), c, x, y, -0.62); // et ve domates
+    for (const [x, y] of [[-0.3, 0.3], [0.34, -0.12], [0.02, -0.38]]) {
+      k.add(new THREE.CylinderGeometry(0.09, 0.09, 0.03, 10), 0xffe14d, x, y, -0.66, Math.PI / 2 - 0.3, 0.4); // limon dilimi
+      k.add(new THREE.CylinderGeometry(0.06, 0.06, 0.035, 10), 0xfff6c0, x, y, -0.665, Math.PI / 2 - 0.3, 0.4);
+    }
+    for (let i = 0; i < 7; i++) // sırtta zikzak sos
+      k.add(new THREE.BoxGeometry(0.07, 0.03, 0.26), 0x6a1420, (i % 2 ? 0.1 : -0.1), 0.44 - Math.abs(i - 3) * 0.012, -0.35 + i * 0.16, 0, (i % 2 ? 0.7 : -0.7));
   } else return null;
   return k.build();
 }
@@ -1524,6 +1546,7 @@ export function dressGull(gull) {
   return out;
 }
 export const COSTUME_SVG = {
+  durum: '<svg viewBox="0 0 48 48"><path d="M6 30l28-14 8 10-28 14z" fill="#ecd9b0"/><path d="M34 16l8 10 3-4-6-9z" fill="#7cc84a"/><circle cx="38" cy="20" r="3" fill="#d62f2a"/><circle cx="41" cy="16" r="2.4" fill="#ffe14d"/><path d="M10 29q6-1 9-5t9-5" stroke="#6a1420" stroke-width="2.4" fill="none"/><path d="M4 31l4-3 2 6z" fill="#5fae38"/><circle cx="18" cy="34" r="1.4" fill="#b5814a"/><circle cx="26" cy="30" r="1.4" fill="#b5814a"/></svg>',
   pacifier: '<svg viewBox="0 0 48 48"><circle cx="24" cy="34" r="9" fill="none" stroke="#ff7fb0" stroke-width="4"/><ellipse cx="24" cy="20" rx="18" ry="11" fill="#7fcfff"/><circle cx="24" cy="20" r="6" fill="#fff"/></svg>',
   bigglasses: '<svg viewBox="0 0 48 48"><circle cx="13" cy="24" r="10" fill="#eaf4ff" stroke="#4a2a16" stroke-width="3.5"/><circle cx="35" cy="24" r="10" fill="#eaf4ff" stroke="#4a2a16" stroke-width="3.5"/><path d="M22 22h4" stroke="#4a2a16" stroke-width="3"/><circle cx="15" cy="25" r="4.5" fill="#111"/><circle cx="33" cy="25" r="4.5" fill="#111"/><circle cx="16" cy="23" r="1.5" fill="#fff"/><circle cx="34" cy="23" r="1.5" fill="#fff"/></svg>',
   chef: '<svg viewBox="0 0 48 48"><rect x="13" y="28" width="22" height="12" rx="2" fill="#e9e9e2"/><circle cx="15" cy="20" r="8" fill="#fff"/><circle cx="33" cy="20" r="8" fill="#fff"/><circle cx="24" cy="15" r="10" fill="#fff"/><path d="M13 28h22" stroke="#d0d0c8" stroke-width="2"/></svg>',
