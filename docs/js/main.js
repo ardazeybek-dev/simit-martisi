@@ -307,6 +307,8 @@ function flySimits(dt) {
   }
 }
 
+// yelkenli: martı boyunda yelkenler yerel z -2.08..0.09 aralığında (ölçüldü); kutu ortası gövdeden SAIL_OFF kadar kayık, her yana 0.25 m martı payı
+const SAIL_OFF = 1.0, SAIL_HW = 1.35;
 function spawnGap(first, fixLen) {
   const d = difficulty();
   const len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, 56 - late() * 10)), z0 = genZ;
@@ -325,7 +327,7 @@ function spawnGap(first, fixLen) {
     if (sail) { // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
       const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
       const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b);
-      const o = { x: xa + side * 60 * k, z, hw: 1.25, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // hw: martı yüksekliğinde iki yelkenin toplam genişliği
+      const o = { x: xa + side * 60 * k + side * SAIL_OFF, z, hw: SAIL_HW, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // martı boyunda yelkenler gövdenin bir yanına uzanır: kutu yelkenlerin üstünde
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
     } else {
       const n = camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
@@ -793,14 +795,26 @@ function updateFlocks(dt, gz) {
 }
 
 // ---------------- kıyı dekoru: koridorun dışında balıkçı tekneleri, arada bir yakından geçen Kız Kulesi ----------------
+// yük anında hafifleme: kare hızı düşünce ya da önde çok engel varken uzaktaki (sisteki) yan dekor tekneleri kısa süre gizlenir,
+// yenisi çıkmaz. Şeritteki yolcu, engel, simit asla gizlenmez. Ayar: SHED_FAR (bundan uzak olanlar), SHED_T (süre)
+const SHED_FAR = 150, SHED_T = 2.5;
+let shedT = 0, shedOn = false;
+function updateShed(dt, gz) {
+  const near = state === 'play' ? obstacles.filter(o => o.z < gz + 5 && o.z > gz - 120).length + rivals.length + kites.length : 0;
+  if (state === 'play' && (fpsSmooth < 48 || near > 8)) shedT = SHED_T; else shedT -= dt;
+  const on = shedT > 0;
+  if (!on && !shedOn) return;
+  for (const d of decor) if (d.shed) d.mesh.visible = !on || gz - d.z < SHED_FAR;
+  shedOn = on;
+}
 function spawnScenery(limit) {
   while (sceneryZ > limit) {
     sceneryZ -= rand(22, 52);
-    if (Math.random() < 0.85 && !piers.some(p => Math.abs(p.z - sceneryZ) < 34)) {
+    if (Math.random() < 0.85 && !(shedT > 0) && !piers.some(p => Math.abs(p.z - sceneryZ) < 34)) { // yük anında yeni yan tekne çıkmaz
       const side = pick([-1, 1]), r = Math.random();
       const b = r < 0.5 ? makeFishingBoat(side) : r < 0.78 ? makeSailboat() : makeYacht();
       b.position.set(side * rand(15, r < 0.5 ? 30 : 40), 0, sceneryZ); b.rotation.y = rand(-0.5, 0.5) + (r >= 0.5 && Math.random() < 0.5 ? Math.PI : 0);
-      scene.add(b); decor.push({ mesh: b, z: sceneryZ, ph: Math.random() * 6 });
+      scene.add(b); decor.push({ mesh: b, z: sceneryZ, ph: Math.random() * 6, shed: true });
     }
     if (sceneryZ < cruiseZ) {
       cruiseZ = sceneryZ - rand(380, 700);
@@ -1921,7 +1935,10 @@ function revive() {
   gull.position.y = FLY_Y; gull.rotation.set(0, 0, 0); gull.visible = true;
   tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
   combo = 0; comboT = 0;
-  pw.shield = dur('shield'); invuln = 2.2; // çarptığı bacanın içinden çıkarken kalkan harcanmasın
+  pw.shield = dur('shield'); invuln = 0.35; // kalkan bir sonraki gerçek çarpmada kırılır
+  for (const o of obstacles) if (Math.abs(o.z - gull.position.z) < o.hd + 6) o.ghost = true; // çarptığı engelin içinden çıkarken kalkan harcanmasın
+  for (const r of rivals) if (Math.abs(r.mesh.position.z - gull.position.z) < 6) { r.hit = true; r.spin = r.mesh.position.x > gull.position.x ? 1 : -1; } // yanındaki rakip savrulup gider
+  for (const k of kites) if (Math.abs(k.z - gull.position.z) < 6) k.ghost = true;
   show('over', false); show('hud'); hideTutorial();
   shownScore = shownSimit = shownDist = -1; shownMult = 0;
   ui.combo.classList.remove('on'); renderPowers(); updateHud();
@@ -1958,7 +1975,7 @@ function updateHud() {
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
 // simit kaçırınca seri biter: kombo yalnızca art arda toplanan simitle büyür
 function missSimit() { if (combo > 0) { combo = 0; comboT = 0; } }
-const COMBO_STEPS = [10, 25, 45, 70]; // x2, x3, x4, x5 için art arda simit
+const COMBO_STEPS = [25, 60, 110, 180]; // x2, x3, x4, x5 için art arda simit: x5 ancak çok uzun, hiç kaçırmayan bir seride
 const mult = () => 1 + COMBO_STEPS.filter(n => combo >= n).length;
 function renderPowers() {
   ui.powers.textContent = '';
@@ -2495,7 +2512,7 @@ function frame() {
       const swept = (z, h) => g.z < z + h && gz0 > z - h;
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x);
-        if (g.y < o.top && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) crash(o.kind);
+        if (g.y < o.top && !o.ghost && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) crash(o.kind);
         else if (!o.passed && g.z < o.z - o.hd) {
           o.passed = true;
           if (dx < o.hw + HIT.near && state === 'play') nearMiss(o.x);
@@ -2513,7 +2530,7 @@ function frame() {
           } else crash('rakip martıya');
         }
       }
-      for (const k of kites) if (Math.abs(k.g.position.x - g.x) < HIT.kiteX && swept(k.z, HIT.kiteZ)) crash('uçurtmaya');
+      for (const k of kites) if (!k.ghost && Math.abs(k.g.position.x - g.x) < HIT.kiteX && swept(k.z, HIT.kiteZ)) crash('uçurtmaya');
       for (const s of smokes) {
         if (!s.hit && g.z < s.z1 && g.z > s.z0 && Math.abs(g.x - s.x) < s.hw) {
           s.hit = true; smokeT = 1.4; // öksürük ve buğu: kombo bozulmaz
@@ -2588,6 +2605,7 @@ function frame() {
       }
     }
   }
+  updateShed(realDt, g.z);
   for (const d of decor) {
     if (d.vz) { if (bridges.some(b => Math.abs(b.z - d.z) < 12)) d.vz = 0; d.z += d.vz * dt; d.mesh.position.z = d.z; } // köprüye gelen gemi demirler (tabliyenin içinden geçmesin)
     d.mesh.position.y = waveAt(d.mesh.position.x, d.z, t) - 0.1; d.mesh.rotation.z = Math.sin(t * 1.7 + d.ph) * (d.calm ? 0.012 : 0.12);
@@ -2606,8 +2624,8 @@ function frame() {
   }
   updatePirates(g.z); updateFalls(dt, g.z);
   for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar
-    c.o.x = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k;
-    c.mesh.position.set(c.o.x, waveAt(c.o.x, c.z, t) - 0.1, c.z); c.mesh.rotation.x = Math.sin(t * 1.3 + c.ph) * 0.06;
+    const cx = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k; c.o.x = cx + c.side * SAIL_OFF;
+    c.mesh.position.set(cx, waveAt(c.o.x, c.z, t) - 0.1, c.z); c.mesh.rotation.x = Math.sin(t * 1.3 + c.ph) * 0.06;
   }
   for (const b of bins) { // martı yaklaşınca kapak fırlar, kırık simit tam önüne zıplar
     const s = b.s, bn = s.bin;
@@ -3020,6 +3038,7 @@ window.__game = {
   get cats() { return cats.map(c => ({ ahead: +(gull.position.z - c.z).toFixed(1), done: c.done })); },
   get bridges() { return bridges.map(b => ({ ahead: +(gull.position.z - b.z).toFixed(1), done: b.done, path: b.path, gx: +gull.position.x.toFixed(2) })); },
   get dolphins() { return dolphins.map(f => ({ ax: +f.ax.toFixed(1), x: +f.mesh.position.x.toFixed(1), y: +f.mesh.position.y.toFixed(1), u: +f.u.toFixed(2), got: f.got, ahead: +(gull.position.z - f.z).toFixed(1) })); },
+  get shed() { return { on: shedOn, hidden: decor.filter(d => d.shed && !d.mesh.visible).length, total: decor.filter(d => d.shed).length }; },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; }, get renderer() { return renderer; }, get scene() { return scene; }, get camera() { return camera; }, get glint() { return glint; },

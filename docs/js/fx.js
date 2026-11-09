@@ -159,8 +159,10 @@ export function popText(text, worldPos, cls = '', edge = null) { // edge: { p: d
   if (v3.z > 1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05) return;
   const el = document.createElement('div');
   el.className = 'pop ' + cls; el.textContent = text;
+  const x = (v3.x * 0.5 + 0.5) * innerWidth, y = (-v3.y * 0.5 + 0.5) * innerHeight;
+  if (edge) el.style.maxWidth = `${Math.max(96, edge.side > 0 ? innerWidth - 8 - x : x - 8)}px`; // şerit kenarıyla ekran kenarı arası: uzun laf alt satıra iner, yola taşmaz
   popLayer.appendChild(el);
-  const x = (v3.x * 0.5 + 0.5) * innerWidth, y = (-v3.y * 0.5 + 0.5) * innerHeight, w = el.offsetWidth;
+  const w = el.offsetWidth;
   // yolcu lafı: martının uçabildiği şeridin hemen dışında, martının yanında; iç kenarı sınırda, balon dışa taşar (yolu kapatmaz)
   const cx = edge ? x + edge.side * w / 2 : x;
   el.style.left = `${Math.min(Math.max(cx, w / 2 + 8), innerWidth - w / 2 - 8)}px`; el.style.top = `${Math.max(y, innerHeight * 0.22)}px`;

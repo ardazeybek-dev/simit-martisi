@@ -578,7 +578,8 @@ export function makeYacht() {
 // ---------------- korsan teknesi (Antalya) ----------------
 // Turist guleti korsan kılığında: kara gövde, altın bant, kara yelkenler, yüksek kıç köşkü, direkte kurukafa bayrağı. Pruva -z.
 // PIRATE_GATE: yerel z'de engeller [merkez, yarı boy, yarı en, tepe]; ön yelkenle arka yelken arasındaki boşluk martının kapısı (PIRATE_GAP).
-export const PIRATE_GATE = [[-3.1, 1.45, 0.35, 11], [2.65, 1.5, 0.35, 9.6], [5.3, 1.3, 1.45, 6.4]], PIRATE_GAP = -0.25;
+// martı boyunda ölçülen yelkenler: ön -4.64..-2.56, arka 1.08..2.82, köşk 3.95..6.65; kutulara her yana 0.25 m martı payı
+export const PIRATE_GATE = [[-3.6, 1.29, 0.35, 11], [1.95, 1.12, 0.35, 9.6], [5.3, 1.3, 1.45, 6.4]], PIRATE_GAP = -0.74;
 let pirateGeo = null;
 function pirateShipGeo() {
   if (pirateGeo) return pirateGeo;
