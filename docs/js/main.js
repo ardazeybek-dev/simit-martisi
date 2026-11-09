@@ -2612,7 +2612,10 @@ function frame() {
     f.mesh.rotation.z = Math.atan((H + 0.6) * 4 * (1 - 2 * u) / f.w) * 0.85;
     if (u > 1 && u - dt / f.T <= 1) splash(x, f.z, 12);
     if (u > 1.4) f.mesh.visible = false;
-    if (!f.got && state === 'play' && u > 0.3 && u < 0.7 && Math.abs(g.x - x) < 1.6 && Math.abs(g.z - f.z) < 1.4) { f.got = true; dolphinBonus(f); }
+    // üstünden geçiş: martı yunusun hizasını bu karede geçtiyse (kare atlasa da kaçmaz) ya da hizasındaysa, yunus havadaysa ve yanda yakınsa sayılır.
+    // Eskiden yalnız tepe anında ±1.4 m'lik dar pencere vardı: gerçekten üstünden geçen çoğu zaman sayılmıyordu
+    const rz = g.z - f.z, crossed = f.rz > 0 && rz <= 0; f.rz = rz;
+    if (!f.got && state === 'play' && u > 0.12 && u < 0.88 && Math.abs(g.x - x) < 2.4 && (crossed || Math.abs(rz) < 1.4)) { f.got = true; dolphinBonus(f); }
   }
   for (const f of fishes) {
     const x0 = f.ax - f.dir * f.w / 2, H = FLY_Y + 0.45;
