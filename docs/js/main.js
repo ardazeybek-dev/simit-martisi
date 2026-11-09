@@ -16,7 +16,7 @@ const SIMIT_VIEW = 140; // telefonda bundan uzaktaki simitler çizilmez
 const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.5, COMBO_T = 2.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 // şerit vapur kadar geniş (gövde ±4, küpeştenin biraz dışı). Çarpışma payları: engeller affedici (kutu görünenden dar),
 // simit ve güçlendirme cömert (yakından geçmek yeter)
-const HIT = { obs: 0.12, near: 1.1, rival: 0.6, kiteX: 0.55, kiteZ: 0.38, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
+const HIT = { obs: 0.08, near: 1.1, rival: 0.48, kiteX: 0.45, kiteZ: 0.38, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
 const KEY_BEST = 'simit-martisi-best', KEY_TUT = 'simit-martisi-tut', KEY_SET = 'simit-martisi-settings';
 const KEY_WALLET = 'simit-martisi-wallet', KEY_LOOK = 'simit-martisi-look', KEY_MIS = 'simit-martisi-missions', KEY_DAILY = 'simit-martisi-daily', KEY_DAILY_AUTO = 'simit-martisi-daily-auto', KEY_UP = 'simit-martisi-upgrades', KEY_CITY = 'simit-martisi-city', KEY_ACH = 'simit-martisi-ach', KEY_DEAL = 'simit-martisi-deal', KEY_FISH = 'simit-martisi-fish';
 
@@ -325,9 +325,9 @@ function spawnGap(first, fixLen) {
       const o = { x: xa + side * 60 * k, z, hw: 1.25, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // hw: martı yüksekliğinde iki yelkenin toplam genişliği
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
     } else {
-      const n = camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.7 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.4 ? 1 : 0) : 2 + (Math.random() < late() * 0.35 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
+      const n = camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
       for (let i = 0; i < n; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
-      if (d > 1.3 && Math.random() < 0.2 + d * 0.06) {
+      if (d > 1.3 && Math.random() < 0.14 + d * 0.04) {
         const nk = d > 3 && Math.random() < 0.4 ? 2 : 1;
         for (let i = 0; i < nk; i++) {
           const z = freeZ(10, len - 8); if (z === null) continue;
