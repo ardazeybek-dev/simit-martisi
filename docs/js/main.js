@@ -2191,39 +2191,90 @@ function padTick() {
 
 
 // ---------------- kostüm podyumu ----------------
-// Kostüm paneli açıkken dünya çizilmez: martı ayrı, sade bir sahnede, ışıklı bir podyumun üstünde yavaşça döner.
+// Kostüm paneli açıkken dünya çizilmez: martı ayrı bir sahnede, gün batımında Boğaz'a bakan ahşap bir iskele babasının üstünde durur.
+// Kendi kendine yavaşça döner; parmak/fare ile sürüklenince elle çevrilir, bırakınca savrulup yavaşlar.
 // Oyun mantığı martıyı dünyadaki yerinde sürmeye devam eder; her karede o yer saklanır, çizimden sonra geri konur.
-const pod = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 0.1, 80), on: false, parent: null, yaw: 0.6,
+const pod = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 0.1, 120), on: false, parent: null, yaw: 0.6, vel: 0.55, drag: -1, dx: 0, lx: 0,
   home: { p: new THREE.Vector3(), q: new THREE.Quaternion() }, box: new THREE.Box3(), size: new THREE.Vector3(), ctr: new THREE.Vector3() };
 const _podB = new THREE.Box3();
 pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncBatches) burada tek tek çizilir
 {
   const s = pod.scene;
-  s.background = canvasTex(4, 256, (g) => { const r = g.createLinearGradient(0, 0, 0, 256); r.addColorStop(0, '#2b2160'); r.addColorStop(0.55, '#4a3a8c'); r.addColorStop(1, '#1a1438'); g.fillStyle = r; g.fillRect(0, 0, 4, 256); });
-  s.add(new THREE.HemisphereLight(0xd8d0ff, 0x30285a, 1.1));
-  const front = new THREE.DirectionalLight(0xfff4e6, 1.2); front.position.set(0, 2.5, 6); s.add(front);
-  const spot = (col, x, y, z, I) => { const l = new THREE.SpotLight(col, I, 0, 0.42, 0.55, 0); l.position.set(x, y, z); l.target.position.set(0, 0.9, 0); s.add(l, l.target); return l; };
-  spot(0xffd9a0, 4.5, 6.5, 3.2, 9); // sağdan sıcak ışık
-  spot(0x9fdcff, -4.5, 6, 2.6, 7); // soldan soğuk ışık
-  spot(0xffffff, 0, 5, -5, 5); // arkadan kontur
-  const beam = canvasTex(64, 256, (g) => { const r = g.createLinearGradient(0, 0, 0, 256); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(1, 'rgba(255,255,255,1)'); g.fillStyle = r; g.fillRect(0, 0, 64, 256);
-    const m = g.createLinearGradient(0, 0, 64, 0); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(0.5, 'rgba(0,0,0,0)'); m.addColorStop(1, 'rgba(0,0,0,1)'); g.globalCompositeOperation = 'destination-out'; g.fillStyle = m; g.fillRect(0, 0, 64, 256); });
-  for (const [x, col] of [[3.2, 0xffd9a0], [-3.2, 0x9fdcff]]) { // ışık huzmeleri
-    const b = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 7.5), new THREE.MeshBasicMaterial({ map: beam, color: col, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, forceSinglePass: true }));
-    b.position.set(x * 0.55, 3.6, -1.2); b.rotation.z = -Math.sign(x) * 0.42; s.add(b);
-  }
-  const top = new THREE.MeshStandardMaterial({ color: 0x3d3480, roughness: 0.55, metalness: 0.1 });
-  const rim = new THREE.MeshStandardMaterial({ color: 0xffc23a, emissive: 0x7a4a00, emissiveIntensity: 0.5, roughness: 0.35, metalness: 0.5 });
-  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2.05, 0.42, 48), top); p1.position.y = -0.21;
-  const p2 = new THREE.Mesh(new THREE.TorusGeometry(1.95, 0.06, 8, 64), rim); p2.rotation.x = Math.PI / 2;
-  const p3 = new THREE.Mesh(new THREE.CylinderGeometry(2.25, 2.4, 0.3, 48), top); p3.position.y = -0.55;
+  // gökyüzü: yukarıda lacivert, ufka doğru mor-pembe-turuncu
+  s.background = canvasTex(4, 256, (g) => { const r = g.createLinearGradient(0, 0, 0, 256);
+    r.addColorStop(0, '#2a3a78'); r.addColorStop(0.35, '#7a4f9a'); r.addColorStop(0.62, '#f08a7a'); r.addColorStop(0.8, '#ffc27a'); r.addColorStop(1, '#ffdca0'); g.fillStyle = r; g.fillRect(0, 0, 4, 256); });
+  s.add(new THREE.HemisphereLight(0xffd8b8, 0x4a3a6a, 1.15));
+  const front = new THREE.DirectionalLight(0xfff0dc, 1.25); front.position.set(1.5, 3, 6); s.add(front);
+  const back = new THREE.DirectionalLight(0xffa860, 1.6); back.position.set(-2, 2.5, -6); s.add(back); // güneşten kontur
+  const FAR = -55, SEA_Y = -0.72;
+  // güneş: ufkun hemen üstünde, sıcak hale
+  const sun = new THREE.Mesh(new THREE.PlaneGeometry(26, 26), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false,
+    map: canvasTex(256, 256, (g) => { const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+      r.addColorStop(0, 'rgba(255,236,190,1)'); r.addColorStop(0.15, 'rgba(255,190,105,1)'); r.addColorStop(0.19, 'rgba(255,140,80,.55)'); r.addColorStop(0.5, 'rgba(255,120,90,.18)'); r.addColorStop(1, 'rgba(255,140,110,0)');
+      g.fillStyle = r; g.fillRect(0, 0, 256, 256); }) }));
+  sun.position.set(-9, SEA_Y + 5.5, FAR - 4); s.add(sun);
+  // karşı kıyı: tepeler, kubbeler, minareler, kule; iki katman (uzak soluk, yakın koyu), pencerelerde ışık
+  const sky = canvasTex(2048, 384, (g, W, H) => {
+    let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const hills = (base, amp, col, n) => { g.fillStyle = col; g.beginPath(); g.moveTo(0, H);
+      for (let x = 0; x <= W; x += 16) g.lineTo(x, base - amp * (0.5 + 0.5 * Math.sin(x / 260 + n) * Math.sin(x / 97 + n * 2)));
+      g.lineTo(W, H); g.fill(); };
+    hills(H - 120, 70, 'rgba(160,96,140,.85)', 1.3); // uzak tepeler
+    const dark = '#3a2449';
+    hills(H - 60, 34, dark, 4.1);
+    const mosque = (cx, sc) => { g.fillStyle = dark; const b = H - 60;
+      g.fillRect(cx - 70 * sc, b - 50 * sc, 140 * sc, 50 * sc);
+      g.beginPath(); g.arc(cx, b - 50 * sc, 46 * sc, Math.PI, 0); g.fill();
+      for (const k of [-1, 1]) { g.beginPath(); g.arc(cx + k * 58 * sc, b - 44 * sc, 22 * sc, Math.PI, 0); g.fill(); }
+      g.fillRect(cx - 2 * sc, b - 112 * sc, 4 * sc, 18 * sc);
+      for (const k of [-1, 1, -1.35, 1.35]) { const mx = cx + k * 96 * sc, h = (Math.abs(k) > 1 ? 120 : 150) * sc;
+        g.fillRect(mx - 5 * sc, b - h, 10 * sc, h); g.beginPath(); g.moveTo(mx - 6 * sc, b - h); g.lineTo(mx, b - h - 34 * sc); g.lineTo(mx + 6 * sc, b - h); g.fill();
+        g.fillRect(mx - 8 * sc, b - h * 0.72, 16 * sc, 4 * sc); } };
+    const tower = (cx, sc) => { const b = H - 60; g.fillStyle = dark; g.fillRect(cx - 16 * sc, b - 120 * sc, 32 * sc, 120 * sc);
+      g.beginPath(); g.moveTo(cx - 20 * sc, b - 120 * sc); g.lineTo(cx, b - 170 * sc); g.lineTo(cx + 20 * sc, b - 120 * sc); g.fill(); };
+    for (let x = 0; x < W; x += 14 + rnd() * 24) { const h = 14 + rnd() * 34, w = 12 + rnd() * 18; g.fillStyle = dark; g.fillRect(x, H - 60 - h, w, h + 4);
+      if (rnd() < 0.55) { g.fillStyle = 'rgba(255,214,130,.9)'; g.fillRect(x + 3 + rnd() * (w - 7), H - 60 - h + 5 + rnd() * (h - 10), 3, 3); } }
+    mosque(560, 1.25); mosque(1460, 0.95); tower(1060, 1.1);
+    g.fillStyle = dark; g.fillRect(0, H - 62, W, 62);
+  });
+  sky.anisotropy = 4; sky.wrapS = THREE.RepeatWrapping; sky.repeat.x = 3;
+  const shore = new THREE.Mesh(new THREE.PlaneGeometry(96, 6), new THREE.MeshBasicMaterial({ map: sky, transparent: true, depthWrite: false, fog: false }));
+  shore.position.set(0, SEA_Y + 3 - 0.35, FAR); s.add(shore);
+  // deniz: uzakta gökyüzünün rengini alır, yakında koyu lacivert; güneşin altında parıltı yolu
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(150, 80), new THREE.MeshBasicMaterial({ fog: false,
+    map: canvasTex(512, 512, (g, W, H) => { const r = g.createLinearGradient(0, 0, 0, H);
+      r.addColorStop(0, '#f2a07e'); r.addColorStop(0.18, '#a8608c'); r.addColorStop(0.5, '#3d3a74'); r.addColorStop(1, '#1d2550'); g.fillStyle = r; g.fillRect(0, 0, W, H);
+      let seed = 3; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let i = 0; i < 420; i++) { const y = Math.pow(rnd(), 1.7) * H, cx = W * 0.44 + (rnd() - 0.5) * (30 + y * 0.5), w = 3 + rnd() * 14 * (1 - y / H * 0.5);
+        g.fillStyle = `rgba(255,${210 + rnd() * 40 | 0},150,${0.55 * (1 - y / H) + 0.08})`; g.fillRect(cx - w / 2, y, w, 1.6 + y / H * 2); }
+      for (let i = 0; i < 220; i++) { const y = rnd() * H, x = rnd() * W; g.fillStyle = `rgba(255,255,255,${0.03 + rnd() * 0.04})`; g.fillRect(x, y, 3 + rnd() * 9, 0.8); } }) }));
+  sea.rotation.x = -Math.PI / 2; sea.position.set(0, SEA_Y, FAR + 40); s.add(sea);
+  // iskele babası: ahşap kalas tepeli kalın direk, üstünde halat sarılı
+  const plank = canvasTex(256, 256, (g) => { g.fillStyle = '#9a6a3e'; g.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#a7764a' : '#8e5f36'; g.fillRect(0, i * 32, 256, 30); g.fillStyle = '#5e3c1f'; g.fillRect(0, i * 32 + 30, 256, 2);
+      for (let k = 0; k < 6; k++) { g.fillStyle = 'rgba(70,40,18,.25)'; g.fillRect(Math.random() * 256, i * 32 + 4 + Math.random() * 22, 30 + Math.random() * 60, 1.5); } } });
+  const wood = new THREE.MeshStandardMaterial({ color: 0x7a5232, roughness: 0.85 });
+  const top = new THREE.MeshStandardMaterial({ map: plank, roughness: 0.8 });
+  const rope = new THREE.MeshStandardMaterial({ color: 0xd8bf88, roughness: 0.95 });
+  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.95, 0.36, 40), [wood, top, wood]); p1.position.y = -0.18;
+  const p2 = new THREE.Mesh(new THREE.TorusGeometry(1.93, 0.07, 6, 56), rope); p2.rotation.x = Math.PI / 2; p2.position.y = -0.03;
+  const p2b = new THREE.Mesh(new THREE.TorusGeometry(1.96, 0.06, 6, 56), rope); p2b.rotation.x = Math.PI / 2; p2b.position.y = -0.17;
+  const p3 = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.75, 0.6, 32), wood); p3.position.y = -0.62;
   const glow = new THREE.Mesh(new THREE.CircleGeometry(4.2, 48), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    map: canvasTex(128, 128, (g) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,214,140,.55)'); r.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); }) }));
-  glow.rotation.x = -Math.PI / 2; glow.position.y = -0.69;
-  s.add(p1, p2, p3, glow);
+    map: canvasTex(128, 128, (g) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,190,130,.35)'); r.addColorStop(1, 'rgba(255,190,130,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); }) }));
+  glow.rotation.x = -Math.PI / 2; glow.position.y = SEA_Y + 0.01;
+  s.add(p1, p2, p2b, p3, glow);
+}
+// sürükleyerek döndürme: panelin dışında basılan parmak/fare martıyı çevirir
+{
+  const el = $('wardrobe');
+  el.addEventListener('pointerdown', e => { if (!dressing || isUi(e) || pod.drag >= 0) return; pod.drag = e.pointerId; pod.lx = e.clientX; pod.dx = 0; pod.vel = 0; try { el.setPointerCapture(e.pointerId); } catch (_) {} });
+  el.addEventListener('pointermove', e => { if (e.pointerId !== pod.drag) return; pod.dx += e.clientX - pod.lx; pod.lx = e.clientX; });
+  const up = e => { if (e.pointerId === pod.drag) pod.drag = -1; };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
 }
 function podEnter() {
-  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6;
+  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6; pod.vel = 0.55; pod.drag = -1;
   pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
 }
 function podRestore() { // karenin başında: martı dünyadaki yerine döner, oyun mantığı onu oradan sürer
@@ -2234,7 +2285,10 @@ function podRestore() { // karenin başında: martı dünyadaki yerine döner, o
 function podDraw(dt) {
   pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
   pod.scene.add(gull);
-  pod.yaw += dt * 0.55;
+  if (pod.drag >= 0) { // elle çevirme: kayma kadar döner, hız savrulma için saklanır
+    const k = 7 / Math.max(innerWidth, 320), dy = pod.dx * k; pod.dx = 0; pod.yaw += dy;
+    pod.vel = THREE.MathUtils.lerp(pod.vel, dt > 0 ? THREE.MathUtils.clamp(dy / dt, -12, 12) : 0, 0.5);
+  } else { pod.vel = damp(pod.vel, 0.55, 1.2, dt); pod.yaw += pod.vel * dt; } // bırakınca savrulur, yavaşça kendi dönüşüne iner
   gull.position.set(0, 0, 0); gull.rotation.set(0, pod.yaw, 0);
   flapGull(gull, t * 1.6, 0.1, 0.32); // kanatlar hafif kalkık, nefes alır gibi oynar
   gull.updateMatrixWorld(true);
@@ -2248,7 +2302,7 @@ function podDraw(dt) {
   const span = Math.max(pod.size.x, pod.size.z, 2.4), H = pod.size.y + 0.6;
   const vis = land ? 0.5 : 0.46, fit = Math.max(H / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * vis), span / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect * (land ? 0.42 : 0.86)));
   const d = fit * 0.95 + 1;
-  cam.position.set(0, H * 0.55 + d * 0.18, d); cam.lookAt(0, H * 0.45, 0);
+  cam.position.set(0, H * 0.55 + d * 0.1, d); cam.lookAt(0, H * 0.48, 0); // neredeyse yandan: ufuk ve karşı kıyı görünsün
   if (land) cam.setViewOffset(w, h, w * 0.24, 0, w, h); else cam.setViewOffset(w, h, 0, h * 0.24, w, h);
   cam.updateProjectionMatrix();
   renderer.render(pod.scene, cam);
@@ -2889,7 +2943,7 @@ addEventListener('online', () => sync());
 requestAnimationFrame(frame);
 
 window.__game = {
-  get state() { return state; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
+  get state() { return state; }, get podYaw() { return pod.yaw; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, setCombo: n => { combo = n; comboT = COMBO_T; }, get powers() { return { ...pw }; },
   genLog: on => { const l = genLog; genLog = on ? [] : null; return l; },
   get wallet() { return wallet; }, get rank() { return { ...rank }; }, addXp, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },

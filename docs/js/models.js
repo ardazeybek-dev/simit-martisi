@@ -38,7 +38,7 @@ const GULL_PAL = {
   grey: { body: 0x6f7682, head: 0x5d6470, wing: 0x474d58, tip: 0x15161a, beak: 0xd9862a, eye: 0xff4a3a },
   red: { body: 0xd9544f, head: 0xc8453f, wing: 0x9c2f2b, tip: 0x2a1010, beak: 0xffc23a, eye: 0xfff2b0 },
   blue: { body: 0x5fa8d3, head: 0x4f93c0, wing: 0x2f6f9f, tip: 0x10202e, beak: 0xffc23a, eye: 0xfff2b0 },
-  pink: { body: 0xffd6e2, head: 0xffe4ec, wing: 0xf08fb0, tip: 0x7a2b4a, beak: 0xf4b52a, eye: 0x111111 },
+  pink: { body: 0xff9cc2, head: 0xffb6d3, wing: 0xe2407f, tip: 0x7d1342, beak: 0xffc23a, eye: 0x111111 }, // flamingo pembesi: beyazla karışmasın
   night: { body: 0x3a3f4c, head: 0x2c303a, wing: 0x1e2129, tip: 0x0a0a0c, beak: 0xffc23a, eye: 0xffe07a },
   golden: { body: 0xffd77a, head: 0xffe39c, wing: 0xe0a53a, tip: 0x8a5a12, beak: 0xff8a3a, eye: 0x111111 },
   sunset: { body: 0xffbb85, head: 0xffcf9e, wing: 0x9b5fc0, tip: 0x3d1f5c, beak: 0xffd34d, eye: 0x111111 },
@@ -1348,6 +1348,12 @@ export const COSTUMES = [
   { id: 'mint', name: 'Nane martı', slot: 'body', price: 1100 },
   { id: 'sunset', name: 'Gün batımı', slot: 'body', price: 2000 },
   { id: 'ice', name: 'Buz martısı', slot: 'body', price: 2500 },
+  // komik, kuşu kapatan büyük parçalar
+  { id: 'pacifier', name: 'Bebek emziği', slot: 'face', price: 350 },
+  { id: 'bigglasses', name: 'Kocaman gözlük', slot: 'eyes', price: 550 },
+  { id: 'chef', name: 'Aşçı şapkası', slot: 'head', price: 700 },
+  { id: 'tophat', name: 'Dev silindir', slot: 'head', price: 900 },
+  { id: 'simitcrown', name: 'Simit tacı', slot: 'head', price: 1500 },
 ];
 // kalp: gözlük camı ve simge için (x-y düzleminde, ortası 0)
 function heartGeo(r) {
@@ -1386,6 +1392,7 @@ function costumeGeo(id) {
     // camlar gözlerin (±0.19, 0.28, −0.86) önünde, kafa küresine teğet ve ondan ~6 cm açıkta (EYE_* ortak); köprü gaganın üstünden geçer
     for (const s of [-1, 1]) {
       k.add(new THREE.BoxGeometry(0.17, 0.13, 0.035), 0x14161c, s * EYE_X, EYE_Y, EYE_Z, 0, -s * EYE_RY);
+      k.add(new THREE.BoxGeometry(0.07, 0.022, 0.01), 0x8a97b4, s * (EYE_X + 0.006), EYE_Y + 0.035, EYE_Z - 0.03, 0, -s * EYE_RY, s * 0.35); // cam parıltısı
       k.add(new THREE.BoxGeometry(0.025, 0.025, 0.3), 0x14161c, s * 0.335, 0.32, -0.76);
     }
     k.add(new THREE.BoxGeometry(0.44, 0.03, 0.03), 0x14161c, 0, 0.32, -1.02);
@@ -1418,6 +1425,36 @@ function costumeGeo(id) {
     k.add(new THREE.TorusGeometry(0.3, 0.014, 4, 20), 0xffc23a, 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
     const disc = (r, c, dz) => k.add(new THREE.CylinderGeometry(r, r, 0.03, 14), c, 0, -0.24, -0.56 - dz, Math.PI / 2);
     disc(0.1, 0x1f4fbf, 0); disc(0.068, 0xffffff, 0.012); disc(0.045, 0x5fb4ff, 0.024); disc(0.022, 0x111111, 0.036);
+  } else if (id === 'pacifier') { // gagaya geçmiş kocaman bebek emziği: mavi kalkan, beyaz düğme, sarkan halka
+    k.add(new THREE.CylinderGeometry(0.24, 0.24, 0.05, 18), 0x7fcfff, 0, 0.14, -1.18, Math.PI / 2, 0, 0, 1, 1, 0.78);
+    k.add(new THREE.SphereGeometry(0.075, 8, 6), 0xffffff, 0, 0.14, -1.23);
+    k.add(new THREE.TorusGeometry(0.13, 0.032, 6, 18), 0xff7fb0, 0, 0.02, -1.25);
+  } else if (id === 'bigglasses') { // kocaman yuvarlak gözlük: kalın kemik çerçeve, büyüteç gibi kocaman görünen gözler
+    for (const s of [-1, 1]) {
+      const x = s * 0.21, y = 0.33, z = -1.1;
+      k.add(new THREE.CylinderGeometry(0.19, 0.19, 0.015, 20), 0xeaf4ff, x, y, z, Math.PI / 2);
+      k.add(new THREE.TorusGeometry(0.19, 0.035, 6, 22), 0x4a2a16, x, y, z);
+      k.add(new THREE.CylinderGeometry(0.085, 0.085, 0.012, 14), 0x111111, x - s * 0.03, y - 0.02, z - 0.012, Math.PI / 2);
+      k.add(new THREE.CylinderGeometry(0.028, 0.028, 0.008, 8), 0xffffff, x - s * 0.005, y + 0.015, z - 0.02, Math.PI / 2);
+      k.add(new THREE.BoxGeometry(0.03, 0.03, 0.4), 0x4a2a16, s * 0.39, y, -0.9);
+    }
+    k.add(new THREE.BoxGeometry(0.06, 0.03, 0.03), 0x4a2a16, 0, 0.36, -1.1);
+  } else if (id === 'chef') { // aşçı şapkası: bant ve üstte kabarık bulut
+    k.add(new THREE.CylinderGeometry(0.28, 0.27, 0.24, 16), 0xf3f3ee, 0, 0.6, -0.72);
+    k.add(new THREE.SphereGeometry(0.26, 12, 8), 0xffffff, 0, 0.92, -0.72);
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; k.add(new THREE.SphereGeometry(0.16, 8, 6), 0xffffff, Math.sin(a) * 0.2, 0.82, -0.72 + Math.cos(a) * 0.2); }
+  } else if (id === 'tophat') { // dev silindir şapka: başın iki katı boyunda, kırmızı bantlı, hafif yana yatık
+    k.add(new THREE.CylinderGeometry(0.44, 0.44, 0.04, 22), 0x16161c, 0, 0.5, -0.72, 0, 0, 0.12);
+    k.add(new THREE.CylinderGeometry(0.29, 0.27, 0.9, 20), 0x1f1f27, 0.06, 0.96, -0.72, 0, 0, 0.12);
+    k.add(new THREE.CylinderGeometry(0.285, 0.282, 0.12, 20), 0xd23a33, 0.015, 0.59, -0.72, 0, 0, 0.12);
+    k.add(new THREE.CylinderGeometry(0.296, 0.296, 0.03, 20), 0x2c2c36, 0.115, 1.41, -0.72, 0, 0, 0.12);
+  } else if (id === 'simitcrown') { // simit tacı: başın üstünde kocaman susamlı simit, üstünde altın sivri uçlar
+    k.add(new THREE.TorusGeometry(0.36, 0.12, 8, 22), (f, y) => (y > 0.6 ? 0xa4531f : 0xc8793a), 0, 0.56, -0.72, Math.PI / 2);
+    for (let i = 0; i < 28; i++) { const a = i * 2.39996, r = 0.36 + Math.sin(i * 7.3) * 0.06;
+      k.add(new THREE.BoxGeometry(0.03, 0.012, 0.016), 0xfff2c8, Math.sin(a) * r, 0.675, -0.72 + Math.cos(a) * r, 0, a); }
+    for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3;
+      k.add(new THREE.ConeGeometry(0.05, 0.16, 5), 0xffcb45, Math.sin(a) * 0.36, 0.76, -0.72 + Math.cos(a) * 0.36);
+      k.add(new THREE.SphereGeometry(0.028, 5, 4), 0xe5484d, Math.sin(a) * 0.36, 0.85, -0.72 + Math.cos(a) * 0.36); }
   } else if (id === 'scarf') {
     const ring = new THREE.TorusGeometry(0.3, 0.075, 6, 16);
     k.add(ring, (f) => (f % 8 < 4 ? 0xd23a33 : 0xf6f0e4), 0, 0.07, -0.5, 0, 0, 0, 1, 0.9, 1);
@@ -1438,6 +1475,11 @@ export function dressGull(gull) {
   return out;
 }
 export const COSTUME_SVG = {
+  pacifier: '<svg viewBox="0 0 48 48"><circle cx="24" cy="34" r="9" fill="none" stroke="#ff7fb0" stroke-width="4"/><ellipse cx="24" cy="20" rx="18" ry="11" fill="#7fcfff"/><circle cx="24" cy="20" r="6" fill="#fff"/></svg>',
+  bigglasses: '<svg viewBox="0 0 48 48"><circle cx="13" cy="24" r="10" fill="#eaf4ff" stroke="#4a2a16" stroke-width="3.5"/><circle cx="35" cy="24" r="10" fill="#eaf4ff" stroke="#4a2a16" stroke-width="3.5"/><path d="M22 22h4" stroke="#4a2a16" stroke-width="3"/><circle cx="15" cy="25" r="4.5" fill="#111"/><circle cx="33" cy="25" r="4.5" fill="#111"/><circle cx="16" cy="23" r="1.5" fill="#fff"/><circle cx="34" cy="23" r="1.5" fill="#fff"/></svg>',
+  chef: '<svg viewBox="0 0 48 48"><rect x="13" y="28" width="22" height="12" rx="2" fill="#e9e9e2"/><circle cx="15" cy="20" r="8" fill="#fff"/><circle cx="33" cy="20" r="8" fill="#fff"/><circle cx="24" cy="15" r="10" fill="#fff"/><path d="M13 28h22" stroke="#d0d0c8" stroke-width="2"/></svg>',
+  tophat: '<svg viewBox="0 0 48 48"><path d="M15 6h18l-1 30H16z" fill="#1f1f27"/><rect x="15.6" y="28" width="16.8" height="6" fill="#d23a33"/><ellipse cx="24" cy="38" rx="20" ry="5" fill="#16161c"/></svg>',
+  simitcrown: '<svg viewBox="0 0 48 48"><path d="M10 24l3-12 6 8 5-12 5 12 6-8 3 12z" fill="#ffcb45"/><ellipse cx="24" cy="32" rx="19" ry="10" fill="#c8793a"/><ellipse cx="24" cy="31" rx="8" ry="3.5" fill="#5a2f14"/><g fill="#fff2c8"><rect x="10" y="28" width="3" height="1.4"/><rect x="16" y="25" width="3" height="1.4"/><rect x="31" y="25" width="3" height="1.4"/><rect x="36" y="30" width="3" height="1.4"/><rect x="22" y="38" width="3" height="1.4"/><rect x="13" y="35" width="3" height="1.4"/><rect x="31" y="36" width="3" height="1.4"/></g></svg>',
   beanie: '<svg viewBox="0 0 48 48"><path d="M8 32a16 16 0 0 1 32 0z" fill="#2f7fd0"/><path d="M12 22h24M9.5 27h29" stroke="#3a93e8" stroke-width="3"/><rect x="6" y="30" width="36" height="8" rx="4" fill="#f6f0e4"/><circle cx="24" cy="12" r="5" fill="#fff"/></svg>',
   tray: '<svg viewBox="0 0 48 48"><ellipse cx="24" cy="30" rx="21" ry="7" fill="#8a5626"/><ellipse cx="24" cy="28" rx="20" ry="6" fill="#b57a3c"/><g fill="none" stroke="#b8642a" stroke-width="3.4"><ellipse cx="15" cy="24" rx="5" ry="3"/><ellipse cx="25" cy="22" rx="5" ry="3"/><ellipse cx="34" cy="25" rx="5" ry="3"/><ellipse cx="22" cy="28" rx="5" ry="3"/></g><path d="M18 36h12l-2 6h-8z" fill="#f6f0e4"/></svg>',
   hearts: '<svg viewBox="0 0 48 48"><path d="M4 19h40" stroke="#d12f6a" stroke-width="3"/><path d="M13 33l-8-8a4.6 4.6 0 0 1 8-5 4.6 4.6 0 0 1 8 5z" fill="#ff4f8b"/><path d="M35 33l-8-8a4.6 4.6 0 0 1 8-5 4.6 4.6 0 0 1 8 5z" fill="#ff4f8b"/></svg>',
@@ -1447,7 +1489,7 @@ export const COSTUME_SVG = {
   sunset: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#9b5fc0"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#ffbb85"/><circle cx="24" cy="21" r="5" fill="#ffcf9e"/><path d="M24 23l3 4h-6z" fill="#ffd34d"/></svg>',
   ice: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#8fc9ef"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#eaf6ff"/><circle cx="24" cy="21" r="5" fill="#f6fbff"/><path d="M24 23l3 4h-6z" fill="#bfe6ff"/><path d="M38 34v8M34 38h8M35.2 35.2l5.6 5.6M40.8 35.2l-5.6 5.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>',
   mustache: '<svg viewBox="0 0 48 48"><path d="M24 22q-6-4-12 0-5 4-9 1 2 8 10 7 7-1 11-6 4 5 11 6 8 1 10-7-4 3-9-1-6-4-12 0z" fill="#2a1a12"/></svg>',
-  pink: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#f08fb0"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#ffd6e2"/><circle cx="24" cy="21" r="5" fill="#ffd6e2"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
+  pink: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#e2407f"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#ff9cc2"/><circle cx="24" cy="21" r="5" fill="#ffb6d3"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
   night: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#1e2129"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#3a3f4c"/><circle cx="24" cy="21" r="5" fill="#3a3f4c"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
   golden: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#e0a53a"/><ellipse cx="24" cy="29" rx="7" ry="9" fill="#ffd77a"/><circle cx="24" cy="21" r="5" fill="#ffd77a"/><path d="M24 23l3 4h-6z" fill="#f4b52a"/></svg>',
   fes: '<svg viewBox="0 0 48 48"><path d="M14 40l4-26h12l4 26z" fill="#c62a33"/><path d="M18 14h12l.6 4H17.4z" fill="#9e1b24"/><path d="M24 14q8-2 9 10" stroke="#1a1a1a" stroke-width="2" fill="none"/><path d="M31 23l4 9h-6z" fill="#1a1a1a"/><rect x="11" y="38" width="26" height="4" rx="2" fill="#7a141b"/></svg>',
