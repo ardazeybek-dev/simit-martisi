@@ -1,6 +1,7 @@
 /* Simit Martısı: dil tablosu. Klasik betik (modül değil): main.js'ten ve portal kopyasındaki platform.js'ten önce yüklenir.
    Kaynak dil Türkçe; metnin kendisi anahtardır. Tabloda olmayan metin Türkçe kalır.
-   Dil: Ayarlar'da seçilen (localStorage), seçilmemişse tarayıcı dili (tr → Türkçe, diğerleri → İngilizce). */
+   Dil: Ayarlar'da seçilen (localStorage), seçilmemişse tarayıcı dili (destekleniyorsa), yoksa İngilizce.
+   tr/en/de/es bu dosyada; diğer diller js/lang/<kod>.js içinde, yalnızca seçilen dil yüklenir (sayfa açılırken eşzamanlı). */
 (function () {
   'use strict';
   var EN = {
@@ -864,13 +865,21 @@
   ];
   MORE.forEach(function (r) { EN[r[0]] = r[1]; DE[r[0]] = r[2]; ES[r[0]] = r[3]; });
   var TABLES = { en: EN, de: DE, es: ES };
+  // dil menüsünde kendi adıyla görünür; sırası menünün sırası
+  var NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', ro: 'Română',
+    az: 'Azərbaycanca', id: 'Bahasa Indonesia', vi: 'Tiếng Việt', el: 'Ελληνικά', ru: 'Русский', uk: 'Українська', hi: 'हिन्दी', ja: '日本語', ko: '한국어', zh: '中文' };
+  var EXTRA = ['fr', 'it', 'pt', 'nl', 'pl', 'ro', 'az', 'id', 'vi', 'el', 'ru', 'uk', 'hi', 'ja', 'ko', 'zh'];
   var TITLES = { en: 'Simit Seagull', de: 'Simit-Möwe', es: 'Gaviota Simit' };
-  var LOCALES = { tr: 'tr-TR', en: 'en-US', de: 'de-DE', es: 'es-ES' };
+  var LOCALES = { tr: 'tr-TR', en: 'en-US', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', it: 'it-IT', pt: 'pt-BR', nl: 'nl-NL', pl: 'pl-PL', ro: 'ro-RO', az: 'az-AZ', id: 'id-ID', vi: 'vi-VN', el: 'el-GR', ru: 'ru-RU', uk: 'uk-UA', hi: 'hi-IN', ja: 'ja-JP', ko: 'ko-KR', zh: 'zh-CN' };
+  var known = function (c) { return c === 'tr' || !!TABLES[c] || EXTRA.indexOf(c) >= 0; };
   var KEY = 'simit-martisi-settings';
   var lang = 'en';
-  try { var l = (navigator.languages && navigator.languages[0]) || navigator.language || ''; if (/^tr\b/i.test(l)) lang = 'tr'; else if (/^de\b/i.test(l)) lang = 'de'; else if (/^es\b/i.test(l)) lang = 'es'; } catch (e) {}
-  try { var s = JSON.parse(localStorage.getItem(KEY) || '{}'); if (s && (s.lang === 'tr' || TABLES[s.lang])) lang = s.lang; } catch (e) {}
+  try { var l = ((navigator.languages && navigator.languages[0]) || navigator.language || '').slice(0, 2).toLowerCase(); if (known(l)) lang = l; } catch (e) {}
+  try { var s = JSON.parse(localStorage.getItem(KEY) || '{}'); if (s && known(s.lang)) lang = s.lang; } catch (e) {}
 
+  // ek dil: tablosu ayrı dosyada; parser'a eşzamanlı eklenir, modül olan main.js ondan sonra çalışır
+  window.I18N_ADD = function (code, table) { TABLES[code] = table; if (table.__title) TITLES[code] = table.__title; };
+  if (EXTRA.indexOf(lang) >= 0 && !TABLES[lang]) document.write('<script src="js/lang/' + lang + '.js"><\/script>');
   function t(s) { var T = TABLES[lang]; return T && Object.prototype.hasOwnProperty.call(T, s) ? T[s] : s; }
 
   // sabit HTML metinleri bir kez, sayfa açılırken çevrilir
@@ -885,5 +894,5 @@
     document.querySelectorAll('[aria-label]').forEach(function (el) { var a = el.getAttribute('aria-label'); if (t(a) !== a) el.setAttribute('aria-label', t(a)); });
   }
 
-  window.I18N = { get lang() { return lang; }, get locale() { return LOCALES[lang] || 'en-US'; }, langs: ['tr'].concat(Object.keys(TABLES)), t: t, translateDom: translateDom };
+  window.I18N = { get lang() { return lang; }, get locale() { return LOCALES[lang] || 'en-US'; }, langs: Object.keys(NAMES), names: NAMES, t: t, translateDom: translateDom };
 })();

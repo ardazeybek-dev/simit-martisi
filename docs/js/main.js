@@ -2154,8 +2154,12 @@ for (const el of document.querySelectorAll('[data-vol]')) {
 for (const el of document.querySelectorAll('[data-mute]')) {
   el.addEventListener('click', e => { e.stopPropagation(); const k = el.dataset.mute; settings[k] = !settings[k]; saveSettings(); sfx.click(); });
 }
-for (const el of document.querySelectorAll('[data-lang]')) {
-  el.addEventListener('click', e => { e.stopPropagation(); if (el.dataset.lang === window.I18N.lang) return; settings.lang = el.dataset.lang; store.set(KEY_SET, settings); sfx.click(); location.reload(); });
+{ // dil: açılır menü, her dil kendi adıyla; seçince sayfa o dille yeniden açılır
+  const sel = $('langSel');
+  for (const c of window.I18N.langs) { const o = document.createElement('option'); o.value = c; o.textContent = window.I18N.names[c]; sel.appendChild(o); }
+  sel.value = window.I18N.lang;
+  sel.addEventListener('click', e => e.stopPropagation()); sel.addEventListener('pointerdown', e => e.stopPropagation());
+  sel.addEventListener('change', () => { if (sel.value === window.I18N.lang) return; settings.lang = sel.value; store.set(KEY_SET, settings); sfx.click(); location.reload(); });
 }
 function saveSettings() {
   for (const k of ['sfx', 'music']) if (settings[k] && !(settings[k + 'Vol'] > 0)) settings[k + 'Vol'] = 0.8; // sessizden açınca kaydırıcı sıfırda kalmasın
@@ -2165,7 +2169,6 @@ function syncToggles() {
   for (const el of document.querySelectorAll('[data-toggle]')) el.setAttribute('aria-pressed', settings[el.dataset.toggle] ? 'true' : 'false');
   for (const el of document.querySelectorAll('[data-mute]')) { const on = !!settings[el.dataset.mute]; el.classList.toggle('off', !on); el.querySelector('use').setAttribute('href', on ? '#i-sound' : '#i-mute'); }
   for (const el of document.querySelectorAll('[data-vol]')) el.value = settings[el.dataset.vol] ? Math.round(settings[el.dataset.vol + 'Vol'] * 100) : 0;
-  for (const el of document.querySelectorAll('[data-lang]')) el.setAttribute('aria-pressed', el.dataset.lang === window.I18N.lang ? 'true' : 'false');
 }
 syncToggles();
 // sekme arka plana geçince otomatik duraklat

@@ -149,6 +149,9 @@ def build(target, zip_dir):
     shutil.copy2(VENDOR / "three.module.min.js", out / "js" / "three.module.min.js")
     shutil.copy2(DOCS / "icons" / "icon.svg", out / "icons" / "icon.svg")
     (out / "style.css").write_text(FONT_CSS + (DOCS / "style.css").read_text("utf-8"), "utf-8")
+    (out / "js" / "lang").mkdir()
+    for f in (DOCS / "js" / "lang").glob("*.js"):
+        shutil.copy2(f, out / "js" / "lang" / f.name)
     for f in (DOCS / "js").glob("*.js"):
         js = f.read_text("utf-8")
         js = {"main.js": patch_main, "audio.js": patch_audio, "net.js": patch_net}.get(f.name, lambda s: s)(js)
