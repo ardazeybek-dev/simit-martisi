@@ -120,7 +120,7 @@ function gullSize(puff = 0) {
 // simitler içe kıvrılan yarış çizgisine dizilir, çizginin çoğunu kapan sapan gibi fırlar.
 // Ayar: TURN_ANG (dönüş açısı, rad), TURN_LEN (viraj boyu), TURN_GAP (iki viraj arası), PUSH (savrulma).
 const TURNS_ON = new URLSearchParams(location.search).get('turn') !== '0'; // ?turn=0 → düz Boğaz (karşılaştırma için)
-const TURN_ANG = [0.38, 0.6], TURN_LEN = [80, 110], TURN_GAP = [340, 520], S_CHANCE = 0.3, PUSH = 0.75;
+const TURN_ANG = [0.34, 0.52], TURN_LEN = [48, 70], /* kısa, keskin virajlar: uzun boş dönüş yok */ TURN_GAP = [340, 520], S_CHANCE = 0.3, PUSH = 0.75;
 let turns = [], turnZ = 0, planYaw = 0, heading = 0, lean = 0, push = 0, sling = 0, slingV = 0, bendOn = 0;
 function planTurns(limit) {
   if (!TURNS_ON) return;
@@ -398,9 +398,11 @@ function spawnTurn(tn) {
     scene.add(c); decor.push({ mesh: c, z, ph: Math.random() * 6 });
   }
   const d = difficulty();
-  if (!MOBILE && d > 1.2 && Math.random() < 0.3 + d * 0.1) { // zorlaştıkça viraj içinde de bir rakip (telefonda yok: eğik kamerada görülmüyor)
-    const z = tn.z0 - len * rand(0.25, 0.75);
-    addRival(z, lineX(z) - tn.dir * 2, rand(0.7, 1.4), 'grey');
+  // viraj boş geçmesin: dış kenarda bir rakip ya da uçurtma (simit çizgisinden 2.6 m uzakta, çizgiyi izleyen geçer)
+  if (d > 0.6 && Math.random() < 0.45 + d * 0.1) {
+    const z = tn.z0 - len * rand(0.3, 0.7), x = clamp(lineX(z) + pick([-1, 1]) * 2.6, -LANE + 0.6, LANE - 0.6);
+    if (d > 1.4 && Math.random() < 0.4) { const k = makeKite(); k.position.set(x, FLY_Y + 0.2, z); scene.add(k); kites.push({ g: k, bx: x, z, ph: Math.random() * 6, sw: rand(0.6, 1) }); }
+    else addRival(z, x, rand(0.4, 0.8), 'grey');
   }
   tn.built = true; genZ = end;
 }
@@ -866,6 +868,15 @@ function spawnPier() {
   addSimit(gx, FLY_Y, gz, true);
   // kapının ardında simit yağmuru: iskeledekiler parça parça atar, martı geldiğinde inerler
   for (let k = 0, x = gx; throwers.length && k < 9; k++) { x = clamp(x + rand(-2.2, 2.2), -LANE + 0.8, LANE - 0.8); addThrown(throwers[k % 2], x, gz - 5 - k * 3.4, k === 8); }
+  // yeni ilçe boş geçiş olmasın: kapıdan sonra simit yağmurunun içinde engeller (ilerideki ilçelerde daha çok)
+  if (i >= 1 && !last) {
+    const n = 1 + (i >= 3 ? 1 : 0) + (i >= 5 ? 1 : 0);
+    for (let k = 0; k < n; k++) {
+      const z = gz - 12 - k * 14, x = rand(-3, 3);
+      if (k === 1 && i >= 2) { const kt = makeKite(); kt.position.set(x, FLY_Y + 0.2, z); scene.add(kt); kites.push({ g: kt, bx: x, z, ph: Math.random() * 6, sw: rand(0.8, 1.4) }); }
+      else addRival(z, x, rand(0.6, 1.3), undefined, gz + 4);
+    }
+  }
   piers.push({ g, z: gz, i, side });
   genZ = z0 - PIER_HALF * 2;
 }
@@ -1256,7 +1267,7 @@ function showOver() {
   { const n = achReady() - achBefore, nb = badgesGot() - bdgBefore; show('overAch', n > 0 || nb > 0);
     const part = (k, s) => (k > 0 ? `${tr(s)}${k > 1 ? ' ×' + k : ''}` : '');
     $('overAch').innerHTML = `<svg><use href="#i-medal"/></svg>${[part(n, 'Yeni başarım!'), part(nb, 'Yeni rozet!')].filter(Boolean).join(' · ')}`; }
-  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span>`
+  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span><small class="earn-rate">${tr('20 simit = 1 · altın 4 sayılır')}</small>`
     + (fishRun ? `<span class="earn-fish">+${fmt(fishRun)} <svg class="ico"><use href="#i-fish"/></svg></span>` : '');
   setTimeout(() => state === 'over' && earnFlow(banked), 700);
   show('over'); show('hud', false); hideTutorial();
@@ -2770,7 +2781,7 @@ function line(list) {
 let shoutT = 0;
 function shout(p, s, cheer) {
   const now = performance.now();
-  if (now - shoutT < 3500) return; // balonlar seyrek: ekranı doldurmasın
+  if (now - shoutT < 1400) return; // yolu kapatmıyor (şerit dışında): sık çıkabilir
   const say = cheer ? line(CHEERS) || line(SHOUTS.genel) : line(SHOUTS[p.kind] || SHOUTS.amca) || line(SHOUTS.genel);
   if (!say) return; // bu uçuşta söylenecek söz kalmadı
   shoutT = now;
@@ -2822,7 +2833,7 @@ function takeSimit(s) {
   bump(ui.score); // kapılan simit ekranda uçmaz: puan sayacı zıplar, o kadar
   flapBurst = Math.max(flapBurst, 0.4);
   if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; shout(s.person, s, true); }
-  else if (s.person) { angry(s.person); if (Math.random() < 0.7) shout(s.person, s); }
+  else if (s.person) { angry(s.person); shout(s.person, s); }
 }
 // viraj çıkışı: çizgideki simitlerin çoğu alındıysa bonus ve sapan gibi fırlama
 function judgeTurn(u) {

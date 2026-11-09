@@ -643,3 +643,4 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .cos-perk { position: absolute; top: 3px; left: 5px; font-style: normal; font-size: 13px; color: #ffd35a; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); pointer-events: none; }
 #wardNote { color: #ffd35a; font-weight: 700; }
 .app-ver { margin: 4px 0 8px; opacity: .55; font-size: 12px; }
+.earn-rate { display: block; width: 100%; margin-top: 3px; font-size: 11px; opacity: .6; font-weight: 600; }
