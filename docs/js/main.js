@@ -2077,6 +2077,9 @@ onBtn('resumeBtn', () => resume());
 onBtn('quitBtn', () => { audio.resume(); showTitle(); });
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
+// panelin dışına (karartılmış boşluğa) dokunmak paneli kapatır; kendi kapatma düğmesine basılmış gibi, oyun başlamaz
+for (const [panel, btn] of Object.entries({ missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' }))
+  $(panel).addEventListener('click', e => { if (e.target === e.currentTarget) { e.stopPropagation(); $(btn).click(); } });
 // paylaşım kartı: o anki sahnenin karesi üstüne puan, simit, metre ve şehir (1080x1080). Telefonda görsel olarak paylaşılır.
 function scoreCard() {
   syncBatches(scene, camera); renderer.render(scene, camera); // çizim tamponu korunmuyor: aynı görevde çizip hemen kopyala

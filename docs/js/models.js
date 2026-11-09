@@ -1368,8 +1368,9 @@ function heartGeo(r) {
 // gözlük camının merkezi ve açısı: kafa yüzeyine teğet (normal yatayda −z'den 0.9 rad dışa), merkezden 0.36 uzakta
 const EYE_X = 0.27, EYE_Y = 0.31, EYE_Z = -0.93, EYE_RY = 0.9;
 // kostümler abartılı: martının kendi ölçüsüne göre büyütülür (dönme noktası yuvasına göre: şapka kafa tepesi, gözlük göz hizası...)
-const COS_GROW = { fes: 1.7, captain: 1.5, crown: 1.7, beanie: 1.25, tray: 1.3, chef: 1.45, simitcrown: 1.2, glasses: 1.4, hearts: 1.6, mustache: 1.6, pacifier: 1.15, scarf: 1.3, bowtie: 1.9, nazar: 1.6 };
-const COS_PIVOT = { head: [0, 0.5, -0.72], eyes: [0, 0.3, -0.95], face: [0, 0.13, -1.05], neck: [0, -0.05, -0.6] };
+const COS_GROW = { fes: 1.95, captain: 1.75, crown: 1.95, beanie: 1.45, tray: 1.45, chef: 1.65, tophat: 1.15, simitcrown: 1.4, glasses: 1.6, hearts: 1.8, bigglasses: 1.15, mustache: 1.85, pacifier: 1.35, scarf: 1.45, bowtie: 2.1, nazar: 1.8,
+  pink: 1.2, night: 1.2, golden: 1.2, sunset: 1.2, mint: 1.2, ice: 1.2 }; // tüy süsleri sırtın ortasından büyür
+const COS_PIVOT = { head: [0, 0.5, -0.72], eyes: [0, 0.3, -0.95], face: [0, 0.13, -1.05], neck: [0, -0.05, -0.6], body: [0, 0.25, 0.4] };
 function costumeGeo(id) {
   const c = COSTUMES.find(x => x.id === id), g = c.slot === 'body' ? featherGeo(id) : costumeGeo_(id), s = COS_GROW[id];
   if (g && s) { const [x, y, z] = COS_PIVOT[c.slot]; g.translate(-x, -y, -z); g.scale(s, s, s); g.translate(x, y, z); }
