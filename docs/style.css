@@ -638,3 +638,4 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 ::-webkit-scrollbar-button { display: none; }
 .play-btn.spent { filter: grayscale(1); opacity: .6; animation: none; }
 .dr-best:empty { display: none; }
+.best-line:empty, .route-line:empty, .rank-line:empty { display: none; }

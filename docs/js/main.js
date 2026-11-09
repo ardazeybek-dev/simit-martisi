@@ -1115,8 +1115,7 @@ function renderRouteLine() {
   const el = $('overRoute');
   el.classList.toggle('new', newStop > 0);
   if (newStop) el.innerHTML = `${tr('Yeni iskele')}: <b>${STOPS[newStop].name}</b> +${fmt(STOPS[newStop].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
-  else if (stopI < STOPS.length) el.textContent = toStop(stopI, Math.max(1, Math.ceil(stopM[stopI] - dist)));
-  else el.textContent = tr(city.end);
+  else el.textContent = ''; // sonraki iskeleye kalan mesafe yazılmaz: ekran sade
 }
 function renderRouteMap() {
   const open = cityOpen(city);
@@ -1214,31 +1213,27 @@ function showOver() {
   $('stCombo').textContent = `${bestCombo}`;
   ui.powers.textContent = '';
   renderRouteLine();
-  $('overBest').textContent = isBest ? tr('Önceki rekoru geçtin') : `${tr('Rekor')} ${fmt(best)} · ${tr('{n} puan kaldı').replace('{n}', fmt(best - final + 1))}`;
+  $('overBest').textContent = ''; // rekor yazılmaz; yeni rekorda ayrı rozet çıkar
   $('newRecord').classList.toggle('hidden', !isBest);
   if (daily) { // günün uçuşu: kendi günlük en iyisi ve gün serisi; ilk uçuş seri ödülünü verir
     const d = dayRun(), dayBest = final > d.best, gift = d.paid ? 0 : dayGift(d.streak);
     store.set(KEY_DAYRUN, { day: dayKey(), best: Math.max(d.best, final), streak: d.streak, runs: Math.max(1, d.runs), paid: true });
     if (gift) { wallet += gift; store.set(KEY_WALLET, wallet); }
     recordRun(final); submitScore(final, Math.floor(dist), city.id); // günün uçuşu da haftalık sıralamaya girer
-    $('overBest').textContent = dayBest && d.best > 0 ? tr('Günün en iyisini geçtin') : `${tr('Günün en iyin')} ${fmt(Math.max(d.best, final))}`;
-    $('overRank').innerHTML = `${tr(dayRule.name)} · ${tr('{n} gün seri').replace('{n}', fmt(d.streak))}` + (gift ? ` · +${fmt(gift)} <svg class="ico"><use href="#i-simit"/></svg>` : '') + ` · ${fmt(dayLeft())}/${DAY_RUNS} ${tr('hak')}`;
+    void dayBest;
+    $('overRank').textContent = `${tr(dayRule.name)} · ${fmt(dayLeft())}/${DAY_RUNS} ${tr('hak')}`;
   } else { // haftalık sıra: sunucudan gelir; gelene kadar (ya da ağ yoksa) cihazdaki haftalık en iyi görünür
     recordRun(final);
-    const el = $('overRank'), seq = ++overSeq, was = myRank;
-    el.textContent = `${tr('Rekor')} ${fmt(best)}`;
-    submitScore(final, Math.floor(dist), city.id).then(r => {
-      if (!r || seq !== overSeq || state !== 'over') return;
-      myRank = r;
-      el.textContent = tr('Sıran: {r}').replace('{r}', '#' + fmt(r)) + (was && r < was ? `  ▲ ${fmt(was - r)}` : '');
-    });
+    const seq = ++overSeq;
+    $('overRank').textContent = ''; // sıra yazılmaz (sıralama panelinde görünür)
+    submitScore(final, Math.floor(dist), city.id).then(r => { if (r && seq === overSeq) myRank = r; });
   }
   { // meydan okuma: arkadaşını geçtin mi, kaç puan kaldı
     const el = $('overVs'), beat = !daily && !!vs && !vs.won && final > vs.s;
     show('overVs', !daily && !!vs && (!vs.won || beat)); el.classList.toggle('won', beat);
     if (beat) { vs.won = true; store.set(KEY_VS, vs); el.textContent = tr('Arkadaşını geçtin! Şimdi sıra onda.'); }
     else if (!daily && vs && !vs.won) el.textContent = tr('Arkadaşını geçmene {n} puan kaldı').replace('{n}', fmt(vs.s - final + 1));
-    shareWon = beat; shareLbl = tr(beat ? 'Rövanş iste' : 'Meydan oku'); $('shareBtn').textContent = shareLbl;
+    shareWon = beat; shareLbl = tr('Paylaş'); $('shareBtn').textContent = shareLbl;
   }
   const achBefore = achReady(), bdgBefore = badgesGot(); achRecord();
   if (!revives) countMission('runs');
@@ -1246,7 +1241,7 @@ function showOver() {
   { const xp = Math.max(0, runXp() - xpGot), f0 = rank.xp / xpNeed(rank.lv); xpGot += xp; renderXp(xp, f0, addXp(xp)); }
   { // sıradaki kostüm: en ucuz alınmamış parçaya ne kadar kaldı
     const next = COSTUMES.filter(c => !look.owned.includes(c.id)).map(c => [c, priceOf(c)]).sort((a, b) => a[1] - b[1])[0];
-    show('overNext', !!next);
+    show('overNext', false); // sıradaki kostüm çubuğu gösterilmez
     if (next) {
       const [c, p] = next, have = Math.min(wallet, p);
       $('overNext').innerHTML = `<span>${tr(wallet >= p ? 'Alabilirsin' : 'Sıradaki kostüm')}: <b>${esc(tr(c.name))}</b></span><span class="lvl-bar"><i style="transform:scaleX(${(have / p).toFixed(3)})"></i></span><small>${fmt(have)}/${fmt(p)}</small>`;
@@ -1457,22 +1452,22 @@ function buyUp(k, el) {
 // Aynı anda üç görev; biten görev hemen simit kazandırır, yerine bir sonraki uçuşta yenisi gelir.
 // total: uçuşlar boyunca birikir (p), diğerleri tek uçuşta tutturulmalı.
 const MISSIONS = [
-  { k: 'simit', text: 'Bir uçuşta {n} simit kap', n: [20, 30, 45, 60], r: [10, 15, 20, 30] },
-  { k: 'near', text: 'Bir uçuşta {n} kez kıl payı geç', n: [3, 5, 8], r: [10, 15, 20], cap: 25 },
-  { k: 'gold', text: 'Bir uçuşta {n} altın simit kap', n: [1, 2], r: [15, 25], cap: 4 },
-  { k: 'dist', text: 'Bir uçuşta {n} m uç', n: [300, 500, 800], r: [10, 15, 25] },
-  { k: 'combo', text: '{n} simitlik seri yap', n: [8, 12, 16], r: [10, 15, 20], cap: 40 },
-  { k: 'power', text: 'Bir uçuşta {n} güçlendirme topla', n: [2, 3], r: [10, 20], cap: 6 },
-  { k: 'steal', text: 'Bir uçuşta yolcuların elinden {n} simit kap', n: [8, 15], r: [10, 20], cap: 40 },
-  { k: 'score', text: 'Bir uçuşta {n} puan yap', n: [800, 1500, 3000], r: [10, 20, 30] },
-  { k: 'turn', text: 'Bir uçuşta {n} kusursuz viraj al', n: [2, 3, 5], r: [10, 15, 20], cap: 10 },
-  { k: 'dolphin', text: 'Bir uçuşta {n} yunusun üstünden geç', n: [3, 6], r: [10, 20], cap: 12 },
-  { k: 'stop', text: 'Bir uçuşta {n} iskeleye var', n: [1, 2, 3], r: [10, 20, 35], cap: 5 },
-  { k: 'bridge', text: 'Bir uçuşta {n} kez köprü altından geç', n: [1, 2], r: [15, 30], cap: 4 },
-  { k: 'feed', text: 'Bir uçuşta ikramcılardan {n} simit al', n: [2, 4], r: [10, 20], cap: 8 },
-  { k: 'piece', text: 'Bir uçuşta atılan {n} simit parçası yakala', n: [8, 16], r: [10, 20], cap: 40 },
-  { k: 'runs', text: '{n} kez uç', n: [3, 5], r: [5, 10], total: true, cap: 15 },
-  { k: 'simitTotal', text: 'Toplam {n} simit topla', n: [100, 200], r: [15, 25], total: true },
+  { k: 'simit', text: 'Bir uçuşta {n} simit kap', n: [30, 45, 65, 90], r: [10, 15, 20, 30] },
+  { k: 'near', text: 'Bir uçuşta {n} kez kıl payı geç', n: [5, 8, 12], r: [10, 15, 20], cap: 30 },
+  { k: 'gold', text: 'Bir uçuşta {n} altın simit kap', n: [2, 3], r: [15, 25], cap: 5 },
+  { k: 'dist', text: 'Bir uçuşta {n} m uç', n: [500, 800, 1200], r: [10, 15, 25] },
+  { k: 'combo', text: '{n} simitlik seri yap', n: [15, 25, 40], r: [10, 15, 20], cap: 70 },
+  { k: 'power', text: 'Bir uçuşta {n} güçlendirme topla', n: [3, 4], r: [10, 20], cap: 7 },
+  { k: 'steal', text: 'Bir uçuşta yolcuların elinden {n} simit kap', n: [12, 20], r: [10, 20], cap: 45 },
+  { k: 'score', text: 'Bir uçuşta {n} puan yap', n: [1500, 3000, 5000], r: [10, 20, 30] },
+  { k: 'turn', text: 'Bir uçuşta {n} kusursuz viraj al', n: [3, 5, 7], r: [10, 15, 20], cap: 12 },
+  { k: 'dolphin', text: 'Bir uçuşta {n} yunusun üstünden geç', n: [5, 8], r: [10, 20], cap: 14 },
+  { k: 'stop', text: 'Bir uçuşta {n} iskeleye var', n: [2, 3, 4], r: [10, 20, 35], cap: 5 },
+  { k: 'bridge', text: 'Bir uçuşta {n} kez köprü altından geç', n: [2, 3], r: [15, 30], cap: 5 },
+  { k: 'feed', text: 'Bir uçuşta ikramcılardan {n} simit al', n: [3, 6], r: [10, 20], cap: 10 },
+  { k: 'piece', text: 'Bir uçuşta atılan {n} simit parçası yakala', n: [12, 24], r: [10, 20], cap: 45 },
+  { k: 'runs', text: '{n} kez uç', n: [4, 6], r: [5, 10], total: true, cap: 15 },
+  { k: 'simitTotal', text: 'Toplam {n} simit topla', n: [150, 300], r: [15, 25], total: true },
 ];
 const misDef = k => MISSIONS.find(d => d.k === k);
 let missions = (store.get(KEY_MIS, []) || []).filter(m => m && misDef(m.k) && m.n > 0 && m.r > 0).slice(0, 3);
@@ -1481,14 +1476,14 @@ function runVal(k) {
 }
 const misProgress = m => Math.floor(misDef(m.k).total ? m.p || 0 : runVal(m.k));
 const misText = m => tr(misDef(m.k).text).replace('{n}', fmt(m.n));
-// görev setleri: üç görev birlikte gelir, üçü de bitince sıradaki set gelir. Her set bir öncekinden zor (hedef %15, ödül %10 artar;
+// görev setleri: üç görev birlikte gelir, üçü de bitince sıradaki set gelir. Her set bir öncekinden zor (hedef %22, ödül %10 artar;
 // cap: bir uçuşta yapılabilecek sınır). Günde en fazla MIS_SETS set; yeni gün takılı kalan seti de yeniler.
 const KEY_MISLV = 'simit-martisi-mislv', MIS_SETS = 3;
 const misLv = Object.assign({ lv: 0, day: '', sets: 0 }, store.get(KEY_MISLV, {}) || {});
 const niceN = v => (v < 20 ? Math.round(v) : v < 200 ? Math.round(v / 5) * 5 : Math.round(v / 50) * 50);
 function newMission(d, lv) {
   const i = (Math.random() * d.n.length) | 0;
-  return { k: d.k, n: Math.min(d.cap || Infinity, niceN(d.n[i] * Math.min(3, 1 + lv * 0.15))), r: Math.round(d.r[i] * Math.min(2, 1 + lv * 0.1)), p: 0, done: false };
+  return { k: d.k, n: Math.min(d.cap || Infinity, niceN(d.n[i] * Math.min(3, 1 + lv * 0.22))), r: Math.round(d.r[i] * Math.min(2, 1 + lv * 0.1)), p: 0, done: false };
 }
 const misAllDone = () => missions.length > 0 && missions.every(m => m.done);
 let misPending = false; // uçuştaki ilerleme henüz görevler panelinde gösterilmedi
