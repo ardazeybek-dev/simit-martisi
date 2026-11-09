@@ -44,6 +44,8 @@ const GULL_PAL = {
   sunset: { body: 0xffbb85, head: 0xffcf9e, wing: 0x9b5fc0, tip: 0x3d1f5c, beak: 0xffd34d, eye: 0x111111 },
   mint: { body: 0xdcfff2, head: 0xecfff8, wing: 0x5cc9a7, tip: 0x1f5e4e, beak: 0xf4b52a, eye: 0x111111 },
   ice: { body: 0xeaf6ff, head: 0xf6fbff, wing: 0x8fc9ef, tip: 0x2f6f9f, beak: 0xbfe6ff, eye: 0x2a6fd6 },
+  kurye: { body: 0x22b33a, head: 0xeeeee8, wing: 0x1fa834, tip: 0x0f3d14, beak: 0x3cc650, eye: 0x111111 }, // kurye: yeşil, beyaz yüz (kask ayrı)
+  taksi: { body: 0xffc81e, head: 0xffd84a, wing: 0xf5b800, tip: 0x15151a, beak: 0xf08a1a, eye: 0x111111 }, // sarı taksi
   durum: { body: 0xead6ad, head: 0x8e3f2c, wing: 0x7cc84a, tip: 0x6a1420, beak: 0xd9952a, eye: 0x111111 }, // dürüm: kafa et, kanat marul, uçlar sos
 };
 function gullGeos(...a) { return pureCall(gullGeos_, a); }
@@ -77,6 +79,14 @@ function gullGeos_(type) {
     const len = 0.78 - i * 0.08, ry = -0.08 - i * 0.17, bx = 0.6 + i * 0.03, bz = -0.04 + i * 0.075, by = -0.012 - i * 0.007;
     handKit.add(primary(len, 0.15), C.tip, bx, by, bz, 0, ry);
     if (i < 2) handKit.add(new THREE.SphereGeometry(0.045, 5, 3), 0xffffff, bx + Math.cos(ry) * len * 0.72, by + 0.012, bz - Math.sin(ry) * len * 0.72, 0, 0, 0, 1, 0.35, 1);
+  }
+  if (type === 'kurye') { // kurye kanadı: boydan beyaz şerit, uçlarda sarı-siyah ikaz
+    armKit.add(new THREE.BoxGeometry(1.05, 0.02, 0.09), 0xffffff, 0.55, 0.012, 0.12);
+    handKit.add(new THREE.BoxGeometry(0.8, 0.02, 0.08), 0xffffff, 0.4, 0.012, 0.12);
+    for (let i = 0; i < 4; i++) handKit.add(new THREE.BoxGeometry(0.07, 0.022, 0.16), i % 2 ? 0x111111 : 0xffd21e, 0.62 + i * 0.07, 0.014, 0.18);
+  }
+  if (type === 'taksi') { // taksi kanadı: damalı şerit
+    for (let i = 0; i < 10; i++) armKit.add(new THREE.BoxGeometry(0.11, 0.02, 0.08), i % 2 ? 0x15151a : 0xffffff, 0.06 + i * 0.11, 0.012, 0.12);
   }
   if (type === 'durum') { // dürüm kanadı: marul üstünde kıvrılan koyu sos şeridi
     for (let i = 0; i < 6; i++) armKit.add(new THREE.BoxGeometry(0.2, 0.02, 0.05), 0x6a1420, 0.1 + i * 0.18, 0.012, 0.08 + Math.sin(i * 1.7) * 0.07, 0, Math.sin(i * 1.7 + 0.8) * 0.5);
@@ -1361,6 +1371,8 @@ export const COSTUMES = [
   { id: 'tophat', name: 'Dev silindir', slot: 'head', price: 900 },
   { id: 'simitcrown', name: 'Simit tacı', slot: 'head', price: 1500 },
   { id: 'durum', name: 'Dürüm martı', slot: 'body', price: 1800 },
+  { id: 'kurye', name: 'Kurye martı', slot: 'body', price: 1600 },
+  { id: 'taksi', name: 'Taksi martı', slot: 'body', price: 1600 },
 ];
 // kalp: gözlük camı ve simge için (x-y düzleminde, ortası 0)
 function heartGeo(r) {
@@ -1441,6 +1453,22 @@ function featherGeo(id) {
     }
     for (let i = 0; i < 8; i++) // sırtta zikzak sos
       k.add(new THREE.CapsuleGeometry(0.035, 0.2, 4, 8), 0x6a1420, (i % 2 ? 0.1 : -0.1), 0.47 - Math.abs(i - 3.5) * 0.02, -0.45 + i * 0.15, Math.PI / 2, 0, (i % 2 ? 0.7 : -0.7));
+  } else if (id === 'kurye') { // kurye: yeşil kask, sırtta teslimat çantası (beyaz şeritli), çantanın kapağı koyu
+    k.add(new THREE.SphereGeometry(0.34, 22, 14, 0, Math.PI * 2, 0, Math.PI * 0.56), 0x1fa834, 0, 0.22, -0.7, -0.55); // kask: tepe ve arka
+    k.add(new THREE.TorusGeometry(0.31, 0.03, 8, 28, Math.PI), 0x0f3d14, 0, 0.26, -0.82, 0, 0, 0, 1, 1, 0.9); // kask kenarı
+    k.add(new THREE.BoxGeometry(0.66, 0.44, 0.56), 0x178a2c, 0, backY(0.15) + 0.24, 0.15); // çanta
+    k.add(new THREE.BoxGeometry(0.7, 0.07, 0.6), 0x0f5a1e, 0, backY(0.15) + 0.48, 0.15); // kapak
+    for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.02, 0.07, 0.5), 0xffffff, s * 0.335, backY(0.15) + 0.22, 0.15); // yan şerit
+    k.add(new THREE.BoxGeometry(0.5, 0.07, 0.02), 0xffffff, 0, backY(0.15) + 0.22, 0.435); // arka şerit
+    k.add(new THREE.BoxGeometry(0.3, 0.05, 0.02), 0xffd21e, 0, backY(0.15) + 0.36, 0.435); // reflektör
+  } else if (id === 'taksi') { // taksi: kafada taksi lambası, gövdenin iki yanında damalı şerit
+    k.add(new THREE.BoxGeometry(0.4, 0.14, 0.2), 0xfff3b0, 0, 0.56, -0.7);
+    k.add(new THREE.BoxGeometry(0.42, 0.04, 0.22), 0x15151a, 0, 0.49, -0.7);
+    for (let i = 0; i < 6; i++) k.add(new THREE.BoxGeometry(0.06, 0.04, 0.012), i % 2 ? 0x15151a : 0xffffff, -0.15 + i * 0.06, 0.53, -0.812); // ön yüzde dama
+    for (const s of [-1, 1]) for (let i = 0; i < 12; i++) for (let r = 0; r < 2; r++) {
+      const z = -0.5 + i * 0.095, y = r ? 0.05 : -0.03, sx = 0.4 * Math.sqrt(Math.max(0, 1 - (z / 0.78) ** 2 - (y / 0.34) ** 2));
+      k.add(new THREE.BoxGeometry(0.02, 0.08, 0.095), (i + r) % 2 ? 0x15151a : 0xffffff, s * (sx + 0.012), y, z);
+    }
   } else return null;
   return k.build({ smooth: true });
 }
@@ -1553,6 +1581,8 @@ export function dressGull(gull) {
   return out;
 }
 export const COSTUME_SVG = {
+  kurye: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#1fa834"/><path d="M8 21l14 3M40 21l-14 3" stroke="#fff" stroke-width="2"/><rect x="15" y="24" width="18" height="14" rx="2" fill="#178a2c"/><rect x="15" y="30" width="18" height="2.4" fill="#fff"/><path d="M17 18a7 7 0 0 1 14 0z" fill="#1fa834"/><path d="M41 20l3-2M38 19l3-3" stroke="#ffd21e" stroke-width="2"/></svg>',
+  taksi: '<svg viewBox="0 0 48 48"><path d="M4 22q10-8 20 2 10-10 20-2-9 0-14 6l-6 4-6-4q-5-6-14-6z" fill="#f5b800"/><ellipse cx="24" cy="30" rx="8" ry="9" fill="#ffc81e"/><g fill="#15151a"><rect x="16" y="29" width="4" height="3"/><rect x="24" y="29" width="4" height="3"/><rect x="20" y="32" width="4" height="3"/><rect x="28" y="32" width="4" height="3"/></g><rect x="18" y="10" width="12" height="6" rx="1.5" fill="#fff3b0" stroke="#15151a" stroke-width="1.4"/></svg>',
   durum: '<svg viewBox="0 0 48 48"><path d="M6 30l28-14 8 10-28 14z" fill="#ecd9b0"/><path d="M34 16l8 10 3-4-6-9z" fill="#7cc84a"/><circle cx="38" cy="20" r="3" fill="#d62f2a"/><circle cx="41" cy="16" r="2.4" fill="#ffe14d"/><path d="M10 29q6-1 9-5t9-5" stroke="#6a1420" stroke-width="2.4" fill="none"/><path d="M4 31l4-3 2 6z" fill="#5fae38"/><circle cx="18" cy="34" r="1.4" fill="#b5814a"/><circle cx="26" cy="30" r="1.4" fill="#b5814a"/></svg>',
   pacifier: '<svg viewBox="0 0 48 48"><circle cx="24" cy="34" r="9" fill="none" stroke="#ff7fb0" stroke-width="4"/><ellipse cx="24" cy="20" rx="18" ry="11" fill="#7fcfff"/><circle cx="24" cy="20" r="6" fill="#fff"/></svg>',
   bigglasses: '<svg viewBox="0 0 48 48"><circle cx="13" cy="24" r="10" fill="#eaf4ff" stroke="#4a2a16" stroke-width="3.5"/><circle cx="35" cy="24" r="10" fill="#eaf4ff" stroke="#4a2a16" stroke-width="3.5"/><path d="M22 22h4" stroke="#4a2a16" stroke-width="3"/><circle cx="15" cy="25" r="4.5" fill="#111"/><circle cx="33" cy="25" r="4.5" fill="#111"/><circle cx="16" cy="23" r="1.5" fill="#fff"/><circle cx="34" cy="23" r="1.5" fill="#fff"/></svg>',

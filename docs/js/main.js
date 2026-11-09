@@ -103,7 +103,7 @@ function dayRun() {
 }
 const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 // kostüm özellikleri: yalnızca giyili parça işler (panelde önizleme işlemez). Küçük tutuldu: cüzdana etkisi uçuş başı 1-2 simit
-const PERKS = { crown: 'Altın simit +%40', simitcrown: 'Kapma alanı +%15', tophat: 'Güçlendirmeler +%20 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Cüzdana +%10 simit' };
+const PERKS = { crown: 'Altın simit +%40', simitcrown: 'Kapma alanı +%15', tophat: 'Güçlendirmeler +%20 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Cüzdana +%10 simit', kurye: 'Görev ödülleri +%25', taksi: 'Kıl payı puanı x3' };
 const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } }; // açılışta look henüz yoksa (dünya üretimi) özellik yok
 // mod boyları: Tombul martı iri ve hantal, Hıçkıran martı hıçkırınca bir an şişer
 const gullBase = () => (ruleOn('chubby') ? 1.2 : 0.95);
@@ -1521,7 +1521,7 @@ function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k =
 function checkMissions() {
   for (const m of missions) {
     if (m.done || misProgress(m) < m.n) continue;
-    m.done = true; wallet += m.r; store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions);
+    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.25 : 1)); // Kurye: +%25 store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions);
     if (state === 'play') {
       sfx.gold(); vibrate([20, 30, 20]);
     }
@@ -2931,7 +2931,7 @@ function dolphinBonus(f) {
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y + 0.5, f.z), 12, 0xcff0ff, 3.5, 0.5);
 }
 function nearMiss(x) {
-  const gain = 5 * mult();
+  const gain = 5 * mult() * (perk('taksi') ? 3 : 1); // Taksi: x3
   points += gain; run.near++;
   sfx.near(); trauma = Math.min(1, trauma + 0.12);
   sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0xffffff, 3, 0.35);
