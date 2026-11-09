@@ -639,4 +639,3 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .play-btn.spent { filter: grayscale(1); opacity: .6; animation: none; }
 .dr-best:empty { display: none; }
 .best-line:empty, .route-line:empty, .rank-line:empty { display: none; }
-#overXp { display: none; } /* oyun sonunda seviye çubuğu gösterilmez (XP yine işler) */
