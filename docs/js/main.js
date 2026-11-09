@@ -13,7 +13,7 @@ const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
 const SIMIT_VIEW = 140; // telefonda bundan uzaktaki simitler çizilmez
-const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.5, COMBO_T = 1.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
+const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.5, COMBO_T = 2.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 // şerit vapur kadar geniş (gövde ±4, küpeştenin biraz dışı). Çarpışma payları: engeller affedici (kutu görünenden dar),
 // simit ve güçlendirme cömert (yakından geçmek yeter)
 const HIT = { obs: 0.12, near: 1.1, rival: 0.6, kiteX: 0.55, kiteZ: 0.38, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
@@ -315,22 +315,27 @@ function spawnGap(first, fixLen) {
   }
   if (!first) {
     const camp = campT > 3 ? campSide : 0;
-    const n = camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.7 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.4 ? 1 : 0) : 2 + (Math.random() < late() * 0.35 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
-    for (let i = 0; i < n; i++) addRival(z0 - rand(10, len - 6), camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
-    if (d > 1.3 && Math.random() < 0.2 + d * 0.06) {
-      const nk = d > 3 && Math.random() < 0.4 ? 2 : 1;
-      for (let i = 0; i < nk; i++) {
-        const k = makeKite(), bx = rand(-2.6, 2.6), z = z0 - rand(10, len - 8);
-        k.position.set(bx, FLY_Y + 0.2, z); scene.add(k);
-        kites.push({ g: k, bx, z, ph: Math.random() * 6, sw: rand(1, 2) });
-      }
-    }
-    // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
-    if (d > 0.9 && len > 34 && Math.random() < 0.18 + d * 0.05) {
+    // engeller birbirine karışmasın: yelkenli gelen açıklık yalnızca onundur (rakip, uçurtma yok);
+    // öbür açıklıklarda rakip ve uçurtmalar boyca en az 13 m arayla dizilir, aralarından geçilebilsin
+    const sail = d > 0.9 && len > 34 && Math.random() < 0.18 + d * 0.05;
+    const used = [], freeZ = (lo, hi) => { for (let t = 0; t < 8; t++) { const z = z0 - rand(lo, hi); if (used.every(u => Math.abs(u - z) >= 13)) { used.push(z); return z; } } return null; };
+    if (sail) { // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
       const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
       const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b);
       const o = { x: xa + side * 60 * k, z, hw: 1.25, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // hw: martı yüksekliğinde iki yelkenin toplam genişliği
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
+    } else {
+      const n = camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.7 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.4 ? 1 : 0) : 2 + (Math.random() < late() * 0.35 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
+      for (let i = 0; i < n; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+      if (d > 1.3 && Math.random() < 0.2 + d * 0.06) {
+        const nk = d > 3 && Math.random() < 0.4 ? 2 : 1;
+        for (let i = 0; i < nk; i++) {
+          const z = freeZ(10, len - 8); if (z === null) continue;
+          const k = makeKite(), bx = rand(-2.6, 2.6);
+          k.position.set(bx, FLY_Y + 0.2, z); scene.add(k);
+          kites.push({ g: k, bx, z, ph: Math.random() * 6, sw: rand(1, 2) });
+        }
+      }
     }
     // yunus sürüsü: önce suda yalnız yüzgeçleri görünür; martı yaklaşınca sırayla koridoru yandan atlayarak keser.
     // Tepe noktası martının geçeceği ana denk gelir: tam üstünden geçen "Yunus!" bonusu alır, kombo süresi tazelenir. Çarpmak yok.
@@ -1311,13 +1316,7 @@ async function renderBoard() {
   if (!me) html += li(0, ccOf(), shownName() || tr('Sen'), tr('Henüz uçmadın'), 'me');
   const list = $('boardList'); list.innerHTML = html;
   const meEl = list.querySelector('.me'); if (meEl) setTimeout(() => meEl.scrollIntoView({ block: 'nearest' }), 0);
-  // bir üstteki oyuncuya kaç puan kaldığı
-  let t = '';
-  if (me) {
-    const up = me.rank > 1 && (top.find(x => x.rank === me.rank - 1) || top[Math.min(2, top.length - 1)]);
-    if (up && up.score >= me.score) t += `<small>${tr('{p} puan daha → {r}. sıra').replace('{p}', fmt(up.score - me.score + 1)).replace('{r}', fmt(up.rank))}</small>`;
-  }
-  $('boardTier').innerHTML = t;
+  $('boardTier').innerHTML = '';
 }
 // ---------------- profil: ad ----------------
 function renderNameChip() { $('profileName').textContent = myName() || shownName() || tr('Ad seç'); $('profLv').textContent = fmt(rank.lv); }
@@ -1358,7 +1357,7 @@ function dealToday() {
   store.set(KEY_DEAL, { day, id });
   return id;
 }
-const priceOf = c => (c.id === dealToday() ? Math.round((c.price * 0.6) / 10) * 10 : c.price);
+const priceOf = c => (c.id === dealToday() ? Math.round((c.price * 0.8) / 10) * 10 : c.price);
 let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan (önizlenen) kostüm
 function openWardrobe() {
   if (state !== 'title') return;
@@ -1385,7 +1384,7 @@ function renderWardrobe() {
     const tag = b.querySelector('small');
     if (own) tag.textContent = on ? tr('Giyili') : tr('Giy');
     else tag.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(price)}` + (deal ? `<s>${fmt(c.price)}</s>` : '');
-    if (deal) b.insertAdjacentHTML('beforeend', '<em class="cos-deal">-40%</em>');
+    if (deal) b.insertAdjacentHTML('beforeend', '<em class="cos-deal">-20%</em>');
     b.addEventListener('click', e => { e.stopPropagation(); pickCostume(c); });
     box.appendChild(b);
   }
@@ -1405,7 +1404,7 @@ function pickCostume(c) {
   sfx.click(); flapBurst = 1;
   sparkle(gull.position, 12, 0xffe7a8, 3, 0.45, 0.25);
   const own = look.owned.includes(c.id);
-  $('wardNote').textContent = !own && wallet < priceOf(c) ? `${tr('Yeterli simit yok')}: ${fmt(priceOf(c) - wallet)}` : '';
+  $('wardNote').textContent = '';
   renderWardrobe();
 }
 function costumeAction() {
@@ -1413,7 +1412,7 @@ function costumeAction() {
   if (!c) return;
   if (!look.owned.includes(c.id)) {
     const price = priceOf(c);
-    if (wallet < price) { sfx.click(); bump($('cosAct'), 'shake'); $('wardNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(price - wallet)}`; return; }
+    if (wallet < price) { sfx.click(); bump($('cosAct'), 'shake'); return; }
     wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]);
     look.on = withItem(look.on, c);
     sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
@@ -1937,7 +1936,7 @@ function updateHud() {
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
 // simit kaçırınca seri biter: kombo yalnızca art arda toplanan simitle büyür
 function missSimit() { if (combo > 0) { combo = 0; comboT = 0; } }
-const COMBO_STEPS = [25, 60, 110, 180]; // x2, x3, x4, x5 için art arda simit: x5 ancak çok uzun, hiç kaçırmayan bir seride
+const COMBO_STEPS = [10, 25, 45, 70]; // x2, x3, x4, x5 için art arda simit
 const mult = () => 1 + COMBO_STEPS.filter(n => combo >= n).length;
 function renderPowers() {
   ui.powers.textContent = '';
@@ -2195,8 +2194,8 @@ function padTick() {
 // Kendi kendine yavaşça döner; parmak/fare ile sürüklenince elle çevrilir, bırakınca savrulup yavaşlar.
 // Oyun mantığı martıyı dünyadaki yerinde sürmeye devam eder; her karede o yer saklanır, çizimden sonra geri konur.
 const pod = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 0.1, 120), on: false, parent: null, yaw: 0.6, vel: 0.55, drag: -1, dx: 0, lx: 0,
-  home: { p: new THREE.Vector3(), q: new THREE.Quaternion() }, box: new THREE.Box3(), size: new THREE.Vector3(), ctr: new THREE.Vector3() };
-const _podB = new THREE.Box3();
+  home: { p: new THREE.Vector3(), q: new THREE.Quaternion() }, box: new THREE.Box3(), size: new THREE.Vector3(), ctr: new THREE.Vector3(), f: { ok: false, cx: 0, cz: 0, my: 0 } };
+const _podB = new THREE.Box3(), _podS = new THREE.Vector3(), _podC = new THREE.Vector3();
 pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncBatches) burada tek tek çizilir
 {
   const s = pod.scene;
@@ -2274,7 +2273,7 @@ pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncB
   el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
 }
 function podEnter() {
-  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6; pod.vel = 0.55; pod.drag = -1;
+  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6; pod.vel = 0.55; pod.drag = -1; pod.f.ok = false;
   pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
 }
 function podRestore() { // karenin başında: martı dünyadaki yerine döner, oyun mantığı onu oradan sürer
@@ -2289,13 +2288,20 @@ function podDraw(dt) {
     const k = 7 / Math.max(innerWidth, 320), dy = pod.dx * k; pod.dx = 0; pod.yaw += dy;
     pod.vel = THREE.MathUtils.lerp(pod.vel, dt > 0 ? THREE.MathUtils.clamp(dy / dt, -12, 12) : 0, 0.5);
   } else { pod.vel = damp(pod.vel, 0.55, 1.2, dt); pod.yaw += pod.vel * dt; } // bırakınca savrulur, yavaşça kendi dönüşüne iner
-  gull.position.set(0, 0, 0); gull.rotation.set(0, pod.yaw, 0);
-  flapGull(gull, t * 1.6, 0.1, 0.32); // kanatlar hafif kalkık, nefes alır gibi oynar
+  // çerçeve martının dönmemiş hâlinden ölçülür ve yumuşatılır: döndükçe kutu değişip ekran zıplamasın
+  gull.position.set(0, 0, 0); gull.rotation.set(0, 0, 0);
+  flapGull(gull, 0, 0, 0.32); // ölçü sabit kanat pozunda: çırpış çerçeveyi oynatmasın
   gull.updateMatrixWorld(true);
   pod.box.makeEmpty(); // yalnızca görünen parçalar: gizli kostüm parçaları kutuyu şişirip martıyı havaya kaldırmasın
   gull.traverseVisible(o => { if (!o.isMesh) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); pod.box.union(_podB.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); });
-  pod.box.getSize(pod.size); pod.box.getCenter(pod.ctr);
-  gull.position.set(-pod.ctr.x, -pod.box.min.y + 0.02, -pod.ctr.z); // ayakları podyumda
+  const f = pod.f, k = f.ok ? 1 - Math.exp(-3 * dt) : 1; f.ok = true;
+  pod.box.getSize(_podS); pod.box.getCenter(_podC);
+  f.cx += (_podC.x - f.cx) * k; f.cz += (_podC.z - f.cz) * k; f.my += (pod.box.min.y - f.my) * k;
+  pod.size.x += (_podS.x - pod.size.x) * k; pod.size.y += (_podS.y - pod.size.y) * k; pod.size.z += (_podS.z - pod.size.z) * k;
+  const cs = Math.cos(pod.yaw), sn = Math.sin(pod.yaw);
+  gull.rotation.set(0, pod.yaw, 0);
+  flapGull(gull, t * 1.6, 0.1, 0.32); // kanatlar hafif kalkık, nefes alır gibi oynar
+  gull.position.set(-(f.cx * cs + f.cz * sn), -f.my + 0.02, -(-f.cx * sn + f.cz * cs)); // dönme ekseni martının ortası, ayakları podyumda
   const w = innerWidth, h = innerHeight, land = w > h, cam = pod.cam;
   cam.aspect = w / h;
   // martı ekranın boş kısmına: dikeyde üst yarıya, yatayda sol yarıya
@@ -2421,7 +2427,7 @@ function frame() {
       if (s.taken || (s.th && s.th.u < 0) || (s.bin && s.bin.u < 0)) continue; // henüz atılmamış simit tepside / kapalı çöp kutusunda
       const dzs = g.z - s.z;
       // geride kalan simit = kaçırıldı: seri biter (yolcunun elindeki, çöp kutusundaki ve martının boyunda olmayan sayılmaz; atılan parçalar suya düşünce)
-      if (!s.missed && dzs < -HIT.simZ - 0.4 && !s.pulled && !s.person && !s.bin && !s.th) { s.missed = true; if (state === 'play' && Math.abs(s.y - g.y) < HIT.simY * 1.5) missSimit(); }
+      if (!s.missed && dzs < -HIT.simZ - 0.4 && !s.pulled && !s.person && !s.bin && !s.th) { s.missed = true; if (state === 'play' && Math.abs(s.y - g.y) < HIT.simY * 1.5 && Math.abs(s.x - g.x) < LANE * 0.5) missSimit(); } // yalnızca martının önünden geçen; yan şeritteki seriyi bozmaz
       if (magnet && dzs > -2 && dzs < 16 && Math.abs(s.x - g.x) < 7) {
         if (!s.free) { // yolcunun elinden kopar
           s.mesh.getWorldPosition(tmp); s.mesh.removeFromParent(); s.mesh.position.copy(tmp); scene.add(s.mesh);
@@ -2943,7 +2949,7 @@ addEventListener('online', () => sync());
 requestAnimationFrame(frame);
 
 window.__game = {
-  get state() { return state; }, get podYaw() { return pod.yaw; }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
+  get state() { return state; }, get podYaw() { return pod.yaw; }, get podCam() { return pod.cam.position.toArray().map(v => +v.toFixed(3)); }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, setCombo: n => { combo = n; comboT = COMBO_T; }, get powers() { return { ...pw }; },
   genLog: on => { const l = genLog; genLog = on ? [] : null; return l; },
   get wallet() { return wallet; }, get rank() { return { ...rank }; }, addXp, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },

@@ -1367,7 +1367,55 @@ function heartGeo(r) {
 // baş merkezi (0, 0.2, −0.72), yarıçap 0.3; gaga −z yönünde
 // gözlük camının merkezi ve açısı: kafa yüzeyine teğet (normal yatayda −z'den 0.9 rad dışa), merkezden 0.36 uzakta
 const EYE_X = 0.27, EYE_Y = 0.31, EYE_Z = -0.93, EYE_RY = 0.9;
+// kostümler abartılı: martının kendi ölçüsüne göre büyütülür (dönme noktası yuvasına göre: şapka kafa tepesi, gözlük göz hizası...)
+const COS_GROW = { fes: 1.7, captain: 1.5, crown: 1.7, beanie: 1.25, tray: 1.3, chef: 1.45, simitcrown: 1.2, glasses: 1.4, hearts: 1.6, mustache: 1.6, pacifier: 1.15, scarf: 1.3, bowtie: 1.9, nazar: 1.6 };
+const COS_PIVOT = { head: [0, 0.5, -0.72], eyes: [0, 0.3, -0.95], face: [0, 0.13, -1.05], neck: [0, -0.05, -0.6] };
 function costumeGeo(id) {
+  const c = COSTUMES.find(x => x.id === id), g = c.slot === 'body' ? featherGeo(id) : costumeGeo_(id), s = COS_GROW[id];
+  if (g && s) { const [x, y, z] = COS_PIVOT[c.slot]; g.translate(-x, -y, -z); g.scale(s, s, s); g.translate(x, y, z); }
+  return g;
+}
+// tüy kostümleri yalnız renk değil: arkadan (uçuş kamerasından) da okunsun diye sırtta ve kuyrukta kendine has süs
+// gövde: yarıçap ~0.4 × 0.34 × 0.78 (z ileri −), sırtın tepesi y≈0.34; kuyruk z 0.7…1.33, y≈0.08
+const backY = z => 0.33 * Math.sqrt(Math.max(0, 1 - (z / 0.8) ** 2));
+function plumes(k, n, len, w, col, spread = 0.38, rx = 1.05, y = 0.16, z = 1.0) { // kuyruktan geriye-yukarı açılan uzun tüyler (yelpaze)
+  for (let i = 0; i < n; i++) {
+    const rz = (i - (n - 1) / 2) * spread, dx = -Math.sin(rz), dy = Math.cos(rz) * Math.cos(rx), dz = Math.cos(rz) * Math.sin(rx);
+    k.add(new THREE.ConeGeometry(w, len, 5), typeof col === 'function' ? col(i) : col, dx * len / 2, y + dy * len / 2, z + dz * len / 2, rx, 0, rz, 1, 1, 0.35);
+  }
+}
+function featherGeo(id) {
+  const k = new Kit();
+  if (id === 'pink') { // flamingo: kocaman pembe kuyruk yelpazesi, sırtta kabarık tüy öbeği
+    plumes(k, 5, 0.95, 0.13, i => (i % 2 ? 0xff5f9e : 0xe2407f));
+    for (let i = 0; i < 4; i++) k.add(new THREE.SphereGeometry(0.15, 7, 5), i % 2 ? 0xff9cc2 : 0xffb6d3, (i % 2 ? 0.12 : -0.12), backY(0.1 + i * 0.12) + 0.04, 0.1 + i * 0.12);
+  } else if (id === 'night') { // gece: sırtta hilal ay, etrafında parlak yıldızlar
+    k.add(new THREE.TorusGeometry(0.2, 0.06, 6, 14, Math.PI * 1.25), 0xffe07a, 0, 0.52, 0.15, 0, 0, 0.5);
+    for (const [x, z, sz] of [[-0.28, -0.1, 0.07], [0.3, 0.05, 0.06], [-0.18, 0.5, 0.05], [0.22, 0.6, 0.07], [0, 0.95, 0.06]])
+      k.add(new THREE.OctahedronGeometry(sz), 0xfff3b0, x, backY(z) + 0.12 + (z > 0.7 ? 0.1 : 0), z, 0, 0.6, 0, 1, 1.6, 1);
+    plumes(k, 3, 0.7, 0.1, 0x14161c);
+  } else if (id === 'golden') { // altın: altın sırt dikenleri, uzun altın kuyruk, pırıltı taşları
+    for (let i = 0; i < 5; i++) { const z = -0.25 + i * 0.17; k.add(new THREE.ConeGeometry(0.08, 0.3 - i * 0.03, 5), i % 2 ? 0xffcb45 : 0xf2b22c, 0, backY(z) + 0.12, z, 0.35); }
+    plumes(k, 5, 1.05, 0.12, i => (i % 2 ? 0xffd35a : 0xe0a53a), 0.32);
+    for (const s of [-1, 1]) k.add(new THREE.OctahedronGeometry(0.07), 0xff4f6a, s * 0.24, backY(0.2) + 0.03, 0.2);
+  } else if (id === 'sunset') { // gün batımı: turuncu-mor şeritli geniş kuyruk, sırtta güneş diski
+    plumes(k, 7, 0.9, 0.11, i => [0x9b5fc0, 0xff7a45, 0xffb347, 0xffd34d, 0xffb347, 0xff7a45, 0x9b5fc0][i], 0.26);
+    k.add(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), 0xffb347, 0, backY(0.15) + 0.03, 0.15);
+    k.add(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 14), 0xffe08a, 0, backY(0.15) + 0.05, 0.15);
+  } else if (id === 'mint') { // nane: sırtta ve kuyrukta kocaman nane yaprakları
+    const leaf = (x, y, z, rx, rz, s) => k.add(new THREE.SphereGeometry(0.2, 8, 5), (f, yy) => (f % 6 < 3 ? 0x3fbf8c : 0x5cd9a2), x, y, z, rx, 0, rz, 0.6 * s, 1.4 * s, 0.15 * s);
+    leaf(-0.14, 0.52, 0.0, 0.4, 0.5, 1); leaf(0.14, 0.52, 0.0, 0.4, -0.5, 1); leaf(0, 0.55, 0.25, 0.6, 0, 1.1);
+    plumes(k, 3, 0.75, 0.14, 0x3fbf8c, 0.45);
+  } else if (id === 'ice') { // buz: sırtta buz kristalleri, kuyruktan sarkan buz sarkıtları, parlak buz kuyruğu
+    for (const [x, z, h, rz] of [[0, -0.2, 0.42, 0], [-0.13, 0.05, 0.34, 0.35], [0.13, 0.08, 0.36, -0.35], [0, 0.32, 0.3, 0], [-0.1, 0.5, 0.22, 0.4], [0.1, 0.52, 0.24, -0.4]])
+      k.add(new THREE.ConeGeometry(0.075, h, 4), (f) => (f % 2 ? 0xbfe6ff : 0xeaf8ff), x, backY(z) + h * 0.4, z, 0.25, 0, rz);
+    for (let i = 0; i < 6; i++) { const x = -0.26 + i * 0.104, h = 0.16 + (i % 3) * 0.08;
+      k.add(new THREE.ConeGeometry(0.035, h, 4), 0xd8f1ff, x, 0.03 - h / 2, 1.3 - Math.abs(x) * 0.2, Math.PI); }
+    plumes(k, 3, 0.65, 0.1, 0x8fd3ff, 0.4);
+  } else return null;
+  return k.build();
+}
+function costumeGeo_(id) {
   const k = new Kit();
   if (id === 'fes') {
     k.add(new THREE.CylinderGeometry(0.15, 0.2, 0.27, 12), (f, y) => (y > 0.69 ? 0x9e1b24 : 0xc62a33), 0, 0.57, -0.74, -0.18);
@@ -1467,8 +1515,8 @@ function costumeGeo(id) {
 export function dressGull(gull) {
   const out = {};
   for (const c of COSTUMES) {
-    if (c.slot === 'body') continue; // tüy rengi ayrı (paintGull)
-    const m = new THREE.Mesh(costumeGeo(c.id), vcMat);
+    const geo = costumeGeo(c.id); if (!geo) continue; // tüy rengi ayrı (paintGull); süsü varsa o da takılır
+    const m = new THREE.Mesh(geo, vcMat);
     m.castShadow = true; m.visible = false;
     gull.add(m); out[c.id] = m;
   }

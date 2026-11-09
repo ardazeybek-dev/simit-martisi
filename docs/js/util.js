@@ -27,6 +27,14 @@ try {
     localStorage.setItem(RESET_MARK, '1');
   }
 } catch (e) {}
+// ikinci sıfırlama: yalnızca harcanabilir şeyler (simit cüzdanı, balık, kostümler, güç yükseltmeleri, günün indirimi); rekor ve sıralama kalır
+const ECO_MARK = 'simit-martisi-eco-reset-2026-11-09';
+try {
+  if (!localStorage.getItem(ECO_MARK)) {
+    for (const k of ['wallet', 'fish', 'look', 'upgrades', 'deal']) localStorage.removeItem('simit-martisi-' + k);
+    localStorage.setItem(ECO_MARK, '1');
+  }
+} catch (e) {}
 
 // Kit: birçok parçayı tek bir vertex-renkli geometriye birleştirir → tek draw call
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();

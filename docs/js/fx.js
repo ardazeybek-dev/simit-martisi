@@ -159,9 +159,10 @@ export function popText(text, worldPos, cls = '') {
   if (v3.z > 1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05) return;
   const el = document.createElement('div');
   el.className = 'pop ' + cls; el.textContent = text;
-  el.style.left = `${(v3.x * 0.5 + 0.5) * innerWidth}px`; el.style.top = `${(-v3.y * 0.5 + 0.5) * innerHeight}px`;
+  // kenara taşmasın: balon ekranın içinde kalsın
+  el.style.left = `${Math.min(Math.max((v3.x * 0.5 + 0.5) * innerWidth, 80), innerWidth - 80)}px`; el.style.top = `${Math.max((-v3.y * 0.5 + 0.5) * innerHeight, 70)}px`;
   popLayer.appendChild(el);
-  setTimeout(() => el.remove(), 550);
+  setTimeout(() => el.remove(), 1650);
 }
 export function clearFx() {
   popLayer.textContent = '';
