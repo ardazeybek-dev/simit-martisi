@@ -2757,7 +2757,8 @@ function shout(p, s, cheer) {
   const say = cheer ? line(CHEERS) || line(SHOUTS.genel) : line(SHOUTS[p.kind] || SHOUTS.amca) || line(SHOUTS.genel);
   if (!say) return; // bu uçuşta söylenecek söz kalmadı
   shoutT = now;
-  popText(tr(say), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout', gull.position);
+  const side = Math.sign(s.x - gull.position.x) || (gull.position.x > 0 ? -1 : 1); // konuşanın tarafı
+  popText(tr(say), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout', { p: tmp.set(side * (LANE + 0.4), gull.position.y + 1.6, gull.position.z - 3), side }); // şerit sınırının hemen dışı, martının biraz önü ve üstü
 }
 // kapılan simit, martının ekrandaki yerinden HUD'daki simit sayacına uçar (seyrekleştirilmiş: telefonda DOM yükü olmasın)
 const coinV = new THREE.Vector3();

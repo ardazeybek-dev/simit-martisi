@@ -154,21 +154,16 @@ export function updateFx(dt) {
 // Uçuşta yalnızca simidi kapılan yolcunun lafı yazı olarak çıkar; puan, rüzgâr vb. yazısı yok.
 const v3 = new THREE.Vector3();
 const popLayer = document.getElementById('pops');
-export function popText(text, worldPos, cls = '', avoid = null) { // avoid: bu dünya noktasının (martı) üstünde kalsın, önünü kapatmasın
-  v3.copy(worldPos).project(camera);
+export function popText(text, worldPos, cls = '', edge = null) { // edge: { p: dünya noktası, side: ±1 } → balon o noktadan dışa doğru açılır
+  v3.copy(edge ? edge.p : worldPos).project(camera);
   if (v3.z > 1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05) return;
   const el = document.createElement('div');
   el.className = 'pop ' + cls; el.textContent = text;
-  // kenara taşmasın: balon ekranın içinde kalsın
-  const x = (v3.x * 0.5 + 0.5) * innerWidth;
-  if (avoid) { // yolcu lafı: ortadaki uçuş yolunu hiç kapatmasın → konuşanın tarafında, ekran kenarına yaslı, HUD'un hemen altında
-    popLayer.appendChild(el);
-    const w = el.offsetWidth, left = x < innerWidth / 2;
-    el.style.left = `${left ? 10 + w / 2 : innerWidth - 10 - w / 2}px`; el.style.top = `${Math.round(innerHeight * 0.27)}px`; // VİRAJ kartının altı, ufkun üstü
-  } else {
-    el.style.left = `${Math.min(Math.max(x, 90), innerWidth - 90)}px`; el.style.top = `${Math.max((-v3.y * 0.5 + 0.5) * innerHeight, innerHeight * 0.22)}px`;
-    popLayer.appendChild(el);
-  }
+  popLayer.appendChild(el);
+  const x = (v3.x * 0.5 + 0.5) * innerWidth, y = (-v3.y * 0.5 + 0.5) * innerHeight, w = el.offsetWidth;
+  // yolcu lafı: martının uçabildiği şeridin hemen dışında, martının yanında; iç kenarı sınırda, balon dışa taşar (yolu kapatmaz)
+  const cx = edge ? x + edge.side * w / 2 : x;
+  el.style.left = `${Math.min(Math.max(cx, w / 2 + 8), innerWidth - w / 2 - 8)}px`; el.style.top = `${Math.max(y, innerHeight * 0.22)}px`;
   setTimeout(() => el.remove(), 1650);
 }
 export function clearFx() {
