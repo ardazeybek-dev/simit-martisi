@@ -359,7 +359,7 @@ function spawnGap(first, fixLen) {
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
     }
     if (segCount > 2 && Math.random() < 0.42) {
-      const kind = pick((d > 1.5 ? ['shield', 'shield', 'magnet', 'double'] : ['magnet', 'double', 'shield']).concat(perk('nazar') ? ['shield', 'shield'] : [])); // Nazar: kalkan daha sık
+      const kind = pick((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield', 'shield'] : [])); // Nazar: kalkan daha sık
       const z = z0 - len * 0.5, x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
       const p = makePowerUp(kind); p.position.set(x, FLY_Y, z); scene.add(p);
       powerups.push({ g: p, kind, x, y: FLY_Y, z });
@@ -993,10 +993,11 @@ let crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flap
 let campT = 0, campSide = 0; // kenara yapışan martı: o kenara rakip gönderilir (her köşe eşit zor)
 let hicT = 0, hicY = 0; // Hıçkıran martı: sonraki hıçkırığa kalan süre, sıçrama yüksekliği
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
-const pw = { magnet: 0, shield: 0, double: 0 };
+const pw = { magnet: 0, shield: 0, double: 0, tea: 0 };
+let teaK = 1; // Çay Molası: simülasyon bu oranla akar (yumuşak geçiş)
 // güçlendirme yükseltmeleri: simitle alınır, her seviye süreyi tabanın %25'i kadar uzatır (Subway Surfers usulü)
-const UP_COST = [600, 1500, 3000, 5500, 9000];
-const ups = { magnet: 0, shield: 0, double: 0 };
+const UP_COST = [600, 1500, 3000, 5500, 9000, 12000];
+const ups = { magnet: 0, shield: 0, double: 0, tea: 0 };
 { const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
 const dur = k => POWER[k].dur * (1 + ups[k] * 0.25) * (perk('tophat') ? 1.2 : 1); // Dev silindir: +%20
 let best = +store.get(KEY_BEST, 0) || 0;
@@ -1063,7 +1064,7 @@ function resetWorld(newWeather = true) {
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishEarly = false; xpGot = 0;
-  pw.magnet = pw.shield = pw.double = 0;
+  pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   Math.random = R0;
   if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
@@ -2436,6 +2437,7 @@ function frame() {
   timeScale = damp(timeScale, 1, 2.2, realDt);
   dt *= state === 'dead' ? timeScale : 1;
   if (slowT > 0) { slowT -= realDt; dt *= 0.4; }
+  teaK = damp(teaK, pw.tea > 0 && state === 'play' ? 0.6 : 1, 3, realDt); dt *= teaK; // Çay Molası: her şey yavaşlar, engeller ve simitler kolay tutturulur
   if (state === 'countdown') {
     countdown -= realDt;
     const n = Math.ceil(countdown / 0.5);
@@ -3032,7 +3034,7 @@ setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gö
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), makeSimit(), makeSimitPiece(), makeSimitPiece(true), ...['magnet', 'shield', 'double'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), makePirateShip().g, makeFalls(), makeBeach(BEACH_LEN), ...BEACH_COLS.map(c => new THREE.Mesh(umbrellaGeo(c), vcMat)), new THREE.Mesh(umbrellaGeo('straw'), vcMat), new THREE.Mesh(SUNBED, vcMat), ...beachRing.map(mt => new THREE.Mesh(RING, mt)), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
+  warm.add(makeKite(), makeSimit(true), makeSimit(), makeSimitPiece(), makeSimitPiece(true), ...['magnet', 'shield', 'double', 'tea'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), makePirateShip().g, makeFalls(), makeBeach(BEACH_LEN), ...BEACH_COLS.map(c => new THREE.Mesh(umbrellaGeo(c), vcMat)), new THREE.Mesh(umbrellaGeo('straw'), vcMat), new THREE.Mesh(SUNBED, vcMat), ...beachRing.map(mt => new THREE.Mesh(RING, mt)), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });

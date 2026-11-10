@@ -1306,12 +1306,14 @@ export const POWER = {
   magnet: { name: 'Mıknatıs', color: '#e5484d', dur: 8 },
   shield: { name: 'Kalkan', color: '#3aa7ff', dur: 12 },
   double: { name: '2x Puan', color: '#ffc23a', dur: 9 },
+  tea: { name: 'Çay Molası', color: '#d4502c', dur: 6 }, // dünya ağır çekime girer
 };
 // HUD ve 3D baloncuk aynı ikonları kullanır
 export const ICON_SVG = {
   magnet: '<svg viewBox="0 0 24 24"><path d="M6 3h4v8a2 2 0 0 0 4 0V3h4v8a6 6 0 0 1-12 0z" fill="currentColor"/><path d="M6 3h4v3H6zM14 3h4v3h-4z" fill="#fff"/></svg>',
   shield: '<svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="currentColor"/><path d="M12 5.2l5 1.9V11c0 3.4-2.1 6.5-5 7.8z" fill="#fff" opacity=".45"/></svg>',
   double: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><text x="12" y="16.2" text-anchor="middle" font-size="11" font-weight="900" font-family="Arial,sans-serif" fill="#5a3500">2x</text></svg>',
+  tea: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="21" rx="9" ry="2.2" fill="#fff" opacity=".85"/><path d="M7 3h10c0 3-2.2 5.2-2.2 8s2.6 4.6 2.6 7.2c0 1.6-2.4 2.3-5.4 2.3s-5.4-.7-5.4-2.3C6.6 15.6 9.2 14 9.2 11S7 6 7 3z" fill="#fff" opacity=".55"/><path d="M8.2 7.2h7.6c-.5 1.5-1.4 2.6-1.4 3.8 0 2.6 2.4 4.2 2.4 7 0 1-2 1.6-4.8 1.6S7.2 19 7.2 18c0-2.8 2.4-4.4 2.4-7 0-1.2-.9-2.3-1.4-3.8z" fill="currentColor"/><path d="M7 3h10" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>',
 };
 function iconTexture(kind) {
   const tex = canvasTex(128, 128, () => {});
