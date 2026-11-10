@@ -2009,7 +2009,7 @@ function updateHud() {
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
 // simit kaçırınca seri biter: kombo yalnızca art arda toplanan simitle büyür
 function missSimit() { if (combo > 0) { combo = 0; comboT = 0; } }
-const COMBO_STEPS = [25, 60, 110, 180]; // x2, x3, x4, x5 için art arda simit: x5 ancak çok uzun, hiç kaçırmayan bir seride
+const COMBO_STEPS = [12, 30, 55, 85]; // x2, x3, x4, x5 için art arda simit: 28k dönemindeki 10/25/45/70 dan bir tık zor
 const mult = () => 1 + COMBO_STEPS.filter(n => combo >= n).length;
 function renderPowers() {
   ui.powers.textContent = '';
