@@ -1786,7 +1786,7 @@ async function claimDaily() {
 // ---------------- şans çarkı (günlük ödül panelinin ikinci sekmesi) ----------------
 // Balıkla ya da simitle çevrilir; ödül çevirir çevirmez cüzdana yazılır (panel kapansa da kaybolmaz), çark durunca gösterilir.
 // Ayar: WHEEL (tür s=simit / f=balık, miktar, ağırlık), SPIN_FISH, SPIN_SIMIT. Ortalama kazanç bedelin altında: çark kazandırmaz, heyecan verir.
-const WHEEL = [['s', 100, 30], ['f', 1, 14], ['s', 150, 22], ['s', 500, 7], ['s', 250, 14], ['f', 3, 7], ['s', 1000, 4], ['s', 3000, 2]];
+const WHEEL = [['s', 100, 42], ['f', 1, 6], ['s', 150, 26], ['s', 500, 6], ['s', 250, 14], ['f', 3, 2], ['s', 1000, 3], ['s', 3000, 1]]; // balık dilimi seyrek: çıkan balıkla yeniden çevrilir, sık olunca çark kâr ettiriyordu
 const SPIN_FISH = 1, SPIN_SIMIT = 280, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
 let wheelRot = 0, spinning = false, wheelBuilt = false;
 const KEY_FREESPIN = 'simit-martisi-freespin';
