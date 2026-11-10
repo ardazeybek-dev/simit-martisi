@@ -48,8 +48,8 @@ language sql immutable as $$ select left(regexp_replace(regexp_replace(coalesce(
 create or replace function sm_fold(p text) returns text
 language sql immutable as $$
   select btrim(regexp_replace(regexp_replace(translate(lower(regexp_replace(normalize(coalesce(p, ''), NFKD), '[\u0300-\u036f]', '', 'g')),
-    'ışğüöçâîûİŞĞÜÖÇ0134578@$!авеёкмнорстухѕіїјԁүһԛԝАВЕЁКМНОРСТУХЅІЇЈαβεικνορτυχΑΒΕΖΗΙΚΜΝΟΡΤΥΧɑɡ',
-    'isguocaiuisguocoieastbasiabeekmhopctyxsiijdyhqwabeekmhopctyxsiijabeikvoptuxabezhikmnoptyxag'), '[^a-z]+', ' ', 'g'), '(.)\1+', '\1', 'g'))
+    'ışğüöçâîûİŞĞÜÖÇ0134578@$!69авеёкмнорстухѕіїјԁүһԛԝАВЕЁКМНОРСТУХЅІЇЈαβεικνορτυχΑΒΕΖΗΙΚΜΝΟΡΤΥΧɑɡ',
+    'isguocaiuisguocoieastbasiggabeekmhopctyxsiijdyhqwabeekmhopctyxsiijabeikvoptuxabezhikmnoptyxag'), '[^a-z]+', ' ', 'g'), '(.)\1+', '\1', 'g'))
 $$;
 -- harf harf yazılan ("s.i.k", "g ö t") tek harflik parçalar birleşir; kelime listesi ve sik… kuralı buna bakar
 create or replace function sm_words(p text) returns text
@@ -59,11 +59,13 @@ language sql immutable as $$ select regexp_replace(replace(sm_fold(p), ' ', ''),
 create or replace function sm_bad(p text) returns boolean
 language sql immutable as $$
   select exists (select 1 from unnest(array[
-    'amcik','amck','amcuk','aminako','aminakoy','aminaq','amk','amq','arschloch','ashole','bastard','bitch','cabron','cocksucker','cunt','dick','dildo','fagot','fahise','fotze','fuck','gavat','gilipolas','gotlek','gotos','gotveren','hijodeputa','hitler','hurensohn','ibne','ipne','kahpe','kaltak','kancik','kerhane','maricon','mierda','orosbu','orospu','orspu','pendejo','penis','pezevenk','porn','porno','pust','pusy','putamadre','rapist','retard','serefsiz','sex','shit','skm','sktr','slut','sokuk','surtuk','vagina','whore','wichser','yarak','yavsak'
+    'amcik','amck','amcuk','aminako','aminakoy','aminaq','amk','amq','arschloch','ashole','bastard','bitch','cabron','cocksucker','cunt','dangalak','dick','dildo','fagot','fahise','fotze','fuck','gavat','gerizekali','gilipolas','gotlek','gotos','gotveren','hijodeputa','hitler','hurensohn','ibine','ibne','ipne','kahpe','kaltak','kancik','kerhane','kevase','kodumun','maricon','mierda','oglanci','orosbu','orospu','orospucocugu','orspu','pendejo','penis','pezevenk','pickurusu','picoglu','pijkurusu','pijoglu','porn','porno','pust','pusy','putamadre','rapist','retard','serefsiz','sex','shit','skm','sktr','slut','sokuk','surtuk','vagina','whore','wichser','yarak','yavsak'
   ]) w where sm_norm(p) like '%' || w || '%')
   or string_to_array(sm_words(p), ' ') && array[
-    'am','amin','amina','amini','amq','aq','bok','boktan','cock','cum','dalama','got','gote','gotler','gotu','gotum','gotun','niga','nigas','niger','oc','pic','seks','seksi','sexy','sik','sike','sikik','sikim','tasak','tasaklar','tits'
+    'ahmak','am','amin','amina','amini','amq','aptal','aq','bok','boktan','cock','cum','dalama','got','gote','gotler','gotu','gotum','gotun','kasar','lavuk','mal','niga','nigas','niger','oc','pic','pice','pij','pijo','pipi','salak','salaklar','sapik','seks','seksi','sexy','sg','sik','sike','sikik','sikim','tasak','tasaklar','tits','yarami'
   ]
+  -- yalnızca Latin/Türkçe harf, rakam, boşluk, . _ - ve emoji (Kiril, Yunan, süslü harfler yasak); net.js oddName ile aynı
+  or normalize(coalesce(p, ''), NFC) ~ '[^A-Za-z0-9 ._çğıöşüÇĞİÖŞÜâîûÂÎÛäëïÿÄËÏßñÑáéíóúÁÉÍÓÚàèìòùÀÈÌÒÙêôÊÔãõÃÕ\u2600-\u27bf\u2b00-\u2bff\U0001f000-\U0001f0ff\U0001f200-\U0001faff\ufe0f\u200d-]'
   -- sik… kökleri önünde i varsa sayılmaz: "Işıkım", "Işıktır" (isikim, isiktir) temiz kalsın
   or sm_words(p) ~ '(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici)'
 $$;

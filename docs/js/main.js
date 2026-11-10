@@ -7,7 +7,7 @@ import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryG
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
-import { netOn, myName, shownName, setName, setCountry, validName, rudeName, ccOf, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc } from './net.js';
+import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -1390,7 +1390,7 @@ function saveName() {
   const rude = validName(v) && rudeName(v), tur = ((window.I18N && window.I18N.lang) || 'tr') === 'tr';
   const bad = !validName(v) ? 'En az 2 harf yaz.' : rude ? 'Bu ad kullanılamaz, başka bir ad seç.' : '';
   if (bad) {
-    $('nameErr').textContent = rude && tur ? 'Ayıp! 😤 Burası martıların yeri, düzgün bir isim koy. Yoksa adını biz koyarız!' : tr(bad);
+    $('nameErr').textContent = !(rude && tur) ? tr(bad) : oddName(v) ? 'Hile yok! 😤 Yalnızca Türkçe harf, rakam ve emoji kullanabilirsin.' : 'Ayıp! 😤 Burası martıların yeri, düzgün bir isim koy. Yoksa adını biz koyarız!';
     show('nameErr'); vibrate(rude ? [60, 40, 60] : 40); if (rude) $('nameInput').value = ''; return;
   }
   setName(v); $('nameInput').blur(); show('profilePanel', false); renderNameChip(); sfx.gold();

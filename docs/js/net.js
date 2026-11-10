@@ -34,15 +34,17 @@ export function cleanName(s) {
 export const validName = s => cps(cleanName(s)).length >= 2;
 // uygunsuz ad: supabase/schema.sql'deki sm_fold + sm_bad ile aynı listeler ve aynı sadeleştirme (ikisi birlikte güncellenir).
 // Benzer harfler (Kiril о, Yunan ο, 0, @ ...) latine çevrilir; BAD adın içinde aranır, WORDS yalnızca tek başına kelimeyse sayılır.
-const BAD = ['amcik', 'amck', 'amcuk', 'aminako', 'aminakoy', 'aminaq', 'amk', 'amq', 'arschloch', 'ashole', 'bastard', 'bitch', 'cabron', 'cocksucker', 'cunt', 'dick', 'dildo', 'fagot', 'fahise', 'fotze', 'fuck', 'gavat', 'gilipolas', 'gotlek', 'gotos', 'gotveren', 'hijodeputa', 'hitler', 'hurensohn', 'ibne', 'ipne', 'kahpe', 'kaltak', 'kancik', 'kerhane', 'maricon', 'mierda', 'orosbu', 'orospu', 'orspu', 'pendejo', 'penis', 'pezevenk', 'porn', 'porno', 'pust', 'pusy', 'putamadre', 'rapist', 'retard', 'serefsiz', 'sex', 'shit', 'skm', 'sktr', 'slut', 'sokuk', 'surtuk', 'vagina', 'whore', 'wichser', 'yarak', 'yavsak'];
-const WORDS = new Set(['am', 'amin', 'amina', 'amini', 'amq', 'aq', 'bok', 'boktan', 'cock', 'cum', 'dalama', 'got', 'gote', 'gotler', 'gotu', 'gotum', 'gotun', 'niga', 'nigas', 'niger', 'oc', 'pic', 'seks', 'seksi', 'sexy', 'sik', 'sike', 'sikik', 'sikim', 'tasak', 'tasaklar', 'tits']);
-const FROM = 'ışğüöçâîûİŞĞÜÖÇ0134578@$!авеёкмнорстухѕіїјԁүһԛԝАВЕЁКМНОРСТУХЅІЇЈαβεικνορτυχΑΒΕΖΗΙΚΜΝΟΡΤΥΧɑɡ', TO = 'isguocaiuisguocoieastbasiabeekmhopctyxsiijdyhqwabeekmhopctyxsiijabeikvoptuxabezhikmnoptyxag';
+const BAD = ['amcik', 'amck', 'amcuk', 'aminako', 'aminakoy', 'aminaq', 'amk', 'amq', 'arschloch', 'ashole', 'bastard', 'bitch', 'cabron', 'cocksucker', 'cunt', 'dangalak', 'dick', 'dildo', 'fagot', 'fahise', 'fotze', 'fuck', 'gavat', 'gerizekali', 'gilipolas', 'gotlek', 'gotos', 'gotveren', 'hijodeputa', 'hitler', 'hurensohn', 'ibine', 'ibne', 'ipne', 'kahpe', 'kaltak', 'kancik', 'kerhane', 'kevase', 'kodumun', 'maricon', 'mierda', 'oglanci', 'orosbu', 'orospu', 'orospucocugu', 'orspu', 'pendejo', 'penis', 'pezevenk', 'pickurusu', 'picoglu', 'pijkurusu', 'pijoglu', 'porn', 'porno', 'pust', 'pusy', 'putamadre', 'rapist', 'retard', 'serefsiz', 'sex', 'shit', 'skm', 'sktr', 'slut', 'sokuk', 'surtuk', 'vagina', 'whore', 'wichser', 'yarak', 'yavsak'];
+const WORDS = new Set(['ahmak', 'am', 'amin', 'amina', 'amini', 'amq', 'aptal', 'aq', 'bok', 'boktan', 'cock', 'cum', 'dalama', 'got', 'gote', 'gotler', 'gotu', 'gotum', 'gotun', 'kasar', 'lavuk', 'mal', 'niga', 'nigas', 'niger', 'oc', 'pic', 'pice', 'pij', 'pijo', 'pipi', 'salak', 'salaklar', 'sapik', 'seks', 'seksi', 'sexy', 'sg', 'sik', 'sike', 'sikik', 'sikim', 'tasak', 'tasaklar', 'tits', 'yarami']);
+const FROM = 'ışğüöçâîûİŞĞÜÖÇ0134578@$!69авеёкмнорстухѕіїјԁүһԛԝАВЕЁКМНОРСТУХЅІЇЈαβεικνορτυχΑΒΕΖΗΙΚΜΝΟΡΤΥΧɑɡ', TO = 'isguocaiuisguocoieastbasiggabeekmhopctyxsiijdyhqwabeekmhopctyxsiijabeikvoptuxabezhikmnoptyxag';
 const fold = s => Array.from(String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()).map(c => { const i = FROM.indexOf(c); return i < 0 ? c : TO[i]; }).join('')
   .replace(/[^a-z]+/g, ' ').replace(/(.)\1+/g, '$1').trim(); // kelimeler boşlukla ayrık, tekrar eden harf teke iner
+// ad yalnızca Latin/Türkçe harf, rakam, boşluk, . _ - ve emoji içerebilir (Kiril, Yunan, süslü/tam genişlik harfler yasak)
+export const oddName = s => /[^A-Za-z0-9 ._çğıöşüÇĞİÖŞÜâîûÂÎÛäëïÿÄËÏßñÑáéíóúÁÉÍÓÚàèìòùÀÈÌÒÙêôÊÔãõÃÕ\u2600-\u27bf\u2b00-\u2bff\u{1f000}-\u{1f0ff}\u{1f200}-\u{1faff}\ufe0f\u200d-]/u.test(String(s).normalize('NFC'));
 export const rudeName = s => {
   // harf harf yazılan ("s.i.k", "g ö t") tek harflik parçalar birleşir
   const f = fold(s).replace(/(?<=\b[a-z]) (?=[a-z]\b)/g, '').replace(/(.)\1+/g, '$1'), n = f.replace(/ /g, '').replace(/(.)\1+/g, '$1');
-  return BAD.some(w => n.includes(w)) || f.split(' ').some(w => WORDS.has(w)) || /(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici)/.test(f);
+  return oddName(s) || BAD.some(w => n.includes(w)) || f.split(' ').some(w => WORDS.has(w)) || /(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici)/.test(f);
 };
 
 export const profile = () => store.get(KEY_PROFILE, null) || {};
