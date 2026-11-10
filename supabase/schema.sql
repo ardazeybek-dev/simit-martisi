@@ -42,24 +42,30 @@ language sql stable as $$ select date_trunc('week', t at time zone 'Europe/Istan
 create or replace function sm_name(p text) returns text
 language sql immutable as $$ select left(regexp_replace(regexp_replace(coalesce(p, ''), '[[:cntrl:]]', '', 'g'), '\s+', ' ', 'g'), 16) $$;
 
--- uygunsuz ad: harfler sadeleşir (ı→i, 0→o, @→a ...), harf dışı atılır, tekrar eden harf teke iner, sonra listede arama.
--- Aynı liste ve aynı sadeleştirme docs/js/net.js içinde de var (oyuncu anında uyarı görsün); ikisi birlikte güncellenir.
-create or replace function sm_norm(p text) returns text
+-- uygunsuz ad: Unicode katlanır, benzer harfler latine çevrilir (Kiril о, Yunan ο, ı→i, 0→o, @→a ...), harf dışı boşluk olur,
+-- tekrar eden harf teke iner. Alt dize listesi adın içinde aranır, kelime listesi yalnızca tek başına kelimeyse sayılır.
+-- Aynı listeler ve aynı sadeleştirme docs/js/net.js içinde de var (oyuncu anında uyarı görsün); ikisi birlikte güncellenir.
+create or replace function sm_fold(p text) returns text
 language sql immutable as $$
-  select regexp_replace(regexp_replace(translate(lower(coalesce(p, '')), 'ışğüöçâîûİŞĞÜÖÇ0134578@$!', 'isguocaiuisguocoieastbasi'), '[^a-z]', '', 'g'), '(.)\1+', '\1', 'g')
+  select btrim(regexp_replace(regexp_replace(translate(lower(regexp_replace(normalize(coalesce(p, ''), NFKD), '[\u0300-\u036f]', '', 'g')),
+    'ışğüöçâîûİŞĞÜÖÇ0134578@$!авеёкмнорстухѕіїјԁүһԛԝАВЕЁКМНОРСТУХЅІЇЈαβεικνορτυχΑΒΕΖΗΙΚΜΝΟΡΤΥΧɑɡ',
+    'isguocaiuisguocoieastbasiabeekmhopctyxsiijdyhqwabeekmhopctyxsiijabeikvoptuxabezhikmnoptyxag'), '[^a-z]+', ' ', 'g'), '(.)\1+', '\1', 'g'))
 $$;
+-- harf harf yazılan ("s.i.k", "g ö t") tek harflik parçalar birleşir; kelime listesi ve sik… kuralı buna bakar
+create or replace function sm_words(p text) returns text
+language sql immutable as $$ select regexp_replace(regexp_replace(sm_fold(p), '(?<=\m[a-z]) (?=[a-z]\M)', '', 'g'), '(.)\1+', '\1', 'g') $$;
+create or replace function sm_norm(p text) returns text
+language sql immutable as $$ select regexp_replace(replace(sm_fold(p), ' ', ''), '(.)\1+', '\1', 'g') $$;
 create or replace function sm_bad(p text) returns boolean
 language sql immutable as $$
   select exists (select 1 from unnest(array[
-    'sokuk','skm','sktr','amk','amq','amcik','aminakoy','aminako',
-    'orospu','orosbu','orspu','pezevenk','gavat','kahpe','yarrak','yarak','ibne','ipne','kaltak','surtuk','fahise','kerhane','yavsak',
-    'serefsiz','gotveren','gotlek','pust','dallama',
-    'fuck','shit','bitch','cunt','dick','pussy','whore','slut','nigga','faggot','retard','asshole','bastard','porn','penis','vagina',
-    'cocksucker','dildo','rapist','hitler','sex',
-    'hurensohn','fotze','wichser','arschloch','hijodeputa','putamadre','mierda','gilipollas','cabron','pendejo','maricon'
-  ]) w where sm_norm(p) like '%' || sm_norm(w) || '%')
+    'amcik','amck','amcuk','aminako','aminakoy','aminaq','amk','amq','arschloch','ashole','bastard','bitch','cabron','cocksucker','cunt','dick','dildo','fagot','fahise','fotze','fuck','gavat','gilipolas','gotlek','gotos','gotveren','hijodeputa','hitler','hurensohn','ibne','ipne','kahpe','kaltak','kancik','kerhane','maricon','mierda','orosbu','orospu','orspu','pendejo','penis','pezevenk','porn','porno','pust','pusy','putamadre','rapist','retard','serefsiz','sex','shit','skm','sktr','slut','sokuk','surtuk','vagina','whore','wichser','yarak','yavsak'
+  ]) w where sm_norm(p) like '%' || w || '%')
+  or string_to_array(sm_words(p), ' ') && array[
+    'am','amin','amina','amini','amq','aq','bok','boktan','cock','cum','dalama','got','gote','gotler','gotu','gotum','gotun','niga','nigas','niger','oc','pic','seks','seksi','sexy','sik','sike','sikik','sikim','tasak','tasaklar','tits'
+  ]
   -- sik… kökleri önünde i varsa sayılmaz: "Işıkım", "Işıktır" (isikim, isiktir) temiz kalsın
-  or sm_norm(p) ~ '(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici)'
+  or sm_words(p) ~ '(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici)'
 $$;
 
 create or replace function register(p_name text, p_cc text default 'TR') returns json
@@ -149,14 +155,14 @@ language sql stable security definer set search_path = public as $$
     'total', (select count(*) from ranked),
     'top', coalesce((select json_agg(json_build_object('rank', rank, 'name', name, 'cc', cc, 'score', score, 'me', player_id = p_id) order by rank)
                      from ranked where rank <= 50), '[]'::json),
-    'me', (select json_build_object('rank', rank, 'score', score) from ranked where player_id = p_id)
+    'me', (select json_build_object('rank', rank, 'score', score, 'name', name) from ranked where player_id = p_id)
   )
 $$;
 
 revoke all on function register(text, text), rename(uuid, uuid, text), set_cc(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) from public;
 grant execute on function register(text, text), rename(uuid, uuid, text), set_cc(uuid, uuid, text), start_run(uuid, uuid), submit_score(uuid, uuid, uuid, int, int, text), get_board(uuid), claim_best(uuid, uuid, int) to anon, authenticated;
 -- yardımcılar dışarıdan çağrılmasın (Supabase yeni fonksiyonlara anon yetkisi verebiliyor)
-revoke all on function sm_week(timestamptz), sm_name(text), sm_norm(text), sm_bad(text) from public, anon, authenticated;
+revoke all on function sm_week(timestamptz), sm_name(text), sm_fold(text), sm_words(text), sm_norm(text), sm_bad(text) from public, anon, authenticated;
 
 -- günlük ödül: kayıt cihazda değil sunucuda. Anahtar = ağ adresi + tarayıcı kimliğinin özeti (ham IP saklanmaz).
 -- Yerel kayıt silinip yeniden girilince ödül ikinci kez alınamaz, seri de sıfırlanmaz. Gün İstanbul saatiyle döner.

@@ -1387,8 +1387,12 @@ function openProfile() {
 }
 function saveName() {
   const v = $('nameInput').value;
-  const bad = !validName(v) ? 'En az 2 harf yaz.' : rudeName(v) ? 'Bu ad kullanılamaz, başka bir ad seç.' : '';
-  if (bad) { $('nameErr').textContent = tr(bad); show('nameErr'); vibrate(40); return; }
+  const rude = validName(v) && rudeName(v), tur = ((window.I18N && window.I18N.lang) || 'tr') === 'tr';
+  const bad = !validName(v) ? 'En az 2 harf yaz.' : rude ? 'Bu ad kullanılamaz, başka bir ad seç.' : '';
+  if (bad) {
+    $('nameErr').textContent = rude && tur ? 'Ayıp! 😤 Burası martıların yeri, düzgün bir isim koy. Yoksa adını biz koyarız!' : tr(bad);
+    show('nameErr'); vibrate(rude ? [60, 40, 60] : 40); if (rude) $('nameInput').value = ''; return;
+  }
   setName(v); $('nameInput').blur(); show('profilePanel', false); renderNameChip(); sfx.gold();
   if (!$('boardPanel').classList.contains('hidden')) renderBoard();
 }
