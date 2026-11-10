@@ -179,6 +179,37 @@ function trailTick(dt, on, m, life) {
   trailGeo.attributes.position.needsUpdate = trailGeo.attributes.color.needsUpdate = true;
 }
 
+// ---------------- altın simit ışıltısı ----------------
+// Altın simit yakına gelince yıldız gibi parlar (uzakta değil: sisin içinden ufukta kayan ışık gibi görünüyordu). Hepsi tek Points: tek çizim çağrısı
+const GLINT_NEAR = 34; // m: bundan uzaktaki altın simidin parıltısı çizilmez
+const GLINT_MAX = 12, glintPos = new Float32Array(GLINT_MAX * 3);
+const glintGeo = new THREE.BufferGeometry(); glintGeo.setAttribute('position', new THREE.BufferAttribute(glintPos, 3).setUsage(THREE.DynamicDrawUsage));
+const glintMat = new THREE.PointsMaterial({
+  color: 0xffe7a0, size: 1.5, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: true,
+  map: canvasTex(64, 64, (g) => {
+    const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.18, 'rgba(255,240,190,.75)'); r.addColorStop(1, 'rgba(255,200,90,0)');
+    g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+    g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(255,250,225,.9)'; // dört kollu yıldız
+    g.beginPath(); g.moveTo(32, 1); g.lineTo(35, 29); g.lineTo(63, 32); g.lineTo(35, 35); g.lineTo(32, 63); g.lineTo(29, 35); g.lineTo(1, 32); g.lineTo(29, 29); g.closePath(); g.fill();
+  }),
+});
+const glint = new THREE.Points(glintGeo, glintMat); glint.frustumCulled = false; scene.add(glint);
+let glintPh = 0;
+function glintTick(dt, list, gz) {
+  let n = 0;
+  for (const s of list) {
+    if (n >= GLINT_MAX) break;
+    if (!s.gold || s.taken || s.pulled || !s.mesh.visible || !s.mesh.parent) continue;
+    s.mesh.getWorldPosition(_tip); if (_tip.z > gz + 1 || _tip.z < gz - GLINT_NEAR) continue;
+    glintPos.set([_tip.x, _tip.y + 0.05, _tip.z + 0.2], n * 3); n++;
+  }
+  glintGeo.setDrawRange(0, n); glint.visible = n > 0;
+  if (!n) return;
+  glintGeo.attributes.position.needsUpdate = true;
+  glintPh += dt * (4.3 + Math.sin(glintPh * 0.37) * 1.4); // düzensiz nabız: tekdüze yanıp sönmez
+  glintMat.size = 1.4 + Math.sin(glintPh) * 0.3 + Math.sin(glintPh * 2.71) * 0.15;
+}
+
 const wakeMat = new THREE.MeshBasicMaterial({
   transparent: true, depthWrite: false,
   map: canvasTex(64, 128, (g) => {
@@ -229,7 +260,7 @@ function throwVolleys(z0, len, first) {
   }
 }
 function addThrown(bt, cx, cz, gold, ry) { // ry: halkanın yüksekliği (vapur güvertesi); yoksa dalgada
-  if (gold) return addSimit(cx, FLY_Y, cz, true, true); // altın parça atılmaz: yerinde asılı durur, olduğu yerde döner
+  if (gold) return addSimit(cx, FLY_Y, cz, true, true); // altın parça atılmaz: yerinde asılı durur, olduğu yerde döner ve parlar
   if (genLog) genLog.push(`t${cx.toFixed(2)},${cz.toFixed(1)}${gold ? 'g' : ''}`);
   const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); if (ruleOn('giant')) m.scale.multiplyScalar(2); scene.add(m);
   const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); ring.visible = false; scene.add(ring); // iniş yeri sürpriz: halka yalnız plajda görünür
@@ -438,7 +469,8 @@ function updateImbat(dt, gz) {
   for (const b of imbats) {
     if (b.z1 > gz + 30 || b.z0 < gz - 260) continue; // geride kaldı ya da henüz uzakta
     for (const s of b.streaks) { const p = s.m.position; p.x += b.dir * s.v * dt; if (p.x * b.dir > 17) p.x -= b.dir * 34; p.y = waveAt(p.x, p.z, t) + 0.18; } // dalgaya oturur
-    for (const s of b.sims) if (!s.taken && !s.pulled && gz - s.z < 30) { s.x += s.vx * dt; s.mesh.position.x = s.x; s.mesh.rotation.z += s.spin * dt; }
+    for (const s of b.sims) if (!s.taken && !s.pulled && gz - s.z < 30) { s.x = clamp(s.x + s.vx * dt, -LANE + 0.6, LANE - 0.6); s.mesh.position.x = s.x; // rüzgâraltı kenarda durur: şeridin dışına savrulup yakalanamaz olmasın
+      s.mesh.rotation.z += s.spin * dt; }
     if (gz <= b.z0 && gz >= b.z1) {
       on = b.dir;
       if (!b.felt && state === 'play') { b.felt = true; sfx.gust(); vibrate(25); }
@@ -2701,7 +2733,8 @@ function frame() {
     }
   }
   if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }
-  for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; }
+  for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
+  glintTick(dt, simits, gull.position.z);
   trailTick(dt, state === 'play', mult(), comboT / COMBO_T);
   updateFx(dt);
 
@@ -3047,7 +3080,7 @@ window.__game = {
   get shed() { return { on: shedOn, hidden: decor.filter(d => d.shed && !d.mesh.visible).length, total: decor.filter(d => d.shed).length }; },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
-  get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; }, get renderer() { return renderer; }, get scene() { return scene; }, get camera() { return camera; },
+  get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; }, get renderer() { return renderer; }, get scene() { return scene; }, get camera() { return camera; }, get glint() { return glint; },
   pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = dur(k); renderPowers(); }, get ups() { return { ...ups }; }, setGod: (b) => (god = !!b), setQuality,
 };
 // ses bağlamı başlık ekranında boşta kurulur (askıda); ilk dokunuş yalnızca açar → kalkış karesi donmaz
