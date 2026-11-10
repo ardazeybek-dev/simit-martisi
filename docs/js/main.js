@@ -1022,7 +1022,7 @@ const KEY_CARRY = 'simit-martisi-carry';
 let carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0);
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
-let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.08, fishCatch = 0.75, fishEarly = false;
+let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.12, fishCatch = 0.75, fishEarly = false;
 const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // martı rütbesi: her uçuşun simiti ve mesafesi XP olur (simit başına 1, 20 m başına 1); her seviye simit ödüller, belli seviyelerde unvan değişir.
@@ -2737,6 +2737,7 @@ function frame() {
   for (const f of fishes) {
     const x0 = f.ax - f.dir * f.w / 2, H = FLY_Y + 0.45;
     if (f.u < 0) { // sıçramadan önce: su yüzünde arada bir çırpınır (küçük sıçrantılar yerini belli eder)
+      if (f.z < g.z + 5 && f.z > g.z - 110 && state === 'play') f.ax = damp(f.ax, clamp(g.x, -LANE + 1.2, LANE - 1.2), 1.4, dt); // su altında martıya doğru süzülür: yolunu bozmayan yakalar
       if ((f.splT -= dt) <= 0) { f.splT = rand(0.3, 0.6); if (f.z < g.z + 5 && f.z > g.z - 110) splash(x0 + rand(-0.5, 0.5), f.z, 4); }
       if (g.z - f.z < speed * (f.T * 0.5 + f.lag) && (state === 'play' || state === 'title')) { f.u = 0; f.mesh.visible = true; splash(x0, f.z, 10); }
       continue;
