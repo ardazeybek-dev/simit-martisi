@@ -339,9 +339,7 @@ function spawnGap(first, fixLen) {
         const nk = d > 3 && Math.random() < 0.4 ? 2 : 1;
         for (let i = 0; i < nk; i++) {
           const z = freeZ(10, len - 8); if (z === null) continue;
-          const k = makeKite(), bx = rand(-2.6, 2.6);
-          k.position.set(bx, FLY_Y + 0.2, z); scene.add(k);
-          kites.push({ g: k, bx, z, ph: Math.random() * 6, sw: rand(1, 2) });
+          addKite(rand(-2.6, 2.6), z, rand(1, 2));
         }
       }
     }
@@ -427,7 +425,7 @@ function spawnTurn(tn) {
   // viraj boş geçmesin: dış kenarda bir rakip ya da uçurtma (simit çizgisinden 2.6 m uzakta, çizgiyi izleyen geçer)
   if (d > 0.6 && Math.random() < 0.45 + d * 0.1) {
     const z = tn.z0 - len * rand(0.3, 0.7), x = clamp(lineX(z) + pick([-1, 1]) * 2.6, -LANE + 0.6, LANE - 0.6);
-    if (d > 1.4 && Math.random() < 0.4) { const k = makeKite(); k.position.set(x, FLY_Y + 0.2, z); scene.add(k); kites.push({ g: k, bx: x, z, ph: Math.random() * 6, sw: rand(0.6, 1) }); }
+    if (d > 1.4 && Math.random() < 0.4 && addKite(x, z, rand(0.6, 1))) { /* uçurtma */ }
     else addRival(z, x, rand(0.4, 0.8), 'grey');
   }
   tn.built = true; genZ = end;
@@ -642,6 +640,13 @@ function spawnBridge() {
   genZ = z0 - 44;
 }
 
+// uçurtma: vapurun ya da korsan teknesinin üstüne düşerse konmaz (geminin içinden çıkıp görünmez engel oluyordu)
+function addKite(x, z, sw) {
+  if (ferries.some(f => z > f.zFront - 6 && z < f.zBack + 6) || pirates.some(p => Math.abs(p.z - z) < 16)) return false;
+  const k = makeKite(); k.position.set(x, FLY_Y + 0.2, z); scene.add(k);
+  kites.push({ g: k, bx: x, z, ph: Math.random() * 6, sw });
+  return true;
+}
 function spawnFerry() {
   const d = difficulty();
   const ft = pickFerryType(), L = pick(ft.lengths), x0 = 0, zc = genZ - L / 2 - 2; // vapur şeridin tam ortasında: şerit = gövde
@@ -780,6 +785,7 @@ function spawnFerry() {
     p.simit.getWorldPosition(tmp);
     simits.push({ mesh: p.simit, x: tmp.x, y: tmp.y, z: tmp.z, person: p, gold });
   }
+  kites = kites.filter(k => { const on = k.z > zFront - 6 && k.z < zBack + 6; if (on) scene.remove(k.g); return !on; }); // önce konmuş uçurtma vapurun içinde kalmasın
   ferries.push({ group: g, x: x0, zFront, zBack, ph: Math.random() * 6, chims, flag, salon: salon && { x: x0 + salon.tx, z: zc + salon.sz } });
   genZ = zFront - 2;
 }
@@ -914,7 +920,7 @@ function spawnPier() {
     const n = 1 + (i >= 3 ? 1 : 0) + (i >= 5 ? 1 : 0);
     for (let k = 0; k < n; k++) {
       const z = gz - 12 - k * 14, x = rand(-3, 3);
-      if (k === 1 && i >= 2) { const kt = makeKite(); kt.position.set(x, FLY_Y + 0.2, z); scene.add(kt); kites.push({ g: kt, bx: x, z, ph: Math.random() * 6, sw: rand(0.8, 1.4) }); }
+      if (k === 1 && i >= 2 && addKite(x, z, rand(0.8, 1.4))) { /* uçurtma */ }
       else addRival(z, x, rand(0.6, 1.3), undefined, gz + 4);
     }
   }
@@ -2054,6 +2060,11 @@ function hideTutorial() {
 function pause() {
   if (state !== 'play' && state !== 'countdown') return;
   state = 'paused'; show('pause'); show('countdown', false);
+  { // kalan görevler: bu uçuşun ilerlemesiyle birlikte (nerede olduğun, kaç görev kaldığı)
+    const left = missions.filter(m => !m.done && misProgress(m) < m.n).length;
+    $('pauseMis').parentElement.classList.toggle('hidden', !missions.length); renderMissions($('pauseMis'));
+    $('pauseMisH').textContent = `${tr('Görevler')} · ${left ? tr('{n} görev kaldı').replace('{n}', fmt(left)) : tr('Görevlerin hepsi bitti!')}`;
+  }
   audio.suspend();
 }
 function resume() {

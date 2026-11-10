@@ -2,17 +2,21 @@ import * as THREE from 'three';
 import { rand, canvasTex } from './util.js';
 import { scene, MOBILE } from './scene.js';
 
-// ---------------- hava: gerçek takvime göre ----------------
-// Kış (Ara-Şub) kar, sonbahar (Eyl-Kas) çoğunlukla yağmur, ara sıra sis; ilkbahar/yaz çoğunlukla açık.
-// ?weather=rain|snow|fog|clear zorlar (deneme için). Her uçuşta yeniden seçilir.
+// ---------------- hava: rastgele, mevsim yalnız ağırlığı biraz kaydırır ----------------
+// Dört hava da her mevsim çıkabilir (yalnız iki hava sırayla geliyor gibi görünüyordu, sıkıcıydı). Az önceki hava tekrar gelirse
+// bir kez yeniden çekilir: üst üste aynı hava seyrekleşir ama yasak değil. ?weather=rain|snow|fog|clear zorlar (deneme için).
 const FORCE = new URLSearchParams(location.search).get('weather');
+const SEASON_W = { // [açık, yağmur, sis, kar]
+  winter: [0.25, 0.2, 0.2, 0.35], spring: [0.45, 0.25, 0.2, 0.1], summer: [0.55, 0.2, 0.17, 0.08], autumn: [0.32, 0.3, 0.25, 0.13],
+};
+const KINDS = ['clear', 'rain', 'fog', 'snow'];
+let last = null;
 export function pickWeather() {
-  if (['rain', 'snow', 'fog', 'clear'].includes(FORCE)) return FORCE;
-  const m = new Date().getMonth(), r = Math.random();
-  if (m === 11 || m <= 1) return r < 0.7 ? 'snow' : r < 0.85 ? 'fog' : 'clear';
-  if (m >= 8 && m <= 10) return r < 0.6 ? 'rain' : r < 0.75 ? 'fog' : 'clear';
-  if (m >= 2 && m <= 4) return r < 0.2 ? 'rain' : r < 0.32 ? 'fog' : 'clear';
-  return r < 0.08 ? 'fog' : 'clear';
+  if (KINDS.includes(FORCE)) return FORCE;
+  const m = new Date().getMonth(), w = SEASON_W[m === 11 || m <= 1 ? 'winter' : m <= 4 ? 'spring' : m <= 7 ? 'summer' : 'autumn'];
+  const roll = () => { let r = Math.random(); for (let i = 0; i < 4; i++) { if ((r -= w[i]) < 0) return KINDS[i]; } return 'clear'; };
+  let k = roll(); if (k === last) k = roll();
+  return (last = k);
 }
 
 // parçacıklar kameranın önündeki bir kutuda döner; düşen tane alttan çıkınca üste, geride kalınca öne sarılır
