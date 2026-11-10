@@ -316,19 +316,21 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .dot.bad { background: var(--red); box-shadow: 0 0 0 3px rgba(229, 72, 77, .3); }
 
 .modal { justify-content: center; background: rgba(15, 13, 36, .45); animation: fadein .25s ease; overflow-y: auto; }
-.card { position: relative; width: 100%; max-width: 360px; text-align: center; padding: 24px 22px 18px; border-radius: 28px;
-  background: radial-gradient(120% 70% at 50% 0%, var(--card-glow, rgba(255, 255, 255, 0)), transparent 60%), linear-gradient(180deg, var(--card-a, rgba(42, 37, 82, .92)), var(--card-b, rgba(27, 24, 56, .94))); border: 1px solid var(--card-line, var(--line));
-  box-shadow: 0 30px 80px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .08); animation: cardin .4s cubic-bezier(.2, 1.4, .4, 1); }
-/* her panelin kendi rengi; içteki kutular (--glass) panelin rengini alsın diye mor yerine koyu saydam */
-#boardPanel .card { --card-a: #13708a; --card-b: #0a3247; --card-glow: rgba(120, 230, 255, .28); --card-line: rgba(150, 230, 255, .3); --glass: rgba(0, 20, 30, .28); }
-#achPanel .card { --card-a: #8c3b2a; --card-b: #3d1717; --card-glow: rgba(255, 196, 90, .32); --card-line: rgba(255, 200, 120, .32); --glass: rgba(30, 6, 4, .3); }
-#upPanel .card { --card-a: #2457c4; --card-b: #13245e; --card-glow: rgba(130, 200, 255, .32); --card-line: rgba(160, 205, 255, .32); --glass: rgba(4, 12, 40, .3); }
-#missionsPanel .card { --card-a: #23845a; --card-b: #0f3a2a; --card-glow: rgba(170, 255, 170, .26); --card-line: rgba(170, 255, 190, .3); --glass: rgba(0, 24, 12, .3); }
-#dailyPanel .card { --card-a: #c4512b; --card-b: #561a26; --card-glow: rgba(255, 210, 110, .34); --card-line: rgba(255, 200, 140, .34); --glass: rgba(40, 6, 10, .3); }
-#dayRunPanel .card { --card-a: #a86d14; --card-b: #45260a; --card-glow: rgba(255, 230, 130, .34); --card-line: rgba(255, 220, 140, .34); --glass: rgba(36, 18, 0, .3); }
-#profilePanel .card { --card-a: #7d3a8f; --card-b: #2f1544; --card-glow: rgba(255, 170, 230, .28); --card-line: rgba(255, 190, 240, .3); --glass: rgba(20, 4, 30, .3); }
-#settings .card { --card-a: #3c4d66; --card-b: #19212f; --card-glow: rgba(200, 225, 255, .2); --card-line: rgba(210, 225, 245, .26); --glass: rgba(0, 6, 16, .3); }
-#wardrobe .card { --card-a: rgba(150, 52, 98, .94); --card-b: rgba(58, 18, 44, .96); --card-glow: rgba(255, 180, 215, .28); --card-line: rgba(255, 190, 220, .32); --glass: rgba(30, 4, 18, .3); }
+.card { position: relative; width: 100%; max-width: 360px; text-align: center; padding: 24px 22px 18px; border-radius: 26px;
+  /* düz, mat zemin + belli belirsiz susam deseni; kalın krem çerçeve ve sert alt gölge (iskele kartıyla aynı el yapımı dil) */
+  background: radial-gradient(rgba(255, 236, 200, .07) 1.2px, transparent 1.6px) 0 0 / 22px 22px, radial-gradient(rgba(255, 236, 200, .05) 1px, transparent 1.4px) 11px 11px / 22px 22px, var(--card-a, #2a2552);
+  border: 3px solid var(--card-line, #f3e3c6);
+  box-shadow: 0 7px 0 var(--card-b, #15122e), 0 22px 44px var(--card-sh, rgba(10, 8, 30, .5)); animation: cardin .4s cubic-bezier(.2, 1.4, .4, 1); }
+/* her panelin kendi rengi: mat, düz tonlar (parlak degrade yok); --card-b sert gölge, iç kutular (--glass) panelin koyusu */
+#boardPanel .card { --card-a: #1d5a66; --card-b: #0f3138; --card-sh: rgba(4, 30, 36, .5); --glass: rgba(4, 26, 30, .32); }
+#achPanel .card { --card-a: #7a3a2c; --card-b: #3f1b14; --card-sh: rgba(40, 10, 4, .5); --glass: rgba(36, 10, 4, .3); }
+#upPanel .card { --card-a: #2b4479; --card-b: #15223f; --card-sh: rgba(6, 14, 40, .5); --glass: rgba(6, 14, 38, .3); }
+#missionsPanel .card { --card-a: #2a6248; --card-b: #133226; --card-sh: rgba(4, 28, 16, .5); --glass: rgba(4, 26, 14, .3); }
+#dailyPanel .card { --card-a: #8f3d2a; --card-b: #4a1a12; --card-sh: rgba(44, 8, 4, .5); --glass: rgba(40, 8, 4, .3); }
+#dayRunPanel .card { --card-a: #7f5a1f; --card-b: #422c0b; --card-sh: rgba(40, 24, 0, .5); --glass: rgba(36, 20, 0, .3); }
+#profilePanel .card { --card-a: #573766; --card-b: #2c1834; --card-sh: rgba(24, 6, 30, .5); --glass: rgba(22, 6, 28, .3); }
+#settings .card { --card-a: #39465a; --card-b: #1c2330; --card-sh: rgba(6, 10, 20, .5); --glass: rgba(4, 8, 18, .3); }
+#wardrobe .card { --card-a: #6d3450; --card-b: #381a29; --card-sh: rgba(30, 6, 18, .5); --glass: rgba(30, 6, 18, .3); }
 @keyframes cardin { from { opacity: 0; transform: translateY(24px) scale(.94); } }
 .card h2 { margin: 0 0 14px; font-size: 30px; font-weight: 800; }
 .btn { display: block; white-space: nowrap; line-height: 1.2; width: 100%; padding: 13px 20px 11px; border-radius: 18px; font-size: 21px; font-weight: 800; transition: transform .08s; }
@@ -666,3 +668,5 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   background: rgba(255, 255, 255, .08) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center / 12px 8px;
   appearance: none; -webkit-appearance: none; cursor: pointer; touch-action: manipulation; }
 .lang-row select option { color: #1b1530; }
+/* panel içindeki satırlar: ince kenarlı cam kart yerine panelin koyusu, kenarsız (dosyanın sonunda: aynı ağırlıktaki satır kurallarını ezer; :where sayesinde durum sınıfları .on/.got yine üstün gelir) */
+.card :where(.ach, .up, .day, .vol, .toggle, .seg > div, .stats div, .mis-box, .tab:not(.on), .wallet, .board li, .mode-card:not(.on), .profile-row, .lang-row select) { background: var(--glass); border-color: transparent; }
