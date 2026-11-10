@@ -354,7 +354,7 @@ function spawnGap(first, fixLen) {
     }
     // zıplayan balık (nadir): önce suda çırpınır, martı gelince martının yüksekliğine sıçrar.
     // Değersen ya yakalarsın (balık cüzdana) ya da elinden kayar: "Kaçtı!"
-    if (d > 0.15 && len > 30 && !fishRun && !fishEarly && Math.random() < fishSpawn * (ruleOn('fish') ? 3 : 1)) { // balık nadir: uçuş başına en çok bir balık zıplar
+    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && Math.random() < fishSpawn * (ruleOn('fish') ? 3 : 1)) { // balık nadir: uçuş başına en çok bir balık zıplar
       fishEarly = true;
       const dir = pick([-1, 1]), m = new THREE.Mesh(FISH, vcMat); m.visible = false; m.scale.setScalar(1.35); scene.add(m);
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
@@ -1025,6 +1025,9 @@ let carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0);
 let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.12, fishCatch = 0.75, fishEarly = false;
 const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
+// balık farmı olmasın: uçuşun ilk FISH_MIN_M metresinde balık çıkmaz (aç-kap uçuşlar kazanmaz), uçuşlardan günde en çok FISH_DAY balık
+const FISH_MIN_M = 300, FISH_DAY = 3, KEY_FISHDAY = 'simit-martisi-fishday';
+const fishToday = () => { const f = store.get(KEY_FISHDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
 // martı rütbesi: her uçuşun simiti ve mesafesi XP olur (simit başına 1, 20 m başına 1); her seviye simit ödüller, belli seviyelerde unvan değişir.
 // Uçuşta gösterilmez, yalnız oyun sonunda çubuk dolar; menüde rozet. Ayar: xpNeed, lvGift, RANKS
 const KEY_RANK = 'simit-martisi-rank';
@@ -3003,7 +3006,7 @@ function splash(x, z, n) {
 // balık yakalandı: cüzdana bir balık, küçük bonus, kombo süresi tazelenir; ikon HUD'daki balık sayacına uçar
 function catchFish(f) {
   f.u = 2; f.mesh.visible = false;
-  setFish(fish + 1); fishRun++; run.fish++;
+  setFish(fish + 1); fishRun++; run.fish++; store.set(KEY_FISHDAY, { day: dayKey(), n: fishToday() + 1 });
   points += 25 * mult(); if (combo > 0) comboT = COMBO_T;
   sfx.gold(); vibrate([20, 30, 20]); hitStop = 0.06; trauma = Math.min(1, trauma + 0.2); flapBurst = 1;
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y, f.z), 30, 0x8fdcff, 5, 0.8, 0.3);
