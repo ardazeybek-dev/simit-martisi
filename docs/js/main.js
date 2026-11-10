@@ -1787,7 +1787,7 @@ async function claimDaily() {
 // Balıkla ya da simitle çevrilir; ödül çevirir çevirmez cüzdana yazılır (panel kapansa da kaybolmaz), çark durunca gösterilir.
 // Ayar: WHEEL (tür s=simit / f=balık, miktar, ağırlık), SPIN_FISH, SPIN_SIMIT. Ortalama kazanç bedelin altında: çark kazandırmaz, heyecan verir.
 const WHEEL = [['s', 100, 30], ['f', 1, 14], ['s', 150, 22], ['s', 500, 7], ['s', 250, 14], ['f', 3, 7], ['s', 1000, 4], ['s', 3000, 2]];
-const SPIN_FISH = 1, SPIN_SIMIT = 300, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
+const SPIN_FISH = 1, SPIN_SIMIT = 280, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
 let wheelRot = 0, spinning = false, wheelBuilt = false;
 const KEY_FREESPIN = 'simit-martisi-freespin';
 const freeSpin = () => store.get(KEY_FREESPIN, '') !== dayKey(); // günde bir bedava çevirme
