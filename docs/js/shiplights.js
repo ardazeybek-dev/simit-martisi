@@ -3,7 +3,7 @@ import { canvasTex } from './util.js';
 
 // ---------------- gemi ışıkları ----------------
 // Yer yer yanan pencereler, direk tepesinde beyaz, iskele kırmızı / sancak yeşil seyir feneri, yolcu gemisi bacasında yanıp sönen kırmızı.
-// Hepsi tek Points (tek çizim çağrısı), gerçek ışık kaynağı yok. Işık havaya bağlı: açıkta hafif, sis ve yağmurda belirgin.
+// Hepsi tek Points (tek çizim çağrısı), gerçek ışık kaynağı yok. Işık yalnızca yağmurda yanar.
 // Işık sisin içinden cisimlerden daha uzağa görünür (gerçekte de öyle).
 const MAX = 900;
 const pos = new Float32Array(MAX * 3), col = new Float32Array(MAX * 3), siz = new Float32Array(MAX);
@@ -40,7 +40,7 @@ const points = new THREE.Points(geo, mat); points.frustumCulled = false; points.
 // tür: 0 pencere (sıcak, hafif kıpırtı, bazıları ağır ağır söner yanar), 1 beyaz direk/demir feneri, 2 kırmızı, 3 yeşil, 4 yanıp sönen kırmızı
 const COL = [[1, 0.7, 0.34], [1, 0.96, 0.88], [1, 0.16, 0.1], [0.25, 1, 0.45], [1, 0.12, 0.08]];
 const BASE = [1.7, 1.2, 1.2, 1.2, 1.3], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7];
-const WEATHER_K = { clear: 0.35, snow: 0.65, fog: 0.85, rain: 1 };
+const WEATHER_K = { rain: 1 }; // yalnız yağmurda yanar: gündüz açık havada ışık olmaz
 
 const ships = new Set();
 const L = (x, y, z, k, size) => ({ x, y, z, k, s: (size || SIZE[k]), ph: Math.random() * 40, r: 0.6 + Math.random() * 0.8, lazy: k === 0 && Math.random() < 0.18 });
@@ -98,7 +98,8 @@ let time = 0;
 const wob = (t, p) => 0.5 + 0.3 * Math.sin(t + p) + 0.2 * Math.sin(t * 1.93 + p * 2.1); // iki oranlı kıpırtı, düzgün sinüs değil
 export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
   time += dt;
-  const k = WEATHER_K[weather] ?? 0.35, fog = scene.fog;
+  const k = WEATHER_K[weather] || 0, fog = scene.fog;
+  if (!k) { points.visible = false; return; }
   const far = fog ? fog.far * 1.5 : 400, near = fog ? fog.near * 0.6 : 60;
   renderer.getDrawingBufferSize(_sz); mat.uniforms.uHalfH.value = _sz.y / 2; mat.uniforms.uMinPx.value = 2.2 * renderer.getPixelRatio();
   const cam = camera.position;

@@ -14,7 +14,7 @@ const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
 const SIMIT_VIEW = 140; // telefonda bundan uzaktaki simitler çizilmez
-const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.5, COMBO_T = 2.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
+const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.85, COMBO_T = 2.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
 // şerit vapur kadar geniş (gövde ±4, küpeştenin biraz dışı). Çarpışma payları: engeller affedici (kutu görünenden dar),
 // simit ve güçlendirme cömert (yakından geçmek yeter)
 const HIT = { obs: 0.08, near: 1.1, rival: 0.48, kiteX: 0.45, kiteZ: 0.38, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
@@ -1008,14 +1008,15 @@ const ups = { magnet: 0, shield: 0, double: 0, tea: 0 };
 const dur = k => POWER[k].dur * (1 + ups[k] * 0.25) * (perk('tophat') ? 1.2 : 1); // Dev silindir: +%20
 let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
-const WALLET_RATE = 15; // kaç yakalanan simit cüzdana 1 simit eder: para yavaş birikir (20 çok azdı)
+const WALLET_RATE = 10; // kaç yakalanan simit cüzdana 1 simit eder (15'te 16 bin puanlık uçuş 30 simit getiriyordu, az bulundu)
+const WALLET_M = 100; // ayrıca her bu kadar metre cüzdana 1 simit
 let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0, recPaid = 0; // recPaid: bu uçuşta verilen rekor bonusu
 // devreden: 20'ye tamamlanmayan simitler kaybolmaz, sonraki uçuşa geçer (eskiden her uçuşta artan kısım siliniyordu: 39 simit = 1)
 const KEY_CARRY = 'simit-martisi-carry';
 let carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0);
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
-let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.03, fishCatch = 0.3, fishEarly = false;
+let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.08, fishCatch = 0.75, fishEarly = false;
 const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // martı rütbesi: her uçuşun simiti ve mesafesi XP olur (simit başına 1, 20 m başına 1); her seviye simit ödüller, belli seviyelerde unvan değişir.
@@ -1410,7 +1411,7 @@ function saveName() {
 
 // ---------------- cüzdan ve kostümler ----------------
 function bank() {
-  const units = carry0 + (simitCount + goldCount * 3) * (perk('golden') ? 1.1 : 1); // Altın martı: +%10
+  const units = carry0 + (simitCount + goldCount * 3) * (perk('golden') ? 1.1 : 1) + dist / WALLET_M * WALLET_RATE; // Altın martı: +%10; mesafe de kazandırır
   const earned = Math.floor(units / WALLET_RATE), gain = earned - banked;
   if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
   store.set(KEY_CARRY, Math.round((units - earned * WALLET_RATE) * 100) / 100); // artan kısım sonraki uçuşa
@@ -2068,11 +2069,11 @@ let cdShown = 0, shownSign = 0;
 // sıçramaz, yalnızca kaydırılan kadar gider; bırakınca olduğu yerde kalır. Alttaki çubuk (#pad) konumu gösterir.
 // Ayar: PAD_SPAN (şeridin bir ucundan öbürüne gitmek için ekran genişliğinin ne kadarı sürüklenir)
 // Artımlı: her hareket yalnızca kendi farkı kadar kaydırır; kenara dayanınca fazlası birikmez, geri dönüş anında başlar
-const PAD_SPAN = 0.65;
+const PAD_SPAN = 0.5;
 let padId = -1, padX0 = 0;
 function steerFromX(clientX) {
   // ekranın ortadaki %80'i tüm şeridi kapsar → kenara doğru biraz daha yaslanmak virajda savrulmayı yener
-  setTx(clamp((clientX / innerWidth - 0.5) / 0.4, -1, 1) * EDGE);
+  setTx(clamp((clientX / innerWidth - 0.5) / 0.35, -1, 1) * EDGE);
 }
 function steerDrag(clientX) {
   const span = Math.max(160, innerWidth * PAD_SPAN);
@@ -2735,7 +2736,7 @@ function frame() {
     f.mesh.rotation.set(f.spin ? f.mesh.rotation.x + f.spin * dt * 18 : 0, f.dir > 0 ? 0 : Math.PI, Math.atan((H + 0.5) * 4 * (1 - 2 * u) / f.w) * 0.9 + Math.sin(t * 30) * 0.12);
     if (u > 1 && u - dt / f.T <= 1) splash(x, f.z, 8);
     if (u > 1.3) f.mesh.visible = false;
-    if (!f.done && state === 'play' && u > 0.25 && u < 0.75 && Math.abs(g.x - x) < 1.15 && Math.abs(g.z - f.z) < 1.3 && Math.abs(g.y - y) < 1.3) {
+    if (!f.done && state === 'play' && u > 0.2 && u < 0.8 && Math.abs(g.x - x) < 1.7 && Math.abs(g.z - f.z) < 2 && Math.abs(g.y - y) < 1.8) {
       f.done = true;
       if (!fishRun && Math.random() < fishCatch) catchFish(f); else slipFish(f);
     }
