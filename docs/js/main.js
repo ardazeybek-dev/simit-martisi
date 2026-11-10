@@ -1001,7 +1001,7 @@ const ups = { magnet: 0, shield: 0, double: 0 };
 const dur = k => POWER[k].dur * (1 + ups[k] * 0.25) * (perk('tophat') ? 1.2 : 1); // Dev silindir: +%20
 let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
-const WALLET_RATE = 20; // kaç yakalanan simit cüzdana 1 simit eder: para yavaş birikir
+const WALLET_RATE = 15; // kaç yakalanan simit cüzdana 1 simit eder: para yavaş birikir (20 çok azdı)
 let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
 // devreden: 20'ye tamamlanmayan simitler kaybolmaz, sonraki uçuşa geçer (eskiden her uçuşta artan kısım siliniyordu: 39 simit = 1)
 const KEY_CARRY = 'simit-martisi-carry';
@@ -1263,7 +1263,7 @@ function showOver() {
   if (isBest) { best = final; store.set(KEY_BEST, best); }
   const msg = { quit: 'Uçuş bitti', 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!' };
   $('overTitle').textContent = tr(msg[cause] || 'Pat!');
-  $('stSimit').textContent = fmt(Math.floor(simitCount)) + (goldCount >= 1 ? ` (+${Math.floor(goldCount)} ${tr('altın')})` : '');
+  $('stSimit').textContent = fmt(Math.floor(simitCount));
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
   $('stCombo').textContent = `${bestCombo}`;
   ui.powers.textContent = '';
@@ -1305,7 +1305,7 @@ function showOver() {
   { const n = achReady() - achBefore, nb = badgesGot() - bdgBefore; show('overAch', n > 0 || nb > 0);
     const part = (k, s) => (k > 0 ? `${tr(s)}${k > 1 ? ' ×' + k : ''}` : '');
     $('overAch').innerHTML = `<svg><use href="#i-medal"/></svg>${[part(n, 'Yeni başarım!'), part(nb, 'Yeni rozet!')].filter(Boolean).join(' · ')}`; }
-  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span><small class="earn-rate">${tr('20 simit = 1 · altın 4 sayılır')} · ${tr('sonraki')} ${Math.floor(+store.get(KEY_CARRY, 0) || 0)}/20</small>`
+  $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span>`
     + (fishRun ? `<span class="earn-fish">+${fmt(fishRun)} <svg class="ico"><use href="#i-fish"/></svg></span>` : '');
   setTimeout(() => state === 'over' && earnFlow(banked), 700);
   show('over'); show('hud', false); hideTutorial();
