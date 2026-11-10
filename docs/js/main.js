@@ -1009,7 +1009,7 @@ const dur = k => POWER[k].dur * (1 + ups[k] * 0.25) * (perk('tophat') ? 1.2 : 1)
 let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
 const WALLET_RATE = 15; // kaç yakalanan simit cüzdana 1 simit eder: para yavaş birikir (20 çok azdı)
-let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0;
+let wallet = Math.max(0, +store.get(KEY_WALLET, 0) || 0), banked = 0, recPaid = 0; // recPaid: bu uçuşta verilen rekor bonusu
 // devreden: 20'ye tamamlanmayan simitler kaybolmaz, sonraki uçuşa geçer (eskiden her uçuşta artan kısım siliniyordu: 39 simit = 1)
 const KEY_CARRY = 'simit-martisi-carry';
 let carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0);
@@ -1068,7 +1068,7 @@ function resetWorld(newWeather = true) {
   beachZ = !city.beach ? -Infinity : BEACH_SOON ? -90 : -rand(550, 750); // ilk plaj Konyaaltı açıklarında
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
-  speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
+  speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
@@ -1300,6 +1300,9 @@ function showOver() {
   const achBefore = achReady(), bdgBefore = badgesGot(); achRecord();
   if (!revives) countMission('runs');
   checkMissions(); store.set(KEY_MIS, missions); bank();
+  // rekor bonusu: rekor kıran, bu uçuşta cüzdana kazandığı kadar bir daha alır (yeniden doğuşla ikinci rekorda yalnız yeni kısmı)
+  const recGain = isBest ? Math.max(0, banked - recPaid) : 0;
+  if (recGain) { recPaid += recGain; wallet += recGain; store.set(KEY_WALLET, wallet); }
   { const xp = Math.max(0, runXp() - xpGot), f0 = rank.xp / xpNeed(rank.lv); xpGot += xp; renderXp(xp, f0, addXp(xp)); }
   { // sıradaki kostüm: en ucuz alınmamış parçaya ne kadar kaldı
     const next = COSTUMES.filter(c => !look.owned.includes(c.id)).map(c => [c, priceOf(c)]).sort((a, b) => a[1] - b[1])[0];
@@ -1313,6 +1316,7 @@ function showOver() {
     const part = (k, s) => (k > 0 ? `${tr(s)}${k > 1 ? ' ×' + k : ''}` : '');
     $('overAch').innerHTML = `<svg><use href="#i-medal"/></svg>${[part(n, 'Yeni başarım!'), part(nb, 'Yeni rozet!')].filter(Boolean).join(' · ')}`; }
   $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span>`
+    + (recGain ? `<span class="earn-rec">${tr('Rekor bonusu')} +${fmt(recGain)} <svg class="ico"><use href="#i-simit"/></svg></span>` : '')
     + (fishRun ? `<span class="earn-fish">+${fmt(fishRun)} <svg class="ico"><use href="#i-fish"/></svg></span>` : '');
   setTimeout(() => state === 'over' && earnFlow(banked), 700);
   show('over'); show('hud', false); hideTutorial();

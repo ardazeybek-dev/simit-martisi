@@ -428,6 +428,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .hud-fish.bump .ico { animation: coinHit .3s cubic-bezier(.3, 1.8, .5, 1); }
 .stat-card.fish { color: #bfe9ff; }
 .earn .earn-fish { display: inline-flex; align-items: center; gap: 4px; color: #bfe9ff; }
+.earn .earn-rec { display: inline-flex; align-items: center; gap: 4px; color: #ffd36b; font-weight: 800; }
 .day .day-fish { color: #8fdcff; font-size: .85em; }
 #reviveBtn svg { width: 22px; height: 22px; flex: none; fill: #2a1503; }
 .ad-ico { display: none; }
