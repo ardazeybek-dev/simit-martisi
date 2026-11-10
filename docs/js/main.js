@@ -180,11 +180,12 @@ function trailTick(dt, on, m, life) {
 }
 
 // ---------------- altın simit ışıltısı ----------------
-// Altın simit uzaktan yıldız gibi parlar: virajın tepe simidi ve altın parçalar önceden seçilir. Hepsi tek Points: tek çizim çağrısı
+// Altın simit yakına gelince yıldız gibi parlar (uzakta değil: sisin içinden ufukta kayan ışık gibi görünüyordu). Hepsi tek Points: tek çizim çağrısı
+const GLINT_NEAR = 34; // m: bundan uzaktaki altın simidin parıltısı çizilmez
 const GLINT_MAX = 12, glintPos = new Float32Array(GLINT_MAX * 3);
 const glintGeo = new THREE.BufferGeometry(); glintGeo.setAttribute('position', new THREE.BufferAttribute(glintPos, 3).setUsage(THREE.DynamicDrawUsage));
 const glintMat = new THREE.PointsMaterial({
-  color: 0xffe7a0, size: 1.5, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+  color: 0xffe7a0, size: 1.5, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: true,
   map: canvasTex(64, 64, (g) => {
     const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.18, 'rgba(255,240,190,.75)'); r.addColorStop(1, 'rgba(255,200,90,0)');
     g.fillStyle = r; g.fillRect(0, 0, 64, 64);
@@ -199,7 +200,7 @@ function glintTick(dt, list, gz) {
   for (const s of list) {
     if (n >= GLINT_MAX) break;
     if (!s.gold || s.taken || s.pulled || !s.mesh.visible || !s.mesh.parent) continue;
-    s.mesh.getWorldPosition(_tip); if (_tip.z > gz + 1) continue;
+    s.mesh.getWorldPosition(_tip); if (_tip.z > gz + 1 || _tip.z < gz - GLINT_NEAR) continue;
     glintPos.set([_tip.x, _tip.y + 0.05, _tip.z + 0.2], n * 3); n++;
   }
   glintGeo.setDrawRange(0, n); glint.visible = n > 0;
@@ -2952,12 +2953,12 @@ function arrive() {
   const el = $('arrive');
   $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase('tr'); // iskele adları Türkçe kalır: her dilde BEŞİKTAŞ (i → İ)
   $('arriveSub').textContent = tr(i === STOPS.length - 1 ? city.end : 'İskeleye vardın');
-  $('arriveGain').textContent = `+${fmt(gain)}`;
+  $('arriveGain').textContent = ''; // puan sessizce eklenir: kartta küçük puan yazısı yok
   if (i > farStop) { // ilk kez: iskele haritada açılır, cüzdana hediye
     farStop = newStop = i; store.set(city.routeKey, i);
     wallet += STOPS[i].gift; store.set(KEY_WALLET, wallet);
     $('arriveSub').textContent = tr(i === STOPS.length - 1 ? city.end : 'Yeni iskele!');
-    $('arriveGain').innerHTML = `+${fmt(gain)} · +${fmt(STOPS[i].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
+    $('arriveGain').innerHTML = `+${fmt(STOPS[i].gift)} <svg class="ico"><use href="#i-simit"/></svg>`; // yalnız ilk varışta: cüzdana gelen simit
     setTimeout(() => sfx.record(), 350);
   }
   bump(el, 'on');
