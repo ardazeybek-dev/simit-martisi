@@ -1026,7 +1026,7 @@ let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0
 const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // balık farmı olmasın: uçuşun ilk FISH_MIN_M metresinde balık çıkmaz (aç-kap uçuşlar kazanmaz), uçuşlardan günde en çok FISH_DAY balık
-const FISH_MIN_M = 300, FISH_DAY = 3, KEY_FISHDAY = 'simit-martisi-fishday';
+const FISH_MIN_M = 1000, FISH_DAY = 3, KEY_FISHDAY = 'simit-martisi-fishday';
 const fishToday = () => { const f = store.get(KEY_FISHDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
 // martı rütbesi: her uçuşun simiti ve mesafesi XP olur (simit başına 1, 20 m başına 1); her seviye simit ödüller, belli seviyelerde unvan değişir.
 // Uçuşta gösterilmez, yalnız oyun sonunda çubuk dolar; menüde rozet. Ayar: xpNeed, lvGift, RANKS
