@@ -337,7 +337,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .btn.ghost { background: rgba(255, 255, 255, .08); border: 1px solid var(--line); color: var(--cream); font-size: 18px; }
 .btn.ghost:active { transform: scale(.97); }
 .link { margin-top: 12px; font-size: 16px; font-weight: 700; opacity: .7; padding: 6px 12px; text-decoration: none; }
-.board { list-style: none; margin: 10px 0 6px; padding: 0; display: grid; gap: 4px; max-height: 50vh; overflow: auto; text-align: left; }
+.board { list-style: none; margin: 10px 0 6px; padding: 0; display: grid; gap: 4px; max-height: 50vh; overflow: auto; text-align: left; padding-right: 6px; }
 .board li { display: grid; grid-template-columns: 62px 26px 1fr auto; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px;
   background: rgba(255, 255, 255, .05); font-size: 15px; font-weight: 700; }
 .board li b { font-size: 13px; opacity: .75; }
@@ -637,11 +637,20 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .prof-h { margin: 0; font-weight: 800; font-size: 16px; }
 
 /* kaydırma çubukları: tarayıcının gri çubuğu yerine panelin üstünde ince, yarı saydam bir şerit */
-* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .22) transparent; }
+/* scrollbar-color yalnızca ::-webkit-scrollbar tanımayan tarayıcıda (Firefox): Chrome'da verilirse aşağıdaki stili ezip oklu gri çubuk çizer */
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .22) transparent; }
+  .board { scrollbar-color: #f0a04b rgba(255, 255, 255, .08); }
+}
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .22); border-radius: 9px; }
 ::-webkit-scrollbar-button { display: none; }
+/* sıralama: simit renginde yuvarlak tutamak, ince bir oluğun içinde */
+.board::-webkit-scrollbar { width: 8px; }
+.board::-webkit-scrollbar-track { background: rgba(255, 255, 255, .08); border-radius: 9px; margin: 4px 0; }
+.board::-webkit-scrollbar-thumb { background: linear-gradient(#ffd27a, #f0a04b); border-radius: 9px; border: 1.5px solid rgba(0, 0, 0, .18); }
+.board::-webkit-scrollbar-thumb:active { background: linear-gradient(#ffe2a3, #f5b25e); }
 .play-btn.spent { filter: grayscale(1); opacity: .6; animation: none; }
 .dr-best:empty { display: none; }
 .best-line:empty, .route-line:empty, .rank-line:empty { display: none; }
