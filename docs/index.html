@@ -1,27 +1,27 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="tr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="app-version" content="2.51.1">
-<title>Simit MartÄ±sÄ±</title>
-<meta name="description" content="Ä°stanbul vapurlarÄ±nÄ±n Ã¼stÃ¼nde simit kapan bir martÄ± ol. Tek parmakla oynanan, tarayÄ±cÄ±da ve telefonda Ã§alÄ±ÅŸan 3D oyun.">
+<title>Simit Martısı</title>
+<meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Simit MartÄ±sÄ±">
+<meta name="apple-mobile-web-app-title" content="Simit Martısı">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Simit MartÄ±sÄ±">
-<meta property="og:description" content="VapurlarÄ±n Ã¼stÃ¼nde sÃ¼zÃ¼l, yolcularÄ±n elinden simit kap. Tek parmakla oynanan 3D Ä°stanbul oyunu.">
+<meta property="og:title" content="Simit Martısı">
+<meta property="og:description" content="Vapurların üstünde süzül, yolcuların elinden simit kap. Tek parmakla oynanan 3D İstanbul oyunu.">
 <meta property="og:url" content="https://ardazeybek-dev.github.io/simit-martisi/">
 <meta property="og:image" content="https://ardazeybek-dev.github.io/simit-martisi/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="tr_TR">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Simit MartÄ±sÄ±">
-<meta name="twitter:description" content="VapurlarÄ±n Ã¼stÃ¼nde sÃ¼zÃ¼l, yolcularÄ±n elinden simit kap.">
+<meta name="twitter:title" content="Simit Martısı">
+<meta name="twitter:description" content="Vapurların üstünde süzül, yolcuların elinden simit kap.">
 <meta name="twitter:image" content="https://ardazeybek-dev.github.io/simit-martisi/og.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -70,7 +70,7 @@
   <div class="loader-inner">
     <img src="icons/icon.svg" alt="" width="96" height="96">
     <div class="loader-bar"><i></i></div>
-    <p id="loaderMsg">MartÄ± Ä±sÄ±nÄ±yorâ€¦</p>
+    <p id="loaderMsg">Martı ısınıyor…</p>
   </div>
 </div>
 
@@ -82,7 +82,7 @@
   <div class="hud-l">
     <div id="score" class="score">0</div>
     <div class="sub"><svg class="ico"><use href="#i-simit"/></svg><b id="simits">0</b><span class="sep"></span><b id="dist">0</b><small>m</small><span id="hudFish" class="hud-fish hidden"><span class="sep"></span><svg class="ico"><use href="#i-fish"/></svg><b id="fishN">0</b></span></div>
-    <div id="route" class="route"><svg class="ico"><use href="#i-pin"/></svg><span id="routeTo">KarakÃ¶y</span><span class="rbar"><i id="routeFill"></i></span><b id="routeLeft">0</b><small>m</small></div>
+    <div id="route" class="route"><svg class="ico"><use href="#i-pin"/></svg><span id="routeTo">Karaköy</span><span class="rbar"><i id="routeFill"></i></span><b id="routeLeft">0</b><small>m</small></div>
   </div>
   <div id="combo" class="combo">
     <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="track"/><circle id="comboRing" cx="20" cy="20" r="16" class="ring" pathLength="100"/></svg>
@@ -92,12 +92,12 @@
 </header>
 <div id="powers"></div>
 <div id="warm" class="pw hidden" aria-hidden="true"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 4l3 2.5L15 4M9 20l3-2.5 3 2.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span><span class="bar"><i></i></span></div>
-<div id="arrive" class="arrive" aria-hidden="true"><small id="arriveSub">Ä°skeleye vardÄ±n</small><b id="arriveName"></b><span id="arriveGain"></span></div>
-<div id="turnSign" class="turn-sign" aria-hidden="true"><b>VÄ°RAJ</b><svg viewBox="0 0 60 24"><path d="M2 2h9l10 10-10 10H2l10-10zM21 2h9l10 10-10 10h-9l10-10zM40 2h9l10 10-10 10h-9l10-10z"/></svg></div>
+<div id="arrive" class="arrive" aria-hidden="true"><small id="arriveSub">İskeleye vardın</small><b id="arriveName"></b><span id="arriveGain"></span></div>
+<div id="turnSign" class="turn-sign" aria-hidden="true"><b>VİRAJ</b><svg viewBox="0 0 60 24"><path d="M2 2h9l10 10-10 10H2l10-10zM21 2h9l10 10-10 10h-9l10-10zM40 2h9l10 10-10 10h-9l10-10z"/></svg></div>
 
 <div id="tutorial" class="hidden">
   <div class="tut-track"><svg class="tut-hand"><use href="#i-hand"/></svg></div>
-  <p><b>ParmaÄŸÄ±nÄ± saÄŸa sola kaydÄ±r</b><br>MartÄ± parmaÄŸÄ±nÄ± takip eder <span>:)</span></p>
+  <p><b>Parmağını sağa sola kaydır</b><br>Martı parmağını takip eder <span>:)</span></p>
 </div>
 
 <section id="title" class="screen hidden">
@@ -111,38 +111,38 @@
     <button id="settingsBtn" class="icon-btn" aria-label="Ayarlar"><svg><use href="#i-gear"/></svg></button>
   </div>
   <div class="logo">
-    <h1><span>Simit</span><span>MartÄ±sÄ±</span></h1>
+    <h1><span>Simit</span><span>Martısı</span></h1>
   </div>
   <div class="spacer"></div>
   <nav class="menu-side">
-    <button class="side-btn" id="wardrobeBtn"><span class="side-ico"><svg><use href="#i-hanger"/></svg></span><span>KostÃ¼mler</span></button>
-    <button class="side-btn" id="missionsBtn"><span class="side-ico"><svg><use href="#i-list"/></svg></span><span>GÃ¶revler</span><i class="badge hidden" id="misBadge"></i></button>
-    <button class="side-btn" id="dailyBtn"><span class="side-ico"><svg><use href="#i-gift"/></svg></span><span>GÃ¼nlÃ¼k Ã¶dÃ¼l</span><i class="badge dot hidden" id="dailyDot"></i></button>
+    <button class="side-btn" id="wardrobeBtn"><span class="side-ico"><svg><use href="#i-hanger"/></svg></span><span>Kostümler</span></button>
+    <button class="side-btn" id="missionsBtn"><span class="side-ico"><svg><use href="#i-list"/></svg></span><span>Görevler</span><i class="badge hidden" id="misBadge"></i></button>
+    <button class="side-btn" id="dailyBtn"><span class="side-ico"><svg><use href="#i-gift"/></svg></span><span>Günlük ödül</span><i class="badge dot hidden" id="dailyDot"></i></button>
   </nav>
   <nav class="menu-side right">
-    <button class="side-btn m-ach" id="achBtn"><span class="side-ico"><svg><use href="#i-medal"/></svg></span><span>BaÅŸarÄ±mlar</span><i class="badge hidden" id="achBadge"></i></button>
-    <button class="side-btn m-board" id="boardBtn"><span class="side-ico"><svg><use href="#i-trophy"/></svg></span><span>SÄ±ralama</span></button>
-    <button class="side-btn m-ups" id="upsBtn"><span class="side-ico"><svg><use href="#i-bolt"/></svg></span><span>GÃ¼Ã§lendir</span></button>
+    <button class="side-btn m-ach" id="achBtn"><span class="side-ico"><svg><use href="#i-medal"/></svg></span><span>Başarımlar</span><i class="badge hidden" id="achBadge"></i></button>
+    <button class="side-btn m-board" id="boardBtn"><span class="side-ico"><svg><use href="#i-trophy"/></svg></span><span>Sıralama</span></button>
+    <button class="side-btn m-ups" id="upsBtn"><span class="side-ico"><svg><use href="#i-bolt"/></svg></span><span>Güçlendir</span></button>
   </nav>
   <div class="title-bottom">
     <div class="vs-pill hidden" id="vsPill"></div>
-    <div class="city-pick no-steer" id="cityPick"><button id="cityPrev" class="city-arrow" aria-label="Ã–nceki ÅŸehir">â€¹</button><b id="cityName">Ä°stanbul</b><button id="cityNext" class="city-arrow" aria-label="Sonraki ÅŸehir">â€º</button></div>
+    <div class="city-pick no-steer" id="cityPick"><button id="cityPrev" class="city-arrow" aria-label="Önceki şehir">‹</button><b id="cityName">İstanbul</b><button id="cityNext" class="city-arrow" aria-label="Sonraki şehir">›</button></div>
     <div class="route-map no-steer"><div id="routeMap" class="dots"></div><p id="routeGoal"></p></div>
     <div class="play-row">
-      <button class="mode-btn" id="modeBtn" aria-label="Mod seÃ§"><svg class="mode-ico"><use id="modeIco" href="#i-simit"/></svg><span class="mode-txt"><small>Mod</small><b id="modeName">Klasik</b></span></button>
+      <button class="mode-btn" id="modeBtn" aria-label="Mod seç"><svg class="mode-ico"><use id="modeIco" href="#i-simit"/></svg><span class="mode-txt"><small>Mod</small><b id="modeName">Klasik</b></span></button>
       <button class="play-btn" id="playBtn"><svg><use href="#i-play"/></svg><span>Oyna</span></button>
     </div>
     <div class="tap">ya da ekrana dokun</div>
     <div class="legend">
       <span><i class="dot ok"></i>Simitleri kap</span>
-      <span><i class="dot bad"></i>Bacalara, direklere, martÄ±lara Ã§arpma</span>
+      <span><i class="dot bad"></i>Bacalara, direklere, martılara çarpma</span>
     </div>
   </div>
 </section>
 
 <section id="missionsPanel" class="screen modal hidden">
   <div class="card">
-    <h2>GÃ¶revler</h2>
+    <h2>Görevler</h2>
     <p class="mis-wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="misWallet">0</b></p>
     <div class="missions" id="titleMis"></div>
     <button class="btn primary" id="closeMissions">Tamam</button>
@@ -151,8 +151,8 @@
 
 <section id="achPanel" class="screen modal hidden">
   <div class="card ach-card">
-    <div class="sheet-head"><h2>BaÅŸarÄ±mlar</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="achWallet">0</b></div></div>
-    <div class="tabs"><button class="tab on" id="tabAch">BaÅŸarÄ±mlar</button><button class="tab" id="tabBdg">Rozetler<i class="badge hidden" id="bdgBadge"></i></button></div>
+    <div class="sheet-head"><h2>Başarımlar</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="achWallet">0</b></div></div>
+    <div class="tabs"><button class="tab on" id="tabAch">Başarımlar</button><button class="tab" id="tabBdg">Rozetler<i class="badge hidden" id="bdgBadge"></i></button></div>
     <div class="achs" id="achList"></div>
     <div class="bdgs hidden" id="bdgBox"><div class="bdg-count" id="badgeCount"></div><div class="bdg-grid" id="badgeGrid"></div><p class="bdg-info" id="badgeInfo"></p></div>
     <button class="btn primary" id="closeAch">Tamam</button>
@@ -161,7 +161,7 @@
 
 <section id="upPanel" class="screen modal hidden">
   <div class="card">
-    <div class="sheet-head"><h2>GÃ¼Ã§lendir</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="upWallet">0</b></div></div>
+    <div class="sheet-head"><h2>Güçlendir</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="upWallet">0</b></div></div>
     <div class="ups" id="ups"></div>
     <button class="btn primary" id="closeUps">Tamam</button>
   </div>
@@ -169,11 +169,11 @@
 
 <section id="boardPanel" class="screen modal hidden">
   <div class="card board-card">
-    <h2>SÄ±ralama</h2>
+    <h2>Sıralama</h2>
     <p class="fine" id="boardInfo"></p>
     <ol class="board" id="boardList"></ol>
     <div class="board-tier" id="boardTier"></div>
-    <div class="board-acts"><button class="btn ghost" id="boardName"></button><button class="btn ghost" id="inviteBtn">ArkadaÅŸlarÄ±nÄ± Ã§aÄŸÄ±r</button></div>
+    <div class="board-acts"><button class="btn ghost" id="boardName"></button><button class="btn ghost" id="inviteBtn">Arkadaşlarını çağır</button></div>
     <button class="btn primary" id="closeBoard">Tamam</button>
   </div>
 </section>
@@ -182,12 +182,12 @@
   <div class="card">
     <h2>Profil</h2>
     <div class="prof-lvl"><b class="lvl-n" id="lvlN">1</b><span class="lvl-m"><small id="lvlName"></small><span class="lvl-bar"><i id="lvlFill"></i></span></span></div>
-    <p class="prof-h">MartÄ± adÄ±n</p>
-    <p class="fine">SÄ±ralamada bu adla gÃ¶rÃ¼nÃ¼rsÃ¼n.</p>
+    <p class="prof-h">Martı adın</p>
+    <p class="fine">Sıralamada bu adla görünürsün.</p>
     <div class="name-row"><img id="ccFlag" class="cc-flag" alt=""><input id="nameInput" class="name-input" type="text" maxlength="16" autocomplete="nickname" autocapitalize="words" enterkeyhint="done" spellcheck="false"></div>
     <p class="fine err hidden" id="nameErr">En az 2 harf yaz.</p>
-    <p class="prof-h">Ãœlken</p>
-    <select id="ccSelect" class="name-input cc-select" aria-label="Ãœlken"></select>
+    <p class="prof-h">Ülken</p>
+    <select id="ccSelect" class="name-input cc-select" aria-label="Ülken"></select>
     <button class="btn primary" id="saveName">Kaydet</button>
     <button class="link" id="skipName">Sonra</button>
   </div>
@@ -195,8 +195,8 @@
 
 <section id="dailyPanel" class="screen modal hidden">
   <div class="card">
-    <div class="sheet-head"><h2>Ã–dÃ¼ller</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="dlWallet">0</b><svg class="ico"><use href="#i-fish"/></svg><b id="dlFish">0</b></div></div>
-    <div class="tabs"><button class="tab on" id="tabDaily">GÃ¼nlÃ¼k Ã¶dÃ¼l</button><button class="tab" id="tabWheel">Åans Ã§arkÄ±</button></div>
+    <div class="sheet-head"><h2>Ödüller</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="dlWallet">0</b><svg class="ico"><use href="#i-fish"/></svg><b id="dlFish">0</b></div></div>
+    <div class="tabs"><button class="tab on" id="tabDaily">Günlük ödül</button><button class="tab" id="tabWheel">Şans çarkı</button></div>
     <div id="dailyBox">
       <p class="fine" id="dailyNote"></p>
       <div class="days" id="days"></div>
@@ -206,7 +206,7 @@
     <div id="wheelBox" class="hidden">
       <p class="fine" id="wheelNote"></p>
       <div class="wheel-wrap"><svg id="wheel" viewBox="-100 -100 200 200" aria-hidden="true"></svg><i class="wheel-pin"></i><b class="wheel-hub"></b></div>
-      <button class="btn primary free-spin hidden" id="spinFree">Bedava Ã§evir</button>
+      <button class="btn primary free-spin hidden" id="spinFree">Bedava çevir</button>
       <div class="wheel-btns">
         <button class="btn primary" id="spinFish"><svg class="ico"><use href="#i-fish"/></svg><span id="spinFishCost"></span></button>
         <button class="btn primary" id="spinSimit"><svg class="ico"><use href="#i-simit"/></svg><span id="spinSimitCost"></span></button>
@@ -218,10 +218,10 @@
 
 <section id="dayRunPanel" class="screen modal hidden">
   <div class="card">
-    <h2>Mod seÃ§</h2>
+    <h2>Mod seç</h2>
     <div class="modes">
-      <button class="mode-card" id="modeClassic"><span class="mode-head"><svg class="dr-i"><use href="#i-simit"/></svg><b>Klasik</b><i class="mode-on">SeÃ§ili</i></span><small>Åehrini seÃ§, iskeleden iskeleye uÃ§.</small></button>
-      <button class="mode-card daily" id="modeDaily"><span class="mode-head"><svg class="dr-i"><use href="#i-sun"/></svg><b>GÃ¼nÃ¼n uÃ§uÅŸu</b><i class="mode-on">SeÃ§ili</i></span>
+      <button class="mode-card" id="modeClassic"><span class="mode-head"><svg class="dr-i"><use href="#i-simit"/></svg><b>Klasik</b><i class="mode-on">Seçili</i></span><small>Şehrini seç, iskeleden iskeleye uç.</small></button>
+      <button class="mode-card daily" id="modeDaily"><span class="mode-head"><svg class="dr-i"><use href="#i-sun"/></svg><b>Günün uçuşu</b><i class="mode-on">Seçili</i></span>
         <span class="dr-rule"><svg class="dr-i"><use id="drIcon" href="#i-sun"/></svg><b id="drRule"></b><small id="drText"></small></span>
         <span class="dr-best" id="drBest"></span><span class="dr-streak" id="drStreak"></span></button>
     </div>
@@ -231,16 +231,16 @@
 
 <section id="pause" class="screen modal hidden">
   <div class="card">
-    <h2>DuraklatÄ±ldÄ±</h2>
+    <h2>Duraklatıldı</h2>
     <button class="btn primary" id="resumeBtn">Devam et</button>
     <div class="vols">
-      <div class="vol"><button class="vol-ico" data-mute="music" aria-label="MÃ¼zik"><svg><use href="#i-sound"/></svg></button><span>MÃ¼zik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="MÃ¼zik"></div>
+      <div class="vol"><button class="vol-ico" data-mute="music" aria-label="Müzik"><svg><use href="#i-sound"/></svg></button><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></div>
       <div class="vol"><button class="vol-ico" data-mute="sfx" aria-label="Ses efektleri"><svg><use href="#i-sound"/></svg></button><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></div>
     </div>
     <div class="toggles">
-      <button class="toggle" data-toggle="vibe"><span>TitreÅŸim</span><i></i></button>
+      <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
-    <button class="link" id="quitBtn">Ana menÃ¼</button>
+    <button class="link" id="quitBtn">Ana menü</button>
   </div>
 </section>
 
@@ -249,11 +249,11 @@
     <h2>Ayarlar</h2>
     <button class="profile-row hidden" id="profileBtn" aria-label="Profil"><span class="prof-mini" id="profLv">1</span><span class="prof-txt"><small>Profil</small><b><img id="profileFlag" class="cc-flag sm" alt=""><span id="profileName"></span></b></span><svg class="ico"><use href="#i-pen"/></svg></button>
 <div class="vols">
-      <div class="vol"><button class="vol-ico" data-mute="music" aria-label="MÃ¼zik"><svg><use href="#i-sound"/></svg></button><span>MÃ¼zik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="MÃ¼zik"></div>
+      <div class="vol"><button class="vol-ico" data-mute="music" aria-label="Müzik"><svg><use href="#i-sound"/></svg></button><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></div>
       <div class="vol"><button class="vol-ico" data-mute="sfx" aria-label="Ses efektleri"><svg><use href="#i-sound"/></svg></button><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></div>
     </div>
     <div class="toggles">
-      <button class="toggle" data-toggle="vibe"><span>TitreÅŸim</span><i></i></button>
+      <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
     <label class="lang-row"><span>Dil</span><select id="langSel" aria-label="Dil"></select></label>
     <button class="btn primary" id="closeSettings">Tamam</button>
@@ -262,8 +262,8 @@
 
 <section id="wardrobe" class="screen modal sheet hidden">
   <div class="card">
-    <div class="sheet-head"><h2>KostÃ¼mler</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="walletN">0</b></div></div>
-    <div class="ward-tabs" id="wardTabs"><button data-tab="kiyafet">KÄ±yafet</button><button data-tab="deri">Deri</button><button data-tab="sapka">Åapka</button></div>
+    <div class="sheet-head"><h2>Kostümler</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="walletN">0</b></div></div>
+    <div class="ward-tabs" id="wardTabs"><button data-tab="kiyafet">Kıyafet</button><button data-tab="deri">Deri</button><button data-tab="sapka">Şapka</button></div>
     <div id="costumes" class="costumes"></div>
     <p class="fine" id="wardNote"></p>
     <div class="ward-actions">
@@ -296,13 +296,13 @@
       <p class="next-line hidden" id="overNext"></p>
     </div>
     <div class="actions">
-      <button class="btn primary hidden" id="reviveBtn"><svg class="ad-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="3"/><path d="M17.5 10.2l4-2.4v8.4l-4-2.4z"/></svg><svg class="sh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z"/></svg><span id="reviveLbl">Ä°kinci ÅŸans</span></button>
-      <button class="btn primary hidden" id="fishBtn"><span>UÃ§maya devam</span><svg class="ico"><use href="#i-fish"/></svg><b id="fishCost">1</b></button>
+      <button class="btn primary hidden" id="reviveBtn"><svg class="ad-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="3"/><path d="M17.5 10.2l4-2.4v8.4l-4-2.4z"/></svg><svg class="sh-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z"/></svg><span id="reviveLbl">İkinci şans</span></button>
+      <button class="btn primary hidden" id="fishBtn"><span>Uçmaya devam</span><svg class="ico"><use href="#i-fish"/></svg><b id="fishCost">1</b></button>
       <p class="revive-note hidden" id="reviveNote"></p>
-      <button class="btn primary" id="againBtn">Tekrar uÃ§</button>
-      <button class="btn ghost" id="shareBtn">PaylaÅŸ</button>
+      <button class="btn primary" id="againBtn">Tekrar uç</button>
+      <button class="btn ghost" id="shareBtn">Paylaş</button>
     </div>
-    <button class="link" id="homeBtn">Ana menÃ¼</button>
+    <button class="link" id="homeBtn">Ana menü</button>
   </div>
 </section>
 
@@ -313,11 +313,11 @@
 <script>I18N.translateDom();</script>
 <script type="module" src="js/main.js"></script>
 <script>
-  // modÃ¼l yÃ¼klenemezse (internet yoksa ve Ã¶nbellek boÅŸsa) kullanÄ±cÄ±ya sÃ¶yle
-  setTimeout(function () { var m = document.getElementById('loaderMsg'); if (m && document.getElementById('loader')) m.textContent = I18N.t('Oyun yÃ¼klenemedi. BaÄŸlantÄ±nÄ± kontrol edip sayfayÄ± yenile.'); }, 15000);
+  // modül yüklenemezse (internet yoksa ve önbellek boşsa) kullanıcıya söyle
+  setTimeout(function () { var m = document.getElementById('loaderMsg'); if (m && document.getElementById('loader')) m.textContent = I18N.t('Oyun yüklenemedi. Bağlantını kontrol edip sayfayı yenile.'); }, 15000);
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
-    // yeni sÃ¼rÃ¼m devraldÄ±ysa sayfa eski kodla kalmasÄ±n: menÃ¼deyse hemen, uÃ§uÅŸtaysa ana menÃ¼ye dÃ¶nÃ¼nce yenilenir
+    // yeni sürüm devraldıysa sayfa eski kodla kalmasın: menüdeyse hemen, uçuştaysa ana menüye dönünce yenilenir
     var hadSw = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange', function () {
       if (!hadSw) return;

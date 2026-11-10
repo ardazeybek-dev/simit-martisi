@@ -1,4 +1,4 @@
-﻿// Simit MartÄ±sÄ± service worker: oyunu Ã§evrimdÄ±ÅŸÄ± da aÃ§Ä±labilir yapar.
+// Simit Martısı service worker: oyunu çevrimdışı da açılabilir yapar.
 const VERSION = 'simit-martisi-v2.51.1';
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const CORE = [
@@ -27,12 +27,12 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // sÃ¼rÃ¼m sabit CDN dosyasÄ±: Ã¶nce Ã¶nbellek
+  // sürüm sabit CDN dosyası: önce önbellek
   if (url.hostname === 'cdn.jsdelivr.net') {
     e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => { const cp = res.clone(); caches.open(VERSION).then(c => c.put(req, cp)); return res; })));
     return;
   }
-  // yazÄ± tipleri: Ã¶nbellekten ver, arkada tazele
+  // yazı tipleri: önbellekten ver, arkada tazele
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     e.respondWith(caches.open(VERSION).then(async c => {
       const hit = await c.match(req);
@@ -41,9 +41,9 @@ self.addEventListener('fetch', (e) => {
     }));
     return;
   }
-  // kendi dosyalarÄ±mÄ±z: Ã¶nce aÄŸ (yeni sÃ¼rÃ¼m hemen gelsin), aÄŸ yoksa Ã¶nbellek
+  // kendi dosyalarımız: önce ağ (yeni sürüm hemen gelsin), ağ yoksa önbellek
   if (url.origin === self.location.origin) {
-    e.respondWith(fetch(req.mode === 'navigate' ? req.url : req, { cache: 'no-cache' }) /* HTTP Ã¶nbelleÄŸini (Pages: 10 dk) doÄŸrula: yeni sÃ¼rÃ¼m ilk aÃ§Ä±lÄ±ÅŸta gelsin */.then(res => {
+    e.respondWith(fetch(req.mode === 'navigate' ? req.url : req, { cache: 'no-cache' }) /* HTTP önbelleğini (Pages: 10 dk) doğrula: yeni sürüm ilk açılışta gelsin */.then(res => {
       if (res.ok) { const cp = res.clone(); caches.open(VERSION).then(c => c.put(req, cp)); }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || (req.mode === 'navigate' ? caches.match('index.html') : Response.error()))));
