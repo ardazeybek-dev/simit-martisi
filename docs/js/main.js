@@ -3,6 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex, seeded, hash
 import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
+import { initShipLights, addShipLights, tickShipLights } from './shiplights.js';
 import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
@@ -194,6 +195,7 @@ const glintMat = new THREE.PointsMaterial({
   }),
 });
 const glint = new THREE.Points(glintGeo, glintMat); glint.frustumCulled = false; scene.add(glint);
+initShipLights(scene);
 let glintPh = 0;
 function glintTick(dt, list, gz) {
   let n = 0;
@@ -657,6 +659,7 @@ function spawnFerry() {
   const mast = new THREE.Mesh(MAST, vcMat); mast.position.set(mx, DECK, mz); mast.castShadow = true; g.add(mast);
   const flag = new THREE.Mesh(FLAG, flagMat); flag.position.set(mx, DECK + 6.2, mz + 0.78); flag.rotation.y = Math.PI / 2; g.add(flag);
   obstacle(mx, mz, 0.22, 0.22, DECK + 6.9, 'direğe');
+  addShipLights(g, 'ferry', { L, type: ft.id, mast: [mx, DECK + 7, mz] });
 
   // camlı salon: zorlaştıkça bazı vapurlar kapalı salonlu olur; martı ortadaki geçitten geçmek zorunda, içinde simit dizisi
   let salon = null;
@@ -838,6 +841,7 @@ function spawnScenery(limit) {
       const b = r < 0.5 ? makeFishingBoat(side) : r < 0.78 ? makeSailboat() : makeYacht();
       b.position.set(side * rand(15, r < 0.5 ? 30 : 40), 0, sceneryZ); b.rotation.y = rand(-0.5, 0.5) + (r >= 0.5 && Math.random() < 0.5 ? Math.PI : 0);
       scene.add(b); decor.push({ mesh: b, z: sceneryZ, ph: Math.random() * 6, shed: true });
+      addShipLights(b, r < 0.5 ? 'fishing' : r < 0.78 ? 'sail' : 'yacht');
     }
     if (sceneryZ < cruiseZ) {
       cruiseZ = sceneryZ - rand(380, 700);
@@ -845,7 +849,7 @@ function spawnScenery(limit) {
         const c = makeCruise(), flip = Math.random() < 0.5;
         c.position.set(rand(62, 88), 0, sceneryZ - 40); c.scale.setScalar(rand(1.4, 1.7)); c.rotation.y = rand(-0.25, 0.25) + (flip ? Math.PI : 0);
         c.userData.face = flip ? Math.PI / 2 : -Math.PI / 2; // yolcular koridora (martıya) dönük
-        scene.add(c); land.push({ mesh: c, z: sceneryZ - 40, crowd: true });
+        scene.add(c); land.push({ mesh: c, z: sceneryZ - 40, crowd: true }); addShipLights(c, 'cruise');
       }
     }
     if (sceneryZ < maidenZ) {
@@ -863,7 +867,7 @@ function spawnScenery(limit) {
       if (!land.some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - z) < 150)) {
         const tank = Math.random() < 0.45, s = new THREE.Mesh(tank ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat);
         s.position.set(x, -0.2, z); s.scale.setScalar(rand(1.6, 2)); s.rotation.y = rand(-0.15, 0.15) + (Math.random() < 0.5 ? Math.PI : 0); // şeride paralel: yan yatıp seyir şeridine taşmaz
-        scene.add(s); land.push({ mesh: s, z });
+        scene.add(s); land.push({ mesh: s, z }); addShipLights(s, tank ? 'tanker' : 'cargo');
       }
     }
     // açıkta seyreden gemiler: dış şeritte karşıdan gelen ya da bizimle giden vapur, daha açıkta şilep. Dokunulmaz, yalnız manzara.
@@ -873,8 +877,8 @@ function spawnScenery(limit) {
       const busy = [...land, ...decor.filter(d => d.vz)].some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - sceneryZ) < 170);
       if (!busy) {
         const g = new THREE.Group();
-        if (big) g.add(new THREE.Mesh(Math.random() < 0.35 ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat));
-        else { const ft = pickFerryType(); g.add(new THREE.Mesh(ferryGeo(pick(ft.lengths), ft.id), vcMat)); const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(0, DECK, 0); g.add(c); }
+        if (big) { const tank = Math.random() < 0.35; g.add(new THREE.Mesh(tank ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat)); addShipLights(g, tank ? 'tanker' : 'cargo'); }
+        else { const ft = pickFerryType(), fl = pick(ft.lengths); g.add(new THREE.Mesh(ferryGeo(fl, ft.id), vcMat)); const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(0, DECK, 0); g.add(c); addShipLights(g, 'ferry', { L: fl, type: ft.id }); }
         const toward = Math.random() < 0.6; // çoğu karşıdan gelir
         g.rotation.y = toward ? 0 : Math.PI; g.position.set(x, 0, sceneryZ);
         scene.add(g); decor.push({ mesh: g, z: sceneryZ, ph: Math.random() * 6, calm: true, vz: (toward ? 1 : -1) * rand(3, 6) });
@@ -2735,6 +2739,7 @@ function frame() {
   if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }
   for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
   glintTick(dt, simits, gull.position.z);
+  tickShipLights(dt, scene, camera, renderer, weather, gull.position.z);
   trailTick(dt, state === 'play', mult(), comboT / COMBO_T);
   updateFx(dt);
 
