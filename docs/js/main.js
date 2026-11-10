@@ -1837,6 +1837,7 @@ async function claimDaily() {
 // Balıkla ya da simitle çevrilir; ödül çevirir çevirmez cüzdana yazılır (panel kapansa da kaybolmaz), çark durunca gösterilir.
 // Ayar: WHEEL (tür s=simit / f=balık, miktar, ağırlık), SPIN_FISH, SPIN_SIMIT. Ortalama kazanç bedelin altında: çark kazandırmaz, heyecan verir.
 const WHEEL = [['s', 100, 42], ['f', 1, 6], ['s', 150, 26], ['s', 500, 6], ['s', 250, 14], ['f', 3, 2], ['s', 1000, 3], ['s', 3000, 1]]; // balık dilimi seyrek: çıkan balıkla yeniden çevrilir, sık olunca çark kâr ettiriyordu
+let spinArmT = 0; // simitle çevirme onayı bekliyor mu (aşağıda spinWheel)
 const SPIN_FISH = 1, SPIN_SIMIT = 280, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
 let wheelRot = 0, spinning = false, wheelBuilt = false;
 const KEY_FREESPIN = 'simit-martisi-freespin';
@@ -1858,8 +1859,10 @@ function buildWheel() {
 }
 function renderWheelUi(msg) {
   $('dlWallet').textContent = fmt(wallet); $('dlFish').textContent = fmt(fish);
-  $('spinFishCost').textContent = fmt(SPIN_FISH); $('spinSimitCost').textContent = fmt(SPIN_SIMIT);
+  $('spinFishCost').textContent = fmt(SPIN_FISH); $('spinSimitCost').textContent = spinArmT ? tr('Emin misin?') : fmt(SPIN_SIMIT);
   $('spinFish').classList.toggle('poor', fish < SPIN_FISH); $('spinSimit').classList.toggle('poor', wallet < SPIN_SIMIT);
+  $('spinFish').classList.toggle('ok', fish >= SPIN_FISH && !spinning); $('spinSimit').classList.toggle('ok', wallet >= SPIN_SIMIT && !spinning); // yetiyorsa parlar, yetmiyorsa söner
+  if (spinning) disarmSpin();
   $('spinFish').disabled = $('spinSimit').disabled = $('spinFree').disabled = spinning;
   show('spinFree', freeSpin() || (spinning && $('spinFree').dataset.on === '1'));
   if (msg !== undefined) $('wheelNote').innerHTML = msg;
@@ -1870,8 +1873,15 @@ function dailyTab(t) {
   show('dailyBox', !w); show('wheelBox', w);
   if (w) { buildWheel(); renderWheelUi(spinning ? undefined : tr(freeSpin() ? 'Bugünkü bedava çevirmen hazır!' : 'Balıkla ya da simitle çevir, şansını dene!')); }
 }
+// simitle çevirme pahalı: ilk dokunuş yalnız kurar ("Emin misin?"), 2.5 sn içindeki ikinci dokunuş çevirir (yanlışlıkla harcanmasın)
+function disarmSpin() { clearTimeout(spinArmT); spinArmT = 0; const b = $('spinSimit'); b.classList.remove('arm'); $('spinSimitCost').textContent = fmt(SPIN_SIMIT); }
 function spinWheel(pay) {
   if (spinning) return;
+  if (pay === 's' && wallet >= SPIN_SIMIT && !spinArmT) {
+    $('spinSimit').classList.add('arm'); vibrate(15); spinArmT = setTimeout(disarmSpin, 2500);
+    return renderWheelUi(tr('Bir daha bas: {n} simit harcanır').replace('{n}', fmt(SPIN_SIMIT)));
+  }
+  if (pay === 's') disarmSpin();
   const btn = $(pay === 'f' ? 'spinFish' : pay === 'free' ? 'spinFree' : 'spinSimit');
   if (pay === 'free' ? !freeSpin() : pay === 'f' ? fish < SPIN_FISH : wallet < SPIN_SIMIT) {
     bump(btn, 'shake'); vibrate(30);
@@ -2753,7 +2763,7 @@ function frame() {
     if (u > 1.3) f.mesh.visible = false;
     if (!f.done && state === 'play' && u > 0.2 && u < 0.8 && Math.abs(g.x - x) < 1.7 && Math.abs(g.z - f.z) < 2 && Math.abs(g.y - y) < 1.8) {
       f.done = true;
-      if (!fishRun && Math.random() < fishCatch) catchFish(f); else slipFish(f);
+      if (!fishRun && dist >= FISH_MIN_M && fishToday() < FISH_DAY && Math.random() < fishCatch) catchFish(f); else slipFish(f); // ikinci kilit: erken ya da kotası dolmuşken asla yakalanmaz
     }
   }
   if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }

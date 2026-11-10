@@ -571,7 +571,15 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .wheel-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .wheel-btns .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 19px; padding-left: 8px; padding-right: 8px; }
 .wheel-btns .btn .ico { width: 22px; height: 22px; flex: none; }
-.wheel-btns .btn.poor { filter: grayscale(.6) brightness(.8); }
+.wheel-btns .btn span { font-size: 23px; letter-spacing: .01em; }
+.wheel-btns .btn.poor { filter: grayscale(1) brightness(.75); opacity: .45; box-shadow: none; transform: none; }
+.wheel-btns .btn.ok { animation: spinGlow 1.5s ease-in-out infinite; }
+.wheel-btns .btn.arm { background: #e5484d; color: #fff; box-shadow: 0 5px 0 #a52a2e, 0 0 0 3px #fff4e2; animation: none; }
+.wheel-btns .btn.arm span { font-size: 17px; }
+@keyframes spinGlow {
+  0%, 100% { box-shadow: 0 5px 0 var(--simit-d), 0 0 0 0 rgba(255, 210, 90, 0); }
+  50% { box-shadow: 0 5px 0 var(--simit-d), 0 0 18px 4px rgba(255, 210, 90, .75); }
+}
 .wheel-btns .btn:disabled { opacity: .55; }
 #wheelNote { min-height: 2.7em; }
 #wheelNote b { color: var(--gold); font-size: 1.25em; }
