@@ -13,7 +13,8 @@ export function week(now = Date.now()) {
 }
 
 // profilde seçilebilen ülkeler: bayrağı aşağıda çizilenler (adlar Intl.DisplayNames ile oyuncunun dilinde)
-export const COUNTRIES = ['TR', 'AZ', 'DE', 'NL', 'AT', 'BE', 'FR', 'GB', 'IE', 'CH', 'IT', 'ES', 'PT', 'SE', 'NO', 'DK', 'FI', 'PL', 'CZ', 'HU', 'RO', 'BG', 'GR', 'CY', 'RS', 'BA', 'AL', 'MK', 'LT', 'EE', 'UA', 'RU', 'GE', 'KZ', 'UZ', 'TM', 'KG', 'IR', 'IQ', 'SY', 'SA', 'AE', 'QA', 'YE', 'EG', 'MA', 'DZ', 'TN', 'NG', 'PK', 'IN', 'CN', 'JP', 'KR', 'VN', 'ID', 'AU', 'US', 'CA', 'MX', 'BR', 'AR', 'CO', 'PE'];
+export const COUNTRIES = ['TR', 'AZ', 'DE', 'NL', 'AT', 'BE', 'FR', 'GB', 'IE', 'CH', 'IT', 'ES', 'PT', 'SE', 'NO', 'DK', 'FI', 'PL', 'CZ', 'HU', 'RO', 'BG', 'GR', 'CY', 'RS', 'BA', 'AL', 'MK', 'LT', 'EE', 'UA', 'RU', 'GE', 'KZ', 'UZ', 'TM', 'KG', 'IR', 'IQ', 'SY', 'SA', 'AE', 'QA', 'YE', 'EG', 'MA', 'DZ', 'TN', 'NG', 'PK', 'IN', 'CN', 'JP', 'KR', 'VN', 'ID', 'AU', 'US', 'CA', 'MX', 'BR', 'AR', 'CO', 'PE',
+  'CL', 'CD', 'LV', 'SK', 'SI', 'HR', 'ME', 'MD', 'BY', 'AM', 'TJ', 'AF', 'BD', 'PH', 'TH', 'MY', 'SG', 'NZ', 'ZA', 'KE', 'ET', 'GH', 'SN', 'CM', 'LY', 'SD', 'SO', 'JO', 'LB', 'KW', 'BH', 'OM', 'VE', 'CU', 'UY', 'PY', 'BO', 'EC', 'IS', 'LU', 'MT', 'MN'];
 // ---------------- bayraklar: emoji bayrak Windows'ta görünmez, küçük tuvalde çizilir ----------------
 const flagCache = {};
 export function flag(cc) {
@@ -28,6 +29,9 @@ export function flag(cc) {
   const fill = c => { g.fillStyle = c; g.fillRect(0, 0, W, H); };
   const cross2 = (bg, o, c) => { cross(bg, o); g.fillStyle = c; g.fillRect(10, 0, 2, H); g.fillRect(0, 9, W, 2); };
   const moon = (x, y, r, c, bg, off) => { disc(x, y, r, c); disc(x + off, y, r * 0.8, bg); };
+  const hs = (...a) => { let y = 0; for (let i = 0; i < a.length; i += 2) { g.fillStyle = a[i]; g.fillRect(0, y, W, a[i + 1] + 0.5); y += a[i + 1]; } }; // renk, kalınlık, ...
+  const tri = (c, w = 13) => { g.fillStyle = c; g.beginPath(); g.moveTo(0, 0); g.lineTo(w, 10); g.lineTo(0, H); g.fill(); };
+  const poly = (c, ...p) => { g.fillStyle = c; g.beginPath(); for (let i = 0; i < p.length; i += 2) g.lineTo(p[i], p[i + 1]); g.fill(); };
   switch (cc) {
     case 'TR': g.fillStyle = '#e30a17'; g.fillRect(0, 0, W, H); disc(12, 10, 6, '#fff'); disc(13.6, 10, 4.8, '#e30a17'); disc(19, 10, 2, '#fff'); break;
     case 'DE': h3('#111', '#dd0000', '#ffce00'); break;
@@ -94,6 +98,48 @@ export function flag(cc) {
     case 'AL': fill('#e41e20'); disc(15, 10, 4.5, '#000'); g.fillStyle = '#e41e20'; g.fillRect(14, 4, 2, 12); break;
     case 'MK': fill('#d20000'); g.strokeStyle = '#ffe600'; g.lineWidth = 2.5; g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; g.moveTo(15, 10); g.lineTo(15 + Math.cos(a) * 18, 10 + Math.sin(a) * 18); } g.stroke(); disc(15, 10, 3.2, '#ffe600'); break;
     case 'CY': fill('#fff'); g.fillStyle = '#d57800'; g.beginPath(); g.ellipse(15, 9, 7, 3.5, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = '#4e5b31'; g.fillRect(10, 14, 10, 1.5); break;
+    case 'CL': hs('#fff', 10, '#d52b1e', 10); g.fillStyle = '#0039a6'; g.fillRect(0, 0, 10, 10); star(5, 5, 3, '#fff'); break;
+    case 'CD': fill('#007fff'); g.strokeStyle = '#f7d618'; g.lineWidth = 7; g.beginPath(); g.moveTo(-2, 22); g.lineTo(32, -2); g.stroke(); g.strokeStyle = '#ce1021'; g.lineWidth = 4.5; g.stroke(); star(6, 5.5, 3.6, '#f7d618'); break;
+    case 'LV': hs('#9e3039', 8, '#fff', 4, '#9e3039', 8); break;
+    case 'SK': h3('#fff', '#0b4ea2', '#ee1c25'); g.fillStyle = '#fff'; g.fillRect(6, 4, 9, 12); g.fillStyle = '#ee1c25'; g.fillRect(7, 5, 7, 10); g.fillStyle = '#fff'; g.fillRect(9.8, 6, 1.4, 8); g.fillRect(8, 8, 5, 1.2); g.fillRect(8.5, 10.4, 4, 1.2); break;
+    case 'SI': h3('#fff', '#005da4', '#ed1c24'); g.fillStyle = '#005da4'; g.fillRect(6, 3, 6, 7); g.fillStyle = '#fff'; poly('#fff', 7, 8, 9, 5, 11, 8); g.fillStyle = '#ed1c24'; g.strokeStyle = '#ed1c24'; g.lineWidth = 1; g.strokeRect(6, 3, 6, 7); break;
+    case 'HR': h3('#ff0000', '#fff', '#171796'); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { g.fillStyle = (i + j) % 2 ? '#fff' : '#ff0000'; g.fillRect(12 + i * 1.6, 5 + j * 2, 1.6, 2); } break;
+    case 'ME': fill('#d4af37'); g.fillStyle = '#c40308'; g.fillRect(1.5, 1.5, 27, 17); disc(15, 10, 3.5, '#d4af37'); break;
+    case 'MD': v3('#0046ae', '#ffd200', '#cc092f'); disc(15, 10, 2.6, '#a77b3a'); break;
+    case 'BY': hs('#c8313e', 13, '#4aa657', 7); g.fillStyle = '#fff'; g.fillRect(0, 0, 4.5, H); g.fillStyle = '#c8313e'; for (let y = 1; y < H; y += 4) g.fillRect(1.2, y, 2, 2); break;
+    case 'AM': h3('#d90012', '#0033a0', '#f2a800'); break;
+    case 'TJ': hs('#cc0000', 6, '#fff', 8, '#006600', 6); disc(15, 10.3, 1.8, '#f8c300'); g.fillStyle = '#fff'; g.fillRect(13, 10.3, 4, 1.8); break;
+    case 'AF': v3('#000', '#d32011', '#007a36'); disc(15, 10, 3.2, '#fff'); disc(15, 10, 2.2, '#d32011'); break;
+    case 'BD': fill('#006a4e'); disc(13, 10, 6, '#f42a41'); break;
+    case 'PH': hs('#0038a8', 10, '#ce1126', 10); poly('#fff', 0, 0, 15, 10, 0, 20); disc(5, 10, 2.2, '#fcd116'); break;
+    case 'TH': hs('#a51931', 3.3, '#f4f5f8', 3.3, '#2d2a4a', 6.8, '#f4f5f8', 3.3, '#a51931', 3.3); break;
+    case 'MY': for (let i = 0; i < 14; i++) { g.fillStyle = i % 2 ? '#fff' : '#cc0001'; g.fillRect(0, i * H / 14, W, H / 14 + 0.5); } g.fillStyle = '#010066'; g.fillRect(0, 0, 15, 11.5); moon(6, 5.8, 3.8, '#fc0', '#010066', 1.3); star(10.8, 5.8, 2.4, '#fc0'); break;
+    case 'SG': hs('#ef3340', 10, '#fff', 10); moon(6, 5, 3.4, '#fff', '#ef3340', 1.3); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; disc(11 + Math.cos(a) * 1.9, 5 + Math.sin(a) * 1.9, 0.6, '#fff'); } break;
+    case 'NZ': fill('#012169'); g.fillStyle = '#fff'; g.fillRect(0, 4, 13, 2); g.fillRect(5.5, 0, 2, 10); g.fillStyle = '#c8102e'; g.fillRect(0, 4.5, 13, 1); g.fillRect(6, 0, 1, 10); for (const [x, y, r] of [[22, 5, 1.8], [25.5, 10, 1.6], [19, 10.5, 1.5], [22, 16, 2]]) { star(x, y, r + 0.6, '#fff'); star(x, y, r, '#c8102e'); } break;
+    case 'ZA': hs('#e03c31', 10, '#001489', 10); g.lineCap = 'butt'; g.strokeStyle = '#fff'; g.lineWidth = 8; g.beginPath(); g.moveTo(0, 0); g.lineTo(13, 10); g.lineTo(0, 20); g.moveTo(13, 10); g.lineTo(30, 10); g.stroke(); g.strokeStyle = '#007749'; g.lineWidth = 4.6; g.stroke(); poly('#ffb81c', 0, 2.5, 9.5, 10, 0, 17.5); poly('#000', 0, 4.3, 7.2, 10, 0, 15.7); break;
+    case 'KE': hs('#000', 6, '#fff', 1, '#bb0000', 6, '#fff', 1, '#006600', 6); g.fillStyle = '#bb0000'; g.beginPath(); g.ellipse(15, 10, 3, 6.5, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.ellipse(15, 10, 1.2, 4, 0, 0, Math.PI * 2); g.fill(); break;
+    case 'ET': h3('#078930', '#fcdd09', '#da121a'); disc(15, 10, 4.2, '#0f47af'); star(15, 10.3, 2.8, '#fcdd09'); break;
+    case 'GH': h3('#ce1126', '#fcd116', '#006b3f'); star(15, 10.3, 3, '#000'); break;
+    case 'SN': v3('#00853f', '#fdef42', '#e31b23'); star(15, 10.3, 3.2, '#00853f'); break;
+    case 'CM': v3('#007a5e', '#ce1126', '#fcd116'); star(15, 10.3, 3.2, '#fcd116'); break;
+    case 'LY': hs('#e70013', 5, '#000', 10, '#239e46', 5); moon(14, 10, 3, '#fff', '#000', 1.1); star(17.4, 10, 1.4, '#fff'); break;
+    case 'SD': h3('#d21034', '#fff', '#000'); tri('#007229', 11); break;
+    case 'SO': fill('#4189dd'); star(15, 10.5, 5, '#fff'); break;
+    case 'JO': h3('#000', '#fff', '#007a3d'); tri('#ce1126', 15); star(5.5, 10, 1.8, '#fff'); break;
+    case 'LB': hs('#ed1c24', 5, '#fff', 10, '#ed1c24', 5); poly('#00a651', 15, 5.5, 20, 13.5, 10, 13.5); g.fillStyle = '#00a651'; g.fillRect(14.3, 13, 1.4, 1.8); break;
+    case 'KW': h3('#007a3d', '#fff', '#ce1126'); poly('#000', 0, 0, 8, 7, 8, 13, 0, 20); break;
+    case 'BH': fill('#ce1126'); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(0, 0); for (let i = 0; i <= 10; i++) g.lineTo(8 + (i % 2 ? 4 : 0), i * H / 10); g.lineTo(0, H); g.fill(); break;
+    case 'OM': fill('#db161b'); g.fillStyle = '#fff'; g.fillRect(9, 0, 21, 7); g.fillStyle = '#008000'; g.fillRect(9, 13, 21, 7); g.fillStyle = '#fff'; g.fillRect(2.5, 2.5, 4, 1.2); g.fillRect(4, 1.5, 1, 4); break;
+    case 'VE': h3('#ffcc00', '#00247d', '#cf142b'); for (let i = 0; i < 8; i++) { const a = Math.PI * (0.18 + i * 0.0914); disc(15 - Math.cos(a) * 5, 12.5 - Math.sin(a) * 5, 0.75, '#fff'); } break;
+    case 'CU': hs('#002a8f', 4, '#fff', 4, '#002a8f', 4, '#fff', 4, '#002a8f', 4); tri('#cf142b', 15); star(5, 10, 2.6, '#fff'); break;
+    case 'UY': for (let i = 0; i < 9; i++) { g.fillStyle = i % 2 ? '#0038a8' : '#fff'; g.fillRect(0, i * H / 9, W, H / 9 + 0.5); } g.fillStyle = '#fff'; g.fillRect(0, 0, 11, 11.1); star(5.5, 5.5, 4, '#fcd116'); disc(5.5, 5.5, 2.2, '#fcd116'); break;
+    case 'PY': h3('#d52b1e', '#fff', '#0038a8'); disc(15, 10, 2.4, '#0038a8'); disc(15, 10, 1.6, '#fff'); star(15, 10, 1.2, '#fedf00'); break;
+    case 'BO': h3('#d52b1e', '#f9e300', '#007934'); break;
+    case 'EC': hs('#ffdd00', 10, '#034ea2', 5, '#ed1c24', 5); disc(15, 9, 3, '#7a5a2a'); disc(15, 9, 2, '#6fb3e0'); break;
+    case 'IS': cross2('#02529c', '#fff', '#dc1e35'); break;
+    case 'LU': h3('#ed2939', '#fff', '#00a1de'); break;
+    case 'MT': g.fillStyle = '#fff'; g.fillRect(0, 0, 15, H); g.fillStyle = '#cf142b'; g.fillRect(15, 0, 15, H); g.fillStyle = '#a0a0a0'; g.fillRect(2.5, 2, 3, 1); g.fillRect(3.5, 1, 1, 3); break;
+    case 'MN': v3('#c4272f', '#015197', '#c4272f'); g.fillStyle = '#f9cf02'; disc(5, 5, 1.2, '#f9cf02'); disc(5, 10, 1.8, '#f9cf02'); g.fillRect(3, 13, 4, 1); g.fillRect(3, 15, 4, 1); g.fillRect(2.2, 8, 0.9, 9); g.fillRect(6.9, 8, 0.9, 9); break;
     default: g.fillStyle = '#888'; g.fillRect(0, 0, W, H);
   }
   return (flagCache[cc] = cv.toDataURL());

@@ -1281,7 +1281,7 @@ function startGame() {
   sfx.click();
   misPending = false; refillMissions(); startRun(); fishSync(false); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
   achRun = {}; saidRun.clear();
-  for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; } // görevler panelinde çubuk buradan dolar
+  for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; m.v = null; } // görevler panelinde çubuk buradan dolar
   misPending = true;
   resetWorld(daily || state !== 'title'); state = 'play';
   qWarm = 4;
@@ -1362,7 +1362,8 @@ function showOver() {
   }
   const achBefore = achReady(), bdgBefore = badgesGot(); achRecord();
   if (!revives) countMission('runs');
-  checkMissions(); store.set(KEY_MIS, missions); bank();
+  checkMissions(); for (const m of missions) m.v = misProgress(m); // menüye dönünce uçuş sayaçları sıfırlanır: panel bu uçuşun ilerlemesini buradan dolar
+  store.set(KEY_MIS, missions); bank();
   // rekor bonusu: rekor kıran, bu uçuşta cüzdana kazandığı kadar bir daha alır (yeniden doğuşla ikinci rekorda yalnız yeni kısmı)
   const recGain = isBest ? Math.max(0, banked - recPaid) : 0;
   if (recGain) { recPaid += recGain; wallet += recGain; store.set(KEY_WALLET, wallet); }
@@ -1669,7 +1670,7 @@ function checkMissions() {
 function renderMissions(box, fill = false) {
   box.textContent = '';
   missions.forEach((m, i) => {
-    const v = Math.min(m.n, misProgress(m)), v0 = fill ? Math.min(v, m.p0 || 0) : v, now = fill && m.done && !m.wasDone;
+    const v = Math.min(m.n, m.done ? m.n : fill && m.v != null ? m.v : misProgress(m)), v0 = fill ? Math.min(v, m.p0 || 0) : v, now = fill && m.done && !m.wasDone;
     const d = document.createElement('div');
     d.className = 'mis' + (m.done && !now ? ' done' : '');
     d.innerHTML = `<span class="mis-t"></span><span class="mis-r">+${m.r}<svg class="ico"><use href="#i-simit"/></svg></span><i class="mis-bar"><b style="width:${(v0 / m.n) * 100}%"></b></i>`;
@@ -2973,15 +2974,18 @@ function line(list) {
   if (!fresh.length) return '';
   const s = pick(fresh); saidRun.add(s); return s;
 }
-let shoutT = 0;
+// vapur sırası art arda soyulur: tek kilit (1,4 sn) lafların çoğunu yutuyordu (41 çalmada 11 balon). Kilit taraf başına;
+// iki taraf birbirini beklemez; aynı taraftaki yeni laf eskisinin yerine geçer (üst üste binmez), okunacak kadar ara kalır
+const shoutT = { '-1': -1e9, '1': -1e9 }, shoutEl = {};
+let shoutAny = -1e9;
 function shout(p, s, cheer) {
-  const now = performance.now();
-  if (now - shoutT < 1400) return; // yolu kapatmıyor (şerit dışında): sık çıkabilir
+  const now = performance.now(), side = Math.sign(s.x - gull.position.x) || (gull.position.x > 0 ? -1 : 1); // konuşanın tarafı
+  if (now - shoutT[side] < 650 || now - shoutAny < 250) return; // yolu kapatmıyor (şerit dışında): sık çıkabilir
   const say = cheer ? line(CHEERS) || line(SHOUTS.genel) : line(SHOUTS[p.kind] || SHOUTS.amca) || line(SHOUTS.genel);
   if (!say) return; // bu uçuşta söylenecek söz kalmadı
-  shoutT = now;
-  const side = Math.sign(s.x - gull.position.x) || (gull.position.x > 0 ? -1 : 1); // konuşanın tarafı
-  popText(tr(say), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout', { p: tmp.set(side * (LANE + 0.4), gull.position.y + 1.6, gull.position.z - 3), side }); // şerit sınırının hemen dışı, martının biraz önü ve üstü
+  shoutT[side] = shoutAny = now;
+  if (shoutEl[side]) shoutEl[side].remove();
+  shoutEl[side] = popText(tr(say), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout', { p: tmp.set(side * (LANE + 0.4), gull.position.y + 1.6, gull.position.z - 3), side }); // şerit sınırının hemen dışı, martının biraz önü ve üstü
 }
 // kapılan simit, martının ekrandaki yerinden HUD'daki simit sayacına uçar (seyrekleştirilmiş: telefonda DOM yükü olmasın)
 const coinV = new THREE.Vector3();

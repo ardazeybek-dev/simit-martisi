@@ -297,6 +297,8 @@ const HAIRS = [0x2e211a, 0x5a3b26, 0x1a1a1a, 0xc9c3b8, 0xb5652e, 0xe0c27a];
 const HATS = ['', 'kasket', 'bere', 'hasir', 'esarp', 'fes', 'kep'];
 const HAT_COLS = [0x3b3b3b, 0xc8352e, 0x3a6ea5, 0xe8d8a8, 0x7d5ba6, 0x4f9d69, 0xe89bb0];
 const personCache = new Map();
+const _la = new THREE.Vector3(), _lb = new THREE.Vector3(), _ld = new THREE.Vector3(), _ly = new THREE.Vector3(0, 1, 0), _lq = new THREE.Quaternion(), _le = new THREE.Euler(), _lc = new THREE.Color();
+const SKIN_LIFT = 1.55;
 // mode: '' ayakta · 'sit' bankta oturur, denize bakar (elinde çay ya da boş) · 'feed' küpeşteye yaslanmış, simidi martıya uzatır
 function personGeo(...a) { return pureCall(personGeo_, a); }
 function personGeo_(L, hold, angry, mode = '') {
@@ -309,6 +311,18 @@ function personGeo_(L, hold, angry, mode = '') {
   const HS = 1.25, HY = 1.95;
   const hd = (geo, c, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) => up(geo, c, x * HS, HY + (y - HY) * HS, z * HS, rx, ry, rz, sx * HS, sy * HS, sz * HS);
   const cyl = (rt, rb, h, c, x, y, z, rz = 0, rx = 0) => up(new THREE.CylinderGeometry(rt, rb, h, 6), c, x, y, z, rx, 0, rz);
+  // kol: omuzdan ele (dirsekli duruşta dirsekten geçer) noktadan noktaya; parçalar uç uca değer, eklemde küçük top, uçta ten renkli el.
+  // Eski kollar eğimle yerleştiriliyordu: omuz ucu gövdeden dışarı açılıp havada asılı kalıyordu ("gövde kırık" görünüyordu)
+  const limb = (pts, c, r = 0.062) => {
+    for (let i = 1; i < pts.length; i++) {
+      const a = _la.set(...pts[i - 1]), b = _lb.set(...pts[i]), len = a.distanceTo(b);
+      _lq.setFromUnitVectors(_ly, _ld.subVectors(b, a).normalize()); _le.setFromQuaternion(_lq);
+      up(new THREE.CylinderGeometry(r, r, len, 6), c, (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2, _le.x, _le.y, _le.z);
+      if (i < pts.length - 1) up(new THREE.SphereGeometry(r, 6, 4), c, b.x, b.y, b.z); // dirsek
+    }
+    up(new THREE.SphereGeometry(r, 6, 4), c, ...pts[0]); // omuz
+    const h = pts[pts.length - 1]; up(new THREE.SphereGeometry(0.078, 6, 5), L.skin, h[0], h[1], h[2]); // el
+  };
   if (sit) { // uyluk öne, baldır aşağı
     for (const x of [-0.12, 0.12]) {
       k.add(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 6), L.pants, x, 0.5, 0.2, Math.PI / 2);
@@ -358,27 +372,34 @@ function personGeo_(L, hold, angry, mode = '') {
   }
   if (L.bun) hd(new THREE.SphereGeometry(0.12, 7, 5), HAIRS[L.hair], 0, 2.14, -0.16);
   if (L.cane && !sit && mode !== 'feed' && L.pose === 'down') { // dedenin bastonu: sol elde, yere dayalı
-    k.add(new THREE.CylinderGeometry(0.03, 0.03, 0.95, 5), 0x5a3a22, -0.46, 0.47, 0.08);
+    k.add(new THREE.CylinderGeometry(0.03, 0.03, 0.95, 5), 0x5a3a22, -0.44, 0.47, 0.08);
     up(new THREE.BoxGeometry(0.16, 0.05, 0.05), 0x5a3a22, -0.4, 0.96, 0.08);
   }
   if (L.bag) { up(new THREE.BoxGeometry(0.16, 0.5, 0.44), L.bag, 0.38, 1.0, -0.05); up(new THREE.BoxGeometry(0.04, 0.6, 0.04), L.bag, 0.24, 1.55, 0.05, 0, 0, -0.5); }
   // kollar: sol duruşa göre (aşağı / belde / telefon), sağ simit tutuyorsa ya da kızgınsa havada
-  const arm = L.shirt;
+  const arm = L.shirt, SH = 1.6, sh = s => [s * 0.25, SH, 0]; // omuz: gövde silindirinin üst kenarı
   if (sit) { // iki el kucakta; çaycı ise kucakta ince belli çay bardağı
-    for (const x of [-0.27, 0.27]) cyl(0.06, 0.06, 0.62, arm, x, 1.12, 0.18, 0, 0.75);
+    for (const s of [-1, 1]) limb([sh(s), [s * 0.34, 1.22, 0.12], [s * 0.13, 1.0, 0.4]], arm);
     if (L.tea) { up(new THREE.CylinderGeometry(0.13, 0.13, 0.025, 10), 0xf6f3ea, 0, 0.92, 0.42); up(new THREE.CylinderGeometry(0.075, 0.055, 0.2, 8), 0xb8401c, 0, 1.03, 0.42); }
   } else if (mode === 'feed') { // küpeşteye yaslanmış: sol el küpeştede, sağ kol simitle öne ve yukarı
-    cyl(0.06, 0.06, 0.7, arm, -0.3, 1.25, 0.25, 0, 0.6);
-    cyl(0.06, 0.06, 0.78, arm, 0.3, 1.93, 0.33, 0, 0.75);
+    limb([sh(-1), [-0.36, 1.25, 0.2], [-0.3, 1.0, 0.5]], arm);
+    limb([sh(1), [0.32, 1.9, 0.35], [0.3, 2.17, 0.62]], arm);
   } else {
-    if (L.pose === 'hip') { cyl(0.06, 0.06, 0.42, arm, -0.42, 1.36, 0, -0.9); cyl(0.06, 0.06, 0.4, arm, -0.38, 1.02, 0, 0.9); }
-    else if (L.pose === 'phone') { cyl(0.06, 0.06, 0.42, arm, -0.33, 1.4, 0.08, 0.2); cyl(0.06, 0.06, 0.4, arm, -0.27, 1.62, 0.2, 0, -1.3); up(new THREE.BoxGeometry(0.12, 0.2, 0.03), 0x1b1c22, -0.22, 1.82, 0.36); }
-    else cyl(0.06, 0.06, 0.78, arm, -0.34, 1.22, 0, 0.18);
-    if (hold || angry) cyl(0.06, 0.06, 0.78, arm, 0.3, 2.0, 0, -0.12);
-    else if (L.pose === 'wave') cyl(0.06, 0.06, 0.78, arm, 0.42, 1.95, 0, -0.55);
-    else cyl(0.06, 0.06, 0.78, arm, 0.34, 1.22, 0, -0.18);
+    const cane = L.cane && L.pose === 'down';
+    if (L.pose === 'hip') limb([sh(-1), [-0.5, 1.3, -0.02], [-0.3, 1.06, 0.06]], arm); // el belde, dirsek dışa
+    else if (L.pose === 'phone') { limb([sh(-1), [-0.33, 1.24, 0.1], [-0.2, 1.58, 0.36]], arm); up(new THREE.BoxGeometry(0.13, 0.22, 0.03), 0x1b1c22, -0.2, 1.72, 0.4, -0.25); } // telefon elde, yüze dönük
+    else limb([sh(-1), cane ? [-0.4, 0.98, 0.08] : [-0.36, 0.92, 0.03]], arm); // bastonlu dedenin eli bastonun sapında
+    if (hold || angry) limb([sh(1), [0.34, 2.4, 0]], arm); // simit elin hemen üstünde (SIMIT_AT)
+    else if (L.pose === 'wave') limb([sh(1), [0.42, 1.92, 0.02], [0.6, 2.25, 0.06]], arm);
+    else limb([sh(1), [0.36, 0.92, 0.03]], arm);
   }
   const g = k.build();
+  // güneş hep önde (SUN_DIR -z), yolcular martıya (+z) bakar: yüzler ters ışıkta yalnız gök ışığı alıp kahverengiye kayıyordu
+  // ("herkes siyah tenli"). Ten köşeleri doğrusal renkte SKIN_LIFT kat parlatılır (köşe rengi 1'i aşabilir): malzeme ve çizim sayısı aynı
+  {
+    _lc.set(L.skin); const c = g.attributes.color.array, r = _lc.r, gg = _lc.g, b = _lc.b;
+    for (let i = 0; i < c.length; i += 3) if (Math.abs(c[i] - r) < 1e-4 && Math.abs(c[i + 1] - gg) < 1e-4 && Math.abs(c[i + 2] - b) < 1e-4) { c[i] *= SKIN_LIFT; c[i + 1] *= SKIN_LIFT; c[i + 2] *= SKIN_LIFT; }
+  }
   personCache.set(key, g);
   return g;
 }

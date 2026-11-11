@@ -156,7 +156,7 @@ const v3 = new THREE.Vector3();
 const popLayer = document.getElementById('pops');
 export function popText(text, worldPos, cls = '', edge = null) { // edge: { p: dünya noktası, side: ±1 } → balon o noktadan dışa doğru açılır
   v3.copy(edge ? edge.p : worldPos).project(camera);
-  if (v3.z > 1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05) return;
+  if (v3.z > 1 || (!edge && Math.abs(v3.x) > 1.05) || Math.abs(v3.y) > 1.05) return; // kenar balonu dar ekranda dışarı düşse de ekrana sıkıştırılır
   const el = document.createElement('div');
   el.className = 'pop ' + cls; el.textContent = text;
   const x = (v3.x * 0.5 + 0.5) * innerWidth, y = (-v3.y * 0.5 + 0.5) * innerHeight;
@@ -167,6 +167,7 @@ export function popText(text, worldPos, cls = '', edge = null) { // edge: { p: d
   const cx = edge ? x + edge.side * w / 2 : x;
   el.style.left = `${Math.min(Math.max(cx, w / 2 + 8), innerWidth - w / 2 - 8)}px`; el.style.top = `${Math.max(y, innerHeight * 0.22)}px`;
   setTimeout(() => el.remove(), 1650);
+  return el;
 }
 export function clearFx() {
   popLayer.textContent = '';

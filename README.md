@@ -118,6 +118,8 @@ Cheat and name guards (server side, so a hand-made request cannot skip them):
 
 To set up a new project: run `supabase/schema.sql` in the SQL Editor (it can be run again after edits; existing data stays), then put the project URL and the publishable key into `docs/js/net.js`. The secret / service_role key never goes into the client or the repo.
 
+- A function added to `schema.sql` does nothing until the file is run again in the SQL Editor: the client treats the missing-function 404 (`PGRST202`) as a rejection and keeps retrying silently (the country picker never reached the server this way) → after each schema edit, call every RPC with curl and a dummy id; `unknown player` means it exists.
+
 - A free project that gets no requests for about a week is paused by Supabase → `.github/workflows/keepalive.yml` calls `get_board` once a day. GitHub turns scheduled workflows off after 60 days without commits; if the board ever says "No connection" for everyone, restore the project from the dashboard and re-enable the workflow.
 - To remove a cheating or rude player: `delete from players where id = '...';` in the SQL Editor (their scores and runs go with it).
 

@@ -65,7 +65,7 @@ export const ccOf = () => profile().cc || myCC();
 export function setName(name) {
   const p = profile(), n = cleanName(name);
   if (!validName(n) || rudeName(n)) return false;
-  if (p.name !== n) { p.name = n; p.dirty = true; }
+  if (p.name !== n) { p.name = n; p.dirty = true; edits++; }
   p.cc = p.cc || myCC();
   store.set(KEY_PROFILE, p);
   sync();
@@ -76,37 +76,50 @@ export function setName(name) {
 export function setCountry(cc) {
   if (!/^[A-Z]{2}$/.test(cc)) return false;
   const p = profile();
-  if (p.cc !== cc) { p.cc = cc; p.ccDirty = true; store.set(KEY_PROFILE, p); sync(); }
+  if (p.cc !== cc) { p.cc = cc; p.ccDirty = true; edits++; store.set(KEY_PROFILE, p); sync(); }
   return true;
 }
 
-let syncing = null, lastRank = null;
-export function sync() { // profil + bekleyen skor; aynı anda tek çalışır
+let syncing = null, lastRank = null, edits = 0; // edits: oyuncunun ad/ülke değişiklik sayacı
+// await arasında oyuncu ad/ülke değiştirebilir: eski kopyayı yazmak yeni ülkeyi ezerdi → yazarken taze profile birleştirilir
+const save = patch => { const p = Object.assign(profile(), patch); store.set(KEY_PROFILE, p); return p; };
+export function sync() { // profil + bekleyen skor; aynı anda tek çalışır. Çalışırken gelen değişiklik için bir tur daha döner
   if (!syncing) syncing = (async () => {
-    const p = profile();
+    let e0 = edits, ok = await syncOnce();
+    for (let i = 0; ok && i < 2 && e0 !== edits; i++) { e0 = edits; ok = await syncOnce(); }
+    return ok;
+  })().finally(() => (syncing = null));
+  return syncing;
+}
+async function syncOnce() {
+  {
+    let p = profile();
     if (!netOn()) return false;
     if (!p.id) {
       const r = await rpc('register', { p_name: p.name || autoName(p), p_cc: p.cc || myCC() });
-      if (r === REJECT) { if (p.name) p.name = ''; else p.auto = ''; store.set(KEY_PROFILE, p); return false; } // sunucu adı kabul etmedi: menüde yeniden sorulur
+      if (r === REJECT) { save(p.name ? { name: '' } : { auto: '' }); return false; } // sunucu adı kabul etmedi: menüde yeniden sorulur
       if (!r || !r.id) return false;
-      Object.assign(p, { id: r.id, secret: r.secret, srv: r.name, dirty: false, ccDirty: false }, p.name ? { name: r.name } : {}); // ülke kayıtla birlikte gitti
-      store.set(KEY_PROFILE, p);
+      const sentCC = p.cc || myCC(), now = profile();
+      // ülke kayıtla birlikte gitti; kayıt sürerken değiştiyse işaretli kalır, bir sonraki turda set_cc ile gider
+      p = save(Object.assign({ id: r.id, secret: r.secret, srv: r.name, dirty: !!now.name && now.name !== p.name, ccDirty: !!now.cc && now.cc !== sentCC }, now.name && now.name === p.name ? { name: r.name } : {}));
     } else if (p.dirty) {
-      const n = await rpc('rename', { p_id: p.id, p_secret: p.secret, p_name: p.name });
+      const sent = p.name, n = await rpc('rename', { p_id: p.id, p_secret: p.secret, p_name: sent });
       if (n === null) return false;
-      if (n === REJECT) { p.name = p.srv === p.auto ? '' : p.srv || ''; p.dirty = false; store.set(KEY_PROFILE, p); }
-      else { p.name = p.srv = n; p.dirty = false; store.set(KEY_PROFILE, p); }
+      const changed = profile().name !== sent; // istek giderken yeni ad yazıldı: o ad işaretli kalır
+      if (n === REJECT) p = save(changed ? {} : { name: p.srv === p.auto ? '' : p.srv || '', dirty: false });
+      else p = save(changed ? { srv: n } : { name: n, srv: n, dirty: false });
     }
     if (p.ccDirty && p.id) {
-      const c = await rpc('set_cc', { p_id: p.id, p_secret: p.secret, p_cc: p.cc });
-      if (c !== null && c !== REJECT) { p.ccDirty = false; store.set(KEY_PROFILE, p); } // reddedilirse yerelde kalır, sonraki sync'te yeniden denenir
+      const sent = p.cc, c = await rpc('set_cc', { p_id: p.id, p_secret: p.secret, p_cc: sent });
+      // reddedilirse yerelde kalır, sonraki sync'te yeniden denenir; istek giderken ülke yine değiştiyse işaret kalır
+      if (c !== null && c !== REJECT && profile().cc === sent) p = save({ ccDirty: false });
     }
     // sıralama kalıcı oldu: bilet gelmeden (ya da çevrimdışı) yapılmış cihaz rekoru sunucuda yoktu → bir kez yüklenir
     const best = +store.get('simit-martisi-best', 0) || 0;
     if (!p.claimed && best > 0) {
       const c = await rpc('claim_best', { p_id: p.id, p_secret: p.secret, p_score: best });
       if (c === null) return false;
-      p.claimed = true; store.set(KEY_PROFILE, p);
+      p = save({ claimed: true });
     }
     const q = store.get(KEY_PENDING, null);
     if (q) {
@@ -116,8 +129,7 @@ export function sync() { // profil + bekleyen skor; aynı anda tek çalışır
       }
     }
     return true;
-  })().finally(() => (syncing = null));
-  return syncing;
+  }
 }
 
 // istemci tarafı hafta anahtarı (yalnızca bekleyen skoru eskitmek için; asıl hafta sunucuda İstanbul saatiyle)
