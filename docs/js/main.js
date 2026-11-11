@@ -1232,7 +1232,8 @@ function renderRouteLine() {
 }
 function renderRouteMap() {
   const open = cityOpen(city);
-  $('cityName').textContent = city.name;
+  $('cityName').textContent = city.name; // puan çarpanı adın yanında: rota bitince de cümleye yapışmaz
+  if (city.mult > 1) $('cityName').insertAdjacentHTML('beforeend', ` <em class="mult-tag">×${city.mult}</em>`);
   $('cityPick').classList.toggle('locked', !open); $('playBtn').classList.toggle('locked', !open); $('routeMap').classList.toggle('locked', !open);
   if (!open) {
     $('routeMap').innerHTML = STOPS.map(s => `<i title="${s.name}"></i>`).join('');
@@ -1241,7 +1242,7 @@ function renderRouteMap() {
   }
   const goal = Math.min(farStop + 1, STOPS.length - 1), done = farStop === STOPS.length - 1;
   $('routeMap').innerHTML = STOPS.map((s, i) => `<i class="${i <= farStop ? 'got' : i === goal ? 'goal' : ''}" title="${s.name}"></i>`).join('');
-  $('routeGoal').innerHTML = (done ? tr(city.end) : `${tr('Hedef')}: <b>${STOPS[goal].name}</b> · ${fmt(STOPS[goal].m)} m`) + (city.mult > 1 ? ` <em class="mult-tag">×${city.mult}</em>` : '');
+  $('routeGoal').innerHTML = (done ? tr(city.end) : `${tr('Hedef')}: <b>${STOPS[goal].name}</b> · ${fmt(STOPS[goal].m)} m`);
 }
 let dailyAuto = false; // kendiliğinden açılan ödül penceresi: sayfa açılışında bir kez
 function showTitle() {
