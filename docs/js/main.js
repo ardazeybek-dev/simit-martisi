@@ -14,7 +14,7 @@ const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
 const tr = s => window.I18N.t(s);
 const SIMIT_VIEW = 140; // telefonda bundan uzaktaki simitler çizilmez
-const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.85, COMBO_T = 2.5, SPEED_MAX = 43, GEAR_M = 300; // GEAR_M: her kaç metrede "Hızlanıyor!"
+const FLY_Y = 5.15, LANE = 4.6, EDGE = 3.85, COMBO_T = 2.5, SPEED_MAX = 43;
 // şerit vapur kadar geniş (gövde ±4, küpeştenin biraz dışı). Çarpışma payları: engeller affedici (kutu görünenden dar),
 // simit ve güçlendirme cömert (yakından geçmek yeter)
 const HIT = { obs: 0.08, near: 1.1, rival: 0.48, kiteX: 0.45, kiteZ: 0.38, simX: 1.6, simZ: 1.7, simY: 2.0, power: 2.1 };
@@ -41,6 +41,7 @@ blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
 let bridgeZ = 0;
+let convoy = false, longSea = false;
 let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, anchorZ = 0, land = [];
 const difficulty = () => clamp(-genZ / 650, 0, 5);
 const late = () => clamp((-genZ - 3250) / 3000, 0, 1); // difficulty tavana vurduktan sonra (~1,6 km → ~3,1 km) yavaşça 0 → 1
@@ -245,11 +246,11 @@ const THROW_T = [1.05, 1.35], THROW_H = [2.4, 3.6];
 const RING = new THREE.RingGeometry(0.5, 0.72, 20);
 const thrownStat = { caught: 0, missed: 0 };
 const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false });
-function throwVolleys(z0, len, first) {
+function throwVolleys(z0, len, first, dense) {
   const end = z0 - len + 5;
   let z = z0 - (first ? 24 : 7), x = rand(-2, 2), side = pick([-1, 1]);
   while (z > end) {
-    const n = pick([1, 1, 2, 3, 4]), bz = z - (n - 1) * 1.7 + rand(-2, 2); // kimi bir parça atar, kimi dört
+    const n = dense ? pick([3, 4, 4, 5]) : pick([1, 1, 2, 3, 4]), bz = z - (n - 1) * 1.7 + rand(-2, 2); // kimi bir parça atar, kimi dört
     const b = makeSimitBoat(side); b.g.position.set(side * rand(9.5, 11), 0, bz); b.g.rotation.y = rand(-0.3, 0.3); scene.add(b.g);
     const bt = { ...b, z: bz, hand: 0, thrown: 0 };
     boats.push(bt); decor.push({ mesh: b.g, z: bz, ph: Math.random() * 6 });
@@ -258,7 +259,7 @@ function throwVolleys(z0, len, first) {
       z -= rand(2.8, 4.2);
       x = clamp(x + rand(-2, 2), -LANE + 0.8, LANE - 0.8);
     }
-    z -= rand(4, 9); side = -side;
+    z -= dense ? rand(2, 4) : rand(4, 9); side = -side;
   }
 }
 function addThrown(bt, cx, cz, gold, ry) { // ry: halkanın yüksekliği (vapur güvertesi); yoksa dalgada
@@ -318,11 +319,24 @@ function sailBox(c, cx, gy) {
   const h = clamp(gy - c.mesh.position.y - 5.15, -1.5, 2), a = -0.04 + h * 0.39 - SAIL_PAD, b = 2.05 - h * 0.51 + SAIL_PAD;
   c.o.x = cx + c.side * (a + b) / 2; c.o.hw = Math.max(0.3, (b - a) / 2);
 }
-function spawnGap(first, fixLen) {
+// açık su türleri: mix (eski karışık), rain (simit teknesi yağmuru, rakipsiz), pod (iki yunus sürüsü), flock (rakip sürüsü), kites (uçurtma dizisi).
+// Sakin su bölgesinde yalnız rain/pod. quiet: konvoy vapurları arasındaki kısa ara (yalnız simit).
+let lastGap = '';
+function gapKind(first, quiet, z0, d) {
+  if (first) return 'mix';
+  if (quiet) { if (genLog) genLog.push('Gquiet'); return 'quiet'; }
+  const tz = tempoAt(z0 - 20), calm = tz && tz.kind === 'calm';
+  const pool = calm ? ['rain', 'pod'] : ['mix', 'mix', 'rain'].concat(d > 0.6 ? ['pod'] : [], d > 1.6 ? ['flock'] : [], d > 1.3 ? ['kites'] : []);
+  const k = pick(pool.filter(k => k === 'mix' || k !== lastGap));
+  lastGap = k; if (genLog) genLog.push('G' + k); return k;
+}
+function spawnGap(first, fixLen, quiet) {
   const d = difficulty();
-  const len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, 56 - late() * 10)), z0 = genZ;
+  let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, 56 - late() * 10));
+  const z0 = genZ, kind = gapKind(first, quiet, z0, d);
+  if (!fixLen && (kind === 'pod' || kind === 'rain')) len = Math.max(len, 46);
   const ph = Math.random() * 6, amp = rand(1.2, 3.4);
-  if (THROW_ON && !(first && tutorialPending)) throwVolleys(z0, len, first);
+  if (THROW_ON && !(first && tutorialPending)) throwVolleys(z0, len, first, kind === 'rain');
   else for (let z = z0 - 7; z > z0 - len + 5; z -= 3.4) {
     const x = clamp(Math.sin((z0 - z) * 0.09 + ph) * amp, -LANE + 0.5, LANE - 0.5);
     addSimit(x, FLY_Y, z, !first && goldRoll(0.035));
@@ -331,7 +345,7 @@ function spawnGap(first, fixLen) {
     const camp = campT > 3 ? campSide : 0;
     // engeller birbirine karışmasın: yelkenli gelen açıklık yalnızca onundur (rakip, uçurtma yok);
     // öbür açıklıklarda rakip ve uçurtmalar boyca en az 13 m arayla dizilir, aralarından geçilebilsin
-    const sail = d > 0.9 && len > 34 && Math.random() < 0.18 + d * 0.05;
+    const sail = kind === 'mix' && d > 0.9 && len > 34 && Math.random() < 0.18 + d * 0.05;
     const used = [], freeZ = (lo, hi) => { for (let t = 0; t < 8; t++) { const z = z0 - rand(lo, hi); if (used.every(u => Math.abs(u - z) >= 13)) { used.push(z); return z; } } return null; };
     if (sail) { // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
       const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
@@ -339,10 +353,10 @@ function spawnGap(first, fixLen) {
       const o = { x: xa + side * SAIL_OFF, z, hw: SAIL_HW, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // martı boyunda yelkenler gövdenin bir yanına uzanır: kutu yelkenlerin üstünde
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
     } else {
-      const n = camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
+      const n = kind === 'flock' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : kind !== 'mix' ? (camp && d >= 0.6 && kind !== 'quiet' && !(tempoAt(z0 - 20)?.kind === 'calm') ? 1 : 0) : camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
       for (let i = 0; i < n; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
-      if (d > 1.3 && Math.random() < 0.14 + d * 0.04) {
-        const nk = d > 3 && Math.random() < 0.4 ? 2 : 1;
+      if (kind === 'kites' || (kind === 'mix' && d > 1.3 && Math.random() < 0.14 + d * 0.04)) {
+        const nk = kind === 'kites' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : d > 3 && Math.random() < 0.4 ? 2 : 1;
         for (let i = 0; i < nk; i++) {
           const z = freeZ(10, len - 8); if (z === null) continue;
           addKite(rand(-2.6, 2.6), z, rand(1, 2));
@@ -351,8 +365,9 @@ function spawnGap(first, fixLen) {
     }
     // yunus sürüsü: önce suda yalnız yüzgeçleri görünür; martı yaklaşınca sırayla koridoru yandan atlayarak keser.
     // Tepe noktası martının geçeceği ana denk gelir: tam üstünden geçen "Yunus!" bonusu alır, kombo süresi tazelenir. Çarpmak yok.
-    if (d > 0.15 && len > 30 && Math.random() < 0.38) {
-      const dir = pick([-1, 1]), z = z0 - rand(12, len - 10), ax = rand(-2.4, 2.4), n = 2 + (Math.random() < 0.45 ? 1 : 0);
+    const pods = kind === 'pod' ? 2 : kind !== 'quiet' && d > 0.15 && len > 30 && Math.random() < 0.38 ? 1 : 0;
+    for (let k = 0; k < pods; k++) {
+      const dir = pods === 2 ? (k ? -1 : 1) * (len % 2 < 1 ? 1 : -1) : pick([-1, 1]), z = pods === 2 ? z0 - len * (k ? 0.74 : 0.32) : z0 - rand(12, len - 10), ax = rand(-2.4, 2.4), n = (pods === 2 ? 3 : 2) + (Math.random() < 0.45 ? 1 : 0);
       for (let i = 0, dz = 0; i < n; i++, dz += rand(1.6, 2.8)) {
         const m = new THREE.Mesh(DOLPHIN, vcMat); m.castShadow = true; m.rotation.y = dir > 0 ? 0 : Math.PI; scene.add(m);
         dolphins.push({ mesh: m, dir, ax: ax + rand(-0.9, 0.9), z: z - dz, w: rand(4.2, 5.6), T: rand(0.95, 1.25), lag: rand(-0.08, 0.14), u: -1, got: false, ph: Math.random() * 6 });
@@ -415,6 +430,7 @@ function addRival(z, bx, sw, kind, zMax = Infinity) {
 }
 // viraj: açık deniz; simitler dıştan girip içe kıvrılan yarış çizgisinde, tepede altın simit; dış kenarda ok tabelaları
 function spawnTurn(tn) {
+  if (genLog) genLog.push('T');
   const z0 = genZ, end = tn.z1 - 6, len = tn.z0 - tn.z1;
   const lineX = z => tn.dir * (-1.2 + 3.8 * Math.sin(Math.PI * clamp((tn.z0 - z) / len, 0, 1)));
   let apex = Math.random() < 0.5 && !ruleOn('gold'); // tepe altını her virajda değil: yarısında (Altın saat: hepsinde)
@@ -657,6 +673,7 @@ function addKite(x, z, sw) {
 }
 function spawnFerry() {
   const d = difficulty();
+  if (genLog) genLog.push('F');
   const ft = pickFerryType(), L = pick(ft.lengths), x0 = 0, zc = genZ - L / 2 - 2; // vapur şeridin tam ortasında: şerit = gövde
   const g = new THREE.Group(); g.position.set(x0, 0, zc); scene.add(g);
   const hull = new THREE.Mesh(ferryGeo(L, ft.id), vcMat); hull.castShadow = hull.receiveShadow = true; g.add(hull);
@@ -970,7 +987,7 @@ function generate(limit) {
   try { generateIn(limit); } finally { Math.random = R0; }
 }
 function generateIn(limit) {
-  planTurns(limit - 200); Math.random = R0; spawnScenery(limit);
+  planTurns(limit - 200); planTempo(limit - 200); Math.random = R0; spawnScenery(limit);
   let purgeFrom = obstacles.length;
   const purge = () => { if (obstacles.length > purgeFrom) purgeSimits(obstacles.slice(purgeFrom)); purgeFrom = obstacles.length; };
   while (genZ > limit) {
@@ -981,7 +998,19 @@ function generateIn(limit) {
       if (genZ - pz < 130) { if (genZ - pz > 30) spawnGap(segCount === 0, genZ - pz); else spawnPier(); continue; }
     }
     const tn = turns.find(u => !u.built && u.z0 > genZ - 75); // yaklaşan virajın öncesini düz suyla doldur
-    if (!tn) { segCount % 2 === 0 ? (genZ < bridgeZ ? spawnBridge() : genZ < imbatZ ? spawnImbat() : genZ < pirateZ ? spawnPirate() : genZ < fallsZ ? spawnFalls() : genZ < beachZ ? spawnBeach() : spawnGap(segCount === 0)) : spawnFerry(); segCount++; }
+    if (!tn) {
+      if (segCount % 2 === 1) {
+        spawnFerry();
+        if (!convoy && difficulty() > 0.6 && Math.random() < 0.2) { convoy = true; spawnGap(false, rand(18, 24), true); continue; } // konvoy: hemen ardından bir vapur daha
+        convoy = false;
+      } else if (genZ < bridgeZ) spawnBridge(); else if (genZ < imbatZ) spawnImbat(); else if (genZ < pirateZ) spawnPirate(); else if (genZ < fallsZ) spawnFalls(); else if (genZ < beachZ) spawnBeach();
+      else {
+        spawnGap(segCount === 0);
+        if (segCount > 2 && !longSea && Math.random() < 0.22) { longSea = true; continue; } // uzun açık su: vapur bu sefer gecikir
+        longSea = false;
+      }
+      segCount++;
+    }
     else if (genZ - tn.z0 > 30) spawnGap(segCount === 0, genZ - tn.z0);
     else { spawnTurn(tn); if (segCount % 2 === 0) segCount++; }
   }
@@ -1105,7 +1134,20 @@ const look = { owned: [], on: [] };
   look.owned = (Array.isArray(l.owned) ? l.owned : []).filter(ok); look.on = (Array.isArray(l.on) ? l.on : []).filter(id => look.owned.includes(id)); }
 let tutorialPending = !store.get(KEY_TUT, false);
 const keys = {};
-let gear = 0, gearAt = GEAR_M;
+// tempo bölgeleri: hız eğrisi tek düze artmasın. Mesafeye bağlı, önceden planlanır (günün uçuşunda herkes için aynı).
+// sakin su: hız ~%13 düşer, rakip/uçurtma yok, bol simit ya da yunus sürüsü. Arka rüzgâr: ~%14 hız patlaması, rüzgâr çizgileri.
+// Ayar: TEMPO_GAP (iki bölge arası, z), TEMPO_LEN (bölge boyu, z), TEMPO_K (hız çarpanı)
+const TEMPO_GAP = [520, 1100], TEMPO_LEN = { calm: [220, 320], tail: [170, 260] }, TEMPO_K = { calm: 0.87, tail: 1.14 };
+let tempos = [], tempoZ = 0, tempoN = 0, tempoK = 1, tempoIn = null;
+function planTempo(limit) {
+  while (tempoZ > limit) {
+    seedAt('p', tempoN++);
+    const kind = tempos.length && tempos[tempos.length - 1].kind === 'calm' ? (Math.random() < 0.75 ? 'tail' : 'calm') : (Math.random() < 0.55 ? 'calm' : 'tail');
+    const z0 = tempoZ - (tempos.length ? rand(...TEMPO_GAP) : rand(480, 700)), z1 = z0 - rand(...TEMPO_LEN[kind]);
+    tempos.push({ kind, z0, z1 }); tempoZ = z1;
+  }
+}
+const tempoAt = z => tempos.find(u => z < u.z0 && z > u.z1) || null;
 // hava (weather.js): yağmurda rüzgâr esintisi martıyı yana iter, karda simit yemezsen üşürsün, siste ufuk kısalır
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
 const GUST = 6.5, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
@@ -1113,7 +1155,7 @@ const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed:
 
 function resetWorld(newWeather = true) {
   seedAt('w'); genN = 0; turnN = 0;
-  clearWorld(); genZ = -8; segCount = 0; sceneryZ = 10; maidenZ = city.maiden ? rand(-500, -300) : -Infinity; cruiseZ = rand(-120, -40); anchorZ = rand(-60, -10);
+  clearWorld(); genZ = -8; segCount = 0; convoy = longSea = false; lastGap = ''; sceneryZ = 10; maidenZ = city.maiden ? rand(-500, -300) : -Infinity; cruiseZ = rand(-120, -40); anchorZ = rand(-60, -10);
   bridgeZ = !city.bridges ? -Infinity : BRIDGE_SOON ? -90 : -rand(1150, 1450); // ilk köprü Karaköy'den sonra
   imbatZ = !city.imbat ? -Infinity : IMBAT_SOON ? -90 : -rand(800, 1000); // ilk imbat Göztepe'den sonra
   pirateZ = !city.pirate ? -Infinity : PIRATE_SOON ? -90 : -rand(1050, 1300); // ilk korsan teknesi Kaleiçi'nden sonra
@@ -1124,7 +1166,7 @@ function resetWorld(newWeather = true) {
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashObs = null; crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
-  for (const k in run) run[k] = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
+  for (const k in run) run[k] = 0; tempos = []; tempoZ = 0; tempoN = 0; tempoK = 1; tempoIn = null; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   Math.random = R0;
   if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
@@ -2565,8 +2607,10 @@ function frame() {
       sling = Math.max(0, sling - dt);
       slingV = damp(slingV, sling > 0 ? 11 : 0, sling > 0 ? 8 : 1.6, dt);
       // ilerledikçe hızlanır: önce hızlı tırmanır, sonra tavana (SPEED_MAX) kadar yavaşça artmayı sürdürür
-      speed = Math.min(SPEED_MAX * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1)) + slingV; // Hızlı vapurlar: %15 hızlı
-      if (dist >= gearAt) { gearAt += GEAR_M; gear++; gearUp(); }
+      const tz = tempoAt(gull.position.z);
+      if (tz !== tempoIn) { tempoIn = tz; if (tz && tz.kind === 'tail') gearUp(); } // efekt yalnız gerçek hız sıçramasında
+      tempoK = damp(tempoK, tz ? TEMPO_K[tz.kind] : 1, 0.9, dt); // ~2,5 sn'de oturur
+      speed = Math.min(SPEED_MAX * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1)) * tempoK + slingV; // Hızlı vapurlar: %15 hızlı
       if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();
     } else { speed = 15; autopilot(); }
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)
@@ -2929,7 +2973,7 @@ function frame() {
   if (sign !== shownSign) { shownSign = sign; $('turnSign').classList.toggle('on', !!sign); $('turnSign').classList.toggle('left', sign < 0); }
   updateWater(t, camera.position.x, camera.position.z);
   updateWeatherFx(dt, t, camera.position.x, camera.position.z, wind);
-  updateSpeedLines(dt, g.x, g.y, g.z, speed, state === 'play' ? (speed - 20) / 12 + (pw.double > 0 ? 0.4 : 0) + slingV / 6 : 0);
+  updateSpeedLines(dt, g.x, g.y, g.z, speed, state === 'play' ? (speed - 20) / 12 + (pw.double > 0 ? 0.4 : 0) + slingV / 6 + Math.max(0, tempoK - 1) * 7 : 0);
 
   // ---- ses, arayüz ----
   audio.tick();
@@ -3187,7 +3231,8 @@ window.__game = {
   addFish: (ahead = 40, x = 0) => { const dir = 1, mm = new THREE.Mesh(FISH, vcMat); mm.visible = false; scene.add(mm); fishes.push({ mesh: mm, dir, ax: x, z: gull.position.z - ahead, w: 3.2, T: 0.85, lag: 0, u: -1, done: false, spin: 0, splT: 0 }); },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
-  get farStop() { return farStop; },
+  get farStop() { return farStop; }, get thrown() { return { ...thrownStat }; },
+  get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
   get city() { return city.id; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
