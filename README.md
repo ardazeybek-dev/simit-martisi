@@ -113,9 +113,12 @@ A free Supabase project holds three tables, `players`, `scores` and `runs`. All 
 | `set_cc(p_id, p_secret, p_cc)` | changes the country (flag), picked in the profile from the drawn flags in `board.js` (`COUNTRIES`) |
 | `start_run(p_id, p_secret)` | called when a flight starts, returns a run id (one per 2 s per player) |
 | `submit_score(p_id, p_secret, p_run, p_score, p_dist, p_city)` | keeps the best (stored per week), returns the all-time rank |
-| `claim_best(p_id, p_secret, p_score)` | once per player: stores the device record (≤ 30,000) |
+| `claim_best(p_id, p_secret, p_score)` | once per player created before 2 Nov 2026: stores the device record (≤ 12,000) |
+| `run_mark(p_id, p_secret, p_run, p_dist)` | flight checkpoint every 400 m: at most 40·Δt + 40 m since the last one, ignored if under 10 s apart |
 | `claim_gifts(p_id, p_secret)` | once per page load: returns the total of the player's unclaimed gift simits and marks them claimed; the game adds it to the wallet and shows *Hediye geldi* on the title screen |
 | `get_board(p_id)` | `{ total, top[50], me }` ranked by each player's best ever (`week`, `ends`, `prev` stay null for old clients) |
+
+To hide a cheater from the board without deleting the account: `update players set hidden = true where id = '<id>';`.
 
 To give a player simits: find the id with `select id, name from players where name ilike '%name%'`, then `insert into gifts(player_id, amount) values ('<id>', 5000);` in the SQL Editor. The player gets them the next time the game opens.
 

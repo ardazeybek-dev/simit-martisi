@@ -8,7 +8,7 @@ import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryG
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
-import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc } from './net.js';
+import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -79,6 +79,7 @@ let vs = null, vsNew = false;
 }
 let newStop = 0; // bu uçuşta ilk kez varılan en uzak iskele (oyun sonu için)
 let slowT = 0; const GATE_FW_Y = 15;
+let markAt = 400; // sıradaki uçuş kontrol noktası (m)
 let opened = null; // bu uçuşta açılan şehir (menüye dönünce o seçilir)
 let stopI = 1, pierI = 1, stopM = STOPS.map(s => s.m); // stopI: sıradaki varış, pierI: sıradaki kurulacak iskele, stopM: bu uçuşta kapıların gerçek metresi
 const PIER_HALF = 36; // iskele kesiti: kapıdan önce ve sonra bu kadar boş su
@@ -1182,7 +1183,7 @@ function resetWorld(newWeather = true) {
   if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
-  full = 1; starve = false; shownFull = -1; show('hungry', false); $('hungry').classList.remove('cold');
+  full = 1; starve = false; shownFull = -1; markAt = 400; show('hungry', false); $('hungry').classList.remove('cold');
   generate(-280); placeMarks();
   camera.position.set(0, FLY_Y + 5.4, 13.5);
 }
@@ -2641,7 +2642,7 @@ function frame() {
     const txl = EDGE; // martı vapur küpeştesinin içinde kalır: kapalı salonun dışından dolaşılamaz
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 17 * dt, -txl, txl);
     if (keys.ArrowRight || keys.KeyD) tx = clamp(tx + 17 * dt, -txl, txl);
-    const dz = speed * dt; g.z -= dz; if (state === 'play') dist += dz / 2;
+    const dz = speed * dt; g.z -= dz; if (state === 'play') { dist += dz / 2; if (dist >= markAt) { markAt = dist + 400; markRun(dist); } } // 400 m'de bir sunucuya kontrol noktası
     if (cur) heading += cur.k * dz * bendOn; else heading *= Math.exp(-dt / 30); // ufuk, düzlükte yavaşça toparlanır
     // kritik sönümlü yay: hızlı ama yumuşak takip (çevik: engelden son anda kaçılabilsin)
     // alt adımlar (en çok 1/60 sn): kare hızı düşen telefonda sert yay titremesin

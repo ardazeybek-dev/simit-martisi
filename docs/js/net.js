@@ -159,6 +159,8 @@ export function startRun() {
     return (runId = typeof r === 'string' ? r : null);
   })();
 }
+// uçuş kontrol noktası: oyun her 400 m'de çağırır, beklenmez (ağ yoksa sessizce geçer)
+export function markRun(d) { const p = profile(); if (runId && p.id) rpc('run_mark', { p_id: p.id, p_secret: p.secret, p_run: runId, p_dist: Math.floor(d) }); }
 // uçuş yarıda kalırken (sekme gizlendi, sayfa yenilendi/kapandı): skor bekleyen olarak saklanır, sonraki açılışta sync onu gönderir.
 // Bilet bir gün geçerli; sunucu süreyi biletten sayar, geç gelen skor yine akla yatkın kalır.
 export function stashScore(score, dist, city) {

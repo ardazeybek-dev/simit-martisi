@@ -28,6 +28,11 @@ create table if not exists runs (
   started_at timestamptz not null default now()
 );
 create index if not exists runs_player on runs (player_id, started_at desc);
+-- uçuş kontrol noktası (run_mark): md = son onaylı metre, mt = zamanı
+alter table runs add column if not exists md int not null default 0;
+alter table runs add column if not exists mt timestamptz;
+-- hileci gizleme: hidden = true olan oyuncu sıralamada görünmez, sırası sayılmaz (hesap silinmez, cihazı bozulmaz)
+alter table players add column if not exists hidden boolean not null default false;
 
 alter table players enable row level security;
 alter table scores enable row level security;
@@ -131,15 +136,33 @@ begin
   on conflict (player_id, week) do update set score = excluded.score, dist = excluded.dist, city = excluded.city, updated_at = now()
     where scores.score < excluded.score;
   select max(score) into best from scores where player_id = p_id;
-  return (select count(*) + 1 from (select max(score) m from scores group by player_id) x where x.m > best);
+  return (select count(*) + 1 from (select max(s.score) m from scores s join players p on p.id = s.player_id where not p.hidden group by s.player_id) x where x.m > best);
 end $$;
 
--- sıralama gelmeden / çevrimdışı yapılmış cihaz rekoru: oyuncu başına bir kez, en fazla 30.000 (doğrulanamaz, üst sınırla kabul)
-create or replace function claim_best(p_id uuid, p_secret uuid, p_score int) returns int
+-- uçuş kontrol noktası: istemci her 400 m'de çağırır. Bir öncekinden bu yana en çok 40·Δt + 40 m ilerlenebilir, 10 sn'den sık
+-- gelen nokta yok sayılır. submit_score henüz buna bakmıyor (eski istemciler güncellenince bakacak).
+create or replace function run_mark(p_id uuid, p_secret uuid, p_run uuid, p_dist int) returns void
 language plpgsql security definer set search_path = public as $$
-declare s int := least(greatest(coalesce(p_score, 0), 0), 30000);
+declare r runs; d int := greatest(0, coalesce(p_dist, 0));
 begin
   if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
+  select * into r from runs where id = p_run and player_id = p_id and started_at > now() - interval '1 day';
+  if not found then raise exception 'unknown run'; end if;
+  if r.mt is not null and now() - r.mt < interval '10 seconds' then return; end if;
+  if d < r.md or d - r.md > 40 * extract(epoch from now() - coalesce(r.mt, r.started_at)) + 40 then raise exception 'implausible mark'; end if;
+  update runs set md = d, mt = now() where id = p_run;
+end $$;
+revoke all on function run_mark(uuid, uuid, uuid, int) from public;
+grant execute on function run_mark(uuid, uuid, uuid, int) to anon, authenticated;
+
+-- sıralama gelmeden / çevrimdışı yapılmış cihaz rekoru: oyuncu başına bir kez, en fazla 12.000, yalnız 2 Kasım öncesi hesaplar (doğrulanamaz, üst sınırla kabul)
+create or replace function claim_best(p_id uuid, p_secret uuid, p_score int) returns int
+language plpgsql security definer set search_path = public as $$
+declare s int := least(greatest(coalesce(p_score, 0), 0), 12000);
+begin
+  if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
+  -- yalnız kalıcı sıralamadan önce açılmış hesaplar: yeni hesap açıp bedava puan yüklenemesin (gerçek en yüksek 11.007)
+  if (select created_at from players where id = p_id) >= timestamptz '2026-11-02 00:00+03' then return 0; end if;
   if s > 0 then insert into scores(player_id, week, score, dist) values (p_id, date '2000-01-03', s, 0) on conflict (player_id, week) do nothing; end if;
   return s;
 end $$;
@@ -153,7 +176,7 @@ language sql stable security definer set search_path = public as $$
   ),
   ranked as (
     select b.player_id, b.score, p.name, p.cc, row_number() over (order by b.score desc, b.updated_at) as rank
-    from b join players p on p.id = b.player_id
+    from b join players p on p.id = b.player_id where not p.hidden
   )
   select json_build_object(
     'week', null, 'ends', null, 'prev', null,
