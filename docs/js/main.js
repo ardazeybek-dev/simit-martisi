@@ -2370,7 +2370,8 @@ function padTick() {
 // Kostüm paneli açıkken dünya çizilmez: martı ayrı bir sahnede, gün batımında Boğaz'a bakan ahşap bir iskele babasının üstünde durur.
 // Kendi kendine yavaşça döner; parmak/fare ile sürüklenince elle çevrilir, bırakınca savrulup yavaşlar.
 // Oyun mantığı martıyı dünyadaki yerinde sürmeye devam eder; her karede o yer saklanır, çizimden sonra geri konur.
-const pod = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 0.1, 120), on: false, parent: null, yaw: 0.6, vel: 0.55, drag: -1, dx: 0, lx: 0,
+const pod = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 0.1, 120), on: false, parent: null, yaw: 0.6, vel: 0.55, drag: -1, dx: 0, lx: 0, idle: 99, // idle: parmak kalkalı kaç sn oldu
+ 
   home: { p: new THREE.Vector3(), q: new THREE.Quaternion() }, box: new THREE.Box3(), size: new THREE.Vector3(), ctr: new THREE.Vector3(), f: { ok: false, cx: 0, cz: 0, my: 0 } };
 const _podB = new THREE.Box3(), _podS = new THREE.Vector3(), _podC = new THREE.Vector3();
 pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncBatches) burada tek tek çizilir
@@ -2446,11 +2447,11 @@ pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncB
   const el = $('wardrobe');
   el.addEventListener('pointerdown', e => { if (!dressing || isUi(e) || pod.drag >= 0) return; pod.drag = e.pointerId; pod.lx = e.clientX; pod.dx = 0; pod.vel = 0; try { el.setPointerCapture(e.pointerId); } catch (_) {} });
   el.addEventListener('pointermove', e => { if (e.pointerId !== pod.drag) return; pod.dx += e.clientX - pod.lx; pod.lx = e.clientX; });
-  const up = e => { if (e.pointerId === pod.drag) pod.drag = -1; };
+  const up = e => { if (e.pointerId === pod.drag) { pod.drag = -1; pod.idle = 0; } };
   el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
 }
 function podEnter() {
-  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6; pod.vel = 0.55; pod.drag = -1; pod.f.ok = false;
+  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6; pod.vel = 0.55; pod.drag = -1; pod.idle = 99; pod.f.ok = false;
   pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
 }
 function podRestore() { // karenin başında: martı dünyadaki yerine döner, oyun mantığı onu oradan sürer
@@ -2465,7 +2466,11 @@ function podDraw(dt) {
     // piksel başına dönüş telefonda da masaüstündeki gibi sakin: dar ekranda parmak az kayınca martı fırıl fırıl dönmesin
     const k = 7 / Math.max(innerWidth, 1000), dy = pod.dx * k; pod.dx = 0; pod.yaw += dy;
     pod.vel = THREE.MathUtils.lerp(pod.vel, dt > 0 ? THREE.MathUtils.clamp(dy / dt, -5, 5) : 0, 0.25);
-  } else { pod.vel = damp(pod.vel, 0.55, 2.2, dt); pod.yaw += pod.vel * dt; } // bırakınca hafif savrulur, çabuk kendi dönüşüne iner
+  } else { // bırakınca savrulma söner, martı durur; 3 sn dokunulmazsa yavaşça hızlanıp kendi dönüşüne geçer
+    pod.idle += dt;
+    pod.vel = pod.idle < 3 ? damp(pod.vel, 0, 2.5, dt) : damp(pod.vel, 0.55, 0.7, dt);
+    pod.yaw += pod.vel * dt;
+  }
   // çerçeve martının dönmemiş hâlinden ölçülür ve yumuşatılır: döndükçe kutu değişip ekran zıplamasın
   gull.position.set(0, 0, 0); gull.rotation.set(0, 0, 0);
   flapGull(gull, 0, 0, 0.32); // ölçü sabit kanat pozunda: çırpış çerçeveyi oynatmasın

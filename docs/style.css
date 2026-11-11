@@ -331,6 +331,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #dayRunPanel .card { --card-a: #7f5a1f; --card-b: #422c0b; --card-sh: rgba(40, 24, 0, .5); --glass: rgba(36, 20, 0, .3); }
 #profilePanel .card { --card-a: #573766; --card-b: #2c1834; --card-sh: rgba(24, 6, 30, .5); --glass: rgba(22, 6, 28, .3); }
 #settings .card { --card-a: #39465a; --card-b: #1c2330; --card-sh: rgba(6, 10, 20, .5); --glass: rgba(4, 8, 18, .3); }
+/* .modal kaydırılabilir kutu: touch-action orada sıfırlanır, yana sürükleme kaydırma sanılıp pointercancel olur → martı çevrilemez */
+#wardrobe { touch-action: none; }
+#wardrobe .card { touch-action: pan-y; }
 #wardrobe .card { --card-a: #6d3450; --card-b: #381a29; --card-sh: rgba(30, 6, 18, .5); --glass: rgba(30, 6, 18, .3); }
 @keyframes cardin { from { opacity: 0; transform: translateY(24px) scale(.94); } }
 .card h2 { margin: 0 0 14px; font-size: 30px; font-weight: 800; }
