@@ -111,7 +111,7 @@ function dayRun() {
 const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 // kostüm özellikleri: yalnızca giyili parça işler (panelde önizleme işlemez). Küçük tutuldu: cüzdana etkisi uçuş başı 1-2 simit
 const PERKS = { crown: 'Altın simit %20 daha sık çıkar', simitcrown: 'Simit kapma alanı %8 daha geniş', tophat: 'Güçlendirmeler +%10 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Yakaladığın simitler cüzdana +%10', kurye: 'Görev ödülleri +%15', taksi: 'Kıl payı puanı x2',
-  fes: 'Uçuş XP +%5', beanie: 'Karda %20 yavaş üşür', chef: 'Çay molası +%15 süre', captain: 'Mıknatıs +%15 süre', tray: 'Görev ödülleri +%5', glasses: 'Kalkan +%15 süre', hearts: 'Kombo süresi +%5', bigglasses: 'Balık yakalama şansı +%5', mustache: 'Kıl payı puanı +%25', pacifier: 'Dirilince kalkan +%25 süre', bowtie: 'Yunus bonusu +%50', pink: 'Uçuş XP +%10', night: 'Yağmurda rüzgâr %20 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%15', ice: 'Karda %50 yavaş üşür', durum: 'Balık daha sık zıplar' };
+  fes: 'Simit puanı +%3', beanie: 'Karda %20 yavaş üşür', chef: 'Çay molası +%15 süre', captain: 'Mıknatıs +%15 süre', tray: 'Görev ödülleri +%5', glasses: 'Kalkan +%15 süre', hearts: 'Kombo süresi +%5', bigglasses: 'Balık yakalama şansı +%5', mustache: 'Kıl payı puanı +%25', pacifier: 'Dirilince kalkan +%25 süre', bowtie: 'Yunus bonusu +%50', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %20 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%15', ice: 'Karda %50 yavaş üşür', durum: 'Balık daha sık zıplar' };
 const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } };
 const comboT0 = () => COMBO_T * (perk('hearts') ? 1.05 : 1); // Kalpli gözlük: kombo süresi +%5
 const PW_PERK = { magnet: 'captain', tea: 'chef', shield: 'glasses' }; // bu kostümler o gücü +%15 uzatır // açılışta look henüz yoksa (dünya üretimi) özellik yok
@@ -1118,7 +1118,7 @@ const xpNeed = lv => 80 + lv * 40, lvGift = lv => Math.min(30, 5 + lv); // seviy
 const rank = Object.assign({ lv: 1, xp: 0 }, store.get(KEY_RANK, {}) || {});
 const rankName = lv => tr(RANKS.filter(r => lv >= r[0]).pop()[1]);
 let xpGot = 0; // bu uçuştan şimdiye dek yazılan XP (ikinci şansta iki kez sayılmasın)
-const runXp = () => Math.round((simitCount + dist / 20) * (perk('fes') ? 1.05 : 1) * (perk('pink') ? 1.1 : 1)); // Fes +%5, Pembe tüy +%10
+const runXp = () => Math.round(simitCount + dist / 20);
 function addXp(n) {
   let ups = 0, gift = 0;
   rank.xp += n;
@@ -1161,7 +1161,7 @@ const tempoAt = z => tempos.find(u => z < u.z0 && z > u.z1) || null;
 // hava (weather.js): yağmurda rüzgâr esintisi martıyı yana iter, karda simit yemezsen üşürsün, siste ufuk kısalır
 let full = 1, starve = false, shownFull = -1; // tokluk: simit yemeden uçan martı acıkır, aç martı ağır döner
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
-const GUST = 6.5, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
+const GUST = 6.5, COLD_S = 11; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
 const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0 }; // görevler ve başarımlar için uçuş sayaçları
 
 function resetWorld(newWeather = true) {
@@ -3069,14 +3069,14 @@ function coinFly(gold, sel = '.sub .ico', icon = 'i-simit') {
 }
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = comboT0(); bestCombo = Math.max(bestCombo, combo);
-  const m = mult() * (pw.double > 0 ? 2 : 1);
+  const m = mult() * (pw.double > 0 ? 2 : 1) * (perk('fes') ? 1.03 : 1) * (perk('pink') ? 1.05 : 1); // Fes +%3, Pembe tüy +%5 simit puanı (mesafe puanına dokunmaz)
   // simit parçası (atılan, çöpten çıkan) çeyrek simittir: puanın ve cüzdana katkısının dörtte biri
   const q = (s.piece ? 0.25 : 1) * (ruleOn('giant') ? 2 : 1), base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
   points += gain; simitCount += q; countMission('simitTotal', q);
   if (s.turn) s.turn.got++;
   if (s.th) thrownStat.caught++;
-  if (weather === 'snow') warmth = Math.min(1, warmth + (s.gold ? 0.35 : 0.08)); // sıcak simit ısıtır
-  full = Math.min(1, full + (s.gold ? 0.4 : 0.14) * (s.piece ? 0.5 : 1)); // simit doyurur
+  if (weather === 'snow') warmth = Math.min(1, warmth + (s.gold ? 0.5 : 0.16) * (s.piece ? 0.5 : 1)); // sıcak simit ısıtır
+  full = Math.min(1, full + (s.gold ? 0.5 : 0.18) * (s.piece ? 0.5 : 1)); // simit doyurur
   if (s.person) run.steal++;
   if (s.person && s.person.feeder) run.feed++;
   if (s.th) run.piece++;
@@ -3116,7 +3116,7 @@ function hungerTick(dt) {
   full = Math.max(0, full - dt / ((city.hunger || 24)));
   if (!starve && full <= 0) { starve = true; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.25); sfx.shiver(); vibrate([25, 40, 25]); }
   else if (starve && full >= 0.25) starve = false;
-  const w = full < 0.5 || starve ? Math.round(full * 50) : -1; // çubuk yalnız yarıdan aşağıda görünür: ekran sade
+  const w = Math.round(full * 50); // çubuk acıkma başlayınca (300 m) hep görünür
   if (w !== shownFull) {
     if (w < 0) show('hungry', false);
     else { if (shownFull < 0) show('hungry'); $('hungry').querySelector('i').style.transform = `scaleX(${full})`; $('hungry').classList.toggle('cold', starve || full < 0.2); }
@@ -3135,14 +3135,16 @@ function weatherTick(dt) {
     if (weather === 'rain') { boltNext -= dt; if (boltNext <= 0) { boltNext = rand(9, 18); bump(ui.flash, 'flashing'); sfx.thunder(); } }
   } else wind = damp(wind, 0, 2, dt);
   if (weather === 'fog') { hornNext -= dt; if (hornNext <= 0) { hornNext = rand(12, 20); sfx.horn(); } }
-  if (weather === 'snow') {
+  if (weather === 'snow' && !tutorialPending && dist >= 200) {
     const was = warmth;
     warmth -= dt / COLD_S * (perk('scarf') ? 0.6 : 1) * (perk('beanie') ? 0.8 : 1) * (perk('ice') ? 0.5 : 1); // Atkı %40, Bere %20, Buz martısı %50 yavaş üşür
     if (was >= 0.25 && warmth < 0.25) sfx.shiver();
-    if (warmth <= 0) { // dondun: kombo sıfırlanır, biraz ısınıp devam
-      warmth = 0.45; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.35); sfx.shiver(); vibrate([30, 30, 30]);
+    if (warmth <= 0 && !starve) { // dondun: kombo sıfırlanır, martı ısınana kadar (iki üç simit) ağır döner ve titrer
+      warmth = 0; starve = true; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.35); sfx.shiver(); vibrate([30, 30, 30]);
       sparkle(gull.position, 30, 0xdff6ff, 4, 0.8, 0.6);
     }
+    warmth = Math.max(0, warmth);
+    if (starve && warmth >= 0.3) starve = false;
     const w = Math.round(warmth * 50);
     if (w !== shownWarm) {
       if (shownWarm < 0) show('warm');
@@ -3276,7 +3278,7 @@ window.__game = {
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
-  get city() { return city.id; }, get full() { return +full.toFixed(3); }, get starve() { return starve; }, setFull: v => (full = v), get arriveText() { return $('arriveSub').textContent; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
+  get city() { return city.id; }, get full() { return +full.toFixed(3); }, get starve() { return starve; }, get warmth() { return +warmth.toFixed(3); }, setFull: v => (full = v), get arriveText() { return $('arriveSub').textContent; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
   get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
   setCity(id) { useCity(cityOf(id)); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },
