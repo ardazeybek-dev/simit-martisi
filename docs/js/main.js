@@ -105,8 +105,11 @@ function dayRun() {
 }
 const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 // kostüm özellikleri: yalnızca giyili parça işler (panelde önizleme işlemez). Küçük tutuldu: cüzdana etkisi uçuş başı 1-2 simit
-const PERKS = { crown: 'Altın simit +%20', simitcrown: 'Kapma alanı +%8', tophat: 'Güçlendirmeler +%10 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Cüzdana +%10 simit', kurye: 'Görev ödülleri +%15', taksi: 'Kıl payı puanı x2' };
-const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } }; // açılışta look henüz yoksa (dünya üretimi) özellik yok
+const PERKS = { crown: 'Altın simit +%20', simitcrown: 'Kapma alanı +%8', tophat: 'Güçlendirmeler +%10 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Cüzdana +%10 simit', kurye: 'Görev ödülleri +%15', taksi: 'Kıl payı puanı x2',
+  fes: 'Uçuş XP +%10', beanie: 'Karda %25 yavaş üşür', chef: 'Çay molası +%30 süre', captain: 'Mıknatıs +%30 süre', tray: 'Görev ödülleri +%10', glasses: 'Kalkan +%30 süre', hearts: 'Kombo süresi +%10', bigglasses: 'Balık yakalama +%10', mustache: 'Kıl payı puanı +%50', pacifier: 'Dirilince kalkan +%50 süre', bowtie: 'Yunus bonusu x2', pink: 'Uçuş XP +%20', night: 'Yağmurda rüzgâr %30 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%25', ice: 'Karda hiç üşümez', durum: 'Balık daha sık zıplar' };
+const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } };
+const comboT0 = () => COMBO_T * (perk('hearts') ? 1.1 : 1); // Kalpli gözlük: kombo süresi +%10
+const PW_PERK = { magnet: 'captain', tea: 'chef', shield: 'glasses' }; // bu kostümler o gücü +%30 uzatır // açılışta look henüz yoksa (dünya üretimi) özellik yok
 // mod boyları: Tombul martı iri ve hantal, Hıçkıran martı hıçkırınca bir an şişer
 const gullBase = () => (ruleOn('chubby') ? 1.2 : 0.95);
 let catchK = 1, obsK = HIT.obs; // simit kapma alanı çarpanı, engel çarpma payı (moda göre)
@@ -330,6 +333,8 @@ function gapKind(first, quiet, z0, d) {
   const k = pick(pool.filter(k => k === 'mix' || k !== lastGap));
   lastGap = k; if (genLog) genLog.push('G' + k); return k;
 }
+let lastPw = '';
+const pickPw = arr => { const k = pick(arr.filter(x => x !== lastPw)); lastPw = k; return k; }; // aynı güç art arda çıkmaz
 function spawnGap(first, fixLen, quiet) {
   const d = difficulty();
   let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, 56 - late() * 10));
@@ -375,14 +380,14 @@ function spawnGap(first, fixLen, quiet) {
     }
     // zıplayan balık (nadir): önce suda çırpınır, martı gelince martının yüksekliğine sıçrar.
     // Değersen ya yakalarsın (balık cüzdana) ya da elinden kayar: "Kaçtı!"
-    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && (Math.random() < (fishSpawn + fishTry++ * 0.05) * (ruleOn('fish') ? 3 : 1))) { // balık nadir: uçuş başına en çok bir balık zıplar; balıksız geçen her açık suda şans +%5 (kimine hiç çıkmamasın)
+    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && (Math.random() < (fishSpawn + fishTry++ * 0.05) * (perk('durum') ? 1.25 : 1) * (ruleOn('fish') ? 3 : 1))) { // balık nadir: uçuş başına en çok bir balık zıplar; balıksız geçen her açık suda şans +%5 (kimine hiç çıkmamasın)
       fishEarly = true;
       const dir = pick([-1, 1]), m = new THREE.Mesh(FISH, vcMat); m.visible = false; m.scale.setScalar(1.35); scene.add(m);
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
     }
     seedAt('gf', genN); // balık atılıp atılmamasından bağımsız: günün uçuşunda güç ve şamandıralar herkes için aynı
-    if (segCount > 2 && Math.random() < 0.42) {
-      const kind = pick((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield'] : [])); // Nazar: kalkan daha sık
+    if (segCount > 2 && Math.random() < 0.33) {
+      const kind = pickPw((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield'] : [])); // Nazar: kalkan daha sık
       const z = z0 - len * 0.5, x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
       const p = makePowerUp(kind); p.position.set(x, FLY_Y, z); scene.add(p);
       powerups.push({ g: p, kind, x, y: FLY_Y, z });
@@ -1079,7 +1084,7 @@ let teaK = 1; // Çay Molası: simülasyon bu oranla akar (yumuşak geçiş)
 const UP_COST = [600, 1500, 3000, 5500, 9000, 12000];
 const ups = { magnet: 0, shield: 0, double: 0, tea: 0 };
 { const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
-const dur = (k, lv = ups[k]) => POWER[k].dur * (1 + lv * 0.25) * (perk('tophat') ? 1.1 : 1); // Dev silindir: +%10
+const dur = (k, lv = ups[k]) => POWER[k].dur * (1 + lv * 0.25) * (perk('tophat') ? 1.1 : 1) * (perk(PW_PERK[k]) ? 1.3 : 1); // Dev silindir: +%10
 let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
 const WALLET_RATE = 10; // kaç yakalanan simit cüzdana 1 simit eder (15'te 16 bin puanlık uçuş 30 simit getiriyordu, az bulundu)
@@ -1108,7 +1113,7 @@ const xpNeed = lv => 80 + lv * 40, lvGift = lv => Math.min(30, 5 + lv); // seviy
 const rank = Object.assign({ lv: 1, xp: 0 }, store.get(KEY_RANK, {}) || {});
 const rankName = lv => tr(RANKS.filter(r => lv >= r[0]).pop()[1]);
 let xpGot = 0; // bu uçuştan şimdiye dek yazılan XP (ikinci şansta iki kez sayılmasın)
-const runXp = () => Math.round(simitCount + dist / 20);
+const runXp = () => Math.round((simitCount + dist / 20) * (perk('fes') ? 1.1 : 1) * (perk('pink') ? 1.2 : 1)); // Fes +%10, Pembe tüy +%20
 function addXp(n) {
   let ups = 0, gift = 0;
   rank.xp += n;
@@ -1155,7 +1160,7 @@ const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed:
 
 function resetWorld(newWeather = true) {
   seedAt('w'); genN = 0; turnN = 0;
-  clearWorld(); genZ = -8; segCount = 0; convoy = longSea = false; lastGap = ''; sceneryZ = 10; maidenZ = city.maiden ? rand(-500, -300) : -Infinity; cruiseZ = rand(-120, -40); anchorZ = rand(-60, -10);
+  clearWorld(); genZ = -8; segCount = 0; convoy = longSea = false; lastGap = ''; lastPw = ''; sceneryZ = 10; maidenZ = city.maiden ? rand(-500, -300) : -Infinity; cruiseZ = rand(-120, -40); anchorZ = rand(-60, -10);
   bridgeZ = !city.bridges ? -Infinity : BRIDGE_SOON ? -90 : -rand(1150, 1450); // ilk köprü Karaköy'den sonra
   imbatZ = !city.imbat ? -Infinity : IMBAT_SOON ? -90 : -rand(800, 1000); // ilk imbat Göztepe'den sonra
   pirateZ = !city.pirate ? -Infinity : PIRATE_SOON ? -90 : -rand(1050, 1300); // ilk korsan teknesi Kaleiçi'nden sonra
@@ -1516,7 +1521,7 @@ function saveName(inp = $('nameInput'), err = $('nameErr')) {
 
 // ---------------- cüzdan ve kostümler ----------------
 function bank() {
-  const units = carry0 + (simitCount + goldCount * 3) * (perk('golden') ? 1.1 : 1) + dist / WALLET_M * WALLET_RATE; // Altın martı: +%10; mesafe de kazandırır
+  const units = carry0 + (simitCount + goldCount * 3) * (perk('golden') ? 1.1 : 1) + dist / WALLET_M * WALLET_RATE * (perk('sunset') ? 1.25 : 1); // Gün batımı: mesafeden +%25 // Altın martı: +%10; mesafe de kazandırır
   const earned = Math.floor(units / WALLET_RATE), gain = earned - banked;
   if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
   store.set(KEY_CARRY, Math.round((units - earned * WALLET_RATE) * 100) / 100); // artan kısım sonraki uçuşa
@@ -1702,7 +1707,7 @@ function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k =
 function checkMissions() {
   for (const m of missions) {
     if (m.done || misProgress(m) < m.n) continue;
-    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.15 : 1)); store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions); // Kurye: +%15
+    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.15 : 1) * (perk('tray') ? 1.1 : 1)); store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions); // Kurye: +%15
     if (state === 'play') {
       sfx.gold(); vibrate([20, 30, 20]);
     }
@@ -1726,7 +1731,7 @@ function renderMissions(box, fill = false) {
 }
 // görevler paneli: son uçuşun ilerlemesi burada dolar, biten görevin üstü çizilir, ödülü cüzdana tık tık sayılır
 function openMissions() {
-  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + Math.round(m.r * (perk('kurye') ? 1.15 : 1)), 0) : 0;
+  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + Math.round(m.r * (perk('kurye') ? 1.15 : 1) * (perk('tray') ? 1.1 : 1)), 0) : 0;
   renderMissions($('titleMis'), fill);
   $('misWallet').textContent = fmt(wallet - gain);
   if (!fill) return;
@@ -2110,7 +2115,7 @@ function revive() {
   gull.position.y = FLY_Y; gull.rotation.set(0, 0, 0); gull.visible = true;
   tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
   combo = 0; comboT = 0;
-  pw.shield = dur('shield'); invuln = 0.35; // kalkan bir sonraki gerçek çarpmada kırılır
+  pw.shield = dur('shield') * (perk('pacifier') ? 1.5 : 1); invuln = 0.35; // kalkan bir sonraki gerçek çarpmada kırılır
   for (const o of obstacles) if (Math.abs(o.z - gull.position.z) < o.hd + 6) o.ghost = true; // çarptığı engelin içinden çıkarken kalkan harcanmasın
   for (const r of rivals) if (Math.abs(r.mesh.position.z - gull.position.z) < 6) { r.hit = true; r.spin = r.mesh.position.x > gull.position.x ? 1 : -1; } // yanındaki rakip savrulup gider
   for (const k of kites) if (Math.abs(k.z - gull.position.z) < 6) k.ghost = true;
@@ -2631,7 +2636,7 @@ function frame() {
       if ((hicT -= dt) <= 0) { hicT = 2 + R0() * 2.5; vx += (R0() < 0.5 ? -1 : 1) * (10 + R0() * 5); hicY = 1; vibrate(15); sfx.click(); }
       hicY = damp(hicY, 0, 5, dt); gullSize(hicY);
     }
-    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) + imbatW + fallsW : 0), -EDGE, EDGE);
+    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.7 : 1) + imbatW + fallsW : 0), -EDGE, EDGE);
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (weather === 'snow' && warmth < 0.25 && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
@@ -2737,8 +2742,7 @@ function frame() {
       for (const k of kites) if (!k.ghost && Math.abs(k.g.position.x - g.x) < HIT.kiteX && swept(k.z, HIT.kiteZ)) crash('uçurtmaya');
       for (const s of smokes) {
         if (!s.hit && g.z < s.z1 && g.z > s.z0 && Math.abs(g.x - s.x) < s.hw) {
-          s.hit = true; smokeT = 1.4; // öksürük ve buğu: kombo bozulmaz
-          sfx.cough(); vibrate(30);
+          s.hit = true; if (!perk('mint')) { smokeT = 1.4; sfx.cough(); vibrate(30); } // öksürük ve buğu: kombo bozulmaz (Nane martı öksürmez)
         }
       }
       for (const u of turns) {
@@ -2894,14 +2898,14 @@ function frame() {
     if (u > 1.3) f.mesh.visible = false;
     if (!f.done && state === 'play' && u > 0.2 && u < 0.8 && Math.abs(g.x - x) < 1.7 && Math.abs(g.z - f.z) < 2 && Math.abs(g.y - y) < 1.8) {
       f.done = true;
-      if (!fishRun && dist >= FISH_MIN_M && fishToday() < FISH_DAY && Math.random() < fishCatch) catchFish(f); else slipFish(f); // ikinci kilit: erken ya da kotası dolmuşken asla yakalanmaz
+      if (!fishRun && dist >= FISH_MIN_M && fishToday() < FISH_DAY && Math.random() < fishCatch + (perk('bigglasses') ? 0.1 : 0)) catchFish(f); else slipFish(f); // ikinci kilit: erken ya da kotası dolmuşken asla yakalanmaz
     }
   }
   if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }
   for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
   glintTick(dt, simits, gull.position.z);
   tickShipLights(dt, scene, camera, renderer, weather, gull.position.z);
-  trailTick(dt, state === 'play', mult(), comboT / COMBO_T);
+  trailTick(dt, state === 'play', mult(), comboT / comboT0());
   updateFx(dt);
 
   // ---- kalkan / sis ----
@@ -2984,7 +2988,7 @@ function frame() {
     const on = combo >= 2;
     ui.combo.classList.toggle('on', on);
     if (on) {
-      ui.comboRing.style.strokeDashoffset = 100 - (comboT / COMBO_T) * 100;
+      ui.comboRing.style.strokeDashoffset = 100 - (comboT / comboT0()) * 100;
       if (m !== shownMult) { ui.mult.textContent = `x${m}`; if (m > shownMult && m > 1) bump(ui.combo, 'bump'); shownMult = m; }
     } else if (shownMult !== 0) { shownMult = 0; }
     tickPowers();
@@ -3051,7 +3055,7 @@ function coinFly(gold, sel = '.sub .ico', icon = 'i-simit') {
   setTimeout(() => { el.remove(); bump(ico()); }, 560);
 }
 function takeSimit(s) {
-  combo = comboT > 0 ? combo + 1 : 1; comboT = COMBO_T; bestCombo = Math.max(bestCombo, combo);
+  combo = comboT > 0 ? combo + 1 : 1; comboT = comboT0(); bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1);
   // simit parçası (atılan, çöpten çıkan) çeyrek simittir: puanın ve cüzdana katkısının dörtte biri
   const q = (s.piece ? 0.25 : 1) * (ruleOn('giant') ? 2 : 1), base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
@@ -3105,7 +3109,7 @@ function weatherTick(dt) {
   if (weather === 'fog') { hornNext -= dt; if (hornNext <= 0) { hornNext = rand(12, 20); sfx.horn(); } }
   if (weather === 'snow') {
     const was = warmth;
-    warmth -= dt / COLD_S * (perk('scarf') ? 0.6 : 1); // Atkı: %40 yavaş üşür
+    warmth -= dt / COLD_S * (perk('scarf') ? 0.6 : 1) * (perk('beanie') ? 0.75 : 1) * (perk('ice') ? 0 : 1); // Atkı %40, Bere %25 yavaş; Buz martısı hiç üşümez
     if (was >= 0.25 && warmth < 0.25) sfx.shiver();
     if (warmth <= 0) { // dondun: kombo sıfırlanır, biraz ısınıp devam
       warmth = 0.45; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.35); sfx.shiver(); vibrate([30, 30, 30]);
@@ -3121,7 +3125,7 @@ function weatherTick(dt) {
 // iskeleye varış (kapının altından geçiş): uçuş sürer, çubuk sıradaki durağa geçer
 function arrive() {
   const i = stopI++, gain = 25 * i * mult();
-  points += gain; if (combo > 0) comboT = COMBO_T;
+  points += gain; if (combo > 0) comboT = comboT0();
   const el = $('arrive');
   $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase('tr'); // iskele adları Türkçe kalır: her dilde BEŞİKTAŞ (i → İ)
   $('arriveSub').textContent = tr(i === STOPS.length - 1 ? city.end : 'İskeleye vardın');
@@ -3153,7 +3157,7 @@ function splash(x, z, n) {
 function catchFish(f) {
   f.u = 2; f.mesh.visible = false;
   setFish(fish + 1); fishRun++; run.fish++; store.set(KEY_FISHDAY, { day: dayKey(), n: fishToday() + 1 }); fishSync(true);
-  points += 25 * mult(); if (combo > 0) comboT = COMBO_T;
+  points += 25 * mult(); if (combo > 0) comboT = comboT0();
   sfx.gold(); vibrate([20, 30, 20]); hitStop = 0.06; trauma = Math.min(1, trauma + 0.2); flapBurst = 1;
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y, f.z), 30, 0x8fdcff, 5, 0.8, 0.3);
   popText(tr('Balık!'), tmp2.set(f.mesh.position.x, f.mesh.position.y + 1.2, f.z), 'shout cheer');
@@ -3167,14 +3171,14 @@ function slipFish(f) {
 }
 // yunusun tepe noktasının üstünden geçmek: küçük bonus + kombo süresi tazelenir (zincir kopmaz)
 function dolphinBonus(f) {
-  const gain = 15 * mult();
+  const gain = 15 * mult() * (perk('bowtie') ? 2 : 1); // Papyon: yunus x2
   points += gain; run.dolphin++;
-  if (combo > 0) comboT = COMBO_T;
+  if (combo > 0) comboT = comboT0();
   sfx.near(); vibrate(15);
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y + 0.5, f.z), 12, 0xcff0ff, 3.5, 0.5);
 }
 function nearMiss(x) {
-  const gain = 5 * mult() * (perk('taksi') ? 2 : 1); // Taksi: x2
+  const gain = 5 * mult() * (perk('taksi') ? 2 : perk('mustache') ? 1.5 : 1); // Taksi x2, Bıyık +%50 (toplanmaz)
   points += gain; run.near++;
   sfx.near(); trauma = Math.min(1, trauma + 0.12);
   sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0xffffff, 3, 0.35);
@@ -3220,7 +3224,7 @@ requestAnimationFrame(frame);
 
 window.__game = {
   get state() { return state; }, get podYaw() { return pod.yaw; }, get podCam() { return pod.cam.position.toArray().map(v => +v.toFixed(3)); }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
-  get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, setCombo: n => { combo = n; comboT = COMBO_T; }, get powers() { return { ...pw }; },
+  get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, setCombo: n => { combo = n; comboT = comboT0(); }, get powers() { return { ...pw }; },
   genTo: z => generate(z), genLog: on => { const l = genLog; genLog = on ? [] : null; return l; },
   get wallet() { return wallet; }, get rank() { return { ...rank }; }, addXp, setWallet: n => { wallet = n; store.set(KEY_WALLET, n); }, get look() { return JSON.parse(JSON.stringify(look)); },
   openWardrobe, closeWardrobe, get missions() { return JSON.parse(JSON.stringify(missions)); },
@@ -3231,7 +3235,7 @@ window.__game = {
   addFish: (ahead = 40, x = 0) => { const dir = 1, mm = new THREE.Mesh(FISH, vcMat); mm.visible = false; scene.add(mm); fishes.push({ mesh: mm, dir, ax: x, z: gull.position.z - ahead, w: 3.2, T: 0.85, lag: 0, u: -1, done: false, spin: 0, splT: 0 }); },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
-  get farStop() { return farStop; }, get thrown() { return { ...thrownStat }; },
+  get farStop() { return farStop; }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
