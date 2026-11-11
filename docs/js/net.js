@@ -158,7 +158,8 @@ export async function submitScore(score, dist, city) {
 
 // { week, ends, total, top:[{rank,name,cc,score,me}], me:{rank,score}|null, prev:{week,rank,total}|null } ya da null
 // günlük ödül sunucuda: aynı ağ + aynı tarayıcı günde bir kez alır (kayıtlar silinse de). act: peek | claim | save
-export const dailyRpc = act => rpc('daily', { p_act: act });
+// günlük ödül oyuncu kimliğine bağlı (IP değil): telefonun IP'si değişince seri 1. güne düşmez. Kayıt henüz gitmediyse eski yol
+export const dailyRpc = act => { const p = profile(); return p.id && p.secret ? rpc('daily', { p_act: act, p_id: p.id, p_secret: p.secret }) : rpc('daily', { p_act: act }); };
 
 export async function fetchBoard() {
   await sync();

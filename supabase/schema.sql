@@ -176,12 +176,12 @@ create table if not exists daily_claims (
 );
 alter table daily_claims enable row level security;
 
-create or replace function daily(p_act text default 'peek') returns json
+-- günlük ödül: oyuncu kimliğine (players.id + secret) bağlı. Eskiden IP+tarayıcı anahtarıydı: telefonda IP değişince
+-- seri 1. güne düşüyordu, aynı ağdaki aynı model telefonlar da tek kişi sayılıyordu. Kimliği olmayan (kaydı henüz
+-- gitmemiş) istemci için eski anahtar sürer; kimlikle ilk gelişte eski kayıt kimliğe kopyalanır (seri kaybolmaz).
+create or replace function daily_k(vk text, p_act text) returns json
 language plpgsql security definer set search_path = public as $$
 declare
-  h json := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json;
-  ip text := coalesce(h->>'cf-connecting-ip', h->>'x-real-ip', split_part(h->>'x-forwarded-for', ',', 1), '');
-  vk text := md5(trim(ip) || '|' || coalesce(h->>'user-agent', ''));
   today date := (now() at time zone 'Europe/Istanbul')::date;
   r daily_claims;
   nxt int; lost int := 0; ago int;
@@ -209,5 +209,38 @@ begin
   if found and r.last = today then return json_build_object('ready', false, 'streak', r.streak); end if;
   return json_build_object('ready', true, 'streak', nxt, 'lost', lost);
 end $$;
+revoke all on function daily_k(text, text) from public, anon, authenticated;
+
+create or replace function daily_legacy_key() returns text
+language plpgsql stable security definer set search_path = public as $$
+declare
+  h json := coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json;
+  ip text := coalesce(h->>'cf-connecting-ip', h->>'x-real-ip', split_part(h->>'x-forwarded-for', ',', 1), '');
+begin
+  return md5(trim(ip) || '|' || coalesce(h->>'user-agent', ''));
+end $$;
+revoke all on function daily_legacy_key() from public, anon, authenticated;
+
+-- eski istemci (önbellekteki sürüm) için: IP+tarayıcı anahtarı
+create or replace function daily(p_act text default 'peek') returns json
+language plpgsql security definer set search_path = public as $$
+begin
+  return daily_k(daily_legacy_key(), p_act);
+end $$;
 revoke all on function daily(text) from public;
 grant execute on function daily(text) to anon, authenticated;
+
+create or replace function daily(p_act text, p_id uuid, p_secret uuid) returns json
+language plpgsql security definer set search_path = public as $$
+declare
+  vk text := 'p:' || p_id::text;
+  lk text := daily_legacy_key();
+begin
+  if p_id is null or not exists (select 1 from players where id = p_id and secret = p_secret) then return daily_k(lk, p_act); end if;
+  if not exists (select 1 from daily_claims where k = vk) then
+    insert into daily_claims (k, last, streak) select vk, d.last, d.streak from daily_claims d where d.k = lk on conflict do nothing;
+  end if;
+  return daily_k(vk, p_act);
+end $$;
+revoke all on function daily(text, uuid, uuid) from public;
+grant execute on function daily(text, uuid, uuid) to anon, authenticated;
