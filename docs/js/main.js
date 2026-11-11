@@ -1159,7 +1159,7 @@ function planTempo(limit) {
 }
 const tempoAt = z => tempos.find(u => z < u.z0 && z > u.z1) || null;
 // hava (weather.js): yağmurda rüzgâr esintisi martıyı yana iter, karda simit yemezsen üşürsün, siste ufuk kısalır
-let full = 1, starve = false, shownFull = -1; // tokluk: simit yemeden uçan martı acıkır, aç martı ağır döner
+let full = 1, starve = false, shownFull = -1; // tokluk: simit yemeden uçan martı acıkır; çubuk biterse düşer (starve: son anlar, titrer)
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
 const GUST = 6.5, COLD_S = 6; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
 const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0 }; // görevler ve başarımlar için uçuş sayaçları
@@ -1382,7 +1382,7 @@ function showOver() {
   $('overMult').textContent = cm > 1 ? ` ×${cm}` : '';
   const isBest = !daily && final > best, prevBest = best, askName = isBest && final > 0 && netOn() && !myName();
   if (isBest) { best = final; store.set(KEY_BEST, best); }
-  const msg = { quit: 'Uçuş bitti', 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!' };
+  const msg = { quit: 'Uçuş bitti', 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!', 'açlıktan': 'Açlıktan düştün!', 'soğuktan': 'Donup düştün!' };
   $('overTitle').textContent = tr(msg[cause] || 'Pat!');
   $('stSimit').textContent = fmt(Math.floor(simitCount));
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
@@ -2124,7 +2124,7 @@ function askRevive() {
 }
 // çarptığı yerden kalkanla devam: dünya aynı kalır, 3-2-1 sayımıyla başlar
 function revive() {
-  revives++; crashObs = null; full = 1; starve = false;
+  revives++; crashObs = null; full = 1; warmth = 1; starve = false;
   gull.position.y = FLY_Y; gull.rotation.set(0, 0, 0); gull.visible = true;
   tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
   combo = 0; comboT = 0;
@@ -2649,7 +2649,7 @@ function frame() {
       if ((hicT -= dt) <= 0) { hicT = 2 + R0() * 2.5; vx += (R0() < 0.5 ? -1 : 1) * (10 + R0() * 5); hicY = 1; vibrate(15); sfx.click(); }
       hicY = damp(hicY, 0, 5, dt); gullSize(hicY);
     }
-    const k = (ruleOn('chubby') ? 120 : 230) * (starve ? 0.3 : 1), c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + imbatW + fallsW : 0), -EDGE, EDGE);
+    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + imbatW + fallsW : 0), -EDGE, EDGE);
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (((weather === 'snow' && warmth < 0.25) || starve) && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme (üşüyen ya da aç martı)
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
@@ -3114,8 +3114,8 @@ function judgeTurn(u) {
 function hungerTick(dt) {
   if (weather === 'snow' || tutorialPending) { if (shownFull >= 0) { show('hungry', false); shownFull = -1; } return; }
   if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 6));
-  if (!starve && full <= 0) { starve = true; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.25); sfx.shiver(); vibrate([25, 40, 25]); }
-  else if (starve && full >= 0.25) starve = false;
+  starve = full < 0.2; // son anlar: martı titrer, başı düşer
+  if (full <= 0) { crash('açlıktan'); if (state === 'play') full = 0.35; } // açlıktan düşer (kalkan yutarsa biraz doyar)
   const w = Math.round(full * 50); // çubuk uçuş boyunca hep görünür
   if (w !== shownFull) {
     if (w < 0) show('hungry', false);
@@ -3139,12 +3139,8 @@ function weatherTick(dt) {
     const was = warmth;
     if (dist >= 50) warmth -= dt / COLD_S * (perk('scarf') ? 0.6 : 1) * (perk('beanie') ? 0.8 : 1) * (perk('ice') ? 0.5 : 1); // Atkı %40, Bere %20, Buz martısı %50 yavaş üşür
     if (was >= 0.25 && warmth < 0.25) sfx.shiver();
-    if (warmth <= 0 && !starve) { // dondun: kombo sıfırlanır, martı ısınana kadar (iki üç simit) ağır döner ve titrer
-      warmth = 0; starve = true; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.35); sfx.shiver(); vibrate([30, 30, 30]);
-      sparkle(gull.position, 30, 0xdff6ff, 4, 0.8, 0.6);
-    }
-    warmth = Math.max(0, warmth);
-    if (starve && warmth >= 0.3) starve = false;
+    warmth = Math.max(0, warmth); starve = warmth < 0.2;
+    if (warmth <= 0) { sparkle(gull.position, 30, 0xdff6ff, 4, 0.8, 0.6); crash('soğuktan'); if (state === 'play') warmth = 0.35; } // donup düşer
     const w = Math.round(warmth * 50);
     if (w !== shownWarm) {
       if (shownWarm < 0) show('warm');
@@ -3245,7 +3241,6 @@ onGift(() => {
   $('giftPill').textContent = '🎁 ' + tr('Hediye geldi: {n} simit!').replace('{n}', fmt(n)); show('giftPill'); sfx.record();
 });
 $('giftPill').addEventListener('click', () => show('giftPill', false));
-$('hungryLbl').textContent = tr('Açlık').toLocaleUpperCase(window.I18N.locale);
 { const v = document.querySelector('meta[name="app-version"]'); $('verTxt').textContent = v ? 'v' + v.content : ''; } // ayarlarda sürüm: telefondaki sürüm görülsün
 addEventListener('online', () => sync());
 setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gönderim, kapanan sayfa) hemen gitsin
