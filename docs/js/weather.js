@@ -12,6 +12,7 @@ const SEASON_W = { // [açık, yağmur, sis, kar]
 const KINDS = ['clear', 'rain', 'fog', 'snow'];
 let last = null;
 export function pickWeather() {
+  try { const k = sessionStorage.getItem('simit-martisi-keepw'); sessionStorage.removeItem('simit-martisi-keepw'); if (KINDS.includes(k)) return (last = k); } catch (e) {} // sürüm yenilemesinde hava aynı kalır
   if (KINDS.includes(FORCE)) return FORCE;
   const m = new Date().getMonth(), w = SEASON_W[m === 11 || m <= 1 ? 'winter' : m <= 4 ? 'spring' : m <= 7 ? 'summer' : 'autumn'];
   const roll = () => { let r = Math.random(); for (let i = 0; i < 4; i++) { if ((r -= w[i]) < 0) return KINDS[i]; } return 'clear'; };
