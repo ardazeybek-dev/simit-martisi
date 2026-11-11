@@ -34,7 +34,7 @@ export function cleanName(s) {
 export const validName = s => cps(cleanName(s)).length >= 2;
 // uygunsuz ad: supabase/schema.sql'deki sm_fold + sm_bad ile aynı listeler ve aynı sadeleştirme (ikisi birlikte güncellenir).
 // Benzer harfler (Kiril о, Yunan ο, 0, @ ...) latine çevrilir; BAD adın içinde aranır, WORDS yalnızca tek başına kelimeyse sayılır.
-const BAD = ['amcik', 'amck', 'amcuk', 'aminako', 'aminakoy', 'aminaq', 'amk', 'amq', 'arschloch', 'ashole', 'bastard', 'bitch', 'cabron', 'cocksucker', 'cunt', 'dangalak', 'dick', 'dildo', 'fagot', 'fahise', 'fotze', 'fuck', 'gavat', 'gerizekali', 'gilipolas', 'gotlek', 'gotos', 'gotveren', 'hijodeputa', 'hitler', 'hurensohn', 'ibine', 'ibne', 'ipne', 'kahpe', 'kaltak', 'kancik', 'kerhane', 'kevase', 'kodumun', 'maricon', 'mierda', 'oglanci', 'orosbu', 'orospu', 'orospucocugu', 'orspu', 'pendejo', 'penis', 'pezevenk', 'pickurusu', 'picoglu', 'pijkurusu', 'pijoglu', 'porn', 'porno', 'pust', 'pusy', 'putamadre', 'rapist', 'retard', 'serefsiz', 'sex', 'shit', 'skm', 'sktr', 'slut', 'sokuk', 'surtuk', 'vagina', 'whore', 'wichser', 'yarak', 'yavsak'];
+const BAD = ['amcik', 'amck', 'amcuk', 'aminako', 'aminakoy', 'aminaq', 'amk', 'amq', 'arschloch', 'ashole', 'bastard', 'bitch', 'cabron', 'cocksucker', 'cunt', 'dangalak', 'dick', 'dildo', 'fagot', 'fahise', 'fotze', 'fuck', 'gavat', 'gerizekali', 'gilipolas', 'gotlek', 'gotos', 'gotveren', 'hijodeputa', 'hitler', 'hurensohn', 'ibine', 'ibne', 'ipne', 'kahpe', 'kaltak', 'kancik', 'kanirt', 'kerhane', 'kevase', 'kodumun', 'maricon', 'mierda', 'oglanci', 'orosbu', 'orospu', 'orospucocugu', 'orspu', 'pendejo', 'penis', 'pezevenk', 'pickurusu', 'picoglu', 'pijkurusu', 'pijoglu', 'porn', 'porno', 'pusi', 'pust', 'pusy', 'putamadre', 'rapist', 'retard', 'serefsiz', 'sex', 'shit', 'skm', 'sktr', 'slut', 'sokuk', 'surtuk', 'vagina', 'whore', 'wichser', 'yalayan', 'yarak', 'yavsak'];
 const WORDS = new Set(['ahmak', 'am', 'amin', 'amina', 'amini', 'amq', 'aptal', 'aq', 'bok', 'boktan', 'cock', 'cum', 'dalama', 'got', 'gote', 'gotler', 'gotu', 'gotum', 'gotun', 'kasar', 'lavuk', 'mal', 'niga', 'nigas', 'niger', 'oc', 'pic', 'pice', 'pij', 'pijo', 'pipi', 'salak', 'salaklar', 'sapik', 'seks', 'seksi', 'sexy', 'sg', 'sik', 'sike', 'sikik', 'sikim', 'tasak', 'tasaklar', 'tits', 'yarami']);
 const FROM = 'ışğüöçâîûİŞĞÜÖÇ0134578@$!69авеёкмнорстухѕіїјԁүһԛԝАВЕЁКМНОРСТУХЅІЇЈαβεικνορτυχΑΒΕΖΗΙΚΜΝΟΡΤΥΧɑɡ', TO = 'isguocaiuisguocoieastbasiggabeekmhopctyxsiijdyhqwabeekmhopctyxsiijabeikvoptuxabezhikmnoptyxag';
 const fold = s => Array.from(String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()).map(c => { const i = FROM.indexOf(c); return i < 0 ? c : TO[i]; }).join('')
@@ -48,6 +48,8 @@ export const rudeName = s => {
 };
 
 export const profile = () => store.get(KEY_PROFILE, null) || {};
+// liste sonradan büyüyünce eski uygunsuz ad cihazda kalmasın: ad silinir, menü yeni ad sorar (skor sunucuda kimliğe bağlı, kaybolmaz)
+{ const p = profile(); if ((p.name && rudeName(p.name)) || (p.srv && rudeName(p.srv))) { if (rudeName(p.name || '')) p.name = ''; if (rudeName(p.srv || '')) p.srv = ''; p.dirty = false; store.set(KEY_PROFILE, p); } }
 // ad seçmeyen de sıralamaya girer: cihaza bir kez "Martı 4821" gibi bir ad verilir; oyuncu ad seçince sunucudaki ad da değişir
 function autoName(p) {
   if (!p.auto) { p.auto = 'Martı ' + (1000 + Math.floor(Math.random() * 9000)); store.set(KEY_PROFILE, p); }
@@ -186,6 +188,6 @@ export async function fetchBoard() {
   const b = await rpc('get_board', { p_id: profile().id || null });
   // ad sunucuda değiştirildiyse (uygunsuz ad cezası) cihazdaki ad da ona döner
   const p = profile(), sn = b && b.me && b.me.name;
-  if (sn && p.id && !p.dirty && sn !== p.srv) { p.srv = sn; if (p.name) p.name = sn; store.set(KEY_PROFILE, p); }
+  if (sn && p.id && !p.dirty && sn !== p.srv) { p.srv = sn; if (p.name || !/^Martı \d{4}$/.test(sn)) p.name = sn; store.set(KEY_PROFILE, p); } // "Martı ####" verildiyse ad yeniden sorulur
   return b;
 }
