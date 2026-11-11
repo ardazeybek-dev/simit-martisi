@@ -1324,8 +1324,8 @@ function showTitle() {
   if (vs && !vs.won) $('vsPill').textContent = tr('Bir arkadaşın {s} puan yaptı. Geçebilir misin?').replace('{s}', fmt(vs.s));
   audio.music(true);
   // günün ilk açılışında ödül kendiliğinden gelir; alınmadan geçilirse her oyun sonunda yeniden açılmaz (menüdeki nokta kalır)
-  if (!tutorialPending && !nameAsked && netOn() && !myName()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal() && !myName()) { nameAsked = true; openProfile(); } }, 700);
-  else if (!tutorialPending && !dailyAuto && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); openDaily(); } }, 700);
+  // ad yalnız oyun sonu kartında sorulur; profil paneli menüde kendiliğinden açılmaz (Ayarlar → Profil)
+  if (!tutorialPending && !dailyAuto && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); openDaily(); } }, 700);
 }
 function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görünür ama uçulmaz
   if (state !== 'title') return;
@@ -1476,7 +1476,7 @@ function earnFlow(gain) {
   if (gain > 0) requestAnimationFrame(step); else n.firstChild.nodeValue = '+0 ';
 }
 // ---------------- haftalık sıralama (net.js: gerçek oyuncular) ----------------
-let boardCache = null, boardSeq = 0, overSeq = 0, myRank = 0, nameAsked = false;
+let boardCache = null, boardSeq = 0, overSeq = 0, myRank = 0;
 const esc = v => String(v).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const refreshBoard = () => fetchBoard().then(b => { if (b) { boardCache = b; if (b.me) myRank = b.me.rank; } return b; });
 function boardMsg(info, line, tier = '') {

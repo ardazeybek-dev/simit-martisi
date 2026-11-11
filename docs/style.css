@@ -38,11 +38,12 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 
 /* ---------- yolcu lafı (simidi kapılınca) ---------- */
 #pops { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
-.pop.shout { position: absolute; width: max-content; min-width: min-content; text-align: center; line-height: 1.15; font-size: clamp(12px, 2.6vmin, 16.5px); font-weight: 800; color: #1b1530; background: #fffaf0; border: 2px solid #1b1530;
+.pop.shout { position: absolute; width: max-content; white-space: nowrap; text-align: center; line-height: 1.15; font-size: clamp(14px, 3.6vmin, 17px); font-weight: 800; color: #1b1530; background: #fffaf0; border: 2px solid #1b1530;
   padding: .25em .6em; border-radius: .75em; box-shadow: 0 3px 10px rgba(0, 0, 0, .35); letter-spacing: .01em;
   transform: translate(-50%, -50%); animation: shout 1.6s cubic-bezier(.2, .9, .3, 1) forwards; will-change: transform, opacity; }
 .pop.shout::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px;
   border: 6px solid transparent; border-bottom: 0; border-top-color: #1b1530; }
+.pop.shout.wrap { white-space: normal; text-wrap: balance; }
 .pop.shout.cheer { background: #ffe9a8; }
 .pop.shout.cheer::after { border-top-color: #1b1530; }
 @keyframes shout {

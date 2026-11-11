@@ -160,12 +160,15 @@ export function popText(text, worldPos, cls = '', edge = null) { // edge: { p: d
   const el = document.createElement('div');
   el.className = 'pop ' + cls; el.textContent = text;
   const x = (v3.x * 0.5 + 0.5) * innerWidth, y = (-v3.y * 0.5 + 0.5) * innerHeight;
-  if (edge) el.style.maxWidth = `${Math.max(96, edge.side > 0 ? innerWidth - 8 - x : x - 8)}px`; // şerit kenarıyla ekran kenarı arası: uzun laf alt satıra iner, yola taşmaz
   popLayer.appendChild(el);
-  const w = el.offsetWidth;
+  let w = el.offsetWidth;
+  // yolcu lafı tek satır, genişliği içeriği kadar (dar boşluğa sıkıştırınca "Ciddi misin şu / an?" diye bölünüyordu);
+  // ekrana sığmayan uzun çeviri kelime sınırında dengeli iki satıra iner. Açılışta balon 1,12 kat büyür: pay ona göre
+  const wMax = Math.floor((innerWidth - 12) / 1.12);
+  if (edge && w > wMax) { el.classList.add('wrap'); el.style.maxWidth = `${wMax}px`; w = el.offsetWidth; }
   // yolcu lafı: martının uçabildiği şeridin hemen dışında, martının yanında; iç kenarı sınırda, balon dışa taşar (yolu kapatmaz)
-  const cx = edge ? x + edge.side * w / 2 : x;
-  el.style.left = `${Math.min(Math.max(cx, w / 2 + 8), innerWidth - w / 2 - 8)}px`; el.style.top = `${Math.max(y, innerHeight * 0.22)}px`;
+  const cx = edge ? x + edge.side * w / 2 : x, m = edge ? w * 0.56 + 6 : w / 2 + 8;
+  el.style.left = `${Math.min(Math.max(cx, m), innerWidth - m)}px`; el.style.top = `${Math.max(y, innerHeight * 0.22)}px`;
   setTimeout(() => el.remove(), 1650);
   return el;
 }
