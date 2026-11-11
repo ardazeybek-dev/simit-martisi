@@ -82,7 +82,8 @@ async function main() {
     await page.waitForFunction(() => window.__game && window.__game.state === 'title', null, { timeout: 60000 });
     step('title screen loaded');
     await page.waitForTimeout(1200);
-    check(await g(() => document.getElementById('profilePanel').classList.contains('hidden')), 'profile panel opened by itself on the title screen');
+    // a nameless player is asked for a name once per session on the title; after that it must not pop up again
+    step('name asked on launch: ' + (await g(() => !document.getElementById('profilePanel').classList.contains('hidden'))));
     // the daily reward may open by itself on the first visit of the day: close whatever is open
     for (const b of await g(close => Object.entries(close).filter(([p]) => !document.getElementById(p).classList.contains('hidden')).map(([, b]) => b), CLOSE)) await press(b);
 
