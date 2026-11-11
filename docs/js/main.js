@@ -310,8 +310,14 @@ function flySimits(dt) {
   }
 }
 
-// yelkenli: martı boyunda yelkenler yerel z -2.08..0.09 aralığında (ölçüldü); kutu ortası gövdeden SAIL_OFF kadar kayık, her yana 0.25 m martı payı
-const SAIL_OFF = 1.0, SAIL_HW = 1.35;
+// yelkenli: yelkenler gövdenin bir yanına uzanır. Martının teknenin tabanına göre yüksekliği h'de yelkenin yandaki kesiti (ölçüldü,
+// h 4.6..5.7): iç kenar -0.04 + 0.39·(h-5.15), dış kenar 2.05 - 0.51·(h-5.15) m. Tekne dalgayla ±0.5 m inip kalktığından kutu her
+// kare o anki yüksekliğe göre kurulur; sabit kutu en geniş hâle göre 0.43 m fazla tutuyordu. Pay 0.17 + obsK 0.08 = martı gövdesinin yarı eni.
+const SAIL_OFF = 1.0, SAIL_HW = 1.35, SAIL_PAD = 0.17;
+function sailBox(c, cx, gy) {
+  const h = clamp(gy - c.mesh.position.y - 5.15, -1.5, 2), a = -0.04 + h * 0.39 - SAIL_PAD, b = 2.05 - h * 0.51 + SAIL_PAD;
+  c.o.x = cx + c.side * (a + b) / 2; c.o.hw = Math.max(0.3, (b - a) / 2);
+}
 function spawnGap(first, fixLen) {
   const d = difficulty();
   const len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, 56 - late() * 10)), z0 = genZ;
@@ -2654,7 +2660,7 @@ function frame() {
       const gz0 = g.z + speed * dt; // bu karede martının geçtiği z aralığı: [g.z, gz0]
       const swept = (z, h) => g.z < z + h && gz0 > z - h;
       // kayan teknelerin kutusu bu karenin martı konumuyla: çizilen yelkenle aynı yerde (bir kare geriden gelmesin)
-      for (const c of crossers) c.o.x = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k + c.side * SAIL_OFF;
+      for (const c of crossers) sailBox(c, c.xa + c.side * Math.max(-40, g.z - c.z) * c.k, g.y);
       for (const p of pirates) { const x = p.xa + p.side * Math.max(-40, g.z - p.z) * p.k; for (const q of p.os) q.o.x = x + q.off; }
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x);
@@ -2770,8 +2776,8 @@ function frame() {
   }
   updatePirates(g.z); updateFalls(dt, g.z);
   for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar
-    const cx = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k; c.o.x = cx + c.side * SAIL_OFF;
-    c.mesh.position.set(cx, waveAt(c.o.x, c.z, t) - 0.1, c.z); c.mesh.rotation.x = Math.sin(t * 1.3 + c.ph) * 0.06;
+    const cx = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k;
+    c.mesh.position.set(cx, waveAt(cx + c.side * SAIL_OFF, c.z, t) - 0.1, c.z); sailBox(c, cx, g.y); c.mesh.rotation.x = Math.sin(t * 1.3 + c.ph) * 0.06;
   }
   for (const b of bins) { // martı yaklaşınca kapak fırlar, kırık simit tam önüne zıplar
     const s = b.s, bn = s.bin;
