@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.58.5">
+<meta name="app-version" content="2.59.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -289,6 +289,11 @@
     <p class="best-line" id="overBest"></p>
     <p class="route-line" id="overRoute"></p>
     <p class="rank-line" id="overRank"></p>
+    <div class="over-name hidden" id="overName">
+      <p class="over-name-t" id="overNameT">Sıralamada adın görünsün!</p>
+      <div class="name-row"><input id="overNameInput" class="name-input" type="text" maxlength="16" autocomplete="nickname" autocapitalize="words" enterkeyhint="done" spellcheck="false"><button class="btn primary small" id="overNameSave">Kaydet</button></div>
+      <p class="fine err hidden" id="overNameErr"></p>
+    </div>
     <div class="over-extra">
       <p class="vs-line hidden" id="overVs"></p>
       <p class="earn" id="overEarn"></p>

@@ -1309,7 +1309,7 @@ function showOver() {
   show('warm', false); shownWarm = -1;
   state = 'over'; overLock = 0.8; applyShadows();
   const final = total();
-  const isBest = !daily && final > best, prevBest = best;
+  const isBest = !daily && final > best, prevBest = best, askName = isBest && final > 0 && netOn() && !myName();
   if (isBest) { best = final; store.set(KEY_BEST, best); }
   const msg = { quit: 'Uçuş bitti', 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!' };
   $('overTitle').textContent = tr(msg[cause] || 'Pat!');
@@ -1331,8 +1331,15 @@ function showOver() {
     recordRun(final);
     const seq = ++overSeq;
     $('overRank').textContent = ''; // sıra yazılmaz (sıralama panelinde görünür)
-    submitScore(final, Math.floor(dist), city.id).then(r => { if (r && seq === overSeq) myRank = r; });
+    submitScore(final, Math.floor(dist), city.id).then(r => {
+      if (!r || seq !== overSeq) return;
+      myRank = r;
+      if (askName) $('overNameT').textContent = tr('Sıralamada {n}. oldun! Adın görünsün mü?').replace('{n}', fmt(r));
+    });
   }
+  // adsız oyuncu ("Martı 1234") rekor kırınca: sıralamada adı görünsün diye bitiş ekranında ad kutusu (gururlandığı an sorulur)
+  show('overName', askName); show('overNameErr', false);
+  if (askName) { $('overNameT').textContent = tr('Sıralamada adın görünsün!'); $('overNameInput').value = ''; $('overNameInput').placeholder = tr('Adını yaz'); }
   { // meydan okuma: arkadaşını geçtin mi, kaç puan kaldı
     const el = $('overVs'), beat = !daily && !!vs && !vs.won && final > vs.s;
     show('overVs', !daily && !!vs && (!vs.won || beat)); el.classList.toggle('won', beat);
@@ -1439,15 +1446,15 @@ function openProfile() {
   show('profilePanel');
   setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
 }
-function saveName() {
-  const v = $('nameInput').value;
+function saveName(inp = $('nameInput'), err = $('nameErr')) {
+  const v = inp.value;
   const rude = validName(v) && rudeName(v), tur = ((window.I18N && window.I18N.lang) || 'tr') === 'tr';
   const bad = !validName(v) ? 'En az 2 harf yaz.' : rude ? 'Bu ad kullanılamaz, başka bir ad seç.' : '';
   if (bad) {
-    $('nameErr').textContent = !(rude && tur) ? tr(bad) : oddName(v) ? 'Hile yok! 😤 Yalnızca Türkçe harf, rakam ve emoji kullanabilirsin.' : 'Ayıp! 😤 Burası martıların yeri, düzgün bir isim koy. Yoksa adını biz koyarız!';
-    show('nameErr'); vibrate(rude ? [60, 40, 60] : 40); if (rude) $('nameInput').value = ''; return;
+    err.textContent = !(rude && tur) ? tr(bad) : oddName(v) ? 'Hile yok! 😤 Yalnızca Türkçe harf, rakam ve emoji kullanabilirsin.' : 'Ayıp! 😤 Burası martıların yeri, düzgün bir isim koy. Yoksa adını biz koyarız!';
+    show(err.id); vibrate(rude ? [60, 40, 60] : 40); if (rude) inp.value = ''; return;
   }
-  setName(v); $('nameInput').blur(); show('profilePanel', false); renderNameChip(); sfx.gold();
+  setName(v); inp.blur(); show('profilePanel', false); show('overName', false); renderNameChip(); sfx.gold();
   if (!$('boardPanel').classList.contains('hidden')) renderBoard();
 }
 
@@ -2174,7 +2181,7 @@ addEventListener('pointerup', padUp);
 addEventListener('pointercancel', padUp);
 $('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e) && !menuModal()) playSel(); });
 addEventListener('keydown', e => {
-  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); saveName(); } else if (e.code === 'Escape') show('profilePanel', false); return; }
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); if (e.target.id === 'overNameInput') saveName(e.target, $('overNameErr')); else saveName(); } else if (e.code === 'Escape') show('profilePanel', false); return; }
   keys[e.code] = true;
   if (dressing) { if (e.code === 'Escape') closeWardrobe(); return; }
   if (e.code === 'KeyM') { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); }
@@ -2216,6 +2223,7 @@ onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
 $('ccSelect').addEventListener('change', e => { setCountry(e.target.value); $('ccFlag').src = flag(e.target.value); renderNameChip(); if (!$('boardPanel').classList.contains('hidden')) renderBoard(); });
 onBtn('skipName', () => show('profilePanel', false));
+onBtn('overNameSave', () => saveName($('overNameInput'), $('overNameErr')));
 onBtn('inviteBtn', async () => {
   const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];
   try {
