@@ -66,9 +66,32 @@ THREE.ShaderChunk.fog_pars_vertex += `
     return o + xd.x * vec2(c, -s);
   }
 #endif`;
-THREE.ShaderChunk.project_vertex = THREE.ShaderChunk.project_vertex.replace('gl_Position', BEND_GLSL + 'gl_Position');
+// güverte lambaları: yağmurda vapur güvertesini gerçekten aydınlatan sahte nokta ışıklar (shiplights.js tickLamps doldurur).
+// Gerçek PointLight eklemek ışık sayısını değiştirip bütün malzemeleri yeniden derletirdi; bu döngü uLampN = 0 iken hemen çıkar (açık havada bedava).
+// Konum bükülmemiş göz uzayında (vLampP): lamba da gemiyle aynı çerçevede, virajda kaymaz.
+export const LAMPS = { value: Array.from({ length: 10 }, () => new THREE.Vector4()) }, LAMP_N = { value: 0 }, LAMP_C = { value: new THREE.Color(0, 0, 0) };
+THREE.ShaderChunk.fog_pars_vertex += `
+#ifdef USE_FOG
+  varying vec3 vLampP;
+#endif`;
+THREE.ShaderChunk.fog_pars_fragment += `
+#ifdef USE_FOG
+  varying vec3 vLampP;
+  uniform vec4 uLamps[10];
+  uniform float uLampN;
+  uniform vec3 uLampC;
+#endif`;
+THREE.ShaderChunk.lights_fragment_end += `
+#ifdef USE_FOG
+  for (int i = 0; i < 10; i++) {
+    if (float(i) >= uLampN) break;
+    vec3 ld = uLamps[i].xyz - vLampP; float rr = uLamps[i].w, la = max(0.0, 1.0 - dot(ld, ld) / (rr * rr));
+    reflectedLight.directDiffuse += diffuseColor.rgb * uLampC * (la * la) * (0.35 + 0.65 * max(dot(normal, normalize(ld)), 0.0));
+  }
+#endif`;
+THREE.ShaderChunk.project_vertex = THREE.ShaderChunk.project_vertex.replace('gl_Position', '#ifdef USE_FOG\n  vLampP = mvPosition.xyz;\n#endif\n' + BEND_GLSL + 'gl_Position');
 THREE.ShaderLib.sprite.vertexShader = THREE.ShaderLib.sprite.vertexShader.replace('\tgl_Position', BEND_GLSL + '\tgl_Position');
-THREE.Material.prototype.onBeforeCompile = function (shader) { shader.uniforms.uBend = BEND; shader.uniforms.uBend2 = BEND2; shader.uniforms.uLevel = LEVEL; };
+THREE.Material.prototype.onBeforeCompile = function (shader) { shader.uniforms.uBend = BEND; shader.uniforms.uBend2 = BEND2; shader.uniforms.uLevel = LEVEL; shader.uniforms.uLamps = LAMPS; shader.uniforms.uLampN = LAMP_N; shader.uniforms.uLampC = LAMP_C; };
 
 // ---------------- ışıklar ----------------
 export const hemi = new THREE.HemisphereLight(PAL.hemiSky, PAL.hemiGround, 1.25);

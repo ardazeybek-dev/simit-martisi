@@ -1164,7 +1164,8 @@ function ferryGeo_(L, type = 'hat') {
   for (const s of [-1, 1]) {
     k.add(new THREE.BoxGeometry(0.07, 0.07, L - 9), 0xf3efe6, s * 3.85, DECK + 0.75, 1.2);
     for (let z = -L / 2 + 5; z < L / 2 - 4; z += 2.2) k.add(new THREE.BoxGeometry(0.05, 0.75, 0.05), 0xf3efe6, s * 3.85, DECK + 0.38, z);
-    for (const z of [-L / 4, L / 4]) k.add(new THREE.TorusGeometry(0.34, 0.1, 5, 10), (f) => (f % 6 < 3 ? 0xf07b22 : 0xffffff), s * 4.08, 1.35, z, 0, Math.PI / 2);
+    // can simitleri korkuluğun dışına asılı, üstü hafif dışa yatık: üstten bakan kameradan da seçilir. Dört turuncu, dört beyaz dilim.
+    for (let z = -L / 2 + 8; z <= L / 2 - 7; z += 8.5) k.add(new THREE.TorusGeometry(0.56, 0.16, 6, 16), (f) => ((Math.floor(f / 2) % 16) >> 2) % 2 ? 0xffffff : 0xf07b22, s * 4.02, DECK + 0.5, z, -Math.PI / 2, s * (Math.PI / 2 - 0.7), 0);
   }
   // kaptan köşkü (uçuş yüksekliğinin altında)
   if (type === 'motor') {

@@ -3,7 +3,7 @@ import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex, seeded, hash
 import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
-import { initShipLights, addShipLights, tickShipLights } from './shiplights.js';
+import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
 import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
@@ -2946,7 +2946,7 @@ function frame() {
   }
 
   if (dressing) podDraw(realDt); // kostüm podyumu: dünya yerine
-  else { syncBatches(scene, camera); renderer.render(scene, camera); } // simitler: tek InstancedMesh (models.js)
+  else { tickLamps(realDt, camera, weather, gull.position); syncBatches(scene, camera); renderer.render(scene, camera); } // simitler: tek InstancedMesh (models.js)
   if (firstFrame) { firstFrame = false; const l = $('loader'); l.classList.add('done'); setTimeout(() => l.remove(), 700); warmPeople(); }
 }
 

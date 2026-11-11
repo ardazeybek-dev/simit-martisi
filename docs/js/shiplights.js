@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { canvasTex } from './util.js';
+import { LAMPS, LAMP_N, LAMP_C } from './scene.js';
 
 // ---------------- gemi ışıkları ----------------
 // Yer yer yanan pencereler, direk tepesinde beyaz, iskele kırmızı / sancak yeşil seyir feneri, yolcu gemisi bacasında yanıp sönen kırmızı.
 // Hepsi tek Points (tek çizim çağrısı), gerçek ışık kaynağı yok. Işık yalnızca yağmurda yanar.
 // Işık sisin içinden cisimlerden daha uzağa görünür (gerçekte de öyle).
-const MAX = 900;
+const MAX = 1600;
 const pos = new Float32Array(MAX * 3), col = new Float32Array(MAX * 3), siz = new Float32Array(MAX);
 const geo = new THREE.BufferGeometry();
 geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
@@ -37,9 +38,9 @@ const mat = new THREE.ShaderMaterial({
 });
 const points = new THREE.Points(geo, mat); points.frustumCulled = false; points.renderOrder = 4;
 
-// tür: 0 pencere (sıcak, hafif kıpırtı, bazıları ağır ağır söner yanar), 1 beyaz direk/demir feneri, 2 kırmızı, 3 yeşil, 4 yanıp sönen kırmızı
-const COL = [[1, 0.7, 0.34], [1, 0.96, 0.88], [1, 0.16, 0.1], [0.25, 1, 0.45], [1, 0.12, 0.08]];
-const BASE = [1.7, 1.2, 1.2, 1.2, 1.3], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7];
+// tür: 0 pencere (sıcak, hafif kıpırtı, bazıları ağır ağır söner yanar), 1 beyaz direk/demir feneri, 2 kırmızı, 3 yeşil, 4 yanıp sönen kırmızı, 5 korkuluk LED'i
+const COL = [[1, 0.7, 0.34], [1, 0.96, 0.88], [1, 0.16, 0.1], [0.25, 1, 0.45], [1, 0.12, 0.08], [1, 0.84, 0.55]];
+const BASE = [1.7, 1.2, 1.2, 1.2, 1.3, 1.25], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7, 0.42];
 const WEATHER_K = { rain: 1 }; // yalnız yağmurda yanar: gündüz açık havada ışık olmaz
 
 const ships = new Set();
@@ -84,12 +85,16 @@ function lampsOf(kind, o = {}) {
     for (const y of ys) for (const s of [-1, 1]) row(a, s * 4.07, y, -len / 2 + 9, len / 2 - 8, 3.2, 0.45);
     nav(a, 4.1, 2.45, -len / 2 + 4, -1); a.push(L(0, 2.5, len / 2 + 1.4, 1, 1));
     if (o.mast) a.push(L(o.mast[0], o.mast[1], o.mast[2], 1, 1.3));
+    for (const s of [-1, 1]) for (let z = -len / 2 + 5; z < len / 2 - 4; z += 1.1) a.push(L(s * 3.85, DECK_Y + 0.8, z, 5)); // korkuluk boyunca LED dizisi
   }
   return a;
 }
 
 // gemiyi ışıklarıyla kaydet: obj sahneden çıkınca (parent yok) kendiliğinden düşer
-export function addShipLights(obj, kind, o) { ships.add({ obj, lamps: lampsOf(kind, o) }); return obj; }
+// vapur güvertesi: tickLamps'ın aydınlattığı noktalar (güverte ortası boyunca, yolcuların başının üstünde)
+const DECK_Y = 2.6; // models.js DECK
+function litOf(kind, o = {}) { if (kind !== 'ferry') return null; const len = o.L || 50, a = []; for (let z = -len / 2 + 7; z <= len / 2 - 6; z += 10) a.push(new THREE.Vector3(0, DECK_Y + 2, z)); return a; }
+export function addShipLights(obj, kind, o) { ships.add({ obj, lamps: lampsOf(kind, o), lit: litOf(kind, o) }); return obj; }
 export function clearShipLights() { ships.clear(); }
 export function initShipLights(scene) { scene.add(points); }
 
@@ -130,4 +135,27 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
   geo.setDrawRange(0, n); points.visible = n > 0;
   if (!n) return;
   for (const name of ['position', 'lcol', 'lsize']) { const at = geo.attributes[name]; at.clearUpdateRanges(); at.addUpdateRange(0, n * at.itemSize); at.needsUpdate = true; }
+}
+
+// güverte lambaları: martıya en yakın 6 nokta göz uzayına çevrilip shader'a gider (scene.js LAMPS). Kamera bu karenin yerine
+// oturduktan sonra, çizimden hemen önce çağrılır; yoksa hızlı uçuşta ışık gemiden bir kare geride kalır.
+const _l = new THREE.Vector3(), best = [];
+let lampK = 0;
+export function tickLamps(dt, camera, weather, g) {
+  lampK += ((WEATHER_K[weather] || 0) - lampK) * Math.min(1, dt * 2);
+  if (lampK < 0.01) { LAMP_N.value = 0; return; }
+  best.length = 0;
+  for (const sh of ships) {
+    const o = sh.obj; if (!sh.lit || !o.parent || !o.visible) continue;
+    const e = o.matrixWorld.elements, dz = e[14] - g.z; if (dz > 25 || dz < -110) continue;
+    for (const p of sh.lit) {
+      _l.copy(p).applyMatrix4(o.matrixWorld);
+      const d = _l.distanceToSquared(g);
+      if (best.length < 6) best.push({ d, x: _l.x, y: _l.y, z: _l.z });
+      else { let w = 0; for (let i = 1; i < 6; i++) if (best[i].d > best[w].d) w = i; if (d < best[w].d) Object.assign(best[w], { d, x: _l.x, y: _l.y, z: _l.z }); }
+    }
+  }
+  camera.updateMatrixWorld();
+  for (let i = 0; i < best.length; i++) { const b = best[i]; _l.set(b.x, b.y, b.z).applyMatrix4(camera.matrixWorldInverse); LAMPS.value[i].set(_l.x, _l.y, _l.z, 10); }
+  LAMP_N.value = best.length; LAMP_C.value.setRGB(1.0, 0.74, 0.44).multiplyScalar(1.7 * lampK);
 }
