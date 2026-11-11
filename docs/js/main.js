@@ -1502,7 +1502,11 @@ let wardTab = 'kiyafet';
 for (const b of document.querySelectorAll('#wardTabs button')) b.addEventListener('click', e => { e.stopPropagation(); wardTab = b.dataset.tab; sfx.click(); renderWardrobe(); });
 function renderWardrobe() {
   $('walletN').textContent = fmt(wallet);
-  for (const b of document.querySelectorAll('#wardTabs button')) b.classList.toggle('on', b.dataset.tab === wardTab);
+  for (const b of document.querySelectorAll('#wardTabs button')) { // sekmede takılı parça sayısı: diğer sekmedeki parçalar da üstünde, kombin görünsün
+    b.classList.toggle('on', b.dataset.tab === wardTab);
+    const n = look.on.filter(id => tabOf(COSTUMES.find(x => x.id === id)) === b.dataset.tab).length;
+    if (n) b.dataset.n = n; else delete b.dataset.n;
+  }
   const box = $('costumes'); box.textContent = '';
   for (const c of COSTUMES) {
     if (tabOf(c) !== wardTab) continue;
@@ -1540,13 +1544,14 @@ function pickCostume(c) {
   $('wardNote').textContent = PERKS[c.id] ? `★ ${tr(PERKS[c.id])}` : ''; // özellik varsa yazar
   renderWardrobe();
 }
+let cosLock = 0, cosLockId = null; // satın alınca düğme "Çıkar"a döner: hızlı ikinci dokunuş yeni alınanı çıkarmasın
 function costumeAction() {
   const c = COSTUMES.find(x => x.id === cosSel);
-  if (!c) return;
+  if (!c || (c.id === cosLockId && performance.now() < cosLock)) return;
   if (!look.owned.includes(c.id)) {
     const price = priceOf(c);
     if (wallet < price) { sfx.click(); bump($('cosAct'), 'shake'); return; }
-    wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]);
+    wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]); cosLock = performance.now() + 400; cosLockId = c.id;
     look.on = withItem(look.on, c);
     sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
     $('wardNote').textContent = '';

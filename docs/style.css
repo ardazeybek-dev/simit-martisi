@@ -679,7 +679,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #wardNote { color: #ffd35a; font-weight: 700; }
 .earn-rate { display: block; width: 100%; margin-top: 3px; font-size: 11px; opacity: .6; font-weight: 600; }
 .ward-tabs { display: flex; gap: 4px; margin: -4px 0 10px; padding: 3px; border-radius: 12px; background: rgba(0, 0, 0, .18); }
-.ward-tabs button { flex: 1; padding: 7px 4px; border: 0; border-radius: 9px; background: none; color: inherit; font: inherit; font-weight: 800; font-size: 14px; opacity: .65; cursor: pointer; }
+.ward-tabs button { position: relative; flex: 1; padding: 7px 4px; border: 0; border-radius: 9px; background: none; color: inherit; font: inherit; font-weight: 800; font-size: 14px; opacity: .65; cursor: pointer; }
+.ward-tabs button[data-n]::after { content: attr(data-n); position: absolute; top: -5px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 99px; background: #ffd35a; color: #2a1503; font-size: 11px; line-height: 16px; font-weight: 900; box-sizing: border-box; }
 .ward-tabs button.on { background: rgba(255, 255, 255, .16); opacity: 1; box-shadow: 0 1px 0 rgba(255, 255, 255, .15) inset; }
 .lang-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 12px; font-weight: 700; }
 .lang-row select { flex: 0 1 60%; padding: 9px 34px 9px 12px; border-radius: 12px; border: 2px solid var(--line); color: inherit; font: inherit; font-weight: 700;
