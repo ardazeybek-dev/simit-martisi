@@ -126,6 +126,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #warm { position: fixed; z-index: 5; pointer-events: none; right: calc(16px + var(--sar)); top: calc(70px + var(--sat)); --c: #8fd3ff; animation: none; }
 #warm.cold { animation: blink .4s steps(2) infinite; --c: #ff8a7a; }
 #hungry { position: fixed; z-index: 5; pointer-events: none; right: calc(16px + var(--sar)); top: calc(70px + var(--sat)); --c: #ffc15a; animation: none; }
+.pw-lbl { font-size: 12px; font-weight: 800; letter-spacing: .5px; color: #fff; }
+.ver { display: block; margin-top: 8px; text-align: center; font-size: 11px; opacity: .55; }
 #hungry.cold { animation: blink .4s steps(2) infinite; --c: #ff8a7a; }
 @keyframes pwin { from { transform: translateX(-30px) scale(.6); opacity: 0; } }
 @keyframes blink { 50% { opacity: .35; } }

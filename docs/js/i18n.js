@@ -907,6 +907,7 @@
     ["Kap bakalım!", "Go for it!", "Hol ihn dir!", "¡A por él!"],
     ["Bol susamlısından!", "Extra sesame for you!", "Mit extra Sesam!", "¡Con extra de sésamo!"],
     ["Hoş geldin martı!", "Welcome aboard, gull!", "Willkommen an Bord, Möwe!", "¡Bienvenida a bordo, gaviota!"],
+    ["Açlık", "Hunger", "Hunger", "Hambre"],
     ["Hediye geldi: {n} simit!", "A gift arrived: {n} simits!", "Ein Geschenk: {n} Simits!", "¡Te llegó un regalo: {n} simits!"],
     ["Bir arkadaşın {s} puan yaptı. Geçebilir misin?", "A friend scored {s}. Can you beat it?", "Ein Freund hat {s} Punkte. Schaffst du mehr?", "Un amigo hizo {s} puntos. ¿Puedes superarlo?"],
     ["Arkadaşını geçtin! Şimdi sıra onda.", "You beat your friend! Their turn now.", "Du hast deinen Freund geschlagen! Jetzt ist er dran.", "¡Superaste a tu amigo! Ahora le toca a él."],
