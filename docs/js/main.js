@@ -1044,7 +1044,7 @@ let teaK = 1; // Çay Molası: simülasyon bu oranla akar (yumuşak geçiş)
 const UP_COST = [600, 1500, 3000, 5500, 9000, 12000];
 const ups = { magnet: 0, shield: 0, double: 0, tea: 0 };
 { const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
-const dur = k => POWER[k].dur * (1 + ups[k] * 0.25) * (perk('tophat') ? 1.2 : 1); // Dev silindir: +%20
+const dur = (k, lv = ups[k]) => POWER[k].dur * (1 + lv * 0.25) * (perk('tophat') ? 1.2 : 1); // Dev silindir: +%20
 let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
 const WALLET_RATE = 10; // kaç yakalanan simit cüzdana 1 simit eder (15'te 16 bin puanlık uçuş 30 simit getiriyordu, az bulundu)
@@ -1569,7 +1569,7 @@ function renderUps() {
     d.className = 'up'; d.style.setProperty('--c', POWER[k].color);
     d.innerHTML = `<span class="up-i">${ICON_SVG[k]}</span><div class="up-m"><b></b><small></small><i class="up-pips">${UP_COST.map((_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</i></div><button class="up-buy"></button>`;
     d.querySelector('b').textContent = tr(POWER[k].name);
-    d.querySelector('small').textContent = `${fmt(Math.round(dur(k)))} ${tr('sn')}` + (max ? '' : ` → ${fmt(Math.round(POWER[k].dur * (1 + (lv + 1) * 0.25)))} ${tr('sn')}`);
+    d.querySelector('small').textContent = `${fmt(Math.round(dur(k)))} ${tr('sn')}` + (max ? '' : ` → ${fmt(Math.round(dur(k, lv + 1)))} ${tr('sn')}`);
     const b = d.querySelector('.up-buy');
     if (max) { b.textContent = tr('Tam'); b.disabled = true; }
     else { b.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(cost)}`; b.classList.toggle('poor', wallet < cost); }
