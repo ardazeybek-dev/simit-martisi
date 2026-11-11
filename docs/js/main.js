@@ -1112,7 +1112,7 @@ function resetWorld(newWeather = true) {
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
-  crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishEarly = false; xpGot = 0;
+  crashObs = null; crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; gear = 0; gearAt = GEAR_M; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   Math.random = R0;
@@ -2038,7 +2038,7 @@ function askRevive() {
 }
 // çarptığı yerden kalkanla devam: dünya aynı kalır, 3-2-1 sayımıyla başlar
 function revive() {
-  revives++;
+  revives++; crashObs = null;
   gull.position.y = FLY_Y; gull.rotation.set(0, 0, 0); gull.visible = true;
   tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
   combo = 0; comboT = 0;
@@ -2235,7 +2235,7 @@ onBtn('cosAct', () => costumeAction());
 onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
 // duraklatmadan çıkış uçuşu bitirir: skor sıralamaya gider, simitler cüzdana, görevler sayılır (eskiden hepsi kayboluyordu)
-onBtn('quitBtn', () => { audio.resume(); show('pause', false); for (const k of Object.keys(pw)) pw[k] = 0; smokeT = 0; invuln = 0; renderPowers(); if (total() > 0 && !tutorialPending) { cause = 'quit'; showOver(); show('reviveBtn', false); show('fishBtn', false); } else showTitle(); });
+onBtn('quitBtn', () => { audio.resume(); show('pause', false); for (const k of Object.keys(pw)) pw[k] = 0; smokeT = 0; invuln = 0; crashObs = null; renderPowers(); if (total() > 0 && !tutorialPending) { cause = 'quit'; showOver(); show('reviveBtn', false); show('fishBtn', false); } else showTitle(); });
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 // panelin dışına (karartılmış boşluğa) dokunmak paneli kapatır; kendi kapatma düğmesine basılmış gibi, oyun başlamaz
@@ -2635,7 +2635,7 @@ function frame() {
       for (const p of pirates) { const x = p.xa + p.side * Math.max(-40, g.z - p.z) * p.k; for (const q of p.os) q.o.x = x + q.off; }
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x);
-        if (g.y < o.top && !o.ghost && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) { crash(o.kind); if (state === 'dead') crashObs = o; }
+        if (g.y < o.top && !o.ghost && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) { crash(o.kind); if (state === 'dead' && gz0 > o.z + o.hd - 0.3) crashObs = o; } // yalnız önden çarpışta (önceki karede engelin önündeydi) geri seker (salon camına yandan değen geri fırlamaz)
         else if (!o.passed && g.z < o.z - o.hd) {
           o.passed = true;
           if (dx >= o.hw + obsK && dx < o.hw + HIT.near && state === 'play') nearMiss(o.x); // içinden geçene (kalkan/dokunulmazlık) sıyırma bonusu yok
