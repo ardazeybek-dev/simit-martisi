@@ -161,7 +161,13 @@ export async function submitScore(score, dist, city) {
 // günlük ödül oyuncu kimliğine bağlı (IP değil): telefonun IP'si değişince seri 1. güne düşmez. Kayıt henüz gitmediyse eski yol
 // günlük balık sınırı sunucuda, oyuncu kimliğine bağlı: take=true yakalananı sayar; dönen bugünkü sayı (ağ yoksa null)
 export const fishDayRpc = take => { const p = profile(); return p.id && p.secret ? rpc('fish_day', { p_id: p.id, p_secret: p.secret, p_take: !!take }) : Promise.resolve(null); };
-export const dailyRpc = act => { const p = profile(); return p.id && p.secret ? rpc('daily', { p_act: act, p_id: p.id, p_secret: p.secret }) : rpc('daily', { p_act: act }); };
+// cihazdaki son alım (main.js KEY_DAILY) da gider: kimliğe geçişte IP değişmişse sunucu eski seriyi bununla bulur
+export const dailyRpc = act => {
+  const p = profile(); if (!(p.id && p.secret)) return rpc('daily', { p_act: act });
+  const d = store.get('simit-martisi-daily', null) || {}, m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(d.last || ''), ok = !!m && Number.isInteger(d.streak); // dayKey sıfırsız yazar: 2026-11-1
+  const last = ok ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null;
+  return rpc('daily', { p_act: act, p_id: p.id, p_secret: p.secret, p_last: last, p_streak: ok ? d.streak : null });
+};
 
 export async function fetchBoard() {
   await sync();

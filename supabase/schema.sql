@@ -233,17 +233,37 @@ end $$;
 revoke all on function daily(text) from public;
 grant execute on function daily(text) to anon, authenticated;
 
-create or replace function daily(p_act text, p_id uuid, p_secret uuid) returns json
+-- kimliğe geçiş anı: kimlik satırı yoksa eski IP satırıyla cihazdaki kayıt (p_last, p_streak) kıyaslanır, daha yenisi taşınır.
+-- IP alımla geçiş arasında değiştiyse eski satır bulunamıyordu; cihaz kaydı seriyi kurtarır. Cihaz kaydı yalnız son 3 gün ve
+-- 1-7 seri ise sayılır, yalnızca satır ilk açılırken bir kez (sahte kayıt için site verisi, yani cüzdan da silinmeli).
+create or replace function daily(p_act text, p_id uuid, p_secret uuid, p_last date, p_streak int) returns json
 language plpgsql security definer set search_path = public as $$
 declare
   vk text := 'p:' || p_id::text;
   lk text := daily_legacy_key();
+  today date := (now() at time zone 'Europe/Istanbul')::date;
+  l daily_claims;
 begin
   if p_id is null or not exists (select 1 from players where id = p_id and secret = p_secret) then return daily_k(lk, p_act); end if;
   if not exists (select 1 from daily_claims where k = vk) then
-    insert into daily_claims (k, last, streak) select vk, d.last, d.streak from daily_claims d where d.k = lk on conflict do nothing;
+    select * into l from daily_claims d where d.k = lk;
+    if p_last between today - 3 and today and p_streak between 1 and 7
+       and (l.k is null or p_last > l.last or (p_last = l.last and p_streak > l.streak)) then
+      insert into daily_claims (k, last, streak) values (vk, p_last, p_streak) on conflict do nothing;
+    elsif l.k is not null then
+      insert into daily_claims (k, last, streak) values (vk, l.last, l.streak) on conflict do nothing;
+    end if;
   end if;
   return daily_k(vk, p_act);
+end $$;
+revoke all on function daily(text, uuid, uuid, date, int) from public;
+grant execute on function daily(text, uuid, uuid, date, int) to anon, authenticated;
+
+-- önbellekteki 2.58.5-2.60.0 istemcileri cihaz kaydı göndermez
+create or replace function daily(p_act text, p_id uuid, p_secret uuid) returns json
+language plpgsql security definer set search_path = public as $$
+begin
+  return daily(p_act, p_id, p_secret, null::date, null::int);
 end $$;
 revoke all on function daily(text, uuid, uuid) from public;
 grant execute on function daily(text, uuid, uuid) to anon, authenticated;
