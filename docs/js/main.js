@@ -105,7 +105,7 @@ function dayRun() {
 }
 const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 // kostüm özellikleri: yalnızca giyili parça işler (panelde önizleme işlemez). Küçük tutuldu: cüzdana etkisi uçuş başı 1-2 simit
-const PERKS = { crown: 'Altın simit +%40', simitcrown: 'Kapma alanı +%15', tophat: 'Güçlendirmeler +%20 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Cüzdana +%10 simit', kurye: 'Görev ödülleri +%25', taksi: 'Kıl payı puanı x3' };
+const PERKS = { crown: 'Altın simit +%20', simitcrown: 'Kapma alanı +%8', tophat: 'Güçlendirmeler +%10 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Cüzdana +%10 simit', kurye: 'Görev ödülleri +%15', taksi: 'Kıl payı puanı x2' };
 const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } }; // açılışta look henüz yoksa (dünya üretimi) özellik yok
 // mod boyları: Tombul martı iri ve hantal, Hıçkıran martı hıçkırınca bir an şişer
 const gullBase = () => (ruleOn('chubby') ? 1.2 : 0.95);
@@ -114,7 +114,7 @@ function gullSize(puff = 0) {
   gull.scale.setScalar(gullBase() * (1 + puff * 0.18));
   const fat = ruleOn('chubby'); // tombul: kanatlar aynı, gövde (ve üstündeki kostümler) şişko
   if (fat !== gull.userData.fat) { gull.userData.fat = fat; for (const m of [gull.userData.body, ...Object.values(outfit)]) m.scale.set(fat ? 1.45 : 1, fat ? 1.35 : 1, fat ? 1.15 : 1); }
-  catchK = (ruleOn('chubby') ? 1.35 : ruleOn('giant') ? 1.3 : 1) * (perk('simitcrown') ? 1.15 : 1); obsK = HIT.obs + (ruleOn('chubby') ? 0.25 : 0);
+  catchK = (ruleOn('chubby') ? 1.35 : ruleOn('giant') ? 1.3 : 1) * (perk('simitcrown') ? 1.08 : 1); obsK = HIT.obs + (ruleOn('chubby') ? 0.25 : 0);
 }
 
 // ---------------- virajlar ----------------
@@ -227,7 +227,7 @@ const wakeMat = new THREE.MeshBasicMaterial({
 const WAKE = new THREE.PlaneGeometry(6.5, 26);
 
 // altın simit nadir: rastgele altın çıkan her yer bu oranla çarpılır (iskele kapısı ve şelale tepesi her zaman altın)
-const GOLD_RATE = 0.35, goldRoll = p => Math.random() < p * GOLD_RATE * (ruleOn('gold') ? 2 : 1) * (perk('crown') ? 1.4 : 1); // Altın taç: +%40
+const GOLD_RATE = 0.35, goldRoll = p => Math.random() < p * GOLD_RATE * (ruleOn('gold') ? 2 : 1) * (perk('crown') ? 1.2 : 1); // Altın taç: +%20
 let genLog = null; // deneme: __game.genLog(true) → üretilen simit/rakip konumları
 function addSimit(x, y, z, gold, piece = false) {
   if (genLog) genLog.push(`s${x.toFixed(2)},${z.toFixed(1)}${gold ? 'g' : ''}`);
@@ -382,7 +382,7 @@ function spawnGap(first, fixLen, quiet) {
     }
     seedAt('gf', genN); // balık atılıp atılmamasından bağımsız: günün uçuşunda güç ve şamandıralar herkes için aynı
     if (segCount > 2 && Math.random() < 0.42) {
-      const kind = pick((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield', 'shield'] : [])); // Nazar: kalkan daha sık
+      const kind = pick((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield'] : [])); // Nazar: kalkan daha sık
       const z = z0 - len * 0.5, x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
       const p = makePowerUp(kind); p.position.set(x, FLY_Y, z); scene.add(p);
       powerups.push({ g: p, kind, x, y: FLY_Y, z });
@@ -1079,7 +1079,7 @@ let teaK = 1; // Çay Molası: simülasyon bu oranla akar (yumuşak geçiş)
 const UP_COST = [600, 1500, 3000, 5500, 9000, 12000];
 const ups = { magnet: 0, shield: 0, double: 0, tea: 0 };
 { const u = store.get(KEY_UP, {}) || {}; for (const k in ups) ups[k] = clamp(u[k] | 0, 0, UP_COST.length); }
-const dur = (k, lv = ups[k]) => POWER[k].dur * (1 + lv * 0.25) * (perk('tophat') ? 1.2 : 1); // Dev silindir: +%20
+const dur = (k, lv = ups[k]) => POWER[k].dur * (1 + lv * 0.25) * (perk('tophat') ? 1.1 : 1); // Dev silindir: +%10
 let best = +store.get(KEY_BEST, 0) || 0;
 // simit cüzdanı: kapılan on iki simitte (48 parça) bir simit cüzdana girer (altın simit 5 sayılır); banked = bu uçuştan cüzdana geçen
 const WALLET_RATE = 10; // kaç yakalanan simit cüzdana 1 simit eder (15'te 16 bin puanlık uçuş 30 simit getiriyordu, az bulundu)
@@ -1702,7 +1702,7 @@ function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k =
 function checkMissions() {
   for (const m of missions) {
     if (m.done || misProgress(m) < m.n) continue;
-    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.25 : 1)); store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions); // Kurye: +%25
+    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.15 : 1)); store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions); // Kurye: +%15
     if (state === 'play') {
       sfx.gold(); vibrate([20, 30, 20]);
     }
@@ -1726,7 +1726,7 @@ function renderMissions(box, fill = false) {
 }
 // görevler paneli: son uçuşun ilerlemesi burada dolar, biten görevin üstü çizilir, ödülü cüzdana tık tık sayılır
 function openMissions() {
-  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + Math.round(m.r * (perk('kurye') ? 1.25 : 1)), 0) : 0;
+  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + Math.round(m.r * (perk('kurye') ? 1.15 : 1)), 0) : 0;
   renderMissions($('titleMis'), fill);
   $('misWallet').textContent = fmt(wallet - gain);
   if (!fill) return;
@@ -3174,7 +3174,7 @@ function dolphinBonus(f) {
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y + 0.5, f.z), 12, 0xcff0ff, 3.5, 0.5);
 }
 function nearMiss(x) {
-  const gain = 5 * mult() * (perk('taksi') ? 3 : 1); // Taksi: x3
+  const gain = 5 * mult() * (perk('taksi') ? 2 : 1); // Taksi: x2
   points += gain; run.near++;
   sfx.near(); trauma = Math.min(1, trauma + 0.12);
   sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0xffffff, 3, 0.35);
