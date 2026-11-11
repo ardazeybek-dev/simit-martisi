@@ -75,10 +75,10 @@ def patch_main(js):
 
     # ad break only on "play again" after game over: CrazyGames forbids ads on menu buttons.
     # startGame is blocked while the ad runs
-    js = sub1(js, "else if (state === 'over' && overLock <= 0) { e.preventDefault(); startGame(); }",
-              "else if (state === 'over' && overLock <= 0) { e.preventDefault(); PF.adBreak(startGame); }", "key ad")
-    js = sub1(js, "onBtn('againBtn', () => { if (overLock <= 0) startGame(); });",
-              "onBtn('againBtn', () => { if (overLock <= 0) PF.adBreak(startGame); });", "again ad")
+    js = sub1(js, "else if (state === 'over' && overLock <= 0) { e.preventDefault(); replay(); }",
+              "else if (state === 'over' && overLock <= 0) { e.preventDefault(); PF.adBreak(replay); }", "key ad")
+    js = sub1(js, "onBtn('againBtn', () => replay());",
+              "onBtn('againBtn', () => { if (overLock <= 0) PF.adBreak(replay); });", "again ad")
     return js
 
 
