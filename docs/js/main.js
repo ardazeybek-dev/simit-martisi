@@ -1034,7 +1034,7 @@ function deckUnder(x, z) {
 // ---------------- oyun durumu ----------------
 let state = 'loading';
 let speed = 15, playT = 0, points = 0, simitCount = 0, goldCount = 0, combo = 0, bestCombo = 0, comboT = 0, dist = 0;
-let crashObs = null, crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flapPh = 0, flapPow = 0.5, flapBurst = 0;
+let crashObs = null, crashHead = true, crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flapPh = 0, flapPow = 0.5, flapBurst = 0;
 let campT = 0, campSide = 0; // kenara yapışan martı: o kenara rakip gönderilir (her köşe eşit zor)
 let hicT = 0, hicY = 0; // Hıçkıran martı: sonraki hıçkırığa kalan süre, sıçrama yüksekliği
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
@@ -2569,13 +2569,16 @@ function frame() {
     flapGull(gull, flapPh, flapPow, 0.1 + (1 - flapPow) * 0.08);
   } else if (state === 'dead' || state === 'over') {
     crashT += dt; lean = damp(lean, 0, 3, dt);
-    if (crashObs) { // çarptığı direğin/yelkenin içine kaymaz: ön yüzünden geri seker
+    if (crashObs && crashHead) { // önden çarptığı direğin/yelkenin içine kaymaz: ön yüzünden geri seker
       const zOut = crashObs.z + crashObs.hd + 0.7;
       if (g.z < zOut) g.z = Math.min(zOut, g.z + 9 * dt);
+    } else if (crashObs) { // yandan değdiği camın/yelkenin içinde kalmaz: geldiği yana itilir
+      const o = crashObs, xOut = o.x + (g.x < o.x ? -1 : 1) * (o.hw + 0.4);
+      if (Math.abs(g.x - o.x) < o.hw + 0.4) g.x += clamp(xOut - g.x, -6 * dt, 6 * dt);
     }
     const floor = floorAt(g.x, g.z);
     if (g.y > floor + 0.01) {
-      vy -= 18 * dt; g.y = Math.max(floor, g.y + vy * dt); if (!crashObs) g.z -= Math.max(0, 7 - crashT * 7) * dt;
+      vy -= 18 * dt; g.y = Math.max(floor, g.y + vy * dt); if (!crashObs || !crashHead) g.z -= Math.max(0, 7 - crashT * 7) * dt;
       gull.rotation.x += dt * 7; gull.rotation.z += dt * 10;
     } else {
       g.y = floor;
@@ -2635,7 +2638,7 @@ function frame() {
       for (const p of pirates) { const x = p.xa + p.side * Math.max(-40, g.z - p.z) * p.k; for (const q of p.os) q.o.x = x + q.off; }
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x);
-        if (g.y < o.top && !o.ghost && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) { crash(o.kind); if (state === 'dead' && gz0 > o.z + o.hd - 0.3) crashObs = o; } // yalnız önden çarpışta (önceki karede engelin önündeydi) geri seker (salon camına yandan değen geri fırlamaz)
+        if (g.y < o.top && !o.ghost && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) { crash(o.kind); if (state === 'dead') { crashObs = o; crashHead = gz0 > o.z + o.hd - 0.3; } } // yalnız önden çarpışta (önceki karede engelin önündeydi) geri seker (salon camına yandan değen geri fırlamaz)
         else if (!o.passed && g.z < o.z - o.hd) {
           o.passed = true;
           if (dx >= o.hw + obsK && dx < o.hw + HIT.near && state === 'play') nearMiss(o.x); // içinden geçene (kalkan/dokunulmazlık) sıyırma bonusu yok
