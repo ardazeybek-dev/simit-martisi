@@ -2134,17 +2134,18 @@ let cdShown = 0, shownSign = 0;
 // Fare: ekranın X konumu = martının hedefi. Dokunmatik: göreli sürükleme — parmak nereye konursa konsun martı
 // sıçramaz, yalnızca kaydırılan kadar gider; bırakınca olduğu yerde kalır. Alttaki çubuk (#pad) konumu gösterir.
 // Ayar: PAD_SPAN (şeridin bir ucundan öbürüne gitmek için ekran genişliğinin ne kadarı sürüklenir)
-// Artımlı: her hareket yalnızca kendi farkı kadar kaydırır; kenara dayanınca fazlası birikmez, geri dönüş anında başlar
+// Çubuk tam olarak bu sürükleme boyundadır: top parmakla birebir gider. Kenarı geçen sürükleme hatırlanır (padV),
+// parmak geri gelince top yine parmağın altından devam eder (top ile parmak arası açılmaz)
 const PAD_SPAN = 0.5;
-let padId = -1, padX0 = 0;
+let padId = -1, padX0 = 0, padV = 0;
+const padSpan = () => clamp(innerWidth * PAD_SPAN, 160, 320);
 function steerFromX(clientX) {
   // ekranın ortadaki %80'i tüm şeridi kapsar → kenara doğru biraz daha yaslanmak virajda savrulmayı yener
   setTx(clamp((clientX / innerWidth - 0.5) / 0.35, -1, 1) * EDGE);
 }
 function steerDrag(clientX) {
-  const span = Math.max(160, innerWidth * PAD_SPAN);
-  setTx(clamp(tx + ((clientX - padX0) / span) * 2 * EDGE, -EDGE, EDGE));
-  padX0 = clientX;
+  padV += ((clientX - padX0) / padSpan()) * 2 * EDGE; padX0 = clientX;
+  setTx(clamp(padV, -EDGE, EDGE));
 }
 function setTx(v) {
   tx = v;
@@ -2160,10 +2161,10 @@ addEventListener('pointerdown', e => {
   if ((state !== 'play' && state !== 'countdown') || isUi(e)) return;
   if (e.pointerType === 'mouse') { if (state === 'play') steerFromX(e.clientX); return; }
   if (padId >= 0 && !e.isPrimary) return; // ikinci parmak, yönlendiren parmağı çalmasın (yeni birincil parmak = öncekiler kalkmış)
-  padId = e.pointerId; padX0 = e.clientX; // yeni parmak: o anki konumdan devam
+  padId = e.pointerId; padX0 = e.clientX; padV = tx; // yeni parmak: o anki konumdan devam
 });
 addEventListener('pointermove', e => {
-  if (state === 'countdown' && e.pointerId === padId) { padX0 = e.clientX; return; } // geri sayımda kayan parmak kalkışta sıçratmasın
+  if (state === 'countdown' && e.pointerId === padId) { padX0 = e.clientX; padV = tx; return; } // geri sayımda kayan parmak kalkışta sıçratmasın
   if (state !== 'play') return;
   if (e.pointerType === 'mouse') steerFromX(e.clientX);
   else if (e.pointerId === padId) steerDrag(e.clientX);
