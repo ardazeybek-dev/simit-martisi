@@ -1297,7 +1297,7 @@ function crash(why) {
     return;
   }
   state = 'dead'; cause = why; crashT = 0; vy = 5.5; crashObs = null; ui.powers.textContent = '';
-  hitStop = 0.14; timeScale = 0.3; trauma = 1;
+  hitStop = 0.14; timeScale = 0.3; trauma = 0.6; // çarpma anında kısa bir vuruş; sonrası sakin
   bump(ui.flash, 'flashing');
   sfx.crash(); vibrate([60, 40, 90]);
   audio.duck(true);
@@ -2585,12 +2585,13 @@ function frame() {
       g.y = floor;
       gull.rotation.x = damp(gull.rotation.x, Math.PI * 0.9, 3, dt); gull.rotation.z = damp(gull.rotation.z, 0.3, 3, dt);
       if (!splashed) {
-        splashed = true; sfx.splash(); trauma = Math.min(1, trauma + 0.3);
+        splashed = true; sfx.splash(); // bitiş ekranı açılırken ekran yeniden sallanmasın
         chunks.emit(tmp.set(g.x, 0.3, g.z), 26, { speed: 6, up: 1, life: 1, size: 0.16, color: [0xffffff, 0xcfe9f2, 0x8cc7da], gravity: 14, spin: 0.3 });
         sparkle(tmp, 14, 0xdff6ff, 5, 0.5, 0.4);
       }
     }
-    flapGull(gull, t * 3, 0.2, -0.3);
+    if (splashed) flapGull(gull, 0, 0, -0.35); // ölü martı kanatları açık, kıpırtısız yatar; yalnız dalgayla iner kalkar
+    else flapGull(gull, t * 3, 0.2, -0.3);
     if (state === 'dead' && crashT > 1.4) showOver();
   }
   if (overLock > 0) overLock -= realDt;
@@ -2866,7 +2867,7 @@ function frame() {
     camera.lookAt(g.x * 0.92 + lean * 2.6 + (g.x - g.x * 0.92 - lean * 2.6) * k, FLY_Y - (land ? 0.2 : 0.6) + (g.y + (land ? 0.05 : 0.6) - FLY_Y + (land ? 0.2 : 0.6)) * k, followZ - 12 + (g.z + 12 - followZ) * k);
   }
   else camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - (land ? 0.2 : 0.6), followZ - 12); // virajın içine bak
-  camera.rotation.z += gull.rotation.z * 0.06 - lean * 0.13;
+  if (state !== 'dead' && state !== 'over') camera.rotation.z += gull.rotation.z * 0.06 - lean * 0.13; // ölünce kamera takla atan martıyla yalpalamaz
   trauma = Math.max(0, trauma - realDt * 1.6);
   if (trauma > 0) {
     const s = trauma * trauma, tt = performance.now() * 0.001;
@@ -3152,7 +3153,7 @@ window.__game = {
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
   get farStop() { return farStop; },
-  get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
+  get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
   get city() { return city.id; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
