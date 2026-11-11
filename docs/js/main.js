@@ -3245,7 +3245,6 @@ onGift(() => {
   $('giftPill').textContent = '🎁 ' + tr('Hediye geldi: {n} simit!').replace('{n}', fmt(n)); show('giftPill'); sfx.record();
 });
 $('giftPill').addEventListener('click', () => show('giftPill', false));
-{ const v = document.querySelector('meta[name="app-version"]'); $('verTxt').textContent = v ? 'v' + v.content : ''; } // ayarlarda sürüm: telefondaki sürüm görülsün
 addEventListener('online', () => sync());
 setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gönderim, kapanan sayfa) hemen gitsin
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
