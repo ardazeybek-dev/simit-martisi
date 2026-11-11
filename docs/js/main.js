@@ -375,7 +375,7 @@ function spawnGap(first, fixLen, quiet) {
     }
     // zıplayan balık (nadir): önce suda çırpınır, martı gelince martının yüksekliğine sıçrar.
     // Değersen ya yakalarsın (balık cüzdana) ya da elinden kayar: "Kaçtı!"
-    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && Math.random() < fishSpawn * (ruleOn('fish') ? 3 : 1)) { // balık nadir: uçuş başına en çok bir balık zıplar
+    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && (Math.random() < (fishSpawn + fishTry++ * 0.05) * (ruleOn('fish') ? 3 : 1))) { // balık nadir: uçuş başına en çok bir balık zıplar; balıksız geçen her açık suda şans +%5 (kimine hiç çıkmamasın)
       fishEarly = true;
       const dir = pick([-1, 1]), m = new THREE.Mesh(FISH, vcMat); m.visible = false; m.scale.setScalar(1.35); scene.add(m);
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
@@ -1090,11 +1090,11 @@ const KEY_CARRY = 'simit-martisi-carry';
 let carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0);
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
-let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishSpawn = 0.12, fishCatch = 0.75, fishEarly = false;
+let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishTry = 0, fishSpawn = 0.12, fishCatch = 0.75, fishEarly = false;
 const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // balık farmı olmasın: uçuşun ilk FISH_MIN_M metresinde balık çıkmaz (aç-kap uçuşlar kazanmaz), uçuşlardan günde en çok FISH_DAY balık
-const FISH_MIN_M = 1000, FISH_DAY = 3, KEY_FISHDAY = 'simit-martisi-fishday';
+const FISH_MIN_M = 700, FISH_DAY = 2, KEY_FISHDAY = 'simit-martisi-fishday';
 // sayaç sunucuda da tutulur (oyuncu kimliği, İstanbul günü): site verisini silmek ya da cihaz saatini ileri almak sınırı aşmaz; ağ yoksa yerel sayaç
 let fishSrv = 0;
 const fishLocal = () => { const f = store.get(KEY_FISHDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
@@ -1164,7 +1164,7 @@ function resetWorld(newWeather = true) {
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
-  crashObs = null; crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishEarly = false; xpGot = 0;
+  crashObs = null; crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishTry = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; tempos = []; tempoZ = 0; tempoN = 0; tempoK = 1; tempoIn = null; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   Math.random = R0;

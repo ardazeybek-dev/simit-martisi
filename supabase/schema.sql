@@ -284,7 +284,7 @@ begin
   if p_take then
     insert into fish_days as f values (p_id, today, 1)
       on conflict (player_id) do update set n = case when f.day = today then f.n + 1 else 1 end, day = today
-      where f.day <> today or f.n < 3;
+      where f.day <> today or f.n < 2;
   end if;
   select * into r from fish_days f where f.player_id = p_id;
   return case when found and r.day = today then r.n else 0 end;
