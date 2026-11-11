@@ -1161,7 +1161,7 @@ const tempoAt = z => tempos.find(u => z < u.z0 && z > u.z1) || null;
 // hava (weather.js): yağmurda rüzgâr esintisi martıyı yana iter, karda simit yemezsen üşürsün, siste ufuk kısalır
 let full = 1, starve = false, shownFull = -1; // tokluk: simit yemeden uçan martı acıkır; çubuk biterse düşer (starve: son anlar, titrer)
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
-const GUST = 6.5, COLD_S = 6; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
+const GUST = 6.5, COLD_S = 8; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
 const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0 }; // görevler ve başarımlar için uçuş sayaçları
 
 function resetWorld(newWeather = true) {
@@ -3113,13 +3113,15 @@ function judgeTurn(u) {
 // iki simit yiyince toparlanır. Karda üşüme çubuğu aynı işi görür (iki çubuk üst üste binmesin), ilk 300 m ve öğreticide yok.
 function hungerTick(dt) {
   if (weather === 'snow' || tutorialPending) { if (shownFull >= 0) { show('hungry', false); shownFull = -1; } return; }
-  if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 6));
-  starve = full < 0.2; // son anlar: martı titrer, başı düşer
+  const was = full;
+  if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 8));
+  if (was >= 0.25 && full < 0.25) { sfx.shiver(); vibrate(20); } // titreme başladı: 2 sn sonra düşer
+  starve = full < 0.25; // son çeyrek (8 sn'lik barda son 2 sn): martı titrer, başı düşer
   if (full <= 0) { crash('açlıktan'); if (state === 'play') full = 0.35; } // açlıktan düşer (kalkan yutarsa biraz doyar)
   const w = Math.round(full * 50); // çubuk uçuş boyunca hep görünür
   if (w !== shownFull) {
     if (w < 0) show('hungry', false);
-    else { if (shownFull < 0) show('hungry'); $('hungry').querySelector('i').style.transform = `scaleX(${full})`; $('hungry').classList.toggle('cold', starve || full < 0.2); }
+    else { if (shownFull < 0) show('hungry'); $('hungry').querySelector('i').style.transform = `scaleX(${full})`; $('hungry').classList.toggle('cold', starve); }
     shownFull = w;
   }
 }
@@ -3138,8 +3140,8 @@ function weatherTick(dt) {
   if (weather === 'snow' && !tutorialPending) {
     const was = warmth;
     if (dist >= 50) warmth -= dt / COLD_S * (perk('scarf') ? 0.6 : 1) * (perk('beanie') ? 0.8 : 1) * (perk('ice') ? 0.5 : 1); // Atkı %40, Bere %20, Buz martısı %50 yavaş üşür
-    if (was >= 0.25 && warmth < 0.25) sfx.shiver();
-    warmth = Math.max(0, warmth); starve = warmth < 0.2;
+    if (was >= 0.25 && warmth < 0.25) sfx.shiver(); // titreme başladı: 2 sn sonra donar
+    warmth = Math.max(0, warmth); starve = warmth < 0.25;
     if (warmth <= 0) { sparkle(gull.position, 30, 0xdff6ff, 4, 0.8, 0.6); crash('soğuktan'); if (state === 'play') warmth = 0.35; } // donup düşer
     const w = Math.round(warmth * 50);
     if (w !== shownWarm) {
