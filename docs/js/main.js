@@ -330,7 +330,7 @@ function spawnGap(first, fixLen) {
     if (sail) { // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
       const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
       const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b);
-      const o = { x: xa + side * 60 * k + side * SAIL_OFF, z, hw: SAIL_HW, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // martı boyunda yelkenler gövdenin bir yanına uzanır: kutu yelkenlerin üstünde
+      const o = { x: xa + side * SAIL_OFF, z, hw: SAIL_HW, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // martı boyunda yelkenler gövdenin bir yanına uzanır: kutu yelkenlerin üstünde
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
     } else {
       const n = camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
@@ -359,6 +359,7 @@ function spawnGap(first, fixLen) {
       const dir = pick([-1, 1]), m = new THREE.Mesh(FISH, vcMat); m.visible = false; m.scale.setScalar(1.35); scene.add(m);
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
     }
+    seedAt('gf', genN); // balık atılıp atılmamasından bağımsız: günün uçuşunda güç ve şamandıralar herkes için aynı
     if (segCount > 2 && Math.random() < 0.42) {
       const kind = pick((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield', 'shield'] : [])); // Nazar: kalkan daha sık
       const z = z0 - len * 0.5, x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
@@ -487,6 +488,7 @@ let pirates = [], pirateZ = 0;
 function spawnPirate() {
   const z0 = genZ, pz = z0 - 40, side = pick([-1, 1]), gapX = rand(-1.8, 1.8), xa = gapX - side * PIRATE_GAP;
   if (THROW_ON) throwVolleys(z0, 24, false);
+  decor = decor.filter(d => (Math.abs(d.z - pz) < 22 && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // kayarken yan teknelerin içinden geçmesin
   const { g, throwers } = makePirateShip(); g.rotation.y = side * Math.PI / 2; scene.add(g); // pruva gidiş yönüne (-side) bakar
   const os = PIRATE_GATE.map(([lz, hl, hb, top]) => {
     const o = { x: xa + side * lz, z: pz, hw: hl, hd: hb, top, kind: 'korsana', passed: false };
@@ -519,6 +521,7 @@ let falls = [], fallsZ = 0, fallsLift = 0, fallsW = 0;
 function spawnFalls() {
   const z0 = genZ, fz = z0 - 34, zA = fz + FALLS_LEN / 2, zB = fz - FALLS_LEN / 2, dir = pick([-1, 1]);
   if (THROW_ON) throwVolleys(z0, 16, false);
+  decor = decor.filter(d => (Math.abs(d.z - fz) < 18 && Math.sign(d.mesh.position.x) === dir && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // falezin içinde tekne kalmasın
   const g = makeFalls(); g.position.set(dir * (LANE + 5.4), 0, fz); if (dir < 0) g.rotation.y = Math.PI; scene.add(g);
   for (const dz of [6, 3]) addSimit(dir * 2.2, FLY_Y, zA + dz, false);
   // serpintide martının izleyeceği yol: hızla kalkar, tepede süzülür, çıkışta alçalır; aralıklar düzensiz, tepedeki altın
@@ -785,6 +788,7 @@ function spawnFerry() {
     simits.push({ mesh: p.simit, x: tmp.x, y: tmp.y, z: tmp.z, person: p, gold });
   }
   kites = kites.filter(k => { const on = k.z > zFront - 6 && k.z < zBack + 6; if (on) scene.remove(k.g); return !on; }); // önce konmuş uçurtma vapurun içinde kalmasın
+  rivals = rivals.filter(r => { const on = r.z > zFront - 6 && r.z < zBack + 6; if (on) scene.remove(r.mesh); return !on; }); // önceki açıklıktan sarkan rakip de
   ferries.push({ group: g, x: x0, zFront, zBack, ph: Math.random() * 6, chims, flag, salon: salon && { x: x0 + salon.tx, z: zc + salon.sz } });
   genZ = zFront - 2;
 }
@@ -838,11 +842,17 @@ function updateShed(dt, gz) {
   for (const d of decor) if (d.shed) d.mesh.visible = !on || gz - d.z < SHED_FAR;
   shedOn = on;
 }
+// kıyı dekoru (yan tekne, geçen gemi) büyük parçaların içine düşmesin: köprü iki yakayı da kaplar, plaj/şelale kendi yakasını, korsan iki yana kayar
+function pieceAt(z, side) {
+  return bridges.some(b => Math.abs(b.z - z) < 16) || pirates.some(p => Math.abs(p.z - z) < 22)
+    || beaches.some(b => b.side === side && Math.abs(b.z - z) < BEACH_LEN / 2 + 8) || falls.some(f => f.dir === side && Math.abs(f.z - z) < 18);
+}
 function spawnScenery(limit) {
   while (sceneryZ > limit) {
     sceneryZ -= rand(22, 52);
     if (Math.random() < 0.85 && !(shedT > 0) && !piers.some(p => Math.abs(p.z - sceneryZ) < 34)) { // yük anında yeni yan tekne çıkmaz
       const side = pick([-1, 1]), r = Math.random();
+      if (pieceAt(sceneryZ, side)) continue;
       const b = r < 0.5 ? makeFishingBoat(side) : r < 0.78 ? makeSailboat() : makeYacht();
       b.position.set(side * rand(15, r < 0.5 ? 30 : 40), 0, sceneryZ); b.rotation.y = rand(-0.5, 0.5) + (r >= 0.5 && Math.random() < 0.5 ? Math.PI : 0);
       scene.add(b); decor.push({ mesh: b, z: sceneryZ, ph: Math.random() * 6, shed: true });
@@ -861,8 +871,10 @@ function spawnScenery(limit) {
       maidenZ = sceneryZ - rand(1100, 1700);
       const ship = land.find(l => l.crowd && l.mesh.position.x > 50 && Math.abs(l.z - sceneryZ) < 220); // yolcu gemisi yakınsa öbür yakaya
       const m = makeMaiden(), side = ship ? -1 : pick([-1, 1]);
-      m.position.set(side * rand(34, 40), 0, sceneryZ - 20); m.rotation.y = side > 0 ? 0 : Math.PI;
-      scene.add(m); land.push({ mesh: m, z: sceneryZ - 20, crowd: true });
+      if (!bridges.some(b => Math.abs(b.z - sceneryZ + 20) < 30)) { // Kız Kulesi köprünün üstüne düşmez
+        m.position.set(side * rand(34, 40), 0, sceneryZ - 20); m.rotation.y = side > 0 ? 0 : Math.PI;
+        scene.add(m); land.push({ mesh: m, z: sceneryZ - 20, crowd: true });
+      }
     }
     // demir yerindeki büyük gemiler (Boğaz'da, körfezde sıra bekleyen şilepler ve tankerler): sisin içinde, orta uzaklıkta durur.
     // Kız Kulesi ya da yolcu gemisi o yakada yakınsa çıkmaz
@@ -877,7 +889,7 @@ function spawnScenery(limit) {
     }
     // açıkta seyreden gemiler: dış şeritte karşıdan gelen ya da bizimle giden vapur, daha açıkta şilep. Dokunulmaz, yalnız manzara.
     // Demirli teknelerin (±15-40) dışında kendi şeritleri var; Kız Kulesi, yolcu gemisi ya da başka gemi o yakada yakınsa çıkmaz
-    if (Math.random() < 0.2 && !piers.some(p => Math.abs(p.z - sceneryZ) < 90)) {
+    if (Math.random() < 0.2 && !piers.some(p => Math.abs(p.z - sceneryZ) < 90) && !bridges.some(b => Math.abs(b.z - sceneryZ) < 90)) {
       const big = Math.random() < 0.55, side = pick([-1, 1]), x = side * (big ? rand(66, 84) : rand(50, 57));
       const busy = [...land, ...decor.filter(d => d.vz)].some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - sceneryZ) < 170);
       if (!busy) {
@@ -953,7 +965,10 @@ function generate(limit) {
 }
 function generateIn(limit) {
   planTurns(limit - 200); Math.random = R0; spawnScenery(limit);
+  let purgeFrom = obstacles.length;
+  const purge = () => { if (obstacles.length > purgeFrom) purgeSimits(obstacles.slice(purgeFrom)); purgeFrom = obstacles.length; };
   while (genZ > limit) {
+    purge(); // önceki parçanın engelleri ('continue' ile çıkılan iskele/viraj dalları dahil)
     seedAt('g', genN++);
     if (pierI < STOPS.length) { // sıradaki iskele yaklaştıysa önünü düz suyla tam kapıya denk gelecek şekilde doldur
       const pz = -2 * STOPS[pierI].m + PIER_HALF;
@@ -964,6 +979,18 @@ function generateIn(limit) {
     else if (genZ - tn.z0 > 30) spawnGap(segCount === 0, genZ - tn.z0);
     else { spawnTurn(tn); if (segCount % 2 === 0) segCount++; }
   }
+  purge();
+}
+// yeni kurulan engelin içine önceki parçadan sarkan simit kalmasın (ör. iskele simit yağmuru ardındaki vapurun cam salonu): alınamaz, alınsa çarptırır
+function purgeSimits(os) {
+  if (!os.length) return;
+  simits = simits.filter(s => {
+    if (s.person) return true;
+    const x = s.th ? s.th.cx : s.x, z = s.th ? s.th.cz : s.z;
+    if (!os.some(o => o.top < 30 && s.y < o.top && Math.abs(x - o.x) < o.hw + 0.35 && Math.abs(z - o.z) < o.hd + 0.35)) return true;
+    scene.remove(s.mesh); dropThrown(s); return false;
+  });
+  powerups = powerups.filter(p => (os.some(o => o.top < 30 && Math.abs(p.x - o.x) < o.hw + 0.5 && Math.abs(p.z - o.z) < o.hd + 0.5) ? (scene.remove(p.g), false) : true));
 }
 function cleanup(z) {
   const behind = z + 30;
@@ -1607,7 +1634,7 @@ function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k =
 function checkMissions() {
   for (const m of missions) {
     if (m.done || misProgress(m) < m.n) continue;
-    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.25 : 1)); // Kurye: +%25 store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions);
+    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.25 : 1)); store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions); // Kurye: +%25
     if (state === 'play') {
       sfx.gold(); vibrate([20, 30, 20]);
     }
@@ -1631,7 +1658,7 @@ function renderMissions(box, fill = false) {
 }
 // görevler paneli: son uçuşun ilerlemesi burada dolar, biten görevin üstü çizilir, ödülü cüzdana tık tık sayılır
 function openMissions() {
-  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + m.r, 0) : 0;
+  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + Math.round(m.r * (perk('kurye') ? 1.25 : 1)), 0) : 0;
   renderMissions($('titleMis'), fill);
   $('misWallet').textContent = fmt(wallet - gain);
   if (!fill) return;
@@ -1684,6 +1711,15 @@ function startDaily() {
   store.set(KEY_DAYRUN, { day: dayKey(), best: d.best, streak: d.streak, runs: d.runs + 1, paid: d.paid }); // hak kalkışta düşer: yarıda bırakılan uçuş da sayılır
   daily = true; dayRule = todayRule(); daySeed = hash('day', dayKey());
   if (city !== CITIES[0]) useCity(CITIES[0]); // günün uçuşu herkes için İstanbul
+  startGame();
+}
+// bitiş ekranından tekrar uç: günün uçuşunda her deneme bir hak düşürür; hak bittiyse ya da gün döndüyse menüye
+function replay() {
+  if (overLock > 0) return;
+  if (!daily) return startGame();
+  const d = dayRun();
+  if (!d.done || d.runs >= DAY_RUNS) return showTitle();
+  store.set(KEY_DAYRUN, { day: dayKey(), best: d.best, streak: d.streak, runs: d.runs + 1, paid: d.paid });
   startGame();
 }
 function renderMenuBadges() {
@@ -1794,7 +1830,7 @@ async function saveStreak() {
     if (srvOk(r)) { setSrvDaily(r); if (!r.saved) return openDaily(); }
   }
   const y = new Date(); y.setDate(y.getDate() - 1);
-  wallet -= STREAK_SAVE; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(y), streak: d.lost });
+  wallet -= STREAK_SAVE; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(y), streak: d.lost }); srvDaily = null;
   sfx.power(); vibrate([20, 30, 20]); $('titleWallet').textContent = fmt(wallet);
   openDaily();
 }
@@ -1830,7 +1866,7 @@ async function claimDaily() {
   }
   if (d.ready) {
     const r = DAILY[d.streak - 1];
-    wallet += r; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(), streak: d.streak });
+    wallet += r; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(), streak: d.streak }); srvDaily = null; // sunucuya ulaşılamadıysa eski 'hazır' bilgisi ödülü tekrar verdirmesin
     if (d.streak === DAILY.length) { setFish(fish + 1); $('titleFish').textContent = fmt(fish); } // haftanın son günü bir balık
     $('titleWallet').textContent = fmt(wallet); bump($('titleWallet').parentNode);
     sfx.gold(); vibrate([20, 30, 20]);
@@ -2144,13 +2180,14 @@ addEventListener('keydown', e => {
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) { if (state === 'play' || state === 'countdown') pause(); else if (state === 'paused') resume(); }
   if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) {
     if (state === 'title' && !menuModal()) { e.preventDefault(); playSel(); }
-    else if (state === 'over' && overLock <= 0) { e.preventDefault(); startGame(); }
+    else if (state === 'over' && overLock <= 0) { e.preventDefault(); replay(); }
     else if (state === 'paused') { e.preventDefault(); resume(); }
   }
 });
 addEventListener('keyup', e => (keys[e.code] = false));
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; }); // pencere odağı giderken basılı kalan ok tuşu martıyı kenara sürüklemesin
 const onBtn = (id, fn) => $(id).addEventListener('click', e => { e.stopPropagation(); sfx.click(); fn(e); });
-onBtn('againBtn', () => { if (overLock <= 0) startGame(); });
+onBtn('againBtn', () => replay());
 onBtn('homeBtn', () => showTitle());
 onBtn('reviveBtn', () => askRevive());
 onBtn('fishBtn', () => fishRevive());
@@ -2198,7 +2235,7 @@ onBtn('cosAct', () => costumeAction());
 onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
 // duraklatmadan çıkış uçuşu bitirir: skor sıralamaya gider, simitler cüzdana, görevler sayılır (eskiden hepsi kayboluyordu)
-onBtn('quitBtn', () => { audio.resume(); show('pause', false); if (total() > 0 && !tutorialPending) { cause = 'quit'; showOver(); show('reviveBtn', false); show('fishBtn', false); } else showTitle(); });
+onBtn('quitBtn', () => { audio.resume(); show('pause', false); for (const k of Object.keys(pw)) pw[k] = 0; smokeT = 0; invuln = 0; renderPowers(); if (total() > 0 && !tutorialPending) { cause = 'quit'; showOver(); show('reviveBtn', false); show('fishBtn', false); } else showTitle(); });
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 // panelin dışına (karartılmış boşluğa) dokunmak paneli kapatır; kendi kapatma düğmesine basılmış gibi, oyun başlamaz
@@ -2314,9 +2351,9 @@ function padTick() {
   if (on !== padOn) { padOn = on; show('pad', on); }
   if (!on) return;
   const k = Math.round((tx / EDGE) * 1000) / 1000;
+  $('pad').classList.toggle('held', padId >= 0); // parmak kalkınca basılı görünümü hemen gitsin
   if (k === padK) return;
   padK = k; $('padKnob').style.left = `${50 + clamp(k, -1, 1) * 50}%`;
-  $('pad').classList.toggle('held', padId >= 0);
 }
 
 
@@ -2593,12 +2630,15 @@ function frame() {
       }
       const gz0 = g.z + speed * dt; // bu karede martının geçtiği z aralığı: [g.z, gz0]
       const swept = (z, h) => g.z < z + h && gz0 > z - h;
+      // kayan teknelerin kutusu bu karenin martı konumuyla: çizilen yelkenle aynı yerde (bir kare geriden gelmesin)
+      for (const c of crossers) c.o.x = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k + c.side * SAIL_OFF;
+      for (const p of pirates) { const x = p.xa + p.side * Math.max(-40, g.z - p.z) * p.k; for (const q of p.os) q.o.x = x + q.off; }
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x);
         if (g.y < o.top && !o.ghost && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) { crash(o.kind); if (state === 'dead') crashObs = o; }
         else if (!o.passed && g.z < o.z - o.hd) {
           o.passed = true;
-          if (dx < o.hw + HIT.near && state === 'play') nearMiss(o.x);
+          if (dx >= o.hw + obsK && dx < o.hw + HIT.near && state === 'play') nearMiss(o.x); // içinden geçene (kalkan/dokunulmazlık) sıyırma bonusu yok
         }
       }
       for (const r of rivals) {
@@ -3108,7 +3148,8 @@ window.__game = {
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
   get farStop() { return farStop; },
-  get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
+  get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
+  get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
   get city() { return city.id; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
   get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },

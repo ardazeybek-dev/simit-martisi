@@ -99,7 +99,7 @@ const wob = (t, p) => 0.5 + 0.3 * Math.sin(t + p) + 0.2 * Math.sin(t * 1.93 + p 
 export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
   time += dt;
   const k = WEATHER_K[weather] || 0, fog = scene.fog;
-  if (!k) { points.visible = false; return; }
+  if (!k) { points.visible = false; for (const sh of ships) if (!sh.obj.parent) ships.delete(sh); return; } // yağmursuz havada da sahneden çıkan gemi kayıttan düşsün (sızıntı)
   const far = fog ? fog.far * 1.5 : 400, near = fog ? fog.near * 0.6 : 60;
   renderer.getDrawingBufferSize(_sz); mat.uniforms.uHalfH.value = _sz.y / 2; mat.uniforms.uMinPx.value = 2.2 * renderer.getPixelRatio();
   const cam = camera.position;
