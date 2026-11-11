@@ -113,17 +113,20 @@ begin
 end $$;
 
 -- skor haftanın satırına yazılır (yalnızca büyükse); dönen değer oyuncunun kalıcı sıralamadaki yeri.
--- Akla yatkınlık (biletten beri geçen t saniyeye göre): mesafe ≤ 40·t + 100 (en yüksek hız ~29 m/sn, sapan dahil),
--- skor = puan + mesafe/10 ve puan ≤ 600·t + 1500 (otomatik pilot ~90 puan/sn; 2x güçlendirici ve x5 komboyla gerçek uçuşlar 200'ü aşıyordu).
+-- Akla yatkınlık (biletten beri geçen t saniyeye göre): mesafe ≤ 40·t + 100, skor = (puan + mesafe/10) × şehir çarpanı
+-- (İstanbul 1, İzmir 1.1, Antalya 1.2). Çarpansız puan ≤ 600·t + 1500 ve ≤ 12·mesafe + 1500: gerçek uçuşlar metre başı
+-- en çok ~6.7 puan yapıyor (2026-11-11 ölçümü, 21 km'lik 1. dahil), tavan bunun ~1.8 katı.
 drop function if exists submit_score(uuid, uuid, int, int, text);
 create or replace function submit_score(p_id uuid, p_secret uuid, p_run uuid, p_score int, p_dist int default 0, p_city text default null) returns int
 language plpgsql security definer set search_path = public as $$
 declare w date := sm_week(); best int; t float8; d int := greatest(0, coalesce(p_dist, 0));
+  cm float8 := case p_city when 'izmir' then 1.1 when 'antalya' then 1.2 else 1 end; pts float8;
 begin
   if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
   select extract(epoch from now() - started_at) into t from runs where id = p_run and player_id = p_id and started_at > now() - interval '1 day';
   if t is null then raise exception 'unknown run'; end if;
-  if p_score is null or p_score < d / 10 or d > 40 * t + 100 or p_score - d / 10 > 600 * t + 1500 then raise exception 'implausible score'; end if;
+  pts := p_score / cm - d / 10;
+  if p_score is null or p_score < d / 10 or d > 40 * t + 100 or pts > 600 * t + 1500 or pts > 12 * d + 1500 then raise exception 'implausible score'; end if;
   insert into scores(player_id, week, city, score, dist) values (p_id, w, left(p_city, 16), p_score, d)
   on conflict (player_id, week) do update set score = excluded.score, dist = excluded.dist, city = excluded.city, updated_at = now()
     where scores.score < excluded.score;
@@ -244,3 +247,27 @@ begin
 end $$;
 revoke all on function daily(text, uuid, uuid) from public;
 grant execute on function daily(text, uuid, uuid) to anon, authenticated;
+
+-- günlük balık sınırı: oyuncu kimliğine bağlı, gün Europe/Istanbul (cihaz saatini ileri almak işe yaramaz).
+-- p_take: yakalanan balığı sayar (sınır doluysa saymaz); dönen değer bugünkü sayı.
+create table if not exists fish_days (
+  player_id uuid primary key references players(id) on delete cascade,
+  day date not null,
+  n int not null
+);
+alter table fish_days enable row level security;
+create or replace function fish_day(p_id uuid, p_secret uuid, p_take boolean default false) returns int
+language plpgsql security definer set search_path = public as $$
+declare today date := (now() at time zone 'Europe/Istanbul')::date; r fish_days;
+begin
+  if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
+  if p_take then
+    insert into fish_days as f values (p_id, today, 1)
+      on conflict (player_id) do update set n = case when f.day = today then f.n + 1 else 1 end, day = today
+      where f.day <> today or f.n < 3;
+  end if;
+  select * into r from fish_days f where f.player_id = p_id;
+  return case when found and r.day = today then r.n else 0 end;
+end $$;
+revoke all on function fish_day(uuid, uuid, boolean) from public;
+grant execute on function fish_day(uuid, uuid, boolean) to anon, authenticated;

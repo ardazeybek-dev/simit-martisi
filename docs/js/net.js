@@ -159,6 +159,8 @@ export async function submitScore(score, dist, city) {
 // { week, ends, total, top:[{rank,name,cc,score,me}], me:{rank,score}|null, prev:{week,rank,total}|null } ya da null
 // günlük ödül sunucuda: aynı ağ + aynı tarayıcı günde bir kez alır (kayıtlar silinse de). act: peek | claim | save
 // günlük ödül oyuncu kimliğine bağlı (IP değil): telefonun IP'si değişince seri 1. güne düşmez. Kayıt henüz gitmediyse eski yol
+// günlük balık sınırı sunucuda, oyuncu kimliğine bağlı: take=true yakalananı sayar; dönen bugünkü sayı (ağ yoksa null)
+export const fishDayRpc = take => { const p = profile(); return p.id && p.secret ? rpc('fish_day', { p_id: p.id, p_secret: p.secret, p_take: !!take }) : Promise.resolve(null); };
 export const dailyRpc = act => { const p = profile(); return p.id && p.secret ? rpc('daily', { p_act: act, p_id: p.id, p_secret: p.secret }) : rpc('daily', { p_act: act }); };
 
 export async function fetchBoard() {

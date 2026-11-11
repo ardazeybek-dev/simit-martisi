@@ -8,7 +8,7 @@ import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryG
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
-import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc } from './net.js';
+import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -1066,7 +1066,11 @@ const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // balık farmı olmasın: uçuşun ilk FISH_MIN_M metresinde balık çıkmaz (aç-kap uçuşlar kazanmaz), uçuşlardan günde en çok FISH_DAY balık
 const FISH_MIN_M = 1000, FISH_DAY = 3, KEY_FISHDAY = 'simit-martisi-fishday';
-const fishToday = () => { const f = store.get(KEY_FISHDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
+// sayaç sunucuda da tutulur (oyuncu kimliği, İstanbul günü): site verisini silmek ya da cihaz saatini ileri almak sınırı aşmaz; ağ yoksa yerel sayaç
+let fishSrv = 0;
+const fishLocal = () => { const f = store.get(KEY_FISHDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
+const fishToday = () => Math.max(fishLocal(), fishSrv);
+const fishSync = take => fishDayRpc(take).then(n => { if (typeof n === 'number') fishSrv = n; });
 // martı rütbesi: her uçuşun simiti ve mesafesi XP olur (simit başına 1, 20 m başına 1); her seviye simit ödüller, belli seviyelerde unvan değişir.
 // Uçuşta gösterilmez, yalnız oyun sonunda çubuk dolar; menüde rozet. Ayar: xpNeed, lvGift, RANKS
 const KEY_RANK = 'simit-martisi-rank';
@@ -1213,7 +1217,8 @@ function bump(el, cls = 'bump') {
   if (el._bumpRaf) cancelAnimationFrame(el._bumpRaf);
   el._bumpRaf = requestAnimationFrame(() => { el._bumpRaf = 0; el.classList.add(cls); });
 }
-const total = () => points + Math.floor(dist / 10);
+const cityMult = () => (daily ? 1 : city.mult || 1); // şehir puan çarpanı: İzmir ×1.1, Antalya ×1.2; günün uçuşu hep ×1
+const total = () => Math.floor((points + Math.floor(dist / 10)) * cityMult());
 // sayı biçimleyici bir kez kurulur: toLocaleString her çağrıda yeni Intl nesnesi kurar (HUD her kare çağırıyor)
 const NF = new Intl.NumberFormat(window.I18N.locale), fmt = n => NF.format(n);
 
@@ -1236,7 +1241,7 @@ function renderRouteMap() {
   }
   const goal = Math.min(farStop + 1, STOPS.length - 1), done = farStop === STOPS.length - 1;
   $('routeMap').innerHTML = STOPS.map((s, i) => `<i class="${i <= farStop ? 'got' : i === goal ? 'goal' : ''}" title="${s.name}"></i>`).join('');
-  $('routeGoal').innerHTML = done ? tr(city.end) : `${tr('Hedef')}: <b>${STOPS[goal].name}</b> · ${fmt(STOPS[goal].m)} m`;
+  $('routeGoal').innerHTML = (done ? tr(city.end) : `${tr('Hedef')}: <b>${STOPS[goal].name}</b> · ${fmt(STOPS[goal].m)} m`) + (city.mult > 1 ? ` <em class="mult-tag">×${city.mult}</em>` : '');
 }
 let dailyAuto = false; // kendiliğinden açılan ödül penceresi: sayfa açılışında bir kez
 function showTitle() {
@@ -1273,7 +1278,7 @@ function startGame() {
   if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
   audio.unlock();
   sfx.click();
-  misPending = false; refillMissions(); startRun(); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
+  misPending = false; refillMissions(); startRun(); fishSync(false); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
   achRun = {}; saidRun.clear();
   for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; } // görevler panelinde çubuk buradan dolar
   misPending = true;
@@ -1314,7 +1319,8 @@ function crash(why) {
 function showOver() {
   show('warm', false); shownWarm = -1;
   state = 'over'; overLock = 0.8; applyShadows();
-  const final = total();
+  const final = total(), cm = cityMult();
+  $('overMult').textContent = cm > 1 ? ` ×${cm}` : '';
   const isBest = !daily && final > best, prevBest = best, askName = isBest && final > 0 && netOn() && !myName();
   if (isBest) { best = final; store.set(KEY_BEST, best); }
   const msg = { quit: 'Uçuş bitti', 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!' };
@@ -3097,7 +3103,7 @@ function splash(x, z, n) {
 // balık yakalandı: cüzdana bir balık, küçük bonus, kombo süresi tazelenir; ikon HUD'daki balık sayacına uçar
 function catchFish(f) {
   f.u = 2; f.mesh.visible = false;
-  setFish(fish + 1); fishRun++; run.fish++; store.set(KEY_FISHDAY, { day: dayKey(), n: fishToday() + 1 });
+  setFish(fish + 1); fishRun++; run.fish++; store.set(KEY_FISHDAY, { day: dayKey(), n: fishToday() + 1 }); fishSync(true);
   points += 25 * mult(); if (combo > 0) comboT = COMBO_T;
   sfx.gold(); vibrate([20, 30, 20]); hitStop = 0.06; trauma = Math.min(1, trauma + 0.2); flapBurst = 1;
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y, f.z), 30, 0x8fdcff, 5, 0.8, 0.3);
