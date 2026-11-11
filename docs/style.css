@@ -125,6 +125,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 /* üşüme göstergesi (karlı havada): simit yedikçe dolar */
 #warm { position: fixed; z-index: 5; pointer-events: none; right: calc(16px + var(--sar)); top: calc(70px + var(--sat)); --c: #8fd3ff; animation: none; }
 #warm.cold { animation: blink .4s steps(2) infinite; --c: #ff8a7a; }
+#hungry { position: fixed; z-index: 5; pointer-events: none; right: calc(16px + var(--sar)); top: calc(70px + var(--sat)); --c: #ffc15a; animation: none; }
+#hungry.cold { animation: blink .4s steps(2) infinite; --c: #ff8a7a; }
 @keyframes pwin { from { transform: translateX(-30px) scale(.6); opacity: 0; } }
 @keyframes blink { 50% { opacity: .35; } }
 
@@ -379,6 +381,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .rank-line:empty, .route-line:empty { display: none; }
 .vs-pill { padding: 5px 14px 4px; border-radius: 99px; background: rgba(47, 127, 214, .85); color: #fff; font-size: 14.5px; font-weight: 800;
   box-shadow: 0 3px 0 rgba(27, 24, 56, .35); animation: vsPulse 2.4s ease-in-out infinite; }
+.gift-pill { background: rgba(224, 128, 36, .92); cursor: pointer; }
 @keyframes vsPulse { 50% { transform: scale(1.04); } }
 .vs-line { margin: 0 0 10px; padding: 6px 12px 5px; border-radius: 12px; background: rgba(47, 127, 214, .18); color: #cfe6ff; font-size: 14.5px; font-weight: 800; text-align: center; }
 .over-name { margin: 0 0 10px; padding: 10px 12px 4px; border-radius: 16px; background: rgba(255, 194, 58, .14); border: 2px solid rgba(255, 194, 58, .45); }

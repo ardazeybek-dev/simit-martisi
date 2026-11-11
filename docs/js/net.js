@@ -6,7 +6,8 @@ import { store } from './util.js';
 const SB_URL = 'https://sznwlsoyssseckgljulb.supabase.co';
 const SB_KEY = 'sb_publishable_9L0oBO1uWQKbNaGAfvBBOg_dO8bTWSS'; // publishable: istemcide durabilir
 export const KEY_PROFILE = 'simit-martisi-profile';
-const KEY_PENDING = 'simit-martisi-pending'; // gönderilemeyen skor: { week, run, score, dist, city }
+const KEY_PENDING = 'simit-martisi-pending';
+const KEY_GIFT = 'simit-martisi-gift'; // sunucudan gelen, cüzdana henüz eklenmemiş hediye simit // gönderilemeyen skor: { week, run, score, dist, city }
 
 export const netOn = () => !!(SB_URL && SB_KEY);
 // null: ağ yok / sunucu cevap vermedi (sonra yeniden denenir) · REJECT: sunucu reddetti (yeniden denemenin anlamı yok)
@@ -35,7 +36,7 @@ export const validName = s => cps(cleanName(s)).length >= 2;
 // uygunsuz ad: supabase/schema.sql'deki sm_fold + sm_bad ile aynı listeler ve aynı sadeleştirme (ikisi birlikte güncellenir).
 // Benzer harfler (Kiril о, Yunan ο, 0, @ ...) latine çevrilir; BAD adın içinde aranır, WORDS yalnızca tek başına kelimeyse sayılır.
 const BAD = ['amcik', 'amck', 'amcuk', 'aminako', 'aminakoy', 'aminaq', 'amk', 'amq', 'arschloch', 'ashole', 'bastard', 'bitch', 'cabron', 'cocksucker', 'cunt', 'dangalak', 'dick', 'dildo', 'fagot', 'fahise', 'fotze', 'fuck', 'gavat', 'gerizekali', 'gilipolas', 'gotlek', 'gotos', 'gotveren', 'hijodeputa', 'hitler', 'hurensohn', 'ibine', 'ibne', 'ipne', 'kahpe', 'kaltak', 'kancik', 'kanirt', 'kerhane', 'kevase', 'kodumun', 'maricon', 'mierda', 'oglanci', 'orosbu', 'orospu', 'orospucocugu', 'orspu', 'pendejo', 'penis', 'pezevenk', 'pickurusu', 'picoglu', 'pijkurusu', 'pijoglu', 'porn', 'porno', 'pusi', 'pust', 'pusy', 'putamadre', 'rapist', 'retard', 'serefsiz', 'sex', 'shit', 'skm', 'sktr', 'slut', 'sokuk', 'surtuk', 'vagina', 'whore', 'wichser', 'yalayan', 'yarak', 'yavsak'];
-const WORDS = new Set(['ahmak', 'am', 'amin', 'amina', 'amini', 'amq', 'aptal', 'aq', 'bok', 'boktan', 'cock', 'cum', 'dalama', 'got', 'gote', 'gotler', 'gotu', 'gotum', 'gotun', 'kasar', 'lavuk', 'mal', 'niga', 'nigas', 'niger', 'oc', 'pic', 'pice', 'pij', 'pijo', 'pipi', 'salak', 'salaklar', 'sapik', 'seks', 'seksi', 'sexy', 'sg', 'sik', 'sike', 'sikik', 'sikim', 'tasak', 'tasaklar', 'tits', 'yarami']);
+const WORDS = new Set(['ahmak', 'am', 'amin', 'amina', 'amini', 'amq', 'aptal', 'aq', 'bok', 'boktan', 'cock', 'cum', 'dalama', 'got', 'gote', 'gotler', 'gotu', 'gotum', 'gotun', 'kasar', 'lavuk', 'mal', 'niga', 'nigas', 'niger', 'oc', 'pic', 'pice', 'pij', 'pijo', 'pipi', 'pitik', 'salak', 'salaklar', 'sapik', 'seks', 'seksi', 'sexy', 'sg', 'sik', 'sike', 'sikik', 'sikim', 'tasak', 'tasaklar', 'tits', 'yarami']);
 const FROM = 'ışğüöçâîûİŞĞÜÖÇ0134578@$!69авеёкмнорстухѕіїјԁүһԛԝАВЕЁКМНОРСТУХЅІЇЈαβεικνορτυχΑΒΕΖΗΙΚΜΝΟΡΤΥΧɑɡ', TO = 'isguocaiuisguocoieastbasiggabeekmhopctyxsiijdyhqwabeekmhopctyxsiijabeikvoptuxabezhikmnoptyxag';
 const fold = s => Array.from(String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()).map(c => { const i = FROM.indexOf(c); return i < 0 ? c : TO[i]; }).join('')
   .replace(/[^a-z]+/g, ' ').replace(/(.)\1+/g, '$1').trim(); // kelimeler boşlukla ayrık, tekrar eden harf teke iner
@@ -82,6 +83,9 @@ export function setCountry(cc) {
   return true;
 }
 
+let giftDone = false, giftCb = null; // hediye sayfa başına bir kez sorulur
+// hediye: sunucu (gifts tablosu) teslim edilmemiş hediyeleri bir kez verir; önce cihaza yazılır, sonra main.js cüzdana ekler
+export const onGift = cb => { giftCb = cb; if (+store.get(KEY_GIFT, 0) > 0) cb(); };
 let syncing = null, lastRank = null, edits = 0; // edits: oyuncunun ad/ülke değişiklik sayacı
 // await arasında oyuncu ad/ülke değiştirebilir: eski kopyayı yazmak yeni ülkeyi ezerdi → yazarken taze profile birleştirilir
 const save = patch => { const p = Object.assign(profile(), patch); store.set(KEY_PROFILE, p); return p; };
@@ -122,6 +126,10 @@ async function syncOnce() {
       const c = await rpc('claim_best', { p_id: p.id, p_secret: p.secret, p_score: best });
       if (c === null) return false;
       p = save({ claimed: true });
+    }
+    if (!giftDone) {
+      const g = await rpc('claim_gifts', { p_id: p.id, p_secret: p.secret });
+      if (g !== null) { giftDone = true; if (typeof g === 'number' && g > 0) { store.set(KEY_GIFT, (+store.get(KEY_GIFT, 0) || 0) + g); if (giftCb) giftCb(); } }
     }
     const q = store.get(KEY_PENDING, null);
     if (q) {

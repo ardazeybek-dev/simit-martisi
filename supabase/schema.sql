@@ -62,7 +62,7 @@ language sql immutable as $$
     'amcik','amck','amcuk','aminako','aminakoy','aminaq','amk','amq','arschloch','ashole','bastard','bitch','cabron','cocksucker','cunt','dangalak','dick','dildo','fagot','fahise','fotze','fuck','gavat','gerizekali','gilipolas','gotlek','gotos','gotveren','hijodeputa','hitler','hurensohn','ibine','ibne','ipne','kahpe','kaltak','kancik','kanirt','kerhane','kevase','kodumun','maricon','mierda','oglanci','orosbu','orospu','orospucocugu','orspu','pendejo','penis','pezevenk','pickurusu','picoglu','pijkurusu','pijoglu','porn','porno','pusi','pust','pusy','putamadre','rapist','retard','serefsiz','sex','shit','skm','sktr','slut','sokuk','surtuk','vagina','whore','wichser','yalayan','yarak','yavsak'
   ]) w where sm_norm(p) like '%' || w || '%')
   or string_to_array(sm_words(p), ' ') && array[
-    'ahmak','am','amin','amina','amini','amq','aptal','aq','bok','boktan','cock','cum','dalama','got','gote','gotler','gotu','gotum','gotun','kasar','lavuk','mal','niga','nigas','niger','oc','pic','pice','pij','pijo','pipi','salak','salaklar','sapik','seks','seksi','sexy','sg','sik','sike','sikik','sikim','tasak','tasaklar','tits','yarami'
+    'ahmak','am','amin','amina','amini','amq','aptal','aq','bok','boktan','cock','cum','dalama','got','gote','gotler','gotu','gotum','gotun','kasar','lavuk','mal','niga','nigas','niger','oc','pic','pice','pij','pijo','pipi','pitik','salak','salaklar','sapik','seks','seksi','sexy','sg','sik','sike','sikik','sikim','tasak','tasaklar','tits','yarami'
   ]
   -- yalnızca Latin/Türkçe harf, rakam, boşluk, . _ - ve emoji (Kiril, Yunan, süslü harfler yasak); net.js oddName ile aynı
   or normalize(coalesce(p, ''), NFC) ~ '[^A-Za-z0-9 ._çğıöşüÇĞİÖŞÜâîûÂÎÛäëïÿÄËÏßñÑáéíóúÁÉÍÓÚàèìòùÀÈÌÒÙêôÊÔãõÃÕ\u2600-\u27bf\u2b00-\u2bff\U0001f000-\U0001f0ff\U0001f200-\U0001faff\ufe0f\u200d-]'
@@ -291,3 +291,26 @@ begin
 end $$;
 revoke all on function fish_day(uuid, uuid, boolean) from public;
 grant execute on function fish_day(uuid, uuid, boolean) to anon, authenticated;
+
+-- hediye simit: yönetici panelden satır ekler (insert into gifts(player_id, amount) values (...)); oyun açılınca claim_gifts
+-- teslim edilmemişlerin toplamını bir kez verir, istemci cüzdana ekler.
+create table if not exists gifts (
+  id bigserial primary key,
+  player_id uuid not null references players on delete cascade,
+  amount int not null check (amount between 1 and 100000),
+  created_at timestamptz not null default now(),
+  claimed_at timestamptz
+);
+alter table gifts enable row level security;
+revoke all on gifts from anon, authenticated;
+create or replace function claim_gifts(p_id uuid, p_secret uuid) returns int
+language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
+  with c as (update gifts set claimed_at = now() where player_id = p_id and claimed_at is null returning amount)
+  select coalesce(sum(amount), 0) into n from c;
+  return n;
+end $$;
+revoke all on function claim_gifts(uuid, uuid) from public;
+grant execute on function claim_gifts(uuid, uuid) to anon, authenticated;

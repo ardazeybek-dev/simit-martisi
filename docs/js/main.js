@@ -8,7 +8,7 @@ import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryG
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
-import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc } from './net.js';
+import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -38,16 +38,20 @@ const blob = new THREE.Mesh(GEO.blob, new THREE.MeshBasicMaterial({ color: 0x0a1
 blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
 // ---------------- dünya ----------------
+// deneme adresleri (?city ?stop ?rule ?turn ...) yalnız bilgisayardaki sunucuda çalışır: canlıda kilitli şehir ya da kısa hat açılmasın
+const QS = new URLSearchParams(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.search : '');
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
 let bridgeZ = 0;
 let convoy = false, longSea = false;
 let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, anchorZ = 0, land = [];
-const difficulty = () => clamp(-genZ / 650, 0, 5);
-const late = () => clamp((-genZ - 3250) / 3000, 0, 1); // difficulty tavana vurduktan sonra (~1,6 km → ~3,1 km) yavaşça 0 → 1
+// şehir zorluğu (cities.js hard): ilk 500 m her şehirde aynı; sonra İzmir/Antalya tavana daha erken varır, geç oyun tavanı da yüksek
+const HARD = () => (city && city.hard) || 0;
+const difficulty = () => clamp(-genZ / 650 + HARD() * 0.3 * Math.max(0, -genZ - 1000) / 650, 0, 5);
+const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HARD() * 0.3); // difficulty tavana vurduktan sonra yavaşça 0 → 1 (İzmir 1.3, Antalya 1.6)
 // ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
 // Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
-const STOP_K = new URLSearchParams(location.search).has('stop') ? 0.15 : 1; // ?stop → duraklar çok yakın (deneme için)
+const STOP_K = QS.has('stop') ? (+QS.get('stop') || 0.15) : 1; // ?stop → duraklar çok yakın, ?stop=0.02 daha da yakın (deneme için)
 const routeOf = c => clamp(+store.get(c.routeKey, 0) || 0, 0, c.stops.length - 1); // o şehirde şimdiye dek varılan en uzak iskele
 const cityOpen = c => { const i = CITIES.indexOf(c); return !c.soon && (i <= 0 || routeOf(CITIES[i - 1]) === CITIES[i - 1].stops.length - 1); };
 let city, STOPS, farStop;
@@ -70,11 +74,12 @@ let vs = null, vsNew = false;
   }
 }
 { // ?city=izmir → kilit olsa da o şehir (deneme için)
-  const q = cityOf(new URLSearchParams(location.search).get('city') || (vsNew && vs.city) || store.get(KEY_CITY, 'istanbul'));
-  useCity(cityOpen(q) || new URLSearchParams(location.search).has('city') ? q : CITIES[0]);
+  const q = cityOf(QS.get('city') || (vsNew && vs.city) || store.get(KEY_CITY, 'istanbul'));
+  useCity(cityOpen(q) || QS.has('city') ? q : CITIES[0]);
 }
 let newStop = 0; // bu uçuşta ilk kez varılan en uzak iskele (oyun sonu için)
 let slowT = 0; const GATE_FW_Y = 15;
+let opened = null; // bu uçuşta açılan şehir (menüye dönünce o seçilir)
 let stopI = 1, pierI = 1, stopM = STOPS.map(s => s.m); // stopI: sıradaki varış, pierI: sıradaki kurulacak iskele, stopM: bu uçuşta kapıların gerçek metresi
 const PIER_HALF = 36; // iskele kesiti: kapıdan önce ve sonra bu kadar boş su
 
@@ -94,7 +99,7 @@ const DAY_RUNS = 3; // günün uçuşunda günlük hak (ikinci şans hak yemez)
 let daily = false, daySeed = 0, dayRule = null, genN = 0, turnN = 0;
 const R0 = Math.random;
 const ruleOn = id => daily && dayRule && dayRule.id === id;
-const RULE_Q = RULES.find(r => r.id === new URLSearchParams(location.search).get('rule')); // ?rule=gold|fast|chubby|giant|hiccup → o kural (deneme için)
+const RULE_Q = RULES.find(r => r.id === QS.get('rule')); // ?rule=gold|fast|chubby|giant|hiccup → o kural (deneme için)
 const todayRule = () => RULE_Q || RULES[hash('rule', dayKey()) % RULES.length];
 function seedAt(...k) { Math.random = daily ? seeded(hash(daySeed, ...k)) : R0; } // günün uçuşunda üretim tohumdan
 const dayGift = n => 15 + 5 * Math.min(n - 1, 6); // gün serisi: 15 → 45 simit
@@ -124,7 +129,7 @@ function gullSize(puff = 0) {
 // Mantık düz koridorda kalır, viraj yalnızca çizimde yay olur (scene.js). Virajda martı dışa savrulur;
 // simitler içe kıvrılan yarış çizgisine dizilir, çizginin çoğunu kapan sapan gibi fırlar.
 // Ayar: TURN_ANG (dönüş açısı, rad), TURN_LEN (viraj boyu), TURN_GAP (iki viraj arası), PUSH (savrulma).
-const TURNS_ON = new URLSearchParams(location.search).get('turn') !== '0'; // ?turn=0 → düz Boğaz (karşılaştırma için)
+const TURNS_ON = QS.get('turn') !== '0'; // ?turn=0 → düz Boğaz (karşılaştırma için)
 const TURN_ANG = [0.34, 0.52], TURN_LEN = [48, 70], /* kısa, keskin virajlar: uzun boş dönüş yok */ TURN_GAP = [340, 520], S_CHANCE = 0.3, PUSH = 0.75;
 let turns = [], turnZ = 0, planYaw = 0, heading = 0, lean = 0, push = 0, sling = 0, slingV = 0, bendOn = 0;
 function planTurns(limit) {
@@ -243,8 +248,8 @@ function addSimit(x, y, z, gold, piece = false) {
 // Açık suda simitler havada asılı durmaz: kenardaki simitçi, simidini bölüp parçalarını martıya atar. Atış martının uzaklığına göre
 // zamanlanır; simit kavis çizip yakalama noktasına martıyla aynı anda iner, kaçarsa denize düşer. İniş yeri önceden görünmez.
 // Ayar: THROW_T (uçuş süresi, sn), THROW_H (kavis yüksekliği). ?throw=0 → eski, havada duran simitler.
-const THROW_ON = new URLSearchParams(location.search).get('throw') !== '0';
-const BRIDGE_SOON = new URLSearchParams(location.search).has('bridge'), SALON_ALL = new URLSearchParams(location.search).has('salon'); // ?bridge → ilk köprü hemen gelir (deneme için)
+const THROW_ON = QS.get('throw') !== '0';
+const BRIDGE_SOON = QS.has('bridge'), SALON_ALL = QS.has('salon'); // ?bridge → ilk köprü hemen gelir (deneme için)
 const THROW_T = [1.05, 1.35], THROW_H = [2.4, 3.6];
 const RING = new THREE.RingGeometry(0.5, 0.72, 20);
 const thrownStat = { caught: 0, missed: 0 };
@@ -466,7 +471,7 @@ function spawnTurn(tn) {
 // Körfezin ikindi rüzgârı: suda yana kayan rüzgâr çizgileri uzaktan görünür. Şeridin içinde martı rüzgârın estiği yana itilir,
 // gevrekler de rüzgârla savrulur: rüzgârla birlikte yatan yakalar, karşı koyan kaçırır. Köprünün İstanbul'daki yerini alır.
 // Ayar: IMBAT_PUSH (şeritte itiş), IMBAT_LEN (şerit boyu), imbatZ aralığı. ?imbat → ilk şerit hemen gelir (deneme için)
-const IMBAT_SOON = new URLSearchParams(location.search).has('imbat');
+const IMBAT_SOON = QS.has('imbat');
 const IMBAT_PUSH = 2.4, IMBAT_LEN = 70;
 const STREAK = new THREE.PlaneGeometry(5, 0.42).rotateX(-Math.PI / 2);
 const streakMat = new THREE.MeshBasicMaterial({ map: canvasTex(64, 4, g => { const r = g.createLinearGradient(0, 0, 64, 0); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(0.65, 'rgba(255,255,255,1)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 4); }), transparent: true, opacity: 0.8, depthWrite: false });
@@ -510,7 +515,7 @@ function updateImbat(dt, gz) {
 // Turist korsan guleti şeridi yandan yavaşça keser; martı vardığında tekne hep aynı yerdedir (xa). Yelkenler ve kıç köşkü engel,
 // iki yelken arasındaki boşluk kapı: güvertedeki turistler simit parçalarını tam o boşluğa fırlatır. Ayar: k (kayma hızı), pirateZ aralığı.
 // ?pirate → ilk tekne hemen gelir (deneme için)
-const PIRATE_SOON = new URLSearchParams(location.search).has('pirate');
+const PIRATE_SOON = QS.has('pirate');
 let pirates = [], pirateZ = 0;
 function spawnPirate() {
   const z0 = genZ, pz = z0 - 40, side = pick([-1, 1]), gapX = rand(-1.8, 1.8), xa = gapX - side * PIRATE_GAP;
@@ -542,7 +547,7 @@ function updatePirates(gz) {
 // Şeridin bir yanında falezden denize dökülen şelale; serpintisi şeridin o yarısına taşar. Serpintiye giren martı yukarı kalkar
 // ve şelaleden öte yana itilir. Yükseğe dizilmiş simit kavsine (tepede altın) yalnız serpintiye başından giren yetişir.
 // Ayar: FALLS_LIFT (en çok yükselme), FALLS_PUSH (yana itiş), FALLS_LEN (serpinti boyu), fallsZ aralığı. ?duden → ilk şelale hemen gelir
-const FALLS_SOON = new URLSearchParams(location.search).has('duden');
+const FALLS_SOON = QS.has('duden');
 const FALLS_LIFT = 3, FALLS_PUSH = 1.3, FALLS_LEN = 26;
 let falls = [], fallsZ = 0, fallsLift = 0, fallsW = 0;
 function spawnFalls() {
@@ -581,7 +586,7 @@ function updateFalls(dt, gz) {
 // Şeridin yanında kum dili; ön sıradaki renkli şemsiyelerin altındaki turistler simit parçası atar, renk şemsiyeden okunur (iniş yeri halkası yok).
 // Atışlar ikişer gelir (iki ayrı renk, şeridin iki yarısına). Üç renk var; art arda iki çiftte mutlaka ortak bir renk olur.
 // Aynı rengi çift çift izleyen seri yapar: ikinci çiftten itibaren bonus ve o renkte parıltı. Ayar: BEACH_LEN, beachZ aralığı. ?beach → hemen gelir
-const BEACH_SOON = new URLSearchParams(location.search).has('beach');
+const BEACH_SOON = QS.has('beach');
 const BEACH_LEN = 80;
 let beaches = [], beachZ = 0, beachId = 0, beachRun = { id: -1, pair: -1, c: -1, n: 0 };
 function spawnBeach() {
@@ -1154,6 +1159,7 @@ function planTempo(limit) {
 }
 const tempoAt = z => tempos.find(u => z < u.z0 && z > u.z1) || null;
 // hava (weather.js): yağmurda rüzgâr esintisi martıyı yana iter, karda simit yemezsen üşürsün, siste ufuk kısalır
+let full = 1, starve = false, shownFull = -1; // tokluk: simit yemeden uçan martı acıkır, aç martı ağır döner
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
 const GUST = 6.5, COLD_S = 28; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
 const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0 }; // görevler ve başarımlar için uçuş sayaçları
@@ -1176,6 +1182,7 @@ function resetWorld(newWeather = true) {
   if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
+  full = 1; starve = false; shownFull = -1; show('hungry', false); $('hungry').classList.remove('cold');
   generate(-280); placeMarks();
   camera.position.set(0, FLY_Y + 5.4, 13.5);
 }
@@ -1274,7 +1281,8 @@ const toStop = (i, n) => tr('{to} {n} m kaldı').replace('{to}', STOPS[i].to).re
 function renderRouteLine() {
   const el = $('overRoute');
   el.classList.toggle('new', newStop > 0);
-  if (newStop) el.innerHTML = `${tr('Yeni iskele')}: <b>${STOPS[newStop].name}</b> +${fmt(STOPS[newStop].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
+  if (opened && newStop === STOPS.length - 1) el.innerHTML = `🎉 <b>${tr(opened.opened)}</b> +${fmt(STOPS[newStop].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
+  else if (newStop) el.innerHTML = `${tr('Yeni iskele')}: <b>${STOPS[newStop].name}</b> +${fmt(STOPS[newStop].gift)} <svg class="ico"><use href="#i-simit"/></svg>`;
   else el.textContent = ''; // sonraki iskeleye kalan mesafe yazılmaz: ekran sade
 }
 function renderRouteMap() {
@@ -1298,6 +1306,8 @@ function showTitle() {
     Promise.race([sync(), new Promise(r => setTimeout(r, 3000))]).finally(() => reloadKeep()); return;
   }
   if (daily) { daily = false; const c = cityOf(store.get(KEY_CITY, 'istanbul')); useCity(cityOpen(c) ? c : CITIES[0]); }
+  if (opened && cityOpen(opened)) { useCity(opened); store.set(KEY_CITY, opened.id); applyWeather(weather); } // yeni açılan şehir menüde seçili gelir
+  opened = null;
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions(); gullSize();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
@@ -1324,6 +1334,7 @@ function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görü
 }
 function startGame() {
   if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
+  show('giftPill', false);
   audio.unlock();
   sfx.click();
   misPending = false; refillMissions(); startRun(); fishSync(false); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
@@ -1365,7 +1376,7 @@ function crash(why) {
   hideTutorial();
 }
 function showOver() {
-  show('warm', false); shownWarm = -1;
+  show('warm', false); shownWarm = -1; show('hungry', false); shownFull = -1;
   state = 'over'; overLock = 0.8; applyShadows();
   const final = total(), cm = cityMult();
   $('overMult').textContent = cm > 1 ? ` ×${cm}` : '';
@@ -2113,7 +2124,7 @@ function askRevive() {
 }
 // çarptığı yerden kalkanla devam: dünya aynı kalır, 3-2-1 sayımıyla başlar
 function revive() {
-  revives++; crashObs = null;
+  revives++; crashObs = null; full = 1; starve = false;
   gull.position.y = FLY_Y; gull.rotation.set(0, 0, 0); gull.visible = true;
   tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
   combo = 0; comboT = 0;
@@ -2404,7 +2415,7 @@ const PR = MOBILE ? [1.5, 1.6, 1.75] : [1.15, 1.5, 2];
 let shadowWant = true;
 let quality = 2, qFrames = 0, qTime = 0, fpsSmooth = 60, qWarm = 4, qGood = 0, qMax = 2;
 // ?q=0|1|2 kaliteyi sabitler (otomatik ayar kapanır) — ölçüm ve test için
-const qLock = /^[012]$/.test(new URLSearchParams(location.search).get('q') || '') ? +new URLSearchParams(location.search).get('q') : -1;
+const qLock = /^[012]$/.test(QS.get('q') || '') ? +QS.get('q') : -1;
 function setQuality(q) {
   quality = q;
   renderer.setPixelRatio(Math.min(DPR, PR[q]));
@@ -2625,7 +2636,7 @@ function frame() {
     lean = damp(lean, cur ? cur.dir : 0, 3, dt);
     push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH * (MOBILE ? 0.4 : 1); // telefonda savrulma hafif: başparmakla düzeltmek zor
     // savrulma, viraj içine yaslandıkça söner: içe tam yaslanan martı tepe noktasındaki simitlere ulaşır
-    if (state === 'play') weatherTick(dt);
+    if (state === 'play') { weatherTick(dt); hungerTick(dt); }
     if (state === 'play') { const sd = Math.abs(g.x) > 2.6 ? Math.sign(g.x) : 0; if (sd && sd === campSide) campT += dt; else { campSide = sd; campT = 0; } }
     const txl = EDGE; // martı vapur küpeştesinin içinde kalır: kapalı salonun dışından dolaşılamaz
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 17 * dt, -txl, txl);
@@ -2638,11 +2649,11 @@ function frame() {
       if ((hicT -= dt) <= 0) { hicT = 2 + R0() * 2.5; vx += (R0() < 0.5 ? -1 : 1) * (10 + R0() * 5); hicY = 1; vibrate(15); sfx.click(); }
       hicY = damp(hicY, 0, 5, dt); gullSize(hicY);
     }
-    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + imbatW + fallsW : 0), -EDGE, EDGE);
+    const k = (ruleOn('chubby') ? 120 : 230) * (starve ? 0.3 : 1), c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + imbatW + fallsW : 0), -EDGE, EDGE);
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
-    gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (weather === 'snow' && warmth < 0.25 && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme
+    gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (((weather === 'snow' && warmth < 0.25) || starve) && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme (üşüyen ya da aç martı)
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
-    gull.rotation.x = damp(gull.rotation.x, -0.05 + Math.sin(t * 1.1) * 0.03, 4, dt);
+    gull.rotation.x = damp(gull.rotation.x, -0.05 + Math.sin(t * 1.1) * 0.03 + (starve && state === 'play' ? 0.22 : 0), 4, dt); // aç martının başı düşer
     g.y = FLY_Y + Math.sin(t * 2.2) * 0.12 + fallsLift + hicY * 0.7;
     // çırpış: aralıklı patlamalar + dönüşte fazladan; arada süzülme
     if (flapBurst <= 0 && Math.random() < dt * 0.6) flapBurst = rand(0.8, 1.6);
@@ -3065,6 +3076,7 @@ function takeSimit(s) {
   if (s.turn) s.turn.got++;
   if (s.th) thrownStat.caught++;
   if (weather === 'snow') warmth = Math.min(1, warmth + (s.gold ? 0.35 : 0.08)); // sıcak simit ısıtır
+  full = Math.min(1, full + (s.gold ? 0.4 : 0.14) * (s.piece ? 0.5 : 1)); // simit doyurur
   if (s.person) run.steal++;
   if (s.person && s.person.feeder) run.feed++;
   if (s.th) run.piece++;
@@ -3095,6 +3107,20 @@ function judgeTurn(u) {
     sparkle(gull.position, 30, 0xffe7a8, 6, 0.7, 0.3);
   } else if (r >= 0.5) {
     points += 10;
+  }
+}
+// tokluk: hiç simit yemeden city.hunger saniyede acıkırsın. Aç martı ağır döner (dümen yayı %30) ve başı düşer, kombo sıfırlanır;
+// iki simit yiyince toparlanır. Karda üşüme çubuğu aynı işi görür (iki çubuk üst üste binmesin), ilk 300 m ve öğreticide yok.
+function hungerTick(dt) {
+  if (weather === 'snow' || tutorialPending || dist < 300) { if (shownFull >= 0) { show('hungry', false); shownFull = -1; } return; }
+  full = Math.max(0, full - dt / ((city.hunger || 24)));
+  if (!starve && full <= 0) { starve = true; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.25); sfx.shiver(); vibrate([25, 40, 25]); }
+  else if (starve && full >= 0.25) starve = false;
+  const w = full < 0.5 || starve ? Math.round(full * 50) : -1; // çubuk yalnız yarıdan aşağıda görünür: ekran sade
+  if (w !== shownFull) {
+    if (w < 0) show('hungry', false);
+    else { if (shownFull < 0) show('hungry'); $('hungry').querySelector('i').style.transform = `scaleX(${full})`; $('hungry').classList.toggle('cold', starve || full < 0.2); }
+    shownFull = w;
   }
 }
 function weatherTick(dt) {
@@ -3136,6 +3162,8 @@ function arrive() {
     farStop = newStop = i; store.set(city.routeKey, i);
     wallet += STOPS[i].gift; store.set(KEY_WALLET, wallet);
     $('arriveSub').textContent = tr(i === STOPS.length - 1 ? city.end : 'Yeni iskele!');
+    const nx = i === STOPS.length - 1 && CITIES[CITIES.indexOf(city) + 1];
+    if (nx && !nx.soon && nx.opened) { opened = nx; $('arriveSub').textContent = tr(nx.opened); } // oyuncu yeni şehri açtığını anlasın
     $('arriveGain').innerHTML = `+${fmt(STOPS[i].gift)} <svg class="ico"><use href="#i-simit"/></svg>`; // yalnız ilk varışta: cüzdana gelen simit
     setTimeout(() => sfx.record(), 350);
   }
@@ -3208,6 +3236,13 @@ renderer.domElement.addEventListener('webglcontextrestored', () => location.relo
 showTitle();
 // sunucu: profil, bekleyen skor ve (bir kez) cihaz rekoru gönderilir
 if (netOn()) refreshBoard();
+// hediye simit geldi: cüzdana eklenir, menüde turuncu hap çıkar (dokununca ya da uçuş başlayınca kapanır)
+onGift(() => {
+  const n = Math.max(0, Math.floor(+store.get('simit-martisi-gift', 0) || 0)); if (!n) return;
+  store.set('simit-martisi-gift', 0); wallet += n; store.set(KEY_WALLET, wallet); $('titleWallet').textContent = fmt(wallet);
+  $('giftPill').textContent = '🎁 ' + tr('Hediye geldi: {n} simit!').replace('{n}', fmt(n)); show('giftPill'); sfx.record();
+});
+$('giftPill').addEventListener('click', () => show('giftPill', false));
 addEventListener('online', () => sync());
 setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gönderim, kapanan sayfa) hemen gitsin
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
@@ -3241,7 +3276,7 @@ window.__game = {
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
-  get city() { return city.id; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
+  get city() { return city.id; }, get full() { return +full.toFixed(3); }, get starve() { return starve; }, setFull: v => (full = v), get arriveText() { return $('arriveSub').textContent; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
   get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
   setCity(id) { useCity(cityOf(id)); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },

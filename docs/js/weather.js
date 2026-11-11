@@ -5,7 +5,7 @@ import { scene, MOBILE } from './scene.js';
 // ---------------- hava: rastgele, mevsim yalnız ağırlığı biraz kaydırır ----------------
 // Dört hava da her mevsim çıkabilir (yalnız iki hava sırayla geliyor gibi görünüyordu, sıkıcıydı). Az önceki hava tekrar gelirse
 // bir kez yeniden çekilir: üst üste aynı hava seyrekleşir ama yasak değil. ?weather=rain|snow|fog|clear zorlar (deneme için).
-const FORCE = new URLSearchParams(location.search).get('weather');
+const FORCE = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? new URLSearchParams(location.search).get('weather') : null; // yalnız localhost
 const SEASON_W = { // [açık, yağmur, sis, kar]
   winter: [0.25, 0.2, 0.2, 0.35], spring: [0.45, 0.25, 0.2, 0.1], summer: [0.55, 0.2, 0.17, 0.08], autumn: [0.32, 0.3, 0.25, 0.13],
 };
