@@ -252,7 +252,7 @@ function addSimit(x, y, z, gold, piece = false) {
 // Ayar: THROW_T (uçuş süresi, sn), THROW_H (kavis yüksekliği). ?throw=0 → eski, havada duran simitler.
 const THROW_ON = QS.get('throw') !== '0';
 const BRIDGE_SOON = QS.has('bridge'), SALON_ALL = QS.has('salon'); // ?bridge → ilk köprü hemen gelir (deneme için)
-const THROW_T = [1.05, 1.35], THROW_H = [2.4, 3.6];
+const THROW_T = [1.05, 1.35], THROW_H = [2.4, 3.6], THROW_X = EDGE - 1; // THROW_X: atılan parça şeridin ortasına yakın iner, ekran kenarına kaçmaz (her şehir, her atıcı)
 const RING = new THREE.RingGeometry(0.5, 0.72, 20);
 const thrownStat = { caught: 0, missed: 0 };
 const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, depthWrite: false });
@@ -260,21 +260,23 @@ function throwVolleys(z0, len, first, dense) {
   const end = z0 - len + 5;
   let z = z0 - (first ? 24 : 7), x = rand(-2, 2), side = pick([-1, 1]);
   while (z > end) {
-    const n = dense ? pick([3, 4, 4, 5]) : pick([1, 1, 2, 3, 4]), bz = z - (n - 1) * 1.7 + rand(-2, 2); // kimi bir parça atar, kimi dört
+    const n = dense ? pick([3, 4, 4, 5]) : pick([2, 3, 4]), bz = z - (n - 1) * 1.7 + rand(-2, 2); // kimi iki parça atar, kimi dört (tek parça az geliyordu)
     const b = makeSimitBoat(side); b.g.position.set(side * rand(9.5, 11), 0, bz); b.g.rotation.y = rand(-0.3, 0.3); scene.add(b.g);
     const bt = { ...b, z: bz, hand: 0, thrown: 0 };
     boats.push(bt); decor.push({ mesh: b.g, z: bz, ph: Math.random() * 6 });
     for (let i = 0; i < n && z > end; i++) {
       addThrown(bt, x, z, !first && goldRoll(0.035));
       z -= rand(2.8, 4.2);
-      x = clamp(x + rand(-2, 2), -LANE + 0.8, LANE - 0.8);
+      x = clamp(x + rand(-2, 2), -THROW_X, THROW_X);
     }
     z -= dense ? rand(2, 4) : rand(4, 9); side = -side;
   }
 }
 function addThrown(bt, cx, cz, gold, ry) { // ry: halkanın yüksekliği (vapur güvertesi); yoksa dalgada
+  cx = clamp(cx, -THROW_X, THROW_X);
   if (gold) return addSimit(cx, FLY_Y, cz, true, true); // altın parça atılmaz: yerinde asılı durur, olduğu yerde döner ve parlar
   if (genLog) genLog.push(`t${cx.toFixed(2)},${cz.toFixed(1)}${gold ? 'g' : ''}`);
+  bt.left = (bt.left || 0) + 1; // atılacak parça sayısı: hepsi atılınca eli boşalır
   const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); if (ruleOn('giant')) m.scale.multiplyScalar(2); scene.add(m);
   const ring = new THREE.Mesh(RING, ringMat); ring.rotation.x = -Math.PI / 2; ring.position.set(cx, 0.2, cz); ring.visible = false; scene.add(ring); // iniş yeri sürpriz: halka hiçbir şehirde görünmez
   simits.push({ mesh: m, x: cx, y: FLY_Y, z: cz, free: true, gold, piece: true, th: { bt, cx, cz, T: rand(...THROW_T), H: rand(...THROW_H), u: -1, p0: new THREE.Vector3(), ring, ry } });
@@ -289,7 +291,7 @@ function flySimits(dt) {
     if (th.u < 0) {
       th.ring.position.y = th.ry ?? waveAt(th.cx, th.cz, t) + 0.12;
       if (g.z - th.cz > speed * th.T || (state !== 'play' && state !== 'title')) continue;
-      th.u = 0; th.bt.person.simit.getWorldPosition(th.p0); th.bt.hand = 0.45;
+      th.u = 0; th.bt.person.simit.getWorldPosition(th.p0); th.bt.hand = 0.45; th.bt.left--;
       const tray = th.bt.tray.find(m => m.visible); if (tray && ++th.bt.thrown % 3 === 0) tray.visible = false; // her simitten üç parça
       s.mesh.visible = true; s.mesh.rotation.set(rand(0, 6), rand(0, 6), 0);
     }
@@ -317,7 +319,7 @@ function flySimits(dt) {
     if (b.hand <= 0) continue;
     b.hand -= dt;
     b.person.mesh.rotation.z = (b.side || (b.g.position.x > 0 ? 1 : -1)) * Math.sin(Math.max(0, b.hand) / 0.45 * Math.PI) * 0.3; // atış hamlesi
-    b.person.simit.visible = b.hand < 0.1 && b.tray.some(m => m.visible);
+    b.person.simit.visible = b.hand < 0.1 && b.left > 0 && b.tray.some(m => m.visible); // son parçayı atan yolcunun elinde simit kalmaz
   }
 }
 
@@ -504,7 +506,7 @@ function updateImbat(dt, gz) {
   for (const b of imbats) {
     if (b.z1 > gz + 30 || b.z0 < gz - 260) continue; // geride kaldı ya da henüz uzakta
     for (const s of b.streaks) { const p = s.m.position; p.x += b.dir * s.v * dt; if (p.x * b.dir > 17) p.x -= b.dir * 34; p.y = waveAt(p.x, p.z, t) + 0.18; } // dalgaya oturur
-    for (const s of b.sims) if (!s.taken && !s.pulled && gz - s.z < 30) { s.x = clamp(s.x + s.vx * dt, -LANE + 0.6, LANE - 0.6); s.mesh.position.x = s.x; // rüzgâraltı kenarda durur: şeridin dışına savrulup yakalanamaz olmasın
+    for (const s of b.sims) if (!s.taken && !s.pulled && gz - s.z < 30) { s.x = clamp(s.x + s.vx * dt, -EDGE + 0.4, EDGE - 0.4); s.mesh.position.x = s.x; // rüzgâraltı kenarda durur: şeridin dışına savrulup yakalanamaz olmasın
       s.mesh.rotation.z += s.spin * dt; }
     if (gz <= b.z0 && gz >= b.z1) {
       on = b.dir;
@@ -697,11 +699,14 @@ function spawnFerry() {
     obstacles.push({ x: x0 + lx, z: zc + lz, hw, hd, top, kind, passed: false });
     blocked.push({ x: lx, z: lz, r: Math.max(hw, hd) + 1.1 });
   };
-  const mx = rand(-2.4, 2.4), mz = -L / 2 + 3;
-  const mast = new THREE.Mesh(MAST, vcMat); mast.position.set(mx, DECK, mz); mast.castShadow = true; g.add(mast);
-  const flag = new THREE.Mesh(FLAG, flagMat); flag.position.set(mx, DECK + 6.2, mz + 0.78); flag.rotation.y = Math.PI / 2; g.add(flag);
-  obstacle(mx, mz, 0.22, 0.22, DECK + 6.9, 'direğe');
-  addShipLights(g, 'ferry', { L, type: ft.id, mast: [mx, DECK + 7, mz] });
+  // bayrak direği iki tane: biri sağda biri solda; ince kalır, ancak tam denk gelen çarpar
+  const mz = -L / 2 + 3, mxs = [-rand(1.9, 2.7), rand(1.9, 2.7)], flag = [];
+  for (const mx of mxs) {
+    const mast = new THREE.Mesh(MAST, vcMat); mast.position.set(mx, DECK, mz); mast.castShadow = true; g.add(mast);
+    const f = new THREE.Mesh(FLAG, flagMat); f.position.set(mx, DECK + 6.2, mz + 0.78); f.rotation.y = Math.PI / 2; g.add(f); flag.push(f);
+    obstacle(mx, mz, 0.18, 0.18, DECK + 6.9, 'direğe');
+  }
+  addShipLights(g, 'ferry', { L, type: ft.id, mast: [mxs[1], DECK + 7, mz] });
 
   // camlı salon: zorlaştıkça bazı vapurlar kapalı salonlu olur; martı ortadaki geçitten geçmek zorunda, içinde simit dizisi
   let salon = null;
@@ -720,7 +725,10 @@ function spawnFerry() {
     const cx = rand(-2.6, 2.6), cz = -L / 2 + 12 + (i + 0.5) * (L - 16) / nCh + rand(-3, 3);
     if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın
     const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(cx, DECK, cz); c.castShadow = c.receiveShadow = true; g.add(c);
-    obstacle(cx, cz, ft.hw, ft.hd, DECK + ft.top, 'bacaya');
+    // kenara yakın bacanın dış yanındaki dar koridor kapalı: engel şerit sınırının ötesine uzar, küpeşte dışından kaytarılmaz; geçit iç taraftaki geniş boşluk
+    const bIn = Math.abs(cx) - ft.hw, bOut = EDGE + 0.6, sx = Math.sign(cx) || 1;
+    if (EDGE - (Math.abs(cx) + ft.hw) < 1.6) obstacle(sx * (bIn + bOut) / 2, cz, (bOut - bIn) / 2, ft.hd, DECK + ft.top, 'bacaya');
+    else obstacle(cx, cz, ft.hw, ft.hd, DECK + ft.top, 'bacaya');
     const dark = d > 1.2 && Math.random() < clamp((d - 1) * 0.22, 0, 0.55);
     chims.push({ x: x0 + cx, z: zc + cz, dark, t: Math.random() });
     if (dark) smokes.push({ x: x0 + cx, z0: zc + cz + 1.3, z1: zc + cz + 7.5, hw: 1.6, hit: false });
@@ -797,7 +805,7 @@ function spawnFerry() {
       const bt = { g: p.mesh, side: s, person: p, tray: [{ visible: true }, { visible: true }], z: zc + lz, hand: 0, thrown: 0 };
       boats.push(bt);
       let x = rand(-1.5, 1.5);
-      for (let k = 0, n = pick([1, 1, 2, 3, 4]), z = lz - 6; k < n && z > -L / 2 + 4; z -= rand(3, 4)) {
+      for (let k = 0, n = pick([2, 3, 4]), z = lz - 6; k < n && z > -L / 2 + 4; z -= rand(3, 4)) {
         x = clamp(x + rand(-1.8, 1.8), -3, 3);
         const ok = !obstacles.some(o => Math.abs(o.x - (x0 + x)) < o.hw + 1.3 && Math.abs(o.z - (zc + z)) < o.hd + 1.6);
         if (ok) { addThrown(bt, x0 + x, zc + z, false, DECK + 0.1); k++; }
@@ -868,13 +876,31 @@ function updateFlocks(dt, gz) {
 // yük anında hafifleme: kare hızı düşünce ya da önde çok engel varken uzaktaki (sisteki) yan dekor tekneleri kısa süre gizlenir,
 // yenisi çıkmaz. Şeritteki yolcu, engel, simit asla gizlenmez. Ayar: SHED_FAR (bundan uzak olanlar), SHED_T (süre)
 const SHED_FAR = 150, SHED_T = 2.5;
+// ---------------- görünmeyen yaşamaz (koşu oyunlarındaki gibi) ----------------
+// kameranın arkasında kalan ya da sisin ötesindeki gruplar (vapur, tekne, köprü, dekor...) ne konumlanır ne taranır ne çizilir; yaklaşınca geri gelir.
+// Telefonda kare başına JS'in büyük kısmı her nesnenin matrisini ve görünürlüğünü dolaşmak. Tek parçalı nesneler (simit, balık) kendi görünürlüğünü yönettiği için dokunulmaz.
+// Ayar: PARK_BACK (kameranın bu kadar arkası), PARK_FOG (sis sınırından bu kadar beride gizlenir). ?park=0 → kapalı (ölçüm için)
+const PARK_ON = QS.get('park') !== '0', PARK_BACK = 6, PARK_FOG = 30, _parkBox = new THREE.Box3();
+scene.matrixAutoUpdate = false; // sahne hiç kıpırdamaz: her karede bütün çocuklara zorla matris hesaplatmasın (park edilen atlanabilsin)
+function parkFar(all = false) {
+  const cz = camera.position.z, ahead = cz - ((scene.fog ? scene.fog.far : 260) - PARK_FOG);
+  for (const o of scene.children) {
+    if (!o.children.length) continue;
+    const u = o.userData;
+    if (!u.pz) { _parkBox.setFromObject(o); u.pz = [_parkBox.min.z - o.position.z, _parkBox.max.z - o.position.z]; if (!(u.pz[1] - u.pz[0] < 400)) u.pz = [-1e9, 1e9]; } // dev/sınırsız nesne (su, uzak kıyı) asla
+    const far = PARK_ON && !all && (o.position.z + u.pz[1] < ahead || o.position.z + u.pz[0] > cz + PARK_BACK);
+    if (far === !!u.park) continue;
+    if (far) { if (!o.visible) continue; o.updateMatrixWorld(true); u.park = true; o.visible = false; o.matrixWorldAutoUpdate = false; }
+    else { u.park = false; o.visible = true; o.matrixWorldAutoUpdate = true; }
+  }
+}
 let shedT = 0, shedOn = false;
 function updateShed(dt, gz) {
   const near = state === 'play' ? obstacles.filter(o => o.z < gz + 5 && o.z > gz - 120).length + rivals.length + kites.length : 0;
   if (state === 'play' && (fpsSmooth < 48 || near > 8)) shedT = SHED_T; else shedT -= dt;
   const on = shedT > 0;
   if (!on && !shedOn) return;
-  for (const d of decor) if (d.shed) d.mesh.visible = !on || gz - d.z < SHED_FAR;
+  for (const d of decor) if (d.shed && !d.mesh.userData.park) d.mesh.visible = !on || gz - d.z < SHED_FAR;
   shedOn = on;
 }
 // kıyı dekoru (yan tekne, geçen gemi) büyük parçaların içine düşmesin: köprü iki yakayı da kaplar, plaj/şelale kendi yakasını, korsan iki yana kayar
@@ -960,7 +986,7 @@ function spawnPier() {
   for (let k = 5; k >= 1; k--) addSimit(gx + k * rand(-0.5, 0.5), FLY_Y, gz + k * 3.4, false);
   addSimit(gx, FLY_Y, gz, true);
   // kapının ardında simit yağmuru: iskeledekiler parça parça atar, martı geldiğinde inerler
-  for (let k = 0, x = gx; throwers.length && k < 9; k++) { x = clamp(x + rand(-2.2, 2.2), -LANE + 0.8, LANE - 0.8); addThrown(throwers[k % 2], x, gz - 5 - k * 3.4, k === 8); }
+  for (let k = 0, x = gx; throwers.length && k < 9; k++) { x = clamp(x + rand(-2.2, 2.2), -THROW_X, THROW_X); addThrown(throwers[k % 2], x, gz - 5 - k * 3.4, k === 8); }
   // yeni ilçe boş geçiş olmasın: kapıdan sonra simit yağmurunun içinde engeller (ilerideki ilçelerde daha çok)
   if (i >= 1 && !last) {
     const n = 1 + (i >= 3 ? 1 : 0) + (i >= 5 ? 1 : 0);
@@ -1596,6 +1622,7 @@ function saveName(inp = $('nameInput'), err = $('nameErr')) {
     err.textContent = !(rude && tur) ? tr(bad) : oddName(v) ? 'Hile yok! 😤 Yalnızca Türkçe harf, rakam ve emoji kullanabilirsin.' : 'Ayıp! 😤 Burası martıların yeri, düzgün bir isim koy. Yoksa adını biz koyarız!';
     show(err.id); vibrate(rude ? [60, 40, 60] : 40); if (rude) inp.value = ''; return;
   }
+  if (inp.id === 'nameInput' && $('ccSelect').value !== ccOf()) setCountry($('ccSelect').value);
   setName(v); inp.blur(); show('profilePanel', false); show('overName', false); renderNameChip(); sfx.gold();
   if (!$('boardPanel').classList.contains('hidden')) renderBoard();
 }
@@ -2063,7 +2090,12 @@ async function claimDaily() {
 // Balıkla ya da simitle çevrilir; ödül çevirir çevirmez cüzdana yazılır (panel kapansa da kaybolmaz), çark durunca gösterilir.
 // Ayar: WHEEL (tür s=simit / f=balık, miktar, ağırlık), SPIN_FISH, SPIN_SIMIT. Ortalama kazanç bedelin altında: çark kazandırmaz, heyecan verir.
 const WHEEL = [['s', 100, 42], ['f', 1, 6], ['s', 150, 26], ['s', 500, 6], ['s', 250, 14], ['f', 3, 2], ['s', 1000, 3], ['s', 3000, 1]]; // balık dilimi seyrek: çıkan balıkla yeniden çevrilir, sık olunca çark kâr ettiriyordu
-let spinArmT = 0; // simitle çevirme onayı bekliyor mu (aşağıda spinWheel)
+let spinArmT = 0, spinArmK = ''; // ücretli çevirme onayı bekliyor mu, hangi düğme ('f' balık, 's' simit) (aşağıda spinWheel)
+// her ücretli çevirmeden önce sorulur; o gün kaçıncı çevirmeyse o laf gelir, liste bitince 4. laftan başa döner (kumardan tatlı bir uzak durma)
+const SPIN_WARN = ['Emin misin?', 'Yapma!!?', 'Kumar kötüdür, git buradan -_-', 'Kasa hep kazanır :)', 'O simitle bir martı doyardı…', 'Annen bunu biliyor mu?', 'Bak, martılar sana bakıyor.', 'Çark döner, simit gider.', 'Son kez soruyorum: emin misin?', 'Tamam, ben karışmam ¯\_(ツ)_/¯'];
+const KEY_SPINWARN = 'simit-martisi-spin-warn';
+const spinWarnN = () => { const w = store.get(KEY_SPINWARN, null); return w && w.d === dayKey() ? w.n : 0; };
+const spinWarn = () => { const n = spinWarnN(), L = SPIN_WARN.length; return SPIN_WARN[n < L ? n : 3 + (n - L) % (L - 3)]; };
 const SPIN_FISH = 1, SPIN_SIMIT = 280, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
 let wheelRot = 0, spinning = false, wheelBuilt = false;
 const KEY_FREESPIN = 'simit-martisi-freespin';
@@ -2085,7 +2117,7 @@ function buildWheel() {
 }
 function renderWheelUi(msg) {
   $('dlWallet').textContent = fmt(wallet); $('dlFish').textContent = fmt(fish);
-  $('spinFishCost').textContent = fmt(SPIN_FISH); $('spinSimitCost').textContent = spinArmT ? tr('Emin misin?') : fmt(SPIN_SIMIT);
+  $('spinFishCost').textContent = spinArmK === 'f' ? tr('Emin misin?') : fmt(SPIN_FISH); $('spinSimitCost').textContent = spinArmK === 's' ? tr('Emin misin?') : fmt(SPIN_SIMIT);
   $('spinFish').classList.toggle('poor', fish < SPIN_FISH); $('spinSimit').classList.toggle('poor', wallet < SPIN_SIMIT);
   $('spinFish').classList.toggle('ok', fish >= SPIN_FISH && !spinning); $('spinSimit').classList.toggle('ok', wallet >= SPIN_SIMIT && !spinning); // yetiyorsa parlar, yetmiyorsa söner
   if (spinning) disarmSpin();
@@ -2099,15 +2131,18 @@ function dailyTab(t) {
   show('dailyBox', !w); show('wheelBox', w);
   if (w) { buildWheel(); renderWheelUi(spinning ? undefined : tr(freeSpin() ? 'Bugünkü bedava çevirmen hazır!' : 'Balıkla ya da simitle çevir, şansını dene!')); }
 }
-// simitle çevirme pahalı: ilk dokunuş yalnız kurar ("Emin misin?"), 2.5 sn içindeki ikinci dokunuş çevirir (yanlışlıkla harcanmasın)
-function disarmSpin() { clearTimeout(spinArmT); spinArmT = 0; const b = $('spinSimit'); b.classList.remove('arm'); $('spinSimitCost').textContent = fmt(SPIN_SIMIT); }
+// ücretli çevirme (balık ya da simit): ilk dokunuş yalnız kurar ("Emin misin?"), 3 sn içinde aynı düğmeye ikinci dokunuş çevirir (yanlışlıkla harcanmasın)
+function disarmSpin() { clearTimeout(spinArmT); spinArmT = 0; spinArmK = ''; $('spinSimit').classList.remove('arm'); $('spinFish').classList.remove('arm'); $('spinSimitCost').textContent = fmt(SPIN_SIMIT); $('spinFishCost').textContent = fmt(SPIN_FISH); }
 function spinWheel(pay) {
   if (spinning) return;
-  if (pay === 's' && wallet >= SPIN_SIMIT && !spinArmT) {
-    $('spinSimit').classList.add('arm'); vibrate(15); spinArmT = setTimeout(disarmSpin, 2500);
-    return renderWheelUi(tr('Bir daha bas: {n} simit harcanır').replace('{n}', fmt(SPIN_SIMIT)));
+  if (pay !== 'free' && (pay === 'f' ? fish >= SPIN_FISH : wallet >= SPIN_SIMIT) && spinArmK !== pay) {
+    disarmSpin(); spinArmK = pay;
+    $(pay === 'f' ? 'spinFish' : 'spinSimit').classList.add('arm'); vibrate(15); spinArmT = setTimeout(() => { disarmSpin(); renderWheelUi(tr(freeSpin() ? 'Bugünkü bedava çevirmen hazır!' : 'Balıkla ya da simitle çevir, şansını dene!')); }, 3000);
+    const how = pay === 'f' ? tr('Bir daha bas: {n} balık harcanır').replace('{n}', fmt(SPIN_FISH)) : tr('Bir daha bas: {n} simit harcanır').replace('{n}', fmt(SPIN_SIMIT));
+    return renderWheelUi(`<b>${esc(tr(spinWarn()))}</b><br>${esc(how)}`);
   }
-  if (pay === 's') disarmSpin();
+  disarmSpin();
+  if (pay !== 'free' && (pay === 'f' ? fish >= SPIN_FISH : wallet >= SPIN_SIMIT)) store.set(KEY_SPINWARN, { d: dayKey(), n: spinWarnN() + 1 });
   const btn = $(pay === 'f' ? 'spinFish' : pay === 'free' ? 'spinFree' : 'spinSimit');
   if (pay === 'free' ? !freeSpin() : pay === 'f' ? fish < SPIN_FISH : wallet < SPIN_SIMIT) {
     bump(btn, 'shake'); vibrate(30);
@@ -2405,7 +2440,7 @@ onBtn('closeBoard', () => show('boardPanel', false));
 onBtn('profileBtn', () => { show('settings', false); openProfile(); });
 onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
-$('ccSelect').addEventListener('change', e => { setCountry(e.target.value); $('ccFlag').src = flag(e.target.value); renderNameChip(); if (!$('boardPanel').classList.contains('hidden')) renderBoard(); });
+$('ccSelect').addEventListener('change', e => { $('ccFlag').src = flag(e.target.value); }); // ülke yalnız Kaydet'le kaydolur; Kapat'ta panel açılırken eski ülkeye döner
 onBtn('skipName', () => show('profilePanel', false));
 onBtn('overNameSave', () => saveName($('overNameInput'), $('overNameErr')));
 onBtn('inviteBtn', async () => {
@@ -2534,7 +2569,7 @@ function applyShadows() {
   if (renderer.shadowMap.enabled === shadowWant) return;
   renderer.shadowMap.enabled = shadowWant; sunLight.castShadow = shadowWant;
   scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => (m.needsUpdate = true)); });
-  syncBatches(scene); try { renderer.compile(scene, camera); } catch (e) {} // kamera elemesi yok: hepsi derlensin
+  parkFar(true); syncBatches(scene); try { renderer.compile(scene, camera); } catch (e) {} // kamera elemesi yok: hepsi derlensin (park edilenler de)
 }
 
 // dokunmatik kaydırma çubuğu: yalnız uçuşta görünür, topuz parmağın verdiği hedefi gösterir (rüzgârla titremez, bırakınca yerinde kalır)
@@ -2928,7 +2963,7 @@ function frame() {
   for (const f of ferries) {
     if (f.zFront > g.z + 40 || f.zBack < g.z - 200) continue;
     f.group.rotation.z = Math.sin(t * 0.8 + f.ph) * 0.015;
-    f.flag.rotation.x = Math.sin(t * 7 + f.ph) * 0.08;
+    for (const [i, fl] of f.flag.entries()) fl.rotation.x = Math.sin(t * 7 + f.ph + i * 1.3) * 0.08;
     for (const c of f.chims) {
       c.t -= dt;
       if (c.t <= 0 && c.z < g.z + 5 && c.z > g.z - 130) {
@@ -3119,7 +3154,7 @@ function frame() {
   }
 
   if (dressing) podDraw(realDt); // kostüm podyumu: dünya yerine
-  else { tickLamps(realDt, camera, weather, gull.position); syncBatches(scene, camera); renderer.render(scene, camera); } // simitler: tek InstancedMesh (models.js)
+  else { tickLamps(realDt, camera, weather, gull.position); parkFar(); syncBatches(scene, camera); renderer.render(scene, camera); } // simitler: tek InstancedMesh (models.js)
   if (firstFrame) { firstFrame = false; const l = $('loader'); l.classList.add('done'); setTimeout(() => l.remove(), 700); warmPeople(); }
 }
 
@@ -3365,7 +3400,7 @@ setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gö
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
   flats.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
   updateFx(0);
-  syncBatches(scene); try { renderer.compile(scene, camera); } catch (e) {} // kamera elemesi yok: hepsi derlensin
+  parkFar(true); syncBatches(scene); try { renderer.compile(scene, camera); } catch (e) {} // kamera elemesi yok: hepsi derlensin (park edilenler de)
   scene.remove(warm);
 }
 requestAnimationFrame(frame);

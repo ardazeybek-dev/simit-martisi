@@ -847,3 +847,202 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #dailyPanel .day:last-child { background: linear-gradient(100deg, rgba(207, 146, 19, .16), transparent 70%); }
 #dailyPanel .day.got b { visibility: hidden; }
 #dailyPanel .day.got::after { left: 50%; top: auto; bottom: 9px; width: 22px; height: 22px; margin: 0 0 0 -11px; }
+
+/* Şans çarkı: çevirme hakkı = iki yanı çentikli krem bilet; parası yetiyorsa bilet parlar, yetmiyorsa kraft kahvesi ve soluk.
+   Bedava çevirme = kırmızı damga (alınacak ödül), para harcatan onay (arm) = kırmızı mürekkeple çizilmiş bilet */
+#wheelBox .wheel-btns .btn { position: relative; border-radius: 9px; background: var(--paper); color: var(--ink); box-shadow: 0 4px 0 rgba(44, 8, 4, .55);
+  outline: 2px dashed rgba(75, 36, 22, .28); outline-offset: -7px; }
+#wheelBox .wheel-btns .btn::before, #wheelBox .wheel-btns .btn::after { content: ""; position: absolute; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--card-a); }
+#wheelBox .wheel-btns .btn::before { left: -7px; }
+#wheelBox .wheel-btns .btn::after { right: -7px; }
+#wheelBox .wheel-btns .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(44, 8, 4, .55); }
+#wheelBox .wheel-btns .btn.ok { animation: ticketGlow 1.5s ease-in-out infinite; }
+@keyframes ticketGlow { 0%, 100% { box-shadow: 0 4px 0 rgba(44, 8, 4, .55), 0 0 0 0 rgba(255, 210, 90, 0); } 50% { box-shadow: 0 4px 0 rgba(44, 8, 4, .55), 0 0 18px 4px rgba(255, 210, 90, .7); } }
+#wheelBox .wheel-btns .btn.poor { background: #d6b281; filter: none; opacity: .55; box-shadow: none; }
+#wheelBox .wheel-btns .btn.arm { color: #c4302b; outline: 2.5px solid #c4302b; outline-offset: -6px; box-shadow: 0 4px 0 rgba(44, 8, 4, .55); animation: none; }
+#wheelBox .free-spin { border-radius: 10px; background: var(--paper); color: #c4302b; border: 3px solid currentColor;
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 4px rgba(196, 48, 43, .45), 0 4px 0 rgba(44, 8, 4, .55); animation: freeStamp 1.8s ease-in-out infinite; }
+#wheelBox .free-spin:active { transform: translateY(3px) rotate(-1.5deg); box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 4px rgba(196, 48, 43, .45), 0 1px 0 rgba(44, 8, 4, .55); }
+@keyframes freeStamp { 0%, 100% { transform: rotate(-1.5deg) scale(1); } 50% { transform: rotate(-.5deg) scale(1.03); } }
+
+/* Görevler = koçanlı bilet: görev yazısı ve çubuk biletin gövdesinde, ödül koçanda.
+   Biten görevin bileti kraft kahvesine döner, ödülün üstüne kırmızı "ödendi" damgası basılır (kıpırdamaz: alınacak bir şey yok) */
+#missionsPanel .missions { gap: 9px; }
+#missionsPanel .mis { position: relative; grid-template-columns: 1fr 66px; column-gap: 12px; row-gap: 7px; padding: 12px 0 12px 13px; border-radius: 9px;
+  background: var(--paper); color: var(--ink); font-size: 15px;
+  -webkit-mask: radial-gradient(circle 7px at calc(100% - 66px) 0, transparent 97%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 7px at calc(100% - 66px) 100%, transparent 97%, #000) bottom / 100% 51% no-repeat;
+          mask: radial-gradient(circle 7px at calc(100% - 66px) 0, transparent 97%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 7px at calc(100% - 66px) 100%, transparent 97%, #000) bottom / 100% 51% no-repeat; }
+#missionsPanel .mis::after { content: ""; position: absolute; right: 66px; top: 10px; bottom: 10px; border-left: 2px dashed rgba(75, 36, 22, .28); }
+#missionsPanel .mis-t { grid-column: 1; }
+#missionsPanel .mis-r { grid-column: 2; grid-row: 1 / 3; justify-self: center; color: var(--ink); font-size: 17px; }
+#missionsPanel .mis-r .ico { width: 16px; height: 16px; }
+#missionsPanel .mis-bar { grid-column: 1; height: 6px; border-radius: 0; background: repeating-linear-gradient(90deg, rgba(75, 36, 22, .25) 0 7px, transparent 7px 11px); }
+#missionsPanel .mis-bar b { border-radius: 3px; background: #2f7a55; }
+#missionsPanel .mis.done { background: linear-gradient(100deg, #e2c393, #d6b281); }
+#missionsPanel .mis.done .mis-t { color: rgba(75, 36, 22, .62); text-decoration-color: rgba(75, 36, 22, .5); }
+#missionsPanel .mis.done .mis-t::before { content: none; }
+#missionsPanel .mis.done .mis-bar { visibility: hidden; }
+#missionsPanel .mis.done .mis-r { padding: 3px 6px 1px; border-radius: 7px; color: #c4302b; border: 2.5px solid currentColor; font-size: 15px;
+  box-shadow: inset 0 0 0 1.5px #d9b888, inset 0 0 0 3px rgba(196, 48, 43, .45); transform: rotate(-9deg); opacity: .9; }
+
+/* Güçlendir: her güç bir krem kart; seviye = zımba delikleri (alınan seviye delinmiş, halkası gücün renginde), son seviyede "Tam" damgası */
+#upPanel .up { border-radius: 9px; background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(6, 14, 40, .55); }
+#upPanel .up-i { border-radius: 50%; background: var(--paper-2); border: 2.5px solid var(--c); }
+#upPanel .up-i svg { width: 27px; height: 27px; }
+#upPanel .up-m small { color: rgba(75, 36, 22, .82); opacity: 1; }
+#upPanel .up-pips { gap: 5px; margin-top: 3px; }
+#upPanel .up-pips i { width: 13px; height: 13px; border-radius: 50%; background: none; border: 1.5px dashed rgba(75, 36, 22, .45); }
+#upPanel .up-pips i.on { border: 0; background: var(--card-b); box-shadow: inset 0 2px 2px rgba(0, 0, 0, .55), 0 0 0 1.5px var(--c); }
+#upPanel .up-buy.poor { filter: none; background: #d6b281; color: rgba(75, 36, 22, .7); box-shadow: 0 3px 0 #a8875a; opacity: 1; }
+#upPanel .up-buy:disabled { padding: 5px 10px 3px; border-radius: 7px; background: none; color: #c4302b; border: 2.5px solid currentColor;
+  box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .45); transform: rotate(-9deg); }
+
+/* Sıralama = gazetedeki puan tablosu: krem sayfa, satırlar kesik çizgiyle ayrılır, ilk üçün sırası kırmızı mürekkep; senin satırın fosforlu kalemle çizilmiş */
+#boardPanel .board { gap: 0; padding: 4px 10px 4px 12px; border-radius: 10px; background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(4, 30, 36, .55); }
+#boardPanel .board li { grid-template-columns: 40px 26px 1fr auto; padding: 9px 4px; border-radius: 0; background: none; border-bottom: 1.5px dashed rgba(75, 36, 22, .22); }
+#boardPanel .board li:last-child { border-bottom: 0; }
+#boardPanel .board li b { color: rgba(75, 36, 22, .62); opacity: 1; }
+#boardPanel .board li em { color: var(--ink); font-weight: 800; }
+#boardPanel .board li.top b { color: #c4302b; }
+#boardPanel .board li.me { color: var(--ink); border-radius: 4px 9px 5px 10px; background: linear-gradient(176deg, transparent 10%, rgba(255, 213, 50, .72) 12% 86%, transparent 89%); }
+#boardPanel .board li.me em { color: var(--ink); }
+#boardPanel .board li.gap { color: var(--ink); }
+#boardPanel .board li.msg { opacity: .8; }
+#boardPanel .board::-webkit-scrollbar-track { background: rgba(75, 36, 22, .1); }
+#missionsPanel .missions { margin-bottom: 16px; }
+
+/* Martı Yolu = sefer biletleri: bulunduğun seviyenin bileti kırmızı kesik çizgiyle işaretli (günlük karttaki "bugün" gibi),
+   alınacak ödül kırmızı damga, alınmış ödülün bileti kraft kahvesi ve zımbalanmış; ulaşılmamış seviyeler soluk */
+#roadPanel .road-list { gap: 8px; }
+#roadPanel .road-row { border: 0; border-radius: 9px; background: var(--paper); color: var(--ink); }
+#roadPanel .road-row.big { background: linear-gradient(100deg, #fbe7a6, var(--paper) 70%); }
+#roadPanel .road-row.big .road-m b { color: #a15c12; }
+#roadPanel .road-row.now { outline: 2.5px dashed #c4302b; outline-offset: -3px; }
+#roadPanel .road-lv { border-radius: 50%; background: var(--paper-2); color: var(--ink); border: 2px dashed rgba(75, 36, 22, .35); }
+#roadPanel .road-row.done .road-lv { background: var(--paper-2); color: var(--ink); border: 2.5px solid #2f86c9; box-shadow: none; }
+#roadPanel .road-m small { color: #a15c12 !important; }
+#roadPanel .road-row.got { background: linear-gradient(100deg, #e2c393, #d6b281); }
+#roadPanel .road-row.got .road-lv { background: none; border-color: rgba(75, 36, 22, .45); box-shadow: none; }
+#roadPanel .road-row.got .road-m b { color: rgba(75, 36, 22, .72); }
+#roadPanel .road-row.got .road-ok { width: 22px; height: 22px; margin-right: 6px; font-size: 0; background: var(--card-b); box-shadow: inset 0 3px 3px rgba(0, 0, 0, .6), 0 0 0 2px rgba(75, 36, 22, .25); }
+#roadPanel .road-get { padding: 4px 10px 2px; border-radius: 7px; background: rgba(196, 48, 43, .06); color: #c4302b; border: 2.5px solid currentColor;
+  box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .5); animation: stamp 1.8s ease-in-out infinite; }
+#roadPanel .road-get:active { transform: rotate(-9deg) scale(.92); box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .5); }
+#roadPanel .road-get.see { color: #1d7f78; background: rgba(29, 127, 120, .06); box-shadow: inset 0 0 0 1.5px #ddc08f, inset 0 0 0 3px rgba(29, 127, 120, .45); animation: none; transform: rotate(-9deg); }
+
+/* Mod seç: her mod iki yanı çentikli bir bilet; seçili modun biletine kırmızı "Seçili" damgası basılır */
+#dayRunPanel .mode-card { position: relative; border: 0; border-radius: 10px; background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(40, 24, 0, .55);
+  outline: 2px dashed rgba(75, 36, 22, .25); outline-offset: -7px; }
+#dayRunPanel .mode-card:not(.on) { background: #eedbb9; }
+#dayRunPanel .mode-card::before, #dayRunPanel .mode-card::after { content: ""; position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: var(--card-a); }
+#dayRunPanel .mode-card::before { left: -8px; }
+#dayRunPanel .mode-card::after { right: -8px; }
+#dayRunPanel .mode-card > small { color: rgba(75, 36, 22, .82); }
+#dayRunPanel .mode-on { padding: 2px 8px 0; border-radius: 6px; background: none; color: #c4302b; border: 2.5px solid currentColor; transform: rotate(-8deg);
+  box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .45); }
+#dayRunPanel .dr-rule { border: 0; border-radius: 8px; background: var(--paper-2); }
+#dayRunPanel .dr-rule b { color: #a15c12; }
+#dayRunPanel .dr-rule small { color: rgba(75, 36, 22, .84); }
+#dayRunPanel .dr-best, #dayRunPanel .dr-streak { color: var(--ink); }
+
+/* Ayarlar ve Profil: profil satırı abonman kartı (seviye rozeti fotoğraf yerinde, kesik çizgiyle ayrılır); ad ve ülke kağıda yazılır, yazarken çerçeve kırmızı kalem */
+#settings .profile-row { border: 0; border-radius: 10px; background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(6, 10, 20, .55); }
+#settings .prof-txt { align-self: stretch; align-content: center; padding-left: 10px; border-left: 2px dashed rgba(75, 36, 22, .28); }
+#settings .profile-row .ico { opacity: .55; }
+#profilePanel .name-input { border: 2px dashed rgba(75, 36, 22, .35); border-radius: 8px; background: var(--paper); color: var(--ink); }
+#profilePanel .name-input:focus { border-color: #c4302b; }
+#profilePanel .name-input::placeholder { color: var(--ink); opacity: .4; }
+
+/* gardırop kutuları = bavul etiketi: köşeleri kesik krem karton, üstte ip deliği; seçili etiket kırmızı kesik çizgili */
+#wardSlots { --paper: #f8e7c8; --paper-2: #efd7ae; --ink: #4b2416; }
+#wardSlots .ward-slot { position: relative; padding-top: 22px; border: 0; border-radius: 6px; background: var(--paper); color: var(--ink); box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none; clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%, 0 16px); }
+#wardSlots .ward-slot::before { content: ""; position: absolute; left: 50%; top: 7px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%;
+  background: #2a2350; box-shadow: inset 0 2px 2px rgba(0, 0, 0, .6), 0 0 0 2.5px #d9b888; }
+#wardSlots .ward-slot.cur { outline: 2.5px dashed #c4302b; outline-offset: -6px; box-shadow: none; }
+#wardSlots .ward-slot small { text-shadow: none; font-weight: 800; }
+#wardSlots .slot-it { background: var(--paper-2); }
+#wardSlots .slot-plus { border: 2px dashed rgba(75, 36, 22, .38); color: var(--ink); opacity: .6; }
+
+/* Günlük ödül v2 = yedi ayrı vapur bileti: üstte gün, kesik çizgi + iki yanda çentik, altta ödül.
+   Alınan günün bileti kraft kahvesi ve köşesi zımbalı (ödül okunur kalır); bugünün ödülüne kırmızı damga basılı (alınacak ödül), bilet hafif kalkık; 7. gün altın bilet */
+#dailyPanel .days { gap: 8px; padding: 0; border-radius: 0; background: none; box-shadow: none; -webkit-mask: none; mask: none; }
+#dailyPanel .day { position: relative; justify-content: flex-start; gap: 2px; margin: 0; padding: 0 2px 10px; border: 0; border-radius: 8px; background: var(--paper); color: var(--ink); transform: none; animation: none;
+  -webkit-mask: radial-gradient(circle 5px at 0 30px, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 30px, #0000 97%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 5px at 0 30px, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 30px, #0000 97%, #000) right / 51% 100% no-repeat; }
+#dailyPanel .day::before { content: ""; position: absolute; left: 7px; right: 7px; top: 29px; border-top: 2px dashed rgba(75, 36, 22, .28); }
+#dailyPanel .day span { display: grid; place-items: center; height: 30px; font-size: 13px; color: rgba(75, 36, 22, .75); }
+#dailyPanel .day b { margin-top: 6px; font-size: 17px; color: var(--ink); visibility: visible; }
+#dailyPanel .day b + b { margin-top: 0; }
+#dailyPanel .day:last-child { background: linear-gradient(110deg, #fbe2a0, var(--paper) 80%); }
+#dailyPanel .day.got { background: linear-gradient(160deg, #e2c393, #d6b281); }
+#dailyPanel .day.got b, #dailyPanel .day.got span { opacity: .55; visibility: visible; }
+#dailyPanel .day.got::after { content: ""; position: absolute; left: auto; right: 7px; top: 9px; bottom: auto; width: 12px; height: 12px; margin: 0; border-radius: 50%;
+  background: var(--card-b); box-shadow: inset 0 2px 2px rgba(0, 0, 0, .6), 0 0 0 1.5px rgba(75, 36, 22, .3); }
+#dailyPanel .day.now { background: #fff4de; border: 0; transform: translateY(-3px); animation: none; }
+#dailyPanel .day.now span { color: #c4302b; }
+#dailyPanel .day.now b:first-of-type { padding: 3px 7px 1px; border-radius: 7px; color: #c4302b; border: 2.5px solid currentColor;
+  box-shadow: inset 0 0 0 1.5px #fff4de, inset 0 0 0 3px rgba(196, 48, 43, .45); animation: stamp 1.8s ease-in-out infinite; }
+
+/* Martı Yolu = sefer biletleri: bulunduğun seviyenin bileti kırmızı kesik çizgiyle işaretli (günlük karttaki "bugün" gibi),
+   alınacak ödül kırmızı damga, alınmış ödülün bileti kraft kahvesi ve zımbalanmış; ulaşılmamış seviyeler soluk */
+#roadPanel .road-list { gap: 8px; }
+#roadPanel .road-row { border: 0; border-radius: 9px; background: var(--paper); color: var(--ink); }
+#roadPanel .road-row.big { background: linear-gradient(100deg, #fbe7a6, var(--paper) 70%); }
+#roadPanel .road-row.big .road-m b { color: #a15c12; }
+#roadPanel .road-row.now { outline: 2.5px dashed #c4302b; outline-offset: -3px; }
+#roadPanel .road-lv { border-radius: 50%; background: var(--paper-2); color: var(--ink); border: 2px dashed rgba(75, 36, 22, .35); }
+#roadPanel .road-row.done .road-lv { background: var(--paper-2); color: var(--ink); border: 2.5px solid #2f86c9; box-shadow: none; }
+#roadPanel .road-m small { color: #a15c12 !important; }
+#roadPanel .road-row.got { background: linear-gradient(100deg, #e2c393, #d6b281); }
+#roadPanel .road-row.got .road-lv { background: none; border-color: rgba(75, 36, 22, .45); box-shadow: none; }
+#roadPanel .road-row.got .road-m b { color: rgba(75, 36, 22, .72); }
+#roadPanel .road-row.got .road-ok { width: 22px; height: 22px; margin-right: 6px; font-size: 0; background: var(--card-b); box-shadow: inset 0 3px 3px rgba(0, 0, 0, .6), 0 0 0 2px rgba(75, 36, 22, .25); }
+#roadPanel .road-get { padding: 4px 10px 2px; border-radius: 7px; background: rgba(196, 48, 43, .06); color: #c4302b; border: 2.5px solid currentColor;
+  box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .5); animation: stamp 1.8s ease-in-out infinite; }
+#roadPanel .road-get:active { transform: rotate(-9deg) scale(.92); box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .5); }
+#roadPanel .road-get.see { color: #1d7f78; background: rgba(29, 127, 120, .06); box-shadow: inset 0 0 0 1.5px #ddc08f, inset 0 0 0 3px rgba(29, 127, 120, .45); animation: none; transform: rotate(-9deg); }
+
+/* Mod seç: her mod iki yanı çentikli bir bilet; seçili modun biletine kırmızı "Seçili" damgası basılır */
+#dayRunPanel .mode-card { position: relative; border: 0; border-radius: 10px; background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(40, 24, 0, .55);
+  outline: 2px dashed rgba(75, 36, 22, .25); outline-offset: -7px; }
+#dayRunPanel .mode-card:not(.on) { background: #eedbb9; }
+#dayRunPanel .mode-card::before, #dayRunPanel .mode-card::after { content: ""; position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: var(--card-a); }
+#dayRunPanel .mode-card::before { left: -8px; }
+#dayRunPanel .mode-card::after { right: -8px; }
+#dayRunPanel .mode-card > small { color: rgba(75, 36, 22, .82); }
+#dayRunPanel .mode-on { padding: 2px 8px 0; border-radius: 6px; background: none; color: #c4302b; border: 2.5px solid currentColor; transform: rotate(-8deg);
+  box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .45); }
+#dayRunPanel .dr-rule { border: 0; border-radius: 8px; background: var(--paper-2); }
+#dayRunPanel .dr-rule b { color: #a15c12; }
+#dayRunPanel .dr-rule small { color: rgba(75, 36, 22, .84); }
+#dayRunPanel .dr-best, #dayRunPanel .dr-streak { color: var(--ink); }
+
+/* Ayarlar ve Profil: profil satırı abonman kartı (seviye rozeti fotoğraf yerinde, kesik çizgiyle ayrılır); ad ve ülke kağıda yazılır, yazarken çerçeve kırmızı kalem */
+#settings .profile-row { border: 0; border-radius: 10px; background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(6, 10, 20, .55); }
+#settings .prof-txt { align-self: stretch; align-content: center; padding-left: 10px; border-left: 2px dashed rgba(75, 36, 22, .28); }
+#settings .profile-row .ico { opacity: .55; }
+#profilePanel .name-input { border: 2px dashed rgba(75, 36, 22, .35); border-radius: 8px; background: var(--paper); color: var(--ink); }
+#profilePanel .name-input:focus { border-color: #c4302b; }
+#profilePanel .name-input::placeholder { color: var(--ink); opacity: .4; }
+
+/* gardırop kutuları = bavul etiketi: köşeleri kesik krem karton, üstte ip deliği; seçili etiket kırmızı kesik çizgili */
+#wardSlots { --paper: #f8e7c8; --paper-2: #efd7ae; --ink: #4b2416; }
+#wardSlots .ward-slot { position: relative; padding-top: 22px; border: 0; border-radius: 6px; background: var(--paper); color: var(--ink); box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none; clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%, 0 16px); }
+#wardSlots .ward-slot::before { content: ""; position: absolute; left: 50%; top: 7px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%;
+  background: #2a2350; box-shadow: inset 0 2px 2px rgba(0, 0, 0, .6), 0 0 0 2.5px #d9b888; }
+#wardSlots .ward-slot.cur { outline: 2.5px dashed #c4302b; outline-offset: -6px; box-shadow: none; }
+#wardSlots .ward-slot small { text-shadow: none; font-weight: 800; }
+#wardSlots .slot-it { background: var(--paper-2); }
+#wardSlots .slot-plus { border: 2px dashed rgba(75, 36, 22, .38); color: var(--ink); opacity: .6; }
+/* gelecek günler ve ulaşılmamış seviyeler: saydamlık yerine soluk kağıt (kart rengi altından sızıp griye çevirmesin); zımba deliği kesik çizginin üstünde */
+#dailyPanel .day { opacity: 1; }
+#dailyPanel .day.got::after { left: 50%; right: auto; top: 23px; margin-left: -6px; }
+#roadPanel .road-row { opacity: 1; }
+#roadPanel .road-row:not(.done):not(.now) { background: #e7d6b8; color: rgba(75, 36, 22, .6); }
+#roadPanel .road-row:not(.done):not(.now) .road-m b .ico, #roadPanel .road-row:not(.done):not(.now) .road-cos { opacity: .6; }
+/* kağıda basılı yazı gölgesiz (kartın kabartma gölgesi kağıtta hayalet kopya gibi görünür) */
+#roadPanel .road-row, #missionsPanel .mis, #upPanel .up, #boardPanel .board, #dayRunPanel .mode-card, #settings .profile-row, #profilePanel .name-input, #wheelBox .btn, #dailyPanel .day, #wardSlots .ward-slot { text-shadow: none; }

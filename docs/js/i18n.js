@@ -966,6 +966,9 @@
     ["Profil", "Profile", "Profil", "Perfil"],
   ];
   MORE.forEach(function (r) { EN[r[0]] = r[1]; DE[r[0]] = r[2]; ES[r[0]] = r[3]; });
+  Object.assign(EN, {"Yapma!!?":"Don't!!?","Kumar kötüdür, git buradan -_-":"Gambling is bad, go away -_-","Kasa hep kazanır :)":"The house always wins :)","O simitle bir martı doyardı…":"That simit could have fed a gull…","Annen bunu biliyor mu?":"Does your mum know about this?","Bak, martılar sana bakıyor.":"Look, the gulls are watching you.","Çark döner, simit gider.":"The wheel turns, the simit is gone.","Son kez soruyorum: emin misin?":"Last time I'm asking: are you sure?","Tamam, ben karışmam ¯\\_(ツ)_/¯":"Fine, not my business ¯\\_(ツ)_/¯","Bir daha bas: {n} balık harcanır":"Tap again: {n} fish will be spent"});
+  Object.assign(DE, {"Yapma!!?":"Lass das!!?","Kumar kötüdür, git buradan -_-":"Glücksspiel ist schlecht, geh weg -_-","Kasa hep kazanır :)":"Die Bank gewinnt immer :)","O simitle bir martı doyardı…":"Mit dem Simit wäre eine Möwe satt geworden…","Annen bunu biliyor mu?":"Weiß deine Mama davon?","Bak, martılar sana bakıyor.":"Schau, die Möwen beobachten dich.","Çark döner, simit gider.":"Das Rad dreht sich, der Simit ist weg.","Son kez soruyorum: emin misin?":"Ich frage zum letzten Mal: Bist du sicher?","Tamam, ben karışmam ¯\\_(ツ)_/¯":"Na gut, mir egal ¯\\_(ツ)_/¯","Bir daha bas: {n} balık harcanır":"Nochmal tippen: {n} Fische werden ausgegeben"});
+  Object.assign(ES, {"Yapma!!?":"¡¡No lo hagas!!?","Kumar kötüdür, git buradan -_-":"El juego es malo, vete de aquí -_-","Kasa hep kazanır :)":"La banca siempre gana :)","O simitle bir martı doyardı…":"Con ese simit comía una gaviota…","Annen bunu biliyor mu?":"¿Tu madre sabe esto?","Bak, martılar sana bakıyor.":"Mira, las gaviotas te están mirando.","Çark döner, simit gider.":"La rueda gira, el simit se va.","Son kez soruyorum: emin misin?":"Te lo pregunto por última vez: ¿seguro?","Tamam, ben karışmam ¯\\_(ツ)_/¯":"Vale, yo no me meto ¯\\_(ツ)_/¯","Bir daha bas: {n} balık harcanır":"Toca otra vez: se gastarán {n} peces"});
   var TABLES = { en: EN, de: DE, es: ES };
   // dil menüsünde kendi adıyla görünür; sırası menünün sırası
   var NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', ro: 'Română',
@@ -980,7 +983,7 @@
   try { var s = JSON.parse(localStorage.getItem(KEY) || '{}'); if (s && known(s.lang)) lang = s.lang; } catch (e) {}
 
   // ek dil: tablosu ayrı dosyada; parser'a eşzamanlı eklenir, modül olan main.js ondan sonra çalışır
-  window.I18N_ADD = function (code, table) { TABLES[code] = table; if (table.__title) TITLES[code] = table.__title; };
+  window.I18N_ADD = function (code, table) { TABLES[code] = Object.assign(TABLES[code] || {}, table); if (table.__title) TITLES[code] = table.__title; };
   if (EXTRA.indexOf(lang) >= 0 && !TABLES[lang]) document.write('<script src="js/lang/' + lang + '.js"><\/script>');
   function t(s) { var T = TABLES[lang]; return T && Object.prototype.hasOwnProperty.call(T, s) ? T[s] : s; }
 
