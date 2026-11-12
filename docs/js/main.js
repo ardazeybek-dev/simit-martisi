@@ -1644,6 +1644,7 @@ function renderWardrobe() {
     const n = look.on.filter(id => tabOf(COSTUMES.find(x => x.id === id)) === b.dataset.tab).length;
     if (n) b.dataset.n = n; else delete b.dataset.n;
   }
+  renderSlots();
   const box = $('costumes'); box.textContent = '';
   for (const c of COSTUMES) {
     if (tabOf(c) !== wardTab) continue;
@@ -1672,6 +1673,26 @@ function renderWardrobe() {
   if (!own && c.lv) act.textContent = `${tr('Martı Yolu')} · ${tr('Sv')} ${fmt(c.lv)}`;
   else if (!own) act.innerHTML = `${tr('Satın al')} <svg class="ico"><use href="#i-simit"/></svg>${fmt(priceOf(c))}`;
   else act.textContent = look.on.includes(c.id) ? tr('Çıkar') : tr('Giy');
+}
+// martının altındaki üç cam kutu: her sekmede giyili olanlar; parçaya dokununca çıkar, kutuya dokununca o sekme açılır
+function renderSlots() {
+  const row = $('wardSlots'); row.textContent = '';
+  for (const t of ['kiyafet', 'deri', 'sapka']) {
+    const d = document.createElement('div'), on = look.on.filter(id => tabOf(COSTUMES.find(x => x.id === id)) === t);
+    d.className = 'ward-slot' + (t === wardTab ? ' cur' : '') + (on.length ? '' : ' empty');
+    d.innerHTML = '<small></small><span class="slot-items"></span>';
+    d.querySelector('small').textContent = document.querySelector(`#wardTabs [data-tab="${t}"]`).textContent;
+    const box = d.querySelector('.slot-items');
+    if (!on.length) box.innerHTML = '<i class="slot-plus">+</i>';
+    for (const id of on) {
+      const b = document.createElement('button'); b.className = 'slot-it'; b.setAttribute('aria-label', tr(COSTUMES.find(x => x.id === id).name));
+      b.innerHTML = `${COSTUME_SVG[id]}<i class="slot-x">×</i>`;
+      b.addEventListener('click', e => { e.stopPropagation(); look.on = look.on.filter(x => x !== id); if (cosSel === id) cosSel = null; store.set(KEY_LOOK, look); applyLook(); sfx.click(); flapBurst = 1; renderWardrobe(); });
+      box.appendChild(b);
+    }
+    d.addEventListener('click', e => { e.stopPropagation(); if (wardTab !== t) { wardTab = t; sfx.click(); renderWardrobe(); } });
+    row.appendChild(d);
+  }
 }
 // dokununca yalnızca önizleme: martı o parçayla gösterilir, cüzdana dokunulmaz
 function pickCostume(c) {
