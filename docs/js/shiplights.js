@@ -38,13 +38,17 @@ const mat = new THREE.ShaderMaterial({
 });
 const points = new THREE.Points(geo, mat); points.frustumCulled = false; points.renderOrder = 4;
 
-// tür: 0 pencere (sıcak, hafif kıpırtı, bazıları ağır ağır söner yanar), 1 beyaz direk/demir feneri, 2 kırmızı, 3 yeşil, 4 yanıp sönen kırmızı, 5 korkuluk LED'i
-const COL = [[1, 0.7, 0.34], [1, 0.96, 0.88], [1, 0.16, 0.1], [0.25, 1, 0.45], [1, 0.12, 0.08], [1, 0.84, 0.55]];
-const BASE = [1.7, 1.2, 1.2, 1.2, 1.3, 1.25], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7, 0.42];
+// tür: 0 pencere (sıcak, hafif kıpırtı, bazıları ağır ağır söner yanar), 1 beyaz direk/demir feneri, 2 kırmızı, 3 yeşil, 4 yanıp sönen kırmızı, 5 korkuluk LED'i,
+// 6 gaz feneri (turuncu, alev gibi titrer), 7 renkli LED (rengi lambada: l.c; sırayla koşar), 8 deniz feneri (çift çakar)
+const COL = [[1, 0.7, 0.34], [1, 0.96, 0.88], [1, 0.16, 0.1], [0.25, 1, 0.45], [1, 0.12, 0.08], [1, 0.84, 0.55], [1, 0.58, 0.2], [1, 1, 1], [1, 0.95, 0.75]];
+const BASE = [1.7, 1.2, 1.2, 1.2, 1.3, 1.25, 1.6, 1.5, 1.6], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7, 0.42, 1.15, 0.5, 3.2];
+const LED = [[1, 0.25, 0.6], [0.2, 0.9, 1], [1, 0.85, 0.15], [0.35, 1, 0.35]];
 const WEATHER_K = { rain: 1 }; // yalnız yağmurda yanar: gündüz açık havada ışık olmaz
 
 const ships = new Set();
 const L = (x, y, z, k, size) => ({ x, y, z, k, s: (size || SIZE[k]), ph: Math.random() * 40, r: 0.6 + Math.random() * 0.8, lazy: k === 0 && Math.random() < 0.18 });
+// LED: i sıradaki yeri (koşan ışık), ref: konumu her kare bu çocuktan alınır (sallanan uçurtma kuyruğu)
+const D = (x, y, z, i, ref) => Object.assign(L(x, y, z, 7), { i, c: LED[i % LED.length], ref });
 // pencere sırası: z0..z1 arası adım adım, her yuvada p olasılıkla yanar (tamamı değil)
 function row(out, x, y, z0, z1, step, p) { for (let z = z0; z <= z1; z += step) if (Math.random() < p) out.push(L(x, y, z, 0)); }
 // seyir fenerleri: pruva yönü bow (-1: -z, +1: +z). Pruvaya bakana göre sol iskele (kırmızı), sağ sancak (yeşil)
@@ -86,6 +90,27 @@ function lampsOf(kind, o = {}) {
     nav(a, 4.1, 2.45, -len / 2 + 4, -1); a.push(L(0, 2.5, len / 2 + 1.4, 1, 1));
     if (o.mast) a.push(L(o.mast[0], o.mast[1], o.mast[2], 1, 1.3));
     for (const s of [-1, 1]) for (let z = -len / 2 + 5; z < len / 2 - 4; z += 1.1) a.push(L(s * 3.85, DECK_Y + 0.8, z, 5)); // korkuluk boyunca LED dizisi
+  } else if (kind === 'simitboat') { // pruvada gaz feneri: yağmurda simidin nereden atılacağı uzaktan seçilir
+    a.push(L(0, 1.3, -1.95, 6), L(0, 0.95, 1.85, 6, 0.7));
+  } else if (kind === 'kite') { // kenarlarda koşan renkli LED, kuyruğun her fiyonkunda bir tane: karanlıkta engel seçilsin
+    const e = [[0, 1.05], [0.37, 0.62], [0.75, 0.2], [0.37, -0.5], [0, -1.2], [-0.37, -0.5], [-0.75, 0.2], [-0.37, 0.62]];
+    e.forEach(([x, y], i) => a.push(D(x, y, 0.06, i)));
+    (o.tail || []).forEach((b, i) => a.push(D(0, 0, 0.05, 8 + i, b)));
+  } else if (kind === 'bridge') { // tabliye fenerleri, alt kat lokanta pencereleri, köprü altında koridoru aydınlatan lambalar
+    for (const s of [-1, 1]) {
+      for (let x = -44; x <= 44; x += 11) a.push(L(x, 16.3, s * 2.6, 1, 1.25));
+      for (const sx of [-1, 1]) for (let x = 10.6; x < 47.5; x += 2.3) if (Math.random() < 0.75) a.push(L(sx * x, 10.7, s * 2.38, 0, 1.2));
+      for (let x = -7.5; x <= 7.6; x += 3) a.push(L(x, 11.75, s * 2.1, 6, 0.8));
+    }
+  } else if (kind === 'pier') { // iskele binası (koridora bakan yüz -x): pencereler, saçakta fenerler, iskele ucunda beyaz, saat kadranı
+    for (let z = -6; z <= 6; z += 2) { if (Math.random() < 0.7) a.push(L(-3.62, 5, z, 0, 1.3)); if (Math.abs(z) > 1 && Math.random() < 0.6) a.push(L(-3.62, 2.3, z, 0, 1.3)); }
+    for (const z of [-5, 0, 5]) a.push(L(-8.4, 3.95, z, 6));
+    for (const z of [-5.8, 5.8]) a.push(L(-9.1, 1.6, z, 1, 1));
+    a.push(L(-2.56, 10.3, 0, 1, 1.4));
+  } else if (kind === 'lighthouse') {
+    a.push(L(0, 13, 0, 8));
+  } else if (kind === 'gate') { // durak kapısının sarı topları
+    for (const s of [-1, 1]) a.push(L(s * 8.6, 14.8, 0, 6, 1.4));
   }
   return a;
 }
@@ -93,40 +118,61 @@ function lampsOf(kind, o = {}) {
 // gemiyi ışıklarıyla kaydet: obj sahneden çıkınca (parent yok) kendiliğinden düşer
 // vapur güvertesi: tickLamps'ın aydınlattığı noktalar (güverte ortası boyunca, yolcuların başının üstünde)
 const DECK_Y = 2.6; // models.js DECK
-function litOf(kind, o = {}) { if (kind !== 'ferry') return null; const len = o.L || 50, a = []; for (let z = -len / 2 + 7; z <= len / 2 - 6; z += 10) a.push(new THREE.Vector3(0, DECK_Y + 2, z)); return a; }
-export function addShipLights(obj, kind, o) { ships.add({ obj, lamps: lampsOf(kind, o), lit: litOf(kind, o) }); return obj; }
+function litOf(kind, o = {}) {
+  if (kind === 'simitboat') return [new THREE.Vector3(0, 1.6, -1.4)]; // simitçi ve tablası
+  if (kind === 'bridge') return [-5, 0, 5].map(x => new THREE.Vector3(x, 10.6, 0)); // köprü altı: martı ışığın altından geçer
+  if (kind !== 'ferry') return null;
+  const len = o.L || 50, a = []; for (let z = -len / 2 + 7; z <= len / 2 - 6; z += 10) a.push(new THREE.Vector3(0, DECK_Y + 2, z)); return a;
+}
+// ext: lambaların gemi merkezinden en uzak yatay uzaklığı (gemi tamamen geçti mi?)
+export function addShipLights(obj, kind, o) { const lamps = lampsOf(kind, o); ships.add({ obj, kind, lamps, lit: litOf(kind, o), ext: lamps.reduce((m, l) => Math.max(m, Math.hypot(l.x, l.z)), 0) + 2 }); return obj; }
 export function clearShipLights() { ships.clear(); }
+// test: kayıtlı ışıklı nesneler (tür, dünya konumu, görünür mü, park mı)
+export function shipLightsInfo() { return [...ships].map(sh => { const e = worldOf(sh.obj, _m).elements; return { kind: sh.kind, x: +e[12].toFixed(1), z: +e[14].toFixed(1), hidden: hidden(sh.obj), park: !!rootOf(sh.obj).userData.park, n: sh.lamps.length }; }); }
 export function initShipLights(scene) { scene.add(points); }
 
-const _p = new THREE.Vector3(), _sz = new THREE.Vector2();
+const _p = new THREE.Vector3(), _sz = new THREE.Vector2(), _m = new THREE.Matrix4();
+// sahnenin en üstteki atası: main.js parkFar sisin ötesini ve kameranın arkasını gizler (visible=false, matris dondurulur)
+function rootOf(o) { while (o.parent && !o.parent.isScene) o = o.parent; return o; } // sahneden ayrılmış ağaçta kökün parent'ı yok
+// park edilen nesnenin matrisi donuk kalır: dünya matrisini konumdan her kare kendimiz kurarız (gemi sisin içinden yaklaşırken ışığı ondan önce görünür)
+function worldOf(o, m) {
+  if (o.matrixAutoUpdate) o.updateMatrix(); m.copy(o.matrix);
+  for (let p = o.parent; p; p = p.parent) { if (p.matrixAutoUpdate) p.updateMatrix(); m.premultiply(p.matrix); }
+  return m;
+}
+// görünmez mi: kendisi ya da bir atası gizli; park yüzünden gizlenmiş kök sayılmaz (ışık sisin içinden görünür)
+function hidden(o) { for (let p = o; p && !p.isScene; p = p.parent) if (!p.visible && !(p.userData.park && p.parent && p.parent.isScene)) return true; return false; }
 let time = 0;
 const wob = (t, p) => 0.5 + 0.3 * Math.sin(t + p) + 0.2 * Math.sin(t * 1.93 + p * 2.1); // iki oranlı kıpırtı, düzgün sinüs değil
 export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
   time += dt;
   const k = WEATHER_K[weather] || 0, fog = scene.fog;
-  if (!k) { points.visible = false; for (const sh of ships) if (!sh.obj.parent) ships.delete(sh); return; } // yağmursuz havada da sahneden çıkan gemi kayıttan düşsün (sızıntı)
-  const far = fog ? fog.far * 1.5 : 400, near = fog ? fog.near * 0.6 : 60;
+  if (!k) { points.visible = false; for (const sh of ships) if (!rootOf(sh.obj).parent) ships.delete(sh); return; } // yağmursuz havada da sahneden çıkan gemi kayıttan düşsün (sızıntı)
+  const far = fog ? fog.far * 1.8 : 400, near = fog ? fog.near * 0.6 : 60;
   renderer.getDrawingBufferSize(_sz); mat.uniforms.uHalfH.value = _sz.y / 2; mat.uniforms.uMinPx.value = 2.2 * renderer.getPixelRatio();
   const cam = camera.position;
   let n = 0;
   for (const sh of ships) {
     const o = sh.obj;
-    if (!o.parent) { ships.delete(sh); continue; }
-    if (!o.visible || n >= MAX) continue;
-    o.updateWorldMatrix(true, false);
-    const e = o.matrixWorld.elements, sc = Math.hypot(e[0], e[1], e[2]);
-    const dz = e[14] - gz; if (dz > 60 || dz < -far - 120) continue; // martının epey arkası ya da sisin çok ötesi
+    if (!rootOf(o).parent) { ships.delete(sh); continue; } // iç içe nesne (iskele binası): kökü sahneden çıktıysa
+    if (n >= MAX || hidden(o)) continue;
+    const e = worldOf(o, _m).elements, sc = Math.hypot(e[0], e[1], e[2]);
+    const dz = e[14] - gz; if (dz - sh.ext * sc > cam.z - gz + 2 || dz < -far - 120) continue; // gemi tamamen kameranın arkasına geçti ya da sisin çok ötesinde
     for (const l of sh.lamps) {
       if (n >= MAX) break;
-      _p.set(l.x, l.y, l.z).applyMatrix4(o.matrixWorld);
+      if (l.ref) _p.copy(l.ref.position).applyMatrix4(_m); else _p.set(l.x, l.y, l.z).applyMatrix4(_m);
+      if (_p.z > cam.z + 0.5) continue; // geçen geminin kameranın arkasında kalan lambası
       const d = _p.distanceTo(cam), f = Math.min(1, Math.max(0, (far - d) / (far - near)));
       if (f <= 0) continue;
       const tt = time * l.r;
       let v;
       if (l.k === 0) { v = 0.72 + 0.28 * wob(tt * 1.1, l.ph); if (l.lazy) v *= Math.min(1, Math.max(0, 0.5 + 1.6 * (Math.sin(tt * 0.21 + l.ph) + 0.45 * Math.sin(tt * 0.13 + l.ph * 3)))); }
       else if (l.k === 4) { const c = (time / (1.5 + 0.5 * (l.r - 1)) + l.ph) % 1; v = c < 0.1 ? 1 : c < 0.2 ? 1 - (c - 0.1) * 9 : 0.1; }
+      else if (l.k === 6) v = 0.7 + 0.3 * wob(tt * 7.3, l.ph) * (0.75 + 0.25 * wob(tt * 13.1, l.ph * 1.7)); // alev: hızlı ve düzensiz
+      else if (l.k === 7) { const c = ((time * 6 - l.i) % 13 + 13) % 13; v = 0.35 + 0.65 * Math.max(0, 1 - c / 3); } // koşan ışık: başta parlak, ardında söner
+      else if (l.k === 8) { const c = (time / 4.2 + l.ph) % 1; v = c < 0.06 || (c > 0.14 && c < 0.2) ? 1 : 0.18; } // çift çakar
       else v = 0.88 + 0.12 * wob(tt * 2.6, l.ph);
-      const c = COL[l.k], w = v * BASE[l.k] * k * f;
+      const c = l.c || COL[l.k], w = v * BASE[l.k] * k * f;
       pos[n * 3] = _p.x; pos[n * 3 + 1] = _p.y; pos[n * 3 + 2] = _p.z;
       col[n * 3] = c[0] * w; col[n * 3 + 1] = c[1] * w; col[n * 3 + 2] = c[2] * w;
       siz[n] = l.s * sc * (0.8 + 0.4 * k); n++;
@@ -146,10 +192,10 @@ export function tickLamps(dt, camera, weather, g) {
   if (lampK < 0.01) { LAMP_N.value = 0; return; }
   best.length = 0;
   for (const sh of ships) {
-    const o = sh.obj; if (!sh.lit || !o.parent || !o.visible) continue;
-    const e = o.matrixWorld.elements, dz = e[14] - g.z; if (dz > 25 || dz < -110) continue;
+    const o = sh.obj; if (!sh.lit || !rootOf(o).parent || hidden(o) || rootOf(o).userData.park) continue;
+    const e = worldOf(o, _m).elements, dz = e[14] - g.z; if (dz > 25 || dz < -110) continue;
     for (const p of sh.lit) {
-      _l.copy(p).applyMatrix4(o.matrixWorld);
+      _l.copy(p).applyMatrix4(_m);
       const d = _l.distanceToSquared(g);
       if (best.length < 6) best.push({ d, x: _l.x, y: _l.y, z: _l.z });
       else { let w = 0; for (let i = 1; i < 6; i++) if (best[i].d > best[w].d) w = i; if (d < best[w].d) Object.assign(best[w], { d, x: _l.x, y: _l.y, z: _l.z }); }

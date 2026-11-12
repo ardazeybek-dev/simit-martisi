@@ -264,7 +264,7 @@ function throwVolleys(z0, len, first, dense) {
   let z = z0 - (first ? 24 : 7), x = rand(-2, 2), side = pick([-1, 1]);
   while (z > end) {
     const n = dense ? pick([3, 4, 4, 5]) : pick([2, 3, 4]), bz = z - (n - 1) * 1.7 + rand(-2, 2); // kimi iki parça atar, kimi dört (tek parça az geliyordu)
-    const b = makeSimitBoat(side); b.g.position.set(side * rand(9.5, 11), 0, bz); b.g.rotation.y = rand(-0.3, 0.3); scene.add(b.g);
+    const b = makeSimitBoat(side); b.g.position.set(side * rand(9.5, 11), 0, bz); b.g.rotation.y = rand(-0.3, 0.3); scene.add(b.g); addShipLights(b.g, 'simitboat');
     const bt = { ...b, z: bz, hand: 0, thrown: 0 };
     boats.push(bt); decor.push({ mesh: b.g, z: bz, ph: Math.random() * 6 });
     for (let i = 0; i < n && z > end; i++) {
@@ -370,7 +370,7 @@ function spawnGap(first, fixLen, quiet) {
       const two = len > 44 && Math.random() < heat() * 0.25, s0 = pick([-1, 1]); // geç oyunda uzun açıklıkta ikinci yelkenli karşı yönden
       for (let j = 0; j < (two ? 2 : 1); j++) {
       const side = j ? -s0 : s0, z = two ? z0 - (j ? rand(len * 0.6, len - 10) : rand(12, len * 0.4)) : z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
-      const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b);
+      const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b); addShipLights(b, 'sail');
       const o = { x: xa + side * SAIL_OFF, z, hw: SAIL_HW, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // martı boyunda yelkenler gövdenin bir yanına uzanır: kutu yelkenlerin üstünde
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
       }
@@ -656,7 +656,7 @@ function beachCatch(b, m) {
 function spawnBridge() {
   const z0 = genZ, bz = z0 - 22, tipY = BRIDGE_Y + 1 + ROD_TIP.y, rz = 2.55 + ROD_TIP.z;
   const g = new THREE.Group(); g.position.z = bz; scene.add(g);
-  const deck = new THREE.Mesh(BRIDGE, bridgeMat); deck.castShadow = deck.receiveShadow = true; g.add(deck);
+  const deck = new THREE.Mesh(BRIDGE, bridgeMat); deck.castShadow = deck.receiveShadow = true; g.add(deck); addShipLights(g, 'bridge');
   // köprünün içine düşen kıyı dekorunu kaldır (tekneler, yolcu gemisi, Kız Kulesi)
   decor = decor.filter(d => (Math.abs(d.z - bz) < (d.vz ? 80 : 12) && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true));
   land = land.filter(l => (Math.abs(l.z - bz) < 60 ? (scene.remove(l.mesh), false) : true));
@@ -692,7 +692,7 @@ function spawnBridge() {
 // uçurtma: vapurun ya da korsan teknesinin üstüne düşerse konmaz (geminin içinden çıkıp görünmez engel oluyordu)
 function addKite(x, z, sw) {
   if (ferries.some(f => z > f.zFront - 6 && z < f.zBack + 6) || pirates.some(p => Math.abs(p.z - z) < 16)) return false;
-  const k = makeKite(); k.position.set(x, FLY_Y + 0.2, z); scene.add(k);
+  const k = makeKite(); k.position.set(x, FLY_Y + 0.2, z); scene.add(k); addShipLights(k, 'kite', { tail: k.userData.tail });
   kites.push({ g: k, bx: x, z, ph: Math.random() * 6, sw });
   return true;
 }
@@ -991,9 +991,9 @@ function spawnPier() {
   decor = decor.filter(d => (Math.abs(d.z - gz) < (d.vz ? 90 : 34) && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true));
   land = land.filter(l => (Math.abs(l.z - gz) < 60 ? (scene.remove(l.mesh), false) : true));
   const g = new THREE.Group(); g.position.z = gz; scene.add(g);
-  g.add(makeStopGate(STOPS[i].name));
+  g.add(addShipLights(makeStopGate(STOPS[i].name), 'gate'));
   const b = new THREE.Mesh(last ? LIGHTHOUSE : PIER, vcMat); b.castShadow = true;
-  b.position.x = side * (last ? 16 : 17); b.rotation.y = side > 0 ? 0 : Math.PI; g.add(b);
+  b.position.x = side * (last ? 16 : 17); b.rotation.y = side > 0 ? 0 : Math.PI; g.add(b); addShipLights(b, last ? 'lighthouse' : 'pier');
   const throwers = [];
   if (!last) for (let k = 0, n = 3 + ((Math.random() * 3) | 0); k < n; k++) { // iskelede martıyı bekleyenler; ilk ikisi simit atar
     const p = makePerson(k < 2, k === 0 ? SIMITCI_LOOK : undefined); p.mesh.position.set(side * (17 - rand(5.2, 8.4)), 1.28, k < 2 ? -2 - k * 3 : rand(-3, 4.5)); p.mesh.rotation.y = -side * Math.PI / 2 + rand(-0.4, 0.4); g.add(p.mesh);
