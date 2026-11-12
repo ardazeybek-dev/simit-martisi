@@ -2298,7 +2298,7 @@ function setTx(v) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
-const menuModal = () => !$('dayRunPanel').classList.contains('hidden') || !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden');
+const menuModal = () => !$('dayRunPanel').classList.contains('hidden') || !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden') || !$('roadPanel').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -2387,7 +2387,7 @@ onBtn('quitBtn', () => { audio.resume(); show('pause', false); for (const k of O
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 // panelin dışına (karartılmış boşluğa) dokunmak paneli kapatır; kendi kapatma düğmesine basılmış gibi, oyun başlamaz
-for (const [panel, btn] of Object.entries({ missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' }))
+for (const [panel, btn] of Object.entries({ roadPanel: 'closeRoad', missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' }))
   $(panel).addEventListener('click', e => { if (e.target === e.currentTarget) { e.stopPropagation(); $(btn).click(); } });
 // paylaşım kartı: o anki sahnenin karesi üstüne puan, simit, metre ve şehir (1080x1080). Telefonda görsel olarak paylaşılır.
 function scoreCard() {

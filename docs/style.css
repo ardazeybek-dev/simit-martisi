@@ -698,6 +698,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .card :where(.ach, .up, .day, .vol, .toggle, .seg > div, .stats div, .mis-box, .tab:not(.on), .wallet, .board li, .mode-card:not(.on), .profile-row, .lang-row select) { background: var(--glass); border-color: transparent; }
 
 /* Martı Yolu: menüdeki seviye rozeti ve ödül yolu paneli */
+.stat-row { display: flex; gap: 6px; }
 .road-chip { position: relative; }
 .road-chip .lvl-bar { width: 70px; }
 .road-chip .badge { top: -7px; right: -7px; }
