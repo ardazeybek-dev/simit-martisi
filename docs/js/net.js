@@ -9,7 +9,9 @@ export const KEY_PROFILE = 'simit-martisi-profile';
 const KEY_PENDING = 'simit-martisi-pending';
 const KEY_GIFT = 'simit-martisi-gift'; // sunucudan gelen, cüzdana henüz eklenmemiş hediye simit // gönderilemeyen skor: { week, run, score, dist, city }
 
-export const netOn = () => !!(SB_URL && SB_KEY);
+// yerel geliştirmede (localhost) canlı sıralamaya bağlanılmaz: test oturumları sahte oyuncu açmasın. Bağlanmak için adrese ?net=1 ekle.
+const LOCAL = (() => { try { return /^(localhost|127\.|\[::1\])/.test(location.hostname) && !/[?&]net=1/.test(location.search); } catch (e) { return false; } })();
+export const netOn = () => !LOCAL && !!(SB_URL && SB_KEY);
 // null: ağ yok / sunucu cevap vermedi (sonra yeniden denenir) · REJECT: sunucu reddetti (yeniden denemenin anlamı yok)
 const REJECT = { rejected: true };
 async function rpc(fn, args) {

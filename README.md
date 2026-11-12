@@ -120,6 +120,8 @@ A free Supabase project holds three tables, `players`, `scores` and `runs`. All 
 | `claim_gifts(p_id, p_secret)` | once per page load: returns the total of the player's unclaimed gift simits and marks them claimed; the game adds it to the wallet and shows *Hediye geldi* on the title screen |
 | `get_board(p_id)` | `{ total, top[50], me }` ranked by each player's best ever (`week`, `ends`, `prev` stay null for old clients) |
 
+On `localhost` the game never talks to the server (no player, scores or board), so local test sessions cannot add fake players; append `?net=1` to the URL to test the online parts locally.
+
 To hide a cheater from the board without deleting the account: `update players set hidden = true where id = '<id>';`.
 
 To give a player simits: find the id with `select id, name from players where name ilike '%name%'`, then `insert into gifts(player_id, amount) values ('<id>', 5000);` in the SQL Editor. The player gets them the next time the game opens.

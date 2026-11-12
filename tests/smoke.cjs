@@ -15,7 +15,7 @@ for (const p of [path.join(NPM, '@playwright/cli/node_modules/playwright'), path
 if (!playwright) { console.error('Playwright not found: npm i -g playwright && npx playwright install chromium'); process.exit(1); }
 
 const PORT = 8765;
-const URL = `http://localhost:${PORT}/?q=0`;
+const URL = `http://localhost:${PORT}/?q=0&net=1`; // net=1: online parts on (requests to the server are blocked below)
 const ROOT = path.join(__dirname, '..');
 const MENU = ['settingsBtn', 'wardrobeBtn', 'missionsBtn', 'dailyBtn', 'achBtn', 'boardBtn', 'upsBtn', 'modeBtn'];
 const CLOSE = { roadPanel: 'closeRoad', missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' };
