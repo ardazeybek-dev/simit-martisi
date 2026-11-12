@@ -793,3 +793,14 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #achPanel .ach-get .ico { width: 17px; height: 17px; }
 #achPanel .ach-get:active { transform: rotate(-9deg) scale(.92); }
 @keyframes stamp { 0%, 100% { transform: rotate(-9deg) scale(1); } 50% { transform: rotate(-6deg) scale(1.08); } }
+/* kullanılmış bilet: üç madalya da alınınca koçan yırtılır (sağ kenar tırtıklı), kağıt kraft kahvesine döner */
+#achPanel .ach.done { grid-template-columns: 46px 1fr; width: calc(100% - 44px); padding-right: 18px;
+  background: linear-gradient(100deg, #e2c393, #d6b281); box-shadow: none;
+  -webkit-mask: linear-gradient(#000 0 0) left / calc(100% - 7px) 100% no-repeat, conic-gradient(from -135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / 8px 11px repeat-y;
+          mask: linear-gradient(#000 0 0) left / calc(100% - 7px) 100% no-repeat, conic-gradient(from -135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / 8px 11px repeat-y; }
+#achPanel .ach.done::after, #achPanel .ach.done .ach-stub { display: none; }
+/* yazılar biraz daha belirgin */
+#achPanel .ach-m b { font-size: 17px; letter-spacing: -.01em; }
+#achPanel .ach-m small { font-size: 13px; color: rgba(75, 36, 22, .84); }
+.ach-stub i { width: 14px; height: 14px; border-color: rgba(75, 36, 22, .5); }
+#achPanel .ach-get { font-size: 17px; }

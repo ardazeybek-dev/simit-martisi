@@ -2318,9 +2318,8 @@ let cdShown = 0, shownSign = 0;
 // Fare: ekranın X konumu = martının hedefi. Dokunmatik: göreli sürükleme — parmak nereye konursa konsun martı
 // sıçramaz, yalnızca kaydırılan kadar gider; bırakınca olduğu yerde kalır. Alttaki çubuk (#pad) konumu gösterir.
 // Ayar: PAD_SPAN (şeridin bir ucundan öbürüne gitmek için ekran genişliğinin ne kadarı sürüklenir)
-// Çubuk tam olarak bu sürükleme boyundadır: top parmakla birebir gider. Kenarı geçen sürükleme hatırlanır (padV),
-// parmak geri gelince top yine parmağın altından devam eder (top ile parmak arası açılmaz)
-const PAD_SPAN = 0.5;
+// Çubuk bu sürükleme boyundadır: top normalde parmakla birebir gider.
+const PAD_SPAN = 0.5, STEER_M = 18; // STEER_M: ekran kenarından bu kadar px içerisi = şeridin kenarı
 let padId = -1, padX0 = 0, padV = 0;
 const padSpan = () => clamp(innerWidth * PAD_SPAN, 160, 320);
 function steerFromX(clientX) {
@@ -2328,8 +2327,14 @@ function steerFromX(clientX) {
   setTx(clamp((clientX / innerWidth - 0.5) / 0.35, -1, 1) * EDGE);
 }
 function steerDrag(clientX) {
-  padV += ((clientX - padX0) / padSpan()) * 2 * EDGE; padX0 = clientX;
-  setTx(clamp(padV, -EDGE, EDGE));
+  // kenarı geçen sürükleme biriktirilmez (ters yöne çekince martı anında döner, ölü bölge yok);
+  // parmağın o yönde ekranda kalan yolu şeridin kalanına yetmiyorsa hassasiyet o yönde artar → ekran kenarına varan parmak martıyı da kenara götürür
+  const dx = clientX - padX0, base = 2 * EDGE / padSpan();
+  let g = base;
+  if (dx > 0) g = Math.max(base, (EDGE - padV) / Math.max(4, innerWidth - STEER_M - padX0));
+  else if (dx < 0) g = Math.max(base, (EDGE + padV) / Math.max(4, padX0 - STEER_M));
+  padV = clamp(padV + dx * g, -EDGE, EDGE); padX0 = clientX;
+  setTx(padV);
 }
 function setTx(v) {
   tx = v;
