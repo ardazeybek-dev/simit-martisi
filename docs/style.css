@@ -731,3 +731,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .road-get { padding: 7px 16px; border-radius: 12px; background: linear-gradient(#ffe08a, var(--gold)); color: #2a1503; font-weight: 800; font-size: 15px; box-shadow: 0 3px 0 #b07d10; animation: pulse 1.2s ease-in-out infinite; }
 .road-get:active { transform: translateY(2px); box-shadow: 0 1px 0 #b07d10; }
 .road-ok { color: #7fe3d6; font-size: 20px; font-weight: 800; }
+.road-row.got { background: rgba(43, 179, 163, .2); border-color: rgba(127, 227, 214, .45); }
+.road-row.got .road-lv { background: linear-gradient(#8ff0e2, var(--teal)); box-shadow: 0 2px 0 #17786d; }
+.road-row.got .road-m b { color: #bff5ec; }
+.road-row.got .road-ok { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 17px; }

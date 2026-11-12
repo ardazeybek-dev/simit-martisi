@@ -1167,7 +1167,7 @@ function renderRoad() {
   for (let lv = 2; lv <= top; lv++) {
     const ps = roadPrize(lv, !roadReady(lv)), p = ps.length ? ps : null, title = RANKS.find(r => r[0] === lv), done = rank.lv >= lv, ready = roadReady(lv), big = lv % 5 === 0;
     const d = document.createElement('div');
-    d.className = 'road-row' + (done ? ' done' : '') + (ready ? ' ready' : '') + (big ? ' big' : '');
+    d.className = 'road-row' + (done ? ' done' : '') + (ready ? ' ready' : done ? ' got' : '') + (big ? ' big' : ''); // got: alınmış, yeşil
     d.innerHTML = `<b class="road-lv">${fmt(lv)}</b><span class="road-m"><b>${p ? p.map(roadPrizeHtml).join('') : ''}</b><small></small></span><span class="road-r"></span>`;
     d.querySelector('small').textContent = title ? tr(title[1]) : '';
     if (!p) d.querySelector('.road-m b').remove();
