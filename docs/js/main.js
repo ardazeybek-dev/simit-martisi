@@ -887,11 +887,12 @@ const PARK_ON = QS.get('park') !== '0', PARK_BACK = 6, PARK_FOG = 30, _parkBox =
 scene.matrixAutoUpdate = false; // sahne hiç kıpırdamaz: her karede bütün çocuklara zorla matris hesaplatmasın (park edilen atlanabilsin)
 function parkFar(all = false) {
   const cz = camera.position.z, ahead = cz - ((scene.fog ? scene.fog.far : 260) - PARK_FOG);
+  const fwd = _fw.set(0, 0, -1).applyQuaternion(camera.quaternion).z < -0.7; // arkayı gizlemek yalnız kamera ileri bakarken güvenli (menü/gösterim kamerası dönerse arkası görünür)
   for (const o of scene.children) {
     if (!o.children.length) continue;
     const u = o.userData;
     if (!u.pz) { _parkBox.setFromObject(o); u.pz = [_parkBox.min.z - o.position.z, _parkBox.max.z - o.position.z]; if (!(u.pz[1] - u.pz[0] < 400)) u.pz = [-1e9, 1e9]; } // dev/sınırsız nesne (su, uzak kıyı) asla
-    const far = PARK_ON && !all && (o.position.z + u.pz[1] < ahead || o.position.z + u.pz[0] > cz + PARK_BACK);
+    const far = PARK_ON && !all && (o.position.z + u.pz[1] < ahead || (fwd && o.position.z + u.pz[0] > cz + PARK_BACK));
     if (far === !!u.park) continue;
     if (far) { if (!o.visible) continue; o.updateMatrixWorld(true); u.park = true; o.visible = false; o.matrixWorldAutoUpdate = false; }
     else { u.park = false; o.visible = true; o.matrixWorldAutoUpdate = true; }
@@ -2680,9 +2681,11 @@ function podEnter() {
 function podRestore() { // karenin başında: martı dünyadaki yerine döner, oyun mantığı onu oradan sürer
   gull.position.copy(pod.home.p); gull.quaternion.copy(pod.home.q);
   if (gull.parent !== pod.parent && pod.parent) pod.parent.add(gull);
-  if (!dressing) pod.on = false;
+  if (!dressing && pod.on) { pod.on = false; renderer.setPixelRatio(Math.min(DPR, PR[quality])); } // uçuşun çözünürlüğüne dön
 }
+const POD_PR = Math.min(3, devicePixelRatio || 1); // podyumda yalnız martı çizilir: ekranın tam çözünürlüğü bedava (telefonda uçuş çözünürlüğüyle martı bulanık görünüyordu)
 function podDraw(dt) {
+  if (renderer.getPixelRatio() !== POD_PR) renderer.setPixelRatio(POD_PR);
   pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
   pod.scene.add(gull);
   if (pod.drag >= 0) { // elle çevirme: kayma kadar döner, hız savrulma için saklanır
