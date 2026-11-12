@@ -1531,11 +1531,10 @@ function showOver() {
   // adsız oyuncu ("Martı 1234") rekor kırınca: sıralamada adı görünsün diye bitiş ekranında ad kutusu (gururlandığı an sorulur)
   show('overName', askName); show('overNameErr', false); if (askName) nameAsked = true;
   if (askName) { $('overNameT').textContent = tr('Sıralamada adın görünsün!'); $('overNameInput').value = ''; $('overNameInput').placeholder = tr('Adını yaz'); }
-  { // meydan okuma: arkadaşını geçtin mi, kaç puan kaldı
-    const el = $('overVs'), beat = !daily && !!vs && !vs.won && final > vs.s;
-    show('overVs', !daily && !!vs && (!vs.won || beat)); el.classList.toggle('won', beat);
-    if (beat) { vs.won = true; store.set(KEY_VS, vs); el.textContent = tr('Arkadaşını geçtin! Şimdi sıra onda.'); }
-    else if (!daily && vs && !vs.won) el.textContent = tr('Arkadaşını geçmene {n} puan kaldı').replace('{n}', fmt(vs.s - final + 1));
+  { // meydan okuma: arkadaşını geçtiysen kaydedilir (paylaşım metni için); bitiş ekranında yazı yok (Arda istemedi)
+    const beat = !daily && !!vs && !vs.won && final > vs.s;
+    show('overVs', false);
+    if (beat) { vs.won = true; store.set(KEY_VS, vs); }
     shareWon = beat; shareLbl = tr('Paylaş'); $('shareBtn').textContent = shareLbl;
   }
   const achBefore = achReady(), bdgBefore = badgesGot(); achRecord();
