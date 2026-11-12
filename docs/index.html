@@ -105,12 +105,11 @@
   <div class="menu-top">
     <div class="stat-col">
       <div class="stat-card"><svg class="ico"><use href="#i-simit"/></svg><b id="titleWallet">0</b></div>
-      <div class="stat-row"><div class="stat-card fish"><svg class="ico"><use href="#i-fish"/></svg><b id="titleFish">0</b></div>
-      <button class="stat-card lvl-card road-chip no-steer" id="roadBtn" aria-label="Martı Yolu"><b class="lvl-n" id="roadLv">1</b><span class="lvl-m"><small id="roadName"></small><span class="lvl-bar"><i id="roadFill"></i></span></span><i class="badge dot hidden" id="roadDot"></i></button></div>
+      <div class="stat-card fish"><svg class="ico"><use href="#i-fish"/></svg><b id="titleFish">0</b></div>
     </div>
     <div class="stat-card best"><svg class="ico"><use href="#i-trophy"/></svg><span id="titleBest"></span></div>
     <span class="grow"></span>
-    <button id="settingsBtn" class="icon-btn" aria-label="Ayarlar"><svg><use href="#i-gear"/></svg></button>
+    <button id="settingsBtn" class="icon-btn" aria-label="Ayarlar"><svg><use href="#i-gear"/></svg><i class="badge dot hidden" id="setDot"></i></button>
   </div>
   <div class="logo">
     <h1><span>Simit</span><span>Martısı</span></h1>
@@ -148,7 +147,6 @@
     <h2>Martı Yolu</h2>
     <div class="road-head"><b class="lvl-n" id="roadLvN">1</b><span class="lvl-m"><small id="roadRank"></small><span class="lvl-bar"><i id="roadBar"></i></span></span><small class="road-xp" id="roadXp"></small></div>
     <p class="road-how">Her simit ve her 20 m seni yolda ilerletir.</p>
-    <p class="road-next" id="roadNext"></p>
     <div class="road-list" id="roadList"></div>
     <button class="btn primary" id="closeRoad">Tamam</button>
   </div>
@@ -195,7 +193,7 @@
 <section id="profilePanel" class="screen modal hidden">
   <div class="card">
     <h2>Profil</h2>
-    <div class="prof-lvl"><b class="lvl-n" id="lvlN">1</b><span class="lvl-m"><small id="lvlName"></small><span class="lvl-bar"><i id="lvlFill"></i></span></span></div>
+    <button class="prof-lvl road-open" id="roadOpen"><b class="lvl-n" id="lvlN">1</b><span class="lvl-m"><small id="lvlName"></small><span class="lvl-bar"><i id="lvlFill"></i></span></span><span class="road-go"><svg class="ico"><use href="#i-gift"/></svg>Martı Yolu</span><i class="badge dot hidden" id="roadDot"></i></button>
     <p class="prof-h">Martı adın</p>
     <p class="fine">Sıralamada bu adla görünürsün.</p>
     <div class="name-row"><img id="ccFlag" class="cc-flag" alt=""><input id="nameInput" class="name-input" type="text" maxlength="16" autocomplete="nickname" autocapitalize="words" enterkeyhint="done" spellcheck="false"></div>
@@ -262,7 +260,7 @@
 <section id="settings" class="screen modal hidden">
   <div class="card">
     <h2>Ayarlar</h2>
-    <button class="profile-row hidden" id="profileBtn" aria-label="Profil"><span class="prof-mini" id="profLv">1</span><span class="prof-txt"><small>Profil</small><b><img id="profileFlag" class="cc-flag sm" alt=""><span id="profileName"></span></b></span><svg class="ico"><use href="#i-pen"/></svg></button>
+    <button class="profile-row hidden" id="profileBtn" aria-label="Profil"><span class="prof-mini" id="profLv">1</span><span class="prof-txt"><small>Profil</small><b><img id="profileFlag" class="cc-flag sm" alt=""><span id="profileName"></span></b></span><svg class="ico"><use href="#i-pen"/></svg><i class="badge dot hidden" id="profDot"></i></button>
 <div class="vols">
       <div class="vol"><button class="vol-ico" data-mute="music" aria-label="Müzik"><svg><use href="#i-sound"/></svg></button><span>Müzik</span><input type="range" min="0" max="100" step="5" data-vol="music" aria-label="Müzik"></div>
       <div class="vol"><button class="vol-ico" data-mute="sfx" aria-label="Ses efektleri"><svg><use href="#i-sound"/></svg></button><span>Ses efektleri</span><input type="range" min="0" max="100" step="5" data-vol="sfx" aria-label="Ses efektleri"></div>

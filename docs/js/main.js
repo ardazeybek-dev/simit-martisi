@@ -1116,70 +1116,79 @@ const fishSync = take => fishDayRpc(take).then(n => { if (typeof n === 'number')
 // Uçuşta gösterilmez, yalnız oyun sonunda çubuk dolar; menüde rozet. Ayar: xpNeed, lvGift, RANKS
 const KEY_RANK = 'simit-martisi-rank';
 const RANKS = [[1, 'Yavru martı'], [3, 'Vapur martısı'], [6, 'Simit avcısı'], [10, 'Boğaz kurdu'], [15, 'İskele reisi'], [20, 'Kaptan martı'], [30, 'Efsane martı']];
-const xpNeed = lv => 80 + lv * 40, lvGift = lv => Math.min(30, 5 + lv); // seviye ödülü cüzdan gelirini ezmesin: 7 → 30 simit
+const xpNeed = lv => 80 + lv * 40, lvGift = lv => 10 + lv * 2; // her seviyenin simiti (Martı Yolu'nda alınır): Sv 2 → 14, Sv 20 → 50, Sv 45 → 100
 const rank = Object.assign({ lv: 1, xp: 0 }, store.get(KEY_RANK, {}) || {});
 const rankName = lv => tr(RANKS.filter(r => lv >= r[0]).pop()[1]);
-// Martı Yolu: her seviye simit verir (addXp, otomatik); her 5 seviyede yolda elle alınan bir ödül daha: 10'un katlarında balık,
-// 15/25/35'te yalnız yoldan çıkan kostüm, kalan 5'lerde simit kesesi. Alınanlar rank.got'ta; geride kalan ödül sonradan da alınır.
-const ROAD_COS = { 15: 'fisher', 25: 'buoy', 35: 'pirate' }, ROAD_SIMIT = 50;
-const roadPrize = lv => (lv % 5 ? null : lv % 10 === 0 ? { k: 'fish', n: 1 } : ROAD_COS[lv] ? { k: 'cos', id: ROAD_COS[lv] } : { k: 'simit', n: ROAD_SIMIT });
+// Martı Yolu (Ayarlar → Profil): her seviyenin ödülü yolda elle alınır. Her seviye lvGift simit; 10'un katlarında Sv/10 balık,
+// 15/25/35'te yalnız yoldan çıkan kostüm, kalan 5'lerde büyük simit kesesi (100 + 10·Sv). Alınanlar rank.got'ta, geride kalan sonradan da alınır.
+// rank.paid: yol gelmeden önce seviye simiti otomatik ödenmişti; o seviyelerin simiti yeniden verilmez (yalnız ekstrası).
+const ROAD_COS = { 15: 'fisher', 25: 'buoy', 35: 'pirate' };
 if (!Array.isArray(rank.got)) rank.got = [];
-const roadOpen = () => { let n = 0; for (let m = 5; m <= rank.lv; m += 5) if (!rank.got.includes(m)) n++; return n; };
+if (typeof rank.paid !== 'number') { rank.paid = rank.lv; store.set(KEY_RANK, rank); }
+function roadPrize(lv, all = false) { // all: ödenmiş seviye simitini de göster (panelde boş satır kalmasın)
+  if (lv < 2) return [];
+  let simit = all || lv > rank.paid ? lvGift(lv) : 0;
+  const out = [];
+  if (lv % 5 === 0 && lv % 10 && !ROAD_COS[lv]) simit += 100 + lv * 10;
+  if (simit) out.push({ k: 'simit', n: simit });
+  if (lv % 10 === 0) out.push({ k: 'fish', n: lv / 10 });
+  if (ROAD_COS[lv]) out.push({ k: 'cos', id: ROAD_COS[lv] });
+  return out;
+}
+const roadReady = lv => lv <= rank.lv && !rank.got.includes(lv) && roadPrize(lv).length > 0;
+const roadOpen = () => { let n = 0; for (let l = 2; l <= rank.lv; l++) if (roadReady(l)) n++; return n; };
 let xpGot = 0; // bu uçuştan şimdiye dek yazılan XP (ikinci şansta iki kez sayılmasın)
 const runXp = () => Math.round(simitCount + dist / 20);
 function addXp(n) {
   let ups = 0, gift = 0;
   rank.xp += n;
-  while (rank.xp >= xpNeed(rank.lv)) { rank.xp -= xpNeed(rank.lv); rank.lv++; ups++; gift += lvGift(rank.lv); }
-  if (gift) { wallet += gift; store.set(KEY_WALLET, wallet); }
+  while (rank.xp >= xpNeed(rank.lv)) { rank.xp -= xpNeed(rank.lv); rank.lv++; ups++; gift += lvGift(rank.lv); } // ödül cüzdana değil yola düşer
   store.set(KEY_RANK, rank);
   return { ups, gift };
 }
 function renderRank() {
   $('lvlN').textContent = fmt(rank.lv); $('lvlName').textContent = rankName(rank.lv);
   $('lvlFill').style.transform = `scaleX(${clamp(rank.xp / xpNeed(rank.lv), 0, 1)})`;
-  $('roadLv').textContent = fmt(rank.lv); $('roadName').textContent = rankName(rank.lv);
-  $('roadFill').style.transform = `scaleX(${clamp(rank.xp / xpNeed(rank.lv), 0, 1)})`;
-  show('roadDot', roadOpen() > 0);
+  const dot = roadOpen() > 0; show('roadDot', dot); show('setDot', dot); show('profDot', dot);
 }
 // yol paneli: 5'in katları ve unvan seviyeleri; ödülü olan geçilmiş satırda "Al"
 function roadPrizeHtml(p) {
-  if (p.k === 'fish') return `<svg class="ico"><use href="#i-fish"/></svg>${fmt(p.n)}`;
-  if (p.k === 'simit') return `<svg class="ico"><use href="#i-simit"/></svg>${fmt(p.n)}`;
-  return `<span class="road-cos">${COSTUME_SVG[p.id]}</span>${esc(tr(COSTUMES.find(c => c.id === p.id).name))}`;
+  if (p.k === 'fish') return `<span class="road-p"><svg class="ico"><use href="#i-fish"/></svg>${fmt(p.n)}</span>`;
+  if (p.k === 'simit') return `<span class="road-p"><svg class="ico"><use href="#i-simit"/></svg>${fmt(p.n)}</span>`;
+  return `<span class="road-p"><span class="road-cos">${COSTUME_SVG[p.id]}</span>${esc(tr(COSTUMES.find(c => c.id === p.id).name))}</span>`;
 }
 function renderRoad() {
   const f = clamp(rank.xp / xpNeed(rank.lv), 0, 1);
   $('roadLvN').textContent = fmt(rank.lv); $('roadRank').textContent = rankName(rank.lv);
   $('roadBar').style.transform = `scaleX(${f})`; $('roadXp').textContent = `${fmt(rank.xp)}/${fmt(xpNeed(rank.lv))}`;
-  $('roadNext').innerHTML = `${esc(tr('Sonraki seviye'))}: +${fmt(lvGift(rank.lv + 1))} <svg class="ico"><use href="#i-simit"/></svg>`;
   const box = $('roadList'); box.textContent = '';
-  const top = Math.max(50, Math.ceil((rank.lv + 10) / 5) * 5), lvls = new Set(RANKS.map(r => r[0]).filter(l => l > 1));
-  for (let i = 5; i <= top; i += 5) lvls.add(i);
+  const top = Math.max(50, Math.ceil((rank.lv + 10) / 5) * 5);
   let focus = null;
-  for (const lv of [...lvls].sort((a, b) => a - b)) {
-    const p = roadPrize(lv), title = RANKS.find(r => r[0] === lv), done = rank.lv >= lv, got = rank.got.includes(lv), ready = !!p && done && !got;
+  for (let lv = 2; lv <= top; lv++) {
+    const ps = roadPrize(lv, !roadReady(lv)), p = ps.length ? ps : null, title = RANKS.find(r => r[0] === lv), done = rank.lv >= lv, ready = roadReady(lv), big = lv % 5 === 0;
     const d = document.createElement('div');
-    d.className = 'road-row' + (done ? ' done' : '') + (ready ? ' ready' : '');
-    d.innerHTML = `<b class="road-lv">${fmt(lv)}</b><span class="road-m"><b>${p ? roadPrizeHtml(p) : ''}</b><small></small></span><span class="road-r"></span>`;
+    d.className = 'road-row' + (done ? ' done' : '') + (ready ? ' ready' : '') + (big ? ' big' : '');
+    d.innerHTML = `<b class="road-lv">${fmt(lv)}</b><span class="road-m"><b>${p ? p.map(roadPrizeHtml).join('') : ''}</b><small></small></span><span class="road-r"></span>`;
     d.querySelector('small').textContent = title ? tr(title[1]) : '';
     if (!p) d.querySelector('.road-m b').remove();
     if (!title) d.querySelector('small').remove();
     const r = d.querySelector('.road-r');
     if (ready) { const b = document.createElement('button'); b.className = 'road-get'; b.textContent = tr('Al'); b.addEventListener('click', e => { e.stopPropagation(); claimRoad(lv); }); r.appendChild(b); }
-    else if (done && p) r.innerHTML = '<span class="road-ok">✓</span>';
+    else if (done) r.innerHTML = '<span class="road-ok">✓</span>';
     if (!focus && (ready || !done)) { focus = d; if (!done) d.classList.add('now'); }
     box.appendChild(d);
   }
   if (focus) requestAnimationFrame(() => { box.scrollTop = Math.max(0, focus.offsetTop - box.offsetTop - 6); });
 }
 function claimRoad(lv) {
-  const p = roadPrize(lv);
-  if (!p || rank.lv < lv || rank.got.includes(lv)) return;
+  if (!roadReady(lv)) return;
+  const ps = roadPrize(lv);
   rank.got.push(lv); store.set(KEY_RANK, rank);
-  if (p.k === 'fish') setFish(fish + p.n);
-  else if (p.k === 'simit') { wallet += p.n; store.set(KEY_WALLET, wallet); }
-  else if (!look.owned.includes(p.id)) { look.owned.push(p.id); store.set(KEY_LOOK, look); }
+  for (const p of ps) {
+    if (p.k === 'fish') setFish(fish + p.n);
+    else if (p.k === 'simit') { wallet += p.n; store.set(KEY_WALLET, wallet); }
+    else if (!look.owned.includes(p.id)) { look.owned.push(p.id); store.set(KEY_LOOK, look); }
+  }
   sfx.record(); vibrate([20, 30, 20]); sparkle(gull.position, 30, 0xffd35a, 5, 0.7, 0.3);
   const top = $('roadList').scrollTop; renderRoad(); $('roadList').scrollTop = top;
   $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); renderRank();
@@ -1187,7 +1196,7 @@ function claimRoad(lv) {
 function renderXp(xp, f0, r) {
   const el = $('overXp'), f1 = clamp(rank.xp / xpNeed(rank.lv), 0, 1);
   el.innerHTML = `<b>${tr('Sv')} ${fmt(rank.lv)}</b><span class="lvl-bar"><i></i></span><small>+${fmt(xp)} XP</small>`
-    + (r.ups ? `<em>${tr('Seviye atladın!')} ${rankName(rank.lv)} · +${fmt(r.gift)} <svg class="ico"><use href="#i-simit"/></svg></em>` : '');
+    + (r.ups ? `<em>${tr('Seviye atladın!')} ${rankName(rank.lv)} · <svg class="ico"><use href="#i-gift"/></svg>${esc(tr('Martı Yolu'))}</em>` : '');
   const bar = el.querySelector('.lvl-bar i'); bar.style.transition = 'none'; bar.style.transform = `scaleX(${r.ups ? 0 : f0})`;
   requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = ''; bar.style.transform = `scaleX(${f1})`; }));
   if (r.ups) setTimeout(() => { if (state === 'over') { sfx.record(); vibrate([20, 30, 20]); bump(el.querySelector('em'), 'popin'); } }, 900);
@@ -1364,7 +1373,7 @@ function showTitle() {
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions(); gullSize();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
-  show('profileBtn', !tutorialPending); show('roadBtn', !tutorialPending); renderNameChip(); renderMode();
+  show('profileBtn', !tutorialPending); renderNameChip(); renderMode();
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap(); renderRank();
   show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false);
   ui.powers.textContent = '';
@@ -1870,7 +1879,7 @@ function renderMenuBadges() {
   $('misBadge').textContent = fresh; show('misBadge', fresh > 0);
   show('dailyDot', dailyState().ready || freeSpin());
   if (state === 'title') $('titleWallet').textContent = fmt(wallet);
-  show('roadDot', roadOpen() > 0);
+  { const dot = roadOpen() > 0; show('roadDot', dot); show('setDot', dot); show('profDot', dot); }
   const ar = achReady() + badgesNew(); $('achBadge').textContent = ar; show('achBadge', ar > 0); // alınmamış başarım + bakılmamış rozet
 }
 // ---------------- başarımlar ----------------
@@ -2342,7 +2351,7 @@ onBtn('cityPrev', () => stepCity(-1));
 onBtn('cityNext', () => stepCity(1));
 onBtn('missionsBtn', () => { openMissions(); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
-onBtn('roadBtn', () => { if (state !== 'title') return; renderRoad(); show('roadPanel'); });
+onBtn('roadOpen', () => { if (state !== 'title') return; show('profilePanel', false); renderRoad(); show('roadPanel'); });
 onBtn('closeRoad', () => { show('roadPanel', false); renderRank(); renderMenuBadges(); });
 onBtn('achBtn', () => openAch());
 onBtn('closeAch', () => show('achPanel', false));
