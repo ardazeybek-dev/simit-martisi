@@ -1174,11 +1174,17 @@ function renderRoad() {
     if (!title) d.querySelector('small').remove();
     const r = d.querySelector('.road-r');
     if (ready) { const b = document.createElement('button'); b.className = 'road-get'; b.textContent = tr('Al'); b.addEventListener('click', e => { e.stopPropagation(); claimRoad(lv); }); r.appendChild(b); }
+    else if (done && ROAD_COS[lv] && look.owned.includes(ROAD_COS[lv])) { const b = document.createElement('button'); b.className = 'road-get see'; b.textContent = tr('Gör'); b.addEventListener('click', e => { e.stopPropagation(); seeCostume(ROAD_COS[lv]); }); r.appendChild(b); }
     else if (done) r.innerHTML = '<span class="road-ok">✓</span>';
     if (!focus && (ready || !done)) { focus = d; if (!done) d.classList.add('now'); }
     box.appendChild(d);
   }
   if (focus) requestAnimationFrame(() => { box.scrollTop = Math.max(0, focus.offsetTop - box.offsetTop - 6); });
+}
+function seeCostume(id) { // yoldan gelen kostüme git: gardırop o sekmede açılır, parça martıda önizlenir
+  const c = COSTUMES.find(x => x.id === id); if (!c || state !== 'title') return;
+  show('roadPanel', false); wardTab = tabOf(c); openWardrobe(); pickCostume(c);
+  $('costumes').querySelector('.sel')?.scrollIntoView({ block: 'nearest' });
 }
 function claimRoad(lv) {
   if (!roadReady(lv)) return;
@@ -1187,7 +1193,7 @@ function claimRoad(lv) {
   for (const p of ps) {
     if (p.k === 'fish') setFish(fish + p.n);
     else if (p.k === 'simit') { wallet += p.n; store.set(KEY_WALLET, wallet); }
-    else if (!look.owned.includes(p.id)) { look.owned.push(p.id); store.set(KEY_LOOK, look); }
+    else if (!look.owned.includes(p.id)) { look.owned.push(p.id); look.fresh.push(p.id); store.set(KEY_LOOK, look); }
   }
   sfx.record(); vibrate([20, 30, 20]); sparkle(gull.position, 30, 0xffd35a, 5, 0.7, 0.3);
   const top = $('roadList').scrollTop; renderRoad(); $('roadList').scrollTop = top;
@@ -1201,9 +1207,10 @@ function renderXp(xp, f0, r) {
   requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = ''; bar.style.transform = `scaleX(${f1})`; }));
   if (r.ups) setTimeout(() => { if (state === 'over') { sfx.record(); vibrate([20, 30, 20]); bump(el.querySelector('em'), 'popin'); } }, 900);
 }
-const look = { owned: [], on: [] };
+const look = { owned: [], on: [], fresh: [] };
 { const l = store.get(KEY_LOOK, {}), ok = id => COSTUMES.some(c => c.id === id);
-  look.owned = (Array.isArray(l.owned) ? l.owned : []).filter(ok); look.on = (Array.isArray(l.on) ? l.on : []).filter(id => look.owned.includes(id)); }
+  look.owned = (Array.isArray(l.owned) ? l.owned : []).filter(ok); look.on = (Array.isArray(l.on) ? l.on : []).filter(id => look.owned.includes(id));
+  look.fresh = (Array.isArray(l.fresh) ? l.fresh : []).filter(id => look.owned.includes(id)); } // fresh: yoldan gelen, henüz bakılmamış kostümler
 let tutorialPending = !store.get(KEY_TUT, false);
 const keys = {};
 // tempo bölgeleri: hız eğrisi tek düze artmasın. Mesafeye bağlı, önceden planlanır (günün uçuşunda herkes için aynı).
@@ -1660,6 +1667,7 @@ function renderWardrobe() {
     else if (c.lv) tag.textContent = `${tr('Sv')} ${fmt(c.lv)}`; // Martı Yolu'ndan açılır
     else tag.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(price)}` + (deal ? `<s>${fmt(c.price)}</s>` : '');
     if (deal) b.insertAdjacentHTML('beforeend', '<em class="cos-deal">-20%</em>');
+    if (look.fresh.includes(c.id)) b.insertAdjacentHTML('beforeend', `<em class="cos-deal cos-new">${esc(tr('Yeni'))}</em>`);
     if (PERKS[c.id]) b.insertAdjacentHTML('beforeend', '<i class="cos-perk">★</i>');
     b.addEventListener('click', e => { e.stopPropagation(); pickCostume(c); });
     box.appendChild(b);
@@ -1697,6 +1705,7 @@ function renderSlots() {
 // dokununca yalnızca önizleme: martı o parçayla gösterilir, cüzdana dokunulmaz
 function pickCostume(c) {
   cosSel = c.id;
+  if (look.fresh.includes(c.id)) { look.fresh = look.fresh.filter(x => x !== c.id); store.set(KEY_LOOK, look); }
   applyLook(look.on.includes(c.id) ? look.on : withItem(look.on, c));
   sfx.click(); flapBurst = 1;
   sparkle(gull.position, 12, 0xffe7a8, 3, 0.45, 0.25);
@@ -1901,6 +1910,7 @@ function renderMenuBadges() {
   show('dailyDot', dailyState().ready || freeSpin());
   if (state === 'title') $('titleWallet').textContent = fmt(wallet);
   { const dot = roadOpen() > 0; show('roadDot', dot); show('setDot', dot); show('profDot', dot); }
+  $('wardBadge').textContent = look.fresh.length; show('wardBadge', look.fresh.length > 0); // yeni kostüm
   const ar = achReady() + badgesNew(); $('achBadge').textContent = ar; show('achBadge', ar > 0); // alınmamış başarım + bakılmamış rozet
 }
 // ---------------- başarımlar ----------------
@@ -2661,9 +2671,15 @@ function podDraw(dt) {
   const vis = land ? 0.5 : 0.46, fit = Math.max(H / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * vis), span / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect * (land ? 0.42 : 0.86)));
   const d = fit * 0.95 + 1;
   cam.position.set(0, H * 0.55 + d * 0.1, d); cam.lookAt(0, H * 0.48, 0); // neredeyse yandan: ufuk ve karşı kıyı görünsün
-  if (land) cam.setViewOffset(w, h, w * 0.24, 0, w, h); else cam.setViewOffset(w, h, 0, h * 0.24, w, h);
+  if (land) cam.setViewOffset(w, h, w * 0.24, 0, w, h); else cam.setViewOffset(w, h, 0, h * 0.4, w, h); // dikeyde martı yukarıda: altında cam kutulara yer kalsın
   cam.updateProjectionMatrix();
   renderer.render(pod.scene, cam);
+  // cam kutular martının ayağının altında (podyumun önünde); dikeyde alttaki panelin üstüne binmez
+  const sl = $('wardSlots'), card = sl.nextElementSibling;
+  _podC.set(0, -0.95, 1.75).project(cam); // podyumun ön alt kenarı: kutular onun altından başlar, podyuma değmez
+  let y = (1 - _podC.y) / 2 * h + 10; const x = w / 2 + (land ? -w * 0.24 : 0), sh = sl.offsetHeight;
+  y = Math.min(y, land ? h - sh - 12 : card.getBoundingClientRect().top - sh - 8); // ekrandan / alttaki panelden taşmasın
+  sl.style.left = `${x.toFixed(1)}px`; sl.style.top = `${y.toFixed(1)}px`;
 }
 
 // ---------------- döngü ----------------

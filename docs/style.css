@@ -738,16 +738,20 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .road-m small { color: var(--gold) !important; font-weight: 700; } /* rütbe adı (yalnız yeni rütbe satırında) altın */
 
 /* gardırop: martının altında üç cam kutu (Kıyafet, Deri, Şapka), giyili parçalar; dokununca çıkar */
-.ward-slots { display: flex; gap: 10px; width: 100%; max-width: 440px; margin: 0 0 10px; }
-.ward-slot { flex: 1; min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 7px 6px 8px; border-radius: 20px; cursor: pointer;
+.ward-slots { position: fixed; z-index: 2; left: 50%; top: 40%; transform: translateX(-50%); display: flex; gap: 12px; width: min(94vw, 460px); }
+@media (orientation: landscape) { .ward-slots { width: min(46vw, 460px); } }
+.ward-slot { flex: 1; min-width: 0; display: grid; justify-items: center; gap: 6px; padding: 10px 8px 12px; border-radius: 24px; cursor: pointer;
   background: linear-gradient(160deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, .07)); border: 1px solid rgba(255, 255, 255, .42);
   backdrop-filter: blur(14px) saturate(1.6); -webkit-backdrop-filter: blur(14px) saturate(1.6);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), inset 0 -10px 18px rgba(255, 255, 255, .06), 0 8px 22px rgba(0, 0, 0, .25); transition: transform .1s; }
 .ward-slot:active { transform: scale(.96); }
 .ward-slot.cur { border-color: rgba(255, 211, 90, .85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 0 0 2px rgba(255, 211, 90, .35), 0 8px 22px rgba(0, 0, 0, .25); }
-.ward-slot small { font-size: 12.5px; font-weight: 700; letter-spacing: .3px; text-shadow: 0 1px 4px rgba(0, 0, 0, .45); }
-.slot-items { display: flex; justify-content: center; align-items: center; gap: 4px; min-height: 40px; }
-.slot-it { position: relative; width: 38px; height: 38px; padding: 3px; border-radius: 12px; background: rgba(255, 255, 255, .16); }
+.ward-slot small { font-size: 15px; font-weight: 700; letter-spacing: .3px; text-shadow: 0 1px 4px rgba(0, 0, 0, .45); }
+.slot-items { display: flex; justify-content: center; align-items: center; gap: 5px; min-height: 54px; flex-wrap: wrap; }
+.slot-it { position: relative; width: 52px; height: 52px; padding: 5px; border-radius: 15px; background: rgba(255, 255, 255, .16); }
 .slot-it svg { width: 100%; height: 100%; }
-.slot-x { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; background: var(--red); color: #fff; font-size: 13px; font-style: normal; font-weight: 800; line-height: 1; }
-.slot-plus { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; border: 1.5px dashed rgba(255, 255, 255, .5); font-style: normal; font-size: 22px; font-weight: 700; opacity: .7; }
+.slot-x { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: var(--red); color: #fff; font-size: 15px; font-style: normal; font-weight: 800; line-height: 1; }
+.slot-plus { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 15px; border: 1.5px dashed rgba(255, 255, 255, .5); font-style: normal; font-size: 22px; font-weight: 700; opacity: .7; }
+@media (orientation: portrait) { .slot-it, .slot-plus { width: 44px; height: 44px; } .slot-items { min-height: 44px; } }
+.cos-new { background: var(--teal); right: auto; left: 50%; transform: translateX(-50%); }
+.road-get.see { background: linear-gradient(#8ff0e2, var(--teal)); box-shadow: 0 3px 0 #17786d; color: #06302a; animation: none; }

@@ -110,7 +110,7 @@ async function main() {
       check(s.dist > 0, `${city}: dist is ${s.dist}`);
       // crash() is ignored while a shield or the invulnerable window is on: keep calling it until the flight ends
       await g(() => { window.__smokeCr = setInterval(() => { if (window.__game.state === 'play') window.__game.crash(); }, 300); });
-      await page.waitForFunction(() => window.__game.state === 'over', null, { timeout: 15000 }).catch(() => { throw new Error(city + ': crash did not end the flight'); });
+      await page.waitForFunction(() => window.__game.state === 'over', null, { timeout: 15000 }).catch(async () => { const st = await g(() => [window.__game.state, window.__game.dist]).catch(() => '?'); throw new Error(city + ': crash did not end the flight, state ' + JSON.stringify(st)); });
       await g(() => clearInterval(window.__smokeCr));
       await g(() => window.__game.showTitle());
       await page.waitForTimeout(1200); // anything that pops up on the title by itself does so within a second

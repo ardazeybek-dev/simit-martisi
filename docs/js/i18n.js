@@ -5,6 +5,8 @@
 (function () {
   'use strict';
   var EN = {
+    "Yeni": "New",
+    "Gör": "View",
     "Martılar kralı": "Gull king",
     "Simit sultanı": "Simit sultan",
     "Martı Yolu": "Gull Road",
@@ -184,6 +186,8 @@
   };
   // DE / ES: aynı anahtarlar; {to} yalnız Türkçede (yönelme ekli iskele adı), diğer diller {s} kullanır
   var DE = {
+    "Yeni": "Neu",
+    "Gör": "Ansehen",
     "Martılar kralı": "Möwenkönig",
     "Simit sultanı": "Simit-Sultan",
     "Martı Yolu": "Möwenweg",
@@ -528,6 +532,8 @@
     "Simit Martısı'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?": "Ich hab in Simit-Möwe {s} Punkte geholt und {n} Simits geschnappt! Schaffst du mehr?",
   };
   var ES = {
+    "Yeni": "Nuevo",
+    "Gör": "Ver",
     "Martılar kralı": "Rey de las gaviotas",
     "Simit sultanı": "Sultán del simit",
     "Martı Yolu": "Ruta de la gaviota",
