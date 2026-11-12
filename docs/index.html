@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.89.0">
+<meta name="app-version" content="2.90.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -192,13 +192,6 @@
     <div class="shop-bar"><span class="shop-coin"><svg class="ico"><use href="#i-simit"/></svg><b id="shopWallet">0</b></span><span class="shop-coin f"><svg class="ico"><use href="#i-fish"/></svg><b id="shopFish">0</b></span></div>
     <div class="shop-grid" id="shopGrid"></div>
     <button class="btn primary" id="closeShop">Tamam</button>
-    <div class="shop-ask hidden" id="shopAsk">
-      <div class="shop-ask-box">
-        <h3>Emin misin?</h3>
-        <div class="shop-deal" id="shopDeal"></div>
-        <div class="shop-ask-btns"><button class="btn ghost" id="shopNo">Vazgeç</button><button class="btn primary" id="shopYes">Satın al</button></div>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -368,5 +361,13 @@
     });
   }
 </script>
+<!-- satın alma onayı: her harcamadan önce (mağaza, kostüm, yükseltme, seri kurtarma) -->
+<div class="shop-ask hidden" id="shopAsk">
+      <div class="shop-ask-box">
+        <h3>Emin misin?</h3>
+        <div class="shop-deal" id="shopDeal"></div>
+        <div class="shop-ask-btns"><button class="btn ghost" id="shopNo">Vazgeç</button><button class="btn primary" id="shopYes">Satın al</button></div>
+      </div>
+    </div>
 </body>
 </html>

@@ -1648,6 +1648,7 @@ function fillCountries() {
   sel.value = cur; $('ccFlag').src = flag(cur);
 }
 function openProfile() {
+  backTo.profilePanel = null;
   const inp = $('nameInput');
   inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false); fillCountries();
   show('profilePanel');
@@ -1662,7 +1663,9 @@ function saveName(inp = $('nameInput'), err = $('nameErr')) {
     show(err.id); vibrate(rude ? [60, 40, 60] : 40); if (rude) inp.value = ''; return;
   }
   if (inp.id === 'nameInput' && $('ccSelect').value !== ccOf()) setCountry($('ccSelect').value);
+  const wasOpen = !$('profilePanel').classList.contains('hidden');
   setName(v); inp.blur(); show('profilePanel', false); show('overName', false); renderNameChip(); sfx.gold();
+  if (wasOpen) goBack('profilePanel');
   if (!$('boardPanel').classList.contains('hidden')) renderBoard();
 }
 
@@ -1802,10 +1805,8 @@ function costumeAction() {
   if (!look.owned.includes(c.id)) {
     const price = priceOf(c);
     if (wallet < price) { sfx.click(); bump($('cosAct'), 'shake'); return; }
-    wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]); cosLock = performance.now() + 400; cosLockId = c.id;
-    look.on = withItem(look.on, c);
-    sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
-    $('wardNote').textContent = '';
+    sfx.click();
+    return askBuy(`<span class="gv">−${SIM_ICO}${fmt(price)}</span><i class="ar">➜</i><span class="gt nm">${esc(tr(c.name))}</span>`, () => buyCostume(c));
   } else if (look.on.includes(c.id)) {
     look.on = look.on.filter(id => id !== c.id); sfx.click();
   } else {
@@ -1814,6 +1815,16 @@ function costumeAction() {
   }
   store.set(KEY_LOOK, look); applyLook(); flapBurst = 1;
   renderWardrobe();
+}
+function buyCostume(c) {
+  const price = priceOf(c);
+  if (look.owned.includes(c.id) || wallet < price) return;
+  wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]); cosLock = performance.now() + 400; cosLockId = c.id;
+  look.on = withItem(look.on, c);
+  sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
+  $('wardNote').textContent = '';
+  store.set(KEY_LOOK, look); applyLook(); flapBurst = 1;
+  renderWardrobe(); $('titleWallet').textContent = fmt(wallet);
 }
 // ---------------- güçlendirme yükseltmeleri ----------------
 function renderUps() {
@@ -1837,6 +1848,12 @@ function buyUp(k, el) {
   const lv = ups[k], cost = UP_COST[lv];
   if (lv >= UP_COST.length) return;
   if (wallet < cost) { sfx.click(); bump(el, 'shake'); vibrate(30); return; }
+  sfx.click();
+  askBuy(`<span class="gv">−${SIM_ICO}${fmt(cost)}</span><i class="ar">➜</i><span class="gt nm">${esc(tr(POWER[k].name))} ${fmt(lv + 1)}</span>`, () => upgrade(k, lv));
+}
+function upgrade(k, lv) {
+  const cost = UP_COST[lv];
+  if (ups[k] !== lv || wallet < cost) return;
   wallet -= cost; ups[k]++; store.set(KEY_WALLET, wallet); store.set(KEY_UP, ups);
   sfx.power(); vibrate([20, 30, 20]);
   renderUps(); $('titleWallet').textContent = fmt(wallet);
@@ -1848,7 +1865,8 @@ function buyUp(k, el) {
 const SHOP_SELL = [250, 520, 810, 1120], SHOP_FISH = 300, SHOP_DAY = 3, KEY_SHOPDAY = 'simit-martisi-shopday';
 const shopBought = () => { const f = store.get(KEY_SHOPDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
 const SIM_ICO = '<svg class="ico"><use href="#i-simit"/></svg>', FISH_ICO = '<svg class="ico fish"><use href="#i-fish"/></svg>';
-let shopPend = '';
+let askFn = null; // onay penceresi: "Satın al" bunu çalıştırır (mağaza, kostüm, yükseltme, seri kurtarma)
+function askBuy(deal, fn) { askFn = fn; $('shopDeal').innerHTML = deal; show('shopAsk'); }
 function renderShop() {
   $('shopWallet').textContent = fmt(wallet); $('shopFish').textContent = fmt(fish);
   const box = $('shopGrid'); box.textContent = '';
@@ -1870,14 +1888,13 @@ function renderShop() {
 function shopTap(k, el) {
   const n = +k.slice(1) || 0, ok = k === 'b' ? wallet >= SHOP_FISH && shopBought() < SHOP_DAY : fish >= n;
   if (!ok) { sfx.click(); bump(el, 'shake'); vibrate(30); return; }
-  sfx.click(); shopPend = k;
+  sfx.click();
   const give = k === 'b' ? `${SIM_ICO}${fmt(SHOP_FISH)}` : `${FISH_ICO}${fmt(n)}`, get = k === 'b' ? `${FISH_ICO}1` : `${SIM_ICO}${fmt(SHOP_SELL[n - 1])}`;
-  $('shopDeal').innerHTML = `<span class="gv">−${give}</span>➜<span class="gt">+${get}</span>`;
-  show('shopAsk');
+  askBuy(`<span class="gv">−${give}</span>➜<span class="gt">+${get}</span>`, () => shopTrade(k));
 }
-function closeShopAsk() { shopPend = ''; show('shopAsk', false); }
-function shopDo() {
-  const k = shopPend; closeShopAsk(); if (!k) return;
+function closeShopAsk() { askFn = null; show('shopAsk', false); }
+function shopDo() { const f = askFn; closeShopAsk(); if (f) f(); }
+function shopTrade(k) {
   const n = +k.slice(1) || 0;
   if (k === 'b') { if (wallet < SHOP_FISH || shopBought() >= SHOP_DAY) return; wallet -= SHOP_FISH; setFish(fish + 1); store.set(KEY_SHOPDAY, { day: dayKey(), n: shopBought() + 1 }); }
   else { if (fish < n) return; setFish(fish - n); wallet += SHOP_SELL[n - 1]; }
@@ -2106,8 +2123,15 @@ function claimAch(id) {
   sfx.record(); vibrate([20, 30, 20]);
   renderAch(); renderMenuBadges(); $('titleWallet').textContent = fmt(wallet);
   const row = $('achList').children[ACH.findIndex(a => a.id === id)]; if (row) bump(row, 'got');
+  setTimeout(() => achFocus(true), 380); // topladığın parlasın, sonra sıradakine kay
 }
-function openAch() { if (state !== 'title') return; renderAch(); achTab('ach'); show('achPanel'); }
+// toplanmayı bekleyen en üstteki başarımı listenin başına getir: oyuncu aramak için kaydırmasın
+function achFocus(smooth) {
+  const box = $('achList'), b = box.querySelector('.ach-get'); if (!b || box.classList.contains('hidden')) return;
+  const top = b.closest('.ach').offsetTop - 4; // offsetTop: panelin açılış ölçeğinden etkilenmez (.achs position: relative)
+  box.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
+}
+function openAch() { if (state !== 'title') return; renderAch(); achTab('ach'); $('achList').scrollTop = 0; show('achPanel'); requestAnimationFrame(() => achFocus(true)); }
 
 // ---------------- günlük ödül ----------------
 // Her gün bir kez; üst üste gelinen günler ödülü büyütür, bir gün kaçarsa seri baştan başlar.
@@ -2132,10 +2156,17 @@ function dailyState() {
   const ago = daysAgo(s.last), n = s.streak || 0;
   return { ready: true, streak, lost: ago >= 2 && ago <= 3 && n >= 2 && n < DAILY.length ? n : 0 };
 }
-async function saveStreak() {
+function askStreak() {
   const d = dailyState();
   if (!d.lost || dailyBusy) return;
   if (wallet < STREAK_SAVE) { bump($('saveStreak'), 'shake'); vibrate(30); $('dailyNote').textContent = `${tr('Yeterli simit yok')}: ${fmt(STREAK_SAVE - wallet)}`; return; }
+  sfx.click();
+  askBuy(`<span class="gv">−${SIM_ICO}${fmt(STREAK_SAVE)}</span><i class="ar">➜</i><span class="gt nm">${esc(tr('Seriyi kurtar'))}</span>`, saveStreak);
+}
+async function saveStreak() {
+  const d = dailyState();
+  if (!d.lost || dailyBusy) return;
+  if (wallet < STREAK_SAVE) return;
   if (netOn()) {
     dailyBusy = true; const r = await dailyRpc('save'); dailyBusy = false;
     if (srvOk(r)) { setSrvDaily(r); if (!r.saved) return openDaily(); }
@@ -2523,8 +2554,8 @@ onBtn('cityPrev', () => stepCity(-1));
 onBtn('cityNext', () => stepCity(1));
 onBtn('missionsBtn', () => { openMissions(); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
-onBtn('roadOpen', () => { if (state !== 'title') return; show('profilePanel', false); renderRoad(); show('roadPanel'); });
-onBtn('closeRoad', () => { show('roadPanel', false); renderRank(); renderMenuBadges(); });
+onBtn('roadOpen', () => { if (state !== 'title') return; backTo.roadPanel = $('profilePanel').classList.contains('hidden') ? null : 'profilePanel'; show('profilePanel', false); renderRoad(); show('roadPanel'); });
+onBtn('closeRoad', () => { show('roadPanel', false); renderRank(); renderMenuBadges(); goBack('roadPanel'); });
 onBtn('achBtn', () => openAch());
 onBtn('closeAch', () => show('achPanel', false));
 onBtn('tabAch', () => achTab('ach'));
@@ -2544,11 +2575,18 @@ onBtn('modeDaily', () => pickMode('daily'));
 onBtn('closeDayRun', () => show('dayRunPanel', false));
 onBtn('boardBtn', () => { renderBoard(); show('boardPanel'); });
 onBtn('closeBoard', () => show('boardPanel', false));
-onBtn('profileBtn', () => { show('settings', false); openProfile(); });
+// geri zinciri: alt panelin Tamam/Kapat'ı bir adım geri götürür (Martı Yolu → Profil → Ayarlar); karartılmış boşluğa dokunmak hepsini kapatır
+const backTo = {};
+function goBack(id) {
+  const p = backTo[id]; backTo[id] = null;
+  if (!p || state !== 'title') return;
+  show(p); if (p === 'settings') syncToggles();
+}
+onBtn('profileBtn', () => { show('settings', false); openProfile(); backTo.profilePanel = 'settings'; });
 onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
 $('ccSelect').addEventListener('change', e => { $('ccFlag').src = flag(e.target.value); }); // ülke yalnız Kaydet'le kaydolur; Kapat'ta panel açılırken eski ülkeye döner
-onBtn('skipName', () => show('profilePanel', false));
+onBtn('skipName', () => { show('profilePanel', false); goBack('profilePanel'); });
 onBtn('overNameSave', () => saveName($('overNameInput'), $('overNameErr')));
 onBtn('inviteBtn', async () => {
   const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];
@@ -2563,7 +2601,7 @@ onBtn('tabWheel', () => dailyTab('wheel'));
 onBtn('spinFish', () => spinWheel('f'));
 onBtn('spinSimit', () => spinWheel('s'));
 onBtn('spinFree', () => spinWheel('free'));
-onBtn('saveStreak', () => saveStreak());
+onBtn('saveStreak', () => askStreak());
 onBtn('closeWheel', () => { show('dailyPanel', false); $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); renderMenuBadges(); });
 onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('cosAct', () => costumeAction());
@@ -2575,7 +2613,7 @@ onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 // panelin dışına (karartılmış boşluğa) dokunmak paneli kapatır; kendi kapatma düğmesine basılmış gibi, oyun başlamaz
 for (const [panel, btn] of Object.entries({ roadPanel: 'closeRoad', missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', shopPanel: 'closeShop', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' }))
-  $(panel).addEventListener('click', e => { if (e.target === e.currentTarget) { e.stopPropagation(); $(btn).click(); } });
+  $(panel).addEventListener('click', e => { if (e.target === e.currentTarget) { e.stopPropagation(); for (const k in backTo) backTo[k] = null; $(btn).click(); } });
 // paylaşım kartı: o anki sahnenin karesi üstüne puan, simit, metre ve şehir (1080x1080). Telefonda görsel olarak paylaşılır.
 function scoreCard() {
   syncBatches(scene, camera); renderer.render(scene, camera); // çizim tamponu korunmuyor: aynı görevde çizip hemen kopyala
