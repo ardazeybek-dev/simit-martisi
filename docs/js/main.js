@@ -1206,7 +1206,8 @@ function renderRoad() {
     if (ready) { const b = document.createElement('button'); b.className = 'road-get'; b.textContent = tr('Al'); b.addEventListener('click', e => { e.stopPropagation(); claimRoad(lv); }); r.appendChild(b); }
     else if (done && ROAD_COS[lv] && look.owned.includes(ROAD_COS[lv])) { const b = document.createElement('button'); b.className = 'road-get see'; b.textContent = tr('Gör'); b.addEventListener('click', e => { e.stopPropagation(); seeCostume(ROAD_COS[lv]); }); r.appendChild(b); }
     else if (done) r.innerHTML = '<span class="road-ok">✓</span>';
-    if (!focus && (ready || !done)) { focus = d; if (!done) d.classList.add('now'); }
+    if (!focus && (ready || !done)) focus = d;
+    if (!done && !box.querySelector('.now')) d.classList.add('now'); // sıradaki seviye, alınacak ödül olsa da işaretli
     box.appendChild(d);
   }
   if (focus) requestAnimationFrame(() => { box.scrollTop = Math.max(0, focus.offsetTop - box.offsetTop - 6); });
@@ -1591,7 +1592,7 @@ async function renderBoard() {
   if (seq !== boardSeq) return;
   if (!b) return boardMsg(tr('Bağlantı yok'), tr('Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.'), bestLine);
   $('boardInfo').textContent = tr('{n} oyuncu').replace('{n}', fmt(b.total)); // kalıcı sıralama: herkesin en iyi skoru, hafta sıfırlanmaz
-  const li = (r, cc, name, score, cls = '') => `<li class="${cls}"><b>${r ? '#' + fmt(r) : '—'}</b><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`;
+  const li = (r, cc, name, score, cls = '') => `<li class="${cls}${r >= 1 && r <= 3 ? ' rk' + r : ''}"><b>${r ? '#' + fmt(r) : '—'}</b><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`;
   const top = b.top || [], me = b.me;
   let html = top.map(t => li(t.rank, t.me ? ccOf() : t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '')).join('');
   if (!top.length) html = `<li class="gap msg">${tr('Henüz kimse uçmadı. İlk sen ol!')}</li>`;
@@ -1711,7 +1712,12 @@ function renderWardrobe() {
   else if (!own) act.innerHTML = `${tr('Satın al')} <svg class="ico"><use href="#i-simit"/></svg>${fmt(priceOf(c))}`;
   else act.textContent = look.on.includes(c.id) ? tr('Çıkar') : tr('Giy');
 }
-// martının altındaki üç cam kutu: her sekmede giyili olanlar; parçaya dokununca çıkar, kutuya dokununca o sekme açılır
+const PART_SVG = {
+  eyes: '<svg viewBox="0 0 24 24"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>',
+  face: '<svg viewBox="0 0 24 24"><path d="M12 11c-2-3-6-3-8-1-1 1-2 2-3 2 2 3 6 3 8 1 1-1 2-2 3-2s2 1 3 2c2 2 6 2 8-1-1 0-2-1-3-2-2-2-6-2-8 1z" fill="currentColor"/></svg>',
+  neck: '<svg viewBox="0 0 24 24"><path d="M4 4c0 7 4 11 8 11s8-4 8-11" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="18" r="3" fill="currentColor"/></svg>',
+};
+// martının altındaki üç kutu: her sekmede giyili olanlar; parçaya dokununca çıkar, kutuya dokununca o sekme açılır
 function renderSlots() {
   const row = $('wardSlots'); row.textContent = '';
   for (const t of ['kiyafet', 'deri', 'sapka']) {
@@ -1720,8 +1726,12 @@ function renderSlots() {
     d.innerHTML = '<small></small><span class="slot-items"></span>';
     d.querySelector('small').textContent = document.querySelector(`#wardTabs [data-tab="${t}"]`).textContent;
     const box = d.querySelector('.slot-items');
-    if (!on.length) box.innerHTML = '<i class="slot-plus">+</i>';
-    for (const id of on) {
+    // Kıyafet üç ayrı yuva: göz, surat (bıyık/emzik), boyun (atkı/kolye); her birine bir parça. Boş yuvada o bölgenin silik ikonu durur
+    const parts = t === 'kiyafet' ? ['eyes', 'face', 'neck'] : null;
+    if (parts) d.classList.add('parts');
+    if (!on.length && !parts) box.innerHTML = '<i class="slot-plus">+</i>';
+    for (const id of parts ? parts.map(pt => on.find(x => slotOf(x) === pt) || pt) : on) {
+      if (parts && parts.includes(id)) { const ph = document.createElement('i'); ph.className = 'slot-plus slot-part'; ph.innerHTML = PART_SVG[id]; box.appendChild(ph); continue; }
       const b = document.createElement('button'); b.className = 'slot-it'; b.setAttribute('aria-label', tr(COSTUMES.find(x => x.id === id).name));
       b.innerHTML = `${COSTUME_SVG[id]}<i class="slot-x">×</i>`;
       b.addEventListener('click', e => { e.stopPropagation(); look.on = look.on.filter(x => x !== id); if (cosSel === id) cosSel = null; store.set(KEY_LOOK, look); applyLook(); sfx.click(); flapBurst = 1; renderWardrobe(); });
