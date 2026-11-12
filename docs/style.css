@@ -981,11 +981,11 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
    yazılar tabela sarısı, ilk üçün paleti madalya renginde; senin şeridinin solundaki yeşil lamba yanıp söner (sen buradasın) */
 #boardPanel .board { gap: 3px; padding: 8px; border-radius: 10px; background: #15181c; font-variant-numeric: tabular-nums;
   box-shadow: inset 0 0 0 2px #2b3036, inset 0 2px 8px rgba(0, 0, 0, .8), 0 3px 0 rgba(4, 30, 36, .55); }
-#boardPanel .board li { position: relative; grid-template-columns: 42px 24px 26px 1fr auto; gap: 6px; padding: 6px 10px 6px 8px; border-radius: 3px; background: #22272d; color: #f2c94c; text-shadow: none; letter-spacing: .03em; }
+#boardPanel .board li { position: relative; grid-template-columns: 38px 22px 24px 1fr auto; gap: 5px; padding: 6px 8px 6px 6px; border-radius: 3px; background: #22272d; color: #f2c94c; text-shadow: none; letter-spacing: .03em; }
 #boardPanel .board li b { position: relative; display: grid; place-items: center; height: 26px; border-radius: 3px; font-size: 14px; color: #f2c94c; opacity: 1;
   background: linear-gradient(#323840 calc(50% - .5px), #0d0f12 0 calc(50% + .5px), #272c32 0); box-shadow: inset 0 0 0 1px #0d0f12; } /* palet yarıları arasındaki ince yarık yazının arkasında */
-#boardPanel .board li span { color: #f3ecdc; }
-#boardPanel .board li em { color: #f2c94c; }
+#boardPanel .board li span { color: #f3ecdc; font-size: 14px; line-height: 1.12; letter-spacing: 0; white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; } /* uzun ad kesilmez, iki satıra iner */
+#boardPanel .board li em { color: #f2c94c; font-size: 14px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 #boardPanel .board li.rk1 b { color: #2a1d00; background: linear-gradient(#ffdf6e calc(50% - .5px), rgba(0, 0, 0, .35) 0 calc(50% + .5px), #f0c43a 0); }
 #boardPanel .board li.rk2 b { color: #1d2228; background: linear-gradient(#e4e8ee calc(50% - .5px), rgba(0, 0, 0, .35) 0 calc(50% + .5px), #c9d0d9 0); }
 #boardPanel .board li.rk3 b { color: #2a1406; background: linear-gradient(#eba673 calc(50% - .5px), rgba(0, 0, 0, .35) 0 calc(50% + .5px), #d48850 0); }
