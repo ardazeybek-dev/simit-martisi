@@ -1643,14 +1643,12 @@ function closeWardrobe() {
 // sekmeler: Kıyafet (göz, boyun, yüz), Deri (tüy rengi), Şapka (baş)
 const tabOf = c => (c.slot === 'head' ? 'sapka' : c.slot === 'body' ? 'deri' : 'kiyafet');
 let wardTab = 'kiyafet';
-for (const b of document.querySelectorAll('#wardTabs button')) b.addEventListener('click', e => { e.stopPropagation(); wardTab = b.dataset.tab; sfx.click(); renderWardrobe(); });
+// sekme değişince önizleme bırakılır: alttaki düğme yalnız bu sekmede dokunulan kostümle çalışır
+function setWardTab(t) { if (wardTab === t) return; wardTab = t; if (cosSel) { cosSel = null; applyLook(); } $('wardNote').textContent = ''; sfx.click(); renderWardrobe(); }
+for (const b of document.querySelectorAll('#wardTabs button')) b.addEventListener('click', e => { e.stopPropagation(); setWardTab(b.dataset.tab); });
 function renderWardrobe() {
   $('walletN').textContent = fmt(wallet);
-  for (const b of document.querySelectorAll('#wardTabs button')) { // sekmede takılı parça sayısı: diğer sekmedeki parçalar da üstünde, kombin görünsün
-    b.classList.toggle('on', b.dataset.tab === wardTab);
-    const n = look.on.filter(id => tabOf(COSTUMES.find(x => x.id === id)) === b.dataset.tab).length;
-    if (n) b.dataset.n = n; else delete b.dataset.n;
-  }
+  for (const b of document.querySelectorAll('#wardTabs button')) b.classList.toggle('on', b.dataset.tab === wardTab);
   renderSlots();
   const box = $('costumes'); box.textContent = '';
   for (const c of COSTUMES) {
@@ -1698,7 +1696,7 @@ function renderSlots() {
       b.addEventListener('click', e => { e.stopPropagation(); look.on = look.on.filter(x => x !== id); if (cosSel === id) cosSel = null; store.set(KEY_LOOK, look); applyLook(); sfx.click(); flapBurst = 1; renderWardrobe(); });
       box.appendChild(b);
     }
-    d.addEventListener('click', e => { e.stopPropagation(); if (wardTab !== t) { wardTab = t; sfx.click(); renderWardrobe(); } });
+    d.addEventListener('click', e => { e.stopPropagation(); setWardTab(t); });
     row.appendChild(d);
   }
 }
@@ -2870,7 +2868,7 @@ function frame() {
       }
       if (comboT > 0) { comboT -= dt; if (comboT <= 0) combo = 0; }
       if ((cryT -= dt) < 0) { cryT = rand(6, 12); sfx.cry(0.08 + Math.random() * 0.05); }
-      for (const k of Object.keys(pw)) if (pw[k] > 0) { pw[k] -= dt; if (pw[k] <= 0) { pw[k] = 0; renderPowers(); } }
+      for (const k of Object.keys(pw)) if (pw[k] > 0) { pw[k] -= k === 'tea' ? dt / teaK : dt; if (pw[k] <= 0) { pw[k] = 0; renderPowers(); } } // çayın kendi süresi gerçek zamanla iner, diğer güçler yavaşlar
       if (invuln > 0) invuln -= dt;
       if (smokeT > 0) smokeT -= dt;
       // öğretici

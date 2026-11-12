@@ -51,7 +51,7 @@ function stopServer(child) {
 async function main() {
   const errors = [];
   const server = await startServer();
-  const browser = await playwright.chromium.launch({ headless: false });
+  const browser = await playwright.chromium.launch({ headless: true, args: ['--mute-audio', '--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'] }); // pencere açmaz, ses çıkarmaz; gerçek ekran kartıyla tam hız
   try {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
     await ctx.route(/supabase/, r => r.abort());

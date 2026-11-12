@@ -687,7 +687,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .earn-rate { display: block; width: 100%; margin-top: 3px; font-size: 11px; opacity: .6; font-weight: 600; }
 .ward-tabs { display: flex; gap: 4px; margin: -4px 0 10px; padding: 3px; border-radius: 12px; background: rgba(0, 0, 0, .18); }
 .ward-tabs button { position: relative; flex: 1; padding: 7px 4px; border: 0; border-radius: 9px; background: none; color: inherit; font: inherit; font-weight: 800; font-size: 14px; opacity: .65; cursor: pointer; }
-.ward-tabs button[data-n]::after { content: attr(data-n); position: absolute; top: -5px; right: 2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 99px; background: #ffd35a; color: #2a1503; font-size: 11px; line-height: 16px; font-weight: 900; box-sizing: border-box; }
 .ward-tabs button.on { background: rgba(255, 255, 255, .16); opacity: 1; box-shadow: 0 1px 0 rgba(255, 255, 255, .15) inset; }
 .lang-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 12px; font-weight: 700; }
 .lang-row select { flex: 0 1 60%; padding: 9px 34px 9px 12px; border-radius: 12px; border: 2px solid var(--line); color: inherit; font: inherit; font-weight: 700;
@@ -747,11 +746,11 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .ward-slot:active { transform: scale(.96); }
 .ward-slot.cur { border-color: rgba(255, 211, 90, .85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 0 0 2px rgba(255, 211, 90, .35), 0 8px 22px rgba(0, 0, 0, .25); }
 .ward-slot small { font-size: 15px; font-weight: 700; letter-spacing: .3px; text-shadow: 0 1px 4px rgba(0, 0, 0, .45); }
-.slot-items { display: flex; justify-content: center; align-items: center; gap: 5px; min-height: 54px; flex-wrap: wrap; }
-.slot-it { position: relative; width: 52px; height: 52px; padding: 5px; border-radius: 15px; background: rgba(255, 255, 255, .16); }
+.slot-items { display: flex; justify-content: center; align-items: center; gap: 5px; min-height: 62px; flex-wrap: wrap; }
+.slot-it { position: relative; width: 60px; height: 60px; padding: 5px; border-radius: 15px; background: rgba(255, 255, 255, .16); }
 .slot-it svg { width: 100%; height: 100%; }
 .slot-x { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: var(--red); color: #fff; font-size: 15px; font-style: normal; font-weight: 800; line-height: 1; }
-.slot-plus { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 15px; border: 1.5px dashed rgba(255, 255, 255, .5); font-style: normal; font-size: 22px; font-weight: 700; opacity: .7; }
-@media (orientation: portrait) { .slot-it, .slot-plus { width: 44px; height: 44px; } .slot-items { min-height: 44px; } }
+.slot-plus { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 15px; border: 1.5px dashed rgba(255, 255, 255, .5); font-style: normal; font-size: 22px; font-weight: 700; opacity: .7; }
+@media (orientation: portrait) { .slot-it, .slot-plus { width: 52px; height: 52px; } .slot-items { min-height: 52px; } }
 .cos-new { background: var(--teal); right: auto; left: 50%; transform: translateX(-50%); }
 .road-get.see { background: linear-gradient(#8ff0e2, var(--teal)); box-shadow: 0 3px 0 #17786d; color: #06302a; animation: none; }
