@@ -982,8 +982,12 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #wardSlots .ward-slot { padding: 10px 8px 11px; gap: 8px; }
 #wardSlots .ward-slot small { font-size: 15px; padding: 2px 12px 1px; }
 #wardSlots .slot-items { min-height: 76px; }
-#wardSlots .slot-it, #wardSlots .slot-plus { width: 68px; height: 68px; }
-@media (orientation: portrait) { #wardSlots .slot-it, #wardSlots .slot-plus { width: 64px; height: 64px; } #wardSlots .slot-items { min-height: 72px; } }
+/* giyili parçalar tek satırda: kutu boyu sabit, parça çoğaldıkça küçülür (alt alta dizilip kutu yukarı uzamasın, martıyı kapatmasın) */
+#wardSlots .slot-items { flex-wrap: nowrap; justify-content: center; height: 76px; min-height: 0; gap: 4px; }
+#wardSlots .slot-plus { width: 64px; height: 64px; }
+#wardSlots .slot-it { flex: 0 1 64px; width: auto; height: auto; min-width: 0; max-height: 64px; aspect-ratio: 1; padding: 4px; }
+#wardSlots .slot-it .slot-x { width: 18px; height: 18px; top: -5px; right: -5px; font-size: 13px; }
+@media (orientation: portrait) { #wardSlots .slot-items { height: 70px; } #wardSlots .slot-plus { width: 58px; height: 58px; } #wardSlots .slot-it { flex-basis: 58px; max-height: 58px; } }
 #dayRunPanel .mode-card, #settings .profile-row, #wheelBox .btn, #dailyPanel .day { text-shadow: none; }
 
 /* Martı Yolu = deniz haritasında sefer rotası: açık mavi harita kağıdı (enlem çizgileri); solda boydan boya rota çizgisi, her seviye bir durak.
@@ -1027,3 +1031,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   background-image: linear-gradient(rgba(43, 63, 52, .35), rgba(43, 63, 52, .35)); background-size: calc(100% - 28px) 2px; background-position: 14px calc(100% - 12px); background-repeat: no-repeat; }
 #profilePanel .cc-flag { border-radius: 3px; box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, .3); }
 #roadPanel .road-list * { text-shadow: none; }
+/* çok parça giyilen kutu daha geniş: üç parça yan yana okunur kalsın */
+#wardSlots .ward-slot:has(.slot-it + .slot-it) { flex: 1.5; }
+#wardSlots .ward-slot:has(.slot-it + .slot-it + .slot-it) { flex: 2; }
