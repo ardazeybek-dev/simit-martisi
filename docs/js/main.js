@@ -1146,7 +1146,7 @@ const KEY_CARRY = 'simit-martisi-carry';
 let carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0);
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
-let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishTry = 0, fishSpawn = 0.12, fishCatch = 0.75, fishEarly = false;
+let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishTry = 0, fishSpawn = 0.12, fishCatch = 0.40, fishEarly = false;
 const fishCost = () => 2 ** fishRev;
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // balık farmı olmasın: uçuşun ilk FISH_MIN_M metresinde balık çıkmaz (aç-kap uçuşlar kazanmaz), uçuşlardan günde en çok FISH_DAY balık
