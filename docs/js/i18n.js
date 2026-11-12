@@ -978,6 +978,9 @@
   Object.assign(EN, {"Haftalık ödül": "Weekly prize", "Her hafta, o hafta uçmuş herkes sırasına göre ödül alır.": "Every week, everyone who flew that week gets a prize by their rank.", "Sonraki ödül: {t}": "Next prize: {t}", "Diğerleri": "Everyone else", "Hediye geldi: {n} simit, {f} balık!": "Gift arrived: {n} simits, {f} fish!", "Haftalık ödül: {r}. sıra!": "Weekly prize: #{r}!", "+{n} simit": "+{n} simits", "+{f} balık": "+{f} fish"});
   Object.assign(DE, {"Haftalık ödül": "Wochenpreis", "Her hafta, o hafta uçmuş herkes sırasına göre ödül alır.": "Jede Woche bekommt jeder, der in der Woche geflogen ist, einen Preis nach seinem Rang.", "Sonraki ödül: {t}": "Nächster Preis: {t}", "Diğerleri": "Alle anderen", "Hediye geldi: {n} simit, {f} balık!": "Geschenk: {n} Simits, {f} Fische!", "Haftalık ödül: {r}. sıra!": "Wochenpreis: Platz {r}!", "+{n} simit": "+{n} Simits", "+{f} balık": "+{f} Fische"});
   Object.assign(ES, {"Haftalık ödül": "Premio semanal", "Her hafta, o hafta uçmuş herkes sırasına göre ödül alır.": "Cada semana, todos los que volaron esa semana reciben un premio según su puesto.", "Sonraki ödül: {t}": "Próximo premio: {t}", "Diğerleri": "Los demás", "Hediye geldi: {n} simit, {f} balık!": "¡Regalo: {n} simits y {f} peces!", "Haftalık ödül: {r}. sıra!": "Premio semanal: ¡puesto {r}!", "+{n} simit": "+{n} simits", "+{f} balık": "+{f} peces"});
+  Object.assign(EN, {"Vazgeç": "Cancel", "Günlük": "Daily"});
+  Object.assign(DE, {"Vazgeç": "Abbrechen", "Günlük": "Täglich"});
+  Object.assign(ES, {"Vazgeç": "Cancelar", "Günlük": "Diario"});
   var TABLES = { en: EN, de: DE, es: ES };
   // dil menüsünde kendi adıyla görünür; sırası menünün sırası
   var NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', ro: 'Română',

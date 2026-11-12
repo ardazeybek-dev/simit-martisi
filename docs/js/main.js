@@ -1608,8 +1608,8 @@ const WEEK_PRIZE = [['1.', 3000, 3], ['2.', 2000, 2], ['3.', 1500, 1], ['4–10.
 const nextPrizeAt = (now = new Date()) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((7 - now.getUTCDay()) % 7 || 7)));
 function renderPrize() {
   const sim = '<svg class="ico"><use href="#i-simit"/></svg>', fi = '<svg class="ico"><use href="#i-fish"/></svg>';
-  const when = nextPrizeAt().toLocaleString(window.I18N.locale, { weekday: 'long', hour: '2-digit', minute: '2-digit' });
-  $('boardPrize').innerHTML = `<h3>${esc(tr('Haftalık ödül'))}</h3><p>${esc(tr('Her hafta, o hafta uçmuş herkes sırasına göre ödül alır.'))}</p><ul>` +
+  const when = nextPrizeAt().toLocaleString(window.I18N.locale, { weekday: 'long', timeZone: 'UTC' }) + ' 00:00 UTC'; // saat dilimine çevrilmez: herkes aynı yazıyı görür
+  $('boardPrize').innerHTML = `<h3>${esc(tr('Haftalık ödül'))}</h3><ul>` +
     WEEK_PRIZE.map(([r, s, f]) => `<li><b>${esc(r || tr('Diğerleri'))}</b>${sim}${fmt(s)}${f ? `<span class="f">${fi}</span>${fmt(f)}` : ''}</li>`).join('') +
     `</ul><p class="next">${esc(tr('Sonraki ödül: {t}').replace('{t}', when))}</p>`;
 }
@@ -1847,34 +1847,43 @@ function buyUp(k, el) {
 // Alış (300) en iyi satıştan (280) pahalı: al-sat ile simit basılamaz. Çarkta 1 balık = 280 simit.
 const SHOP_SELL = [250, 520, 810, 1120], SHOP_FISH = 300, SHOP_DAY = 3, KEY_SHOPDAY = 'simit-martisi-shopday';
 const shopBought = () => { const f = store.get(KEY_SHOPDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
-let shopArm = '', shopArmT = 0;
-function disarmShop() { clearTimeout(shopArmT); shopArmT = 0; shopArm = ''; }
+const SIM_ICO = '<svg class="ico"><use href="#i-simit"/></svg>', FISH_ICO = '<svg class="ico fish"><use href="#i-fish"/></svg>';
+let shopPend = '';
 function renderShop() {
   $('shopWallet').textContent = fmt(wallet); $('shopFish').textContent = fmt(fish);
-  const box = $('shopSell'); box.textContent = '';
-  SHOP_SELL.forEach((get, i) => {
-    const n = i + 1, b = document.createElement('button'), bonus = Math.round((get / n / SHOP_SELL[0] - 1) * 100);
-    b.className = 'shop-t' + (fish < n ? ' poor' : '') + (shopArm === 's' + n ? ' arm' : '');
-    b.innerHTML = `<span class="fishes">${'<svg class="ico"><use href="#i-fish"/></svg>'.repeat(n)}</span><span class="gets"><svg class="ico"><use href="#i-simit"/></svg>${shopArm === 's' + n ? tr('Emin misin?') : fmt(get)}</span>` + (bonus > 0 ? `<i class="tag">+%${bonus}</i>` : '');
-    b.addEventListener('click', e => { e.stopPropagation(); shopTap('s' + n, b); });
+  const box = $('shopGrid'); box.textContent = '';
+  const card = (k, cls, html, poor, off = false) => {
+    const b = document.createElement('button');
+    b.className = 'shop-it' + cls + (poor ? ' poor' : ''); b.innerHTML = html; b.disabled = off;
+    b.addEventListener('click', e => { e.stopPropagation(); shopTap(k, b); });
     box.appendChild(b);
+  };
+  // kartın üstü = ne alırsın, alttaki krem şerit = ne ödersin
+  SHOP_SELL.forEach((get, i) => {
+    const n = i + 1, bonus = Math.round((get / n / SHOP_SELL[0] - 1) * 100);
+    card('s' + n, '', `<span class="top"><span class="box">${SIM_ICO}</span><span class="nm">+${fmt(get)}</span></span><span class="pay">${FISH_ICO}${fmt(n)}</span>` + (bonus > 0 ? `<i class="rib">+%${bonus}</i>` : ''), fish < n);
   });
-  const left = SHOP_DAY - shopBought(), bb = $('shopBuy');
-  $('shopLeft').textContent = tr('Bugün {n}/{m} hak').replace('{n}', fmt(left)).replace('{m}', fmt(SHOP_DAY));
-  bb.innerHTML = shopArm === 'b' ? tr('Emin misin?') : `<svg class="ico"><use href="#i-simit"/></svg>${fmt(SHOP_FISH)}`;
-  bb.classList.toggle('arm', shopArm === 'b'); bb.classList.toggle('poor', wallet < SHOP_FISH || left <= 0); bb.disabled = left <= 0;
+  const left = SHOP_DAY - shopBought();
+  card('b', ' wide', `<span class="top"><span class="box fishy">${FISH_ICO}<i>×1</i></span><span class="nm">+1<small>${esc(tr('Bugün {n}/{m} hak').replace('{n}', fmt(left)).replace('{m}', fmt(SHOP_DAY)))}</small></span></span><span class="pay">${SIM_ICO}${fmt(SHOP_FISH)}</span><i class="rib">${esc(tr('Günlük'))}</i>`, wallet < SHOP_FISH, left <= 0);
 }
-// iki dokunuş: ilki "Emin misin?", ikincisi takası yapar (yanlışlıkla balık harcanmasın)
+// alım tek dokunuşla olmaz: kart onay penceresi açar, "Satın al" takası yapar
 function shopTap(k, el) {
   const n = +k.slice(1) || 0, ok = k === 'b' ? wallet >= SHOP_FISH && shopBought() < SHOP_DAY : fish >= n;
   if (!ok) { sfx.click(); bump(el, 'shake'); vibrate(30); return; }
-  if (shopArm !== k) { sfx.click(); shopArm = k; clearTimeout(shopArmT); shopArmT = setTimeout(() => { shopArm = ''; renderShop(); }, 2500); renderShop(); return; }
-  disarmShop();
-  if (k === 'b') { wallet -= SHOP_FISH; setFish(fish + 1); store.set(KEY_SHOPDAY, { day: dayKey(), n: shopBought() + 1 }); }
-  else { setFish(fish - n); wallet += SHOP_SELL[n - 1]; }
+  sfx.click(); shopPend = k;
+  const give = k === 'b' ? `${SIM_ICO}${fmt(SHOP_FISH)}` : `${FISH_ICO}${fmt(n)}`, get = k === 'b' ? `${FISH_ICO}1` : `${SIM_ICO}${fmt(SHOP_SELL[n - 1])}`;
+  $('shopDeal').innerHTML = `<span class="gv">−${give}</span>➜<span class="gt">+${get}</span>`;
+  show('shopAsk');
+}
+function closeShopAsk() { shopPend = ''; show('shopAsk', false); }
+function shopDo() {
+  const k = shopPend; closeShopAsk(); if (!k) return;
+  const n = +k.slice(1) || 0;
+  if (k === 'b') { if (wallet < SHOP_FISH || shopBought() >= SHOP_DAY) return; wallet -= SHOP_FISH; setFish(fish + 1); store.set(KEY_SHOPDAY, { day: dayKey(), n: shopBought() + 1 }); }
+  else { if (fish < n) return; setFish(fish - n); wallet += SHOP_SELL[n - 1]; }
   store.set(KEY_WALLET, wallet);
   sfx.power(); vibrate([20, 30, 20]);
-  renderShop(); bump($('shopPanel').querySelector('.wallet'), 'bump');
+  renderShop(); bump($('shopWallet').parentNode, 'bump'); bump($('shopFish').parentNode, 'bump');
   $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
 }
 // ---------------- görevler ----------------
@@ -2522,9 +2531,11 @@ onBtn('tabAch', () => achTab('ach'));
 onBtn('tabBdg', () => achTab('bdg'));
 onBtn('upsBtn', () => { renderUps(); show('upPanel'); });
 onBtn('boardHelp', () => togglePrize());
-onBtn('shopBtn', () => { disarmShop(); renderShop(); show('shopPanel'); });
-$('shopBuy').addEventListener('click', e => { e.stopPropagation(); shopTap('b', $('shopBuy')); });
-onBtn('closeShop', () => { disarmShop(); show('shopPanel', false); $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); });
+onBtn('shopBtn', () => { closeShopAsk(); renderShop(); show('shopPanel'); });
+onBtn('shopNo', () => closeShopAsk());
+$('shopYes').addEventListener('click', e => { e.stopPropagation(); shopDo(); });
+$('shopAsk').addEventListener('click', e => { e.stopPropagation(); if (e.target === e.currentTarget) closeShopAsk(); });
+onBtn('closeShop', () => { closeShopAsk(); show('shopPanel', false); $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); });
 onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
 onBtn('dailyBtn', () => openDaily());
 onBtn('modeBtn', () => openDayRun());

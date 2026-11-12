@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.87.0">
+<meta name="app-version" content="2.88.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -183,13 +183,22 @@
 </section>
 
 <section id="shopPanel" class="screen modal hidden">
-  <div class="card">
-    <div class="sheet-head"><h2>Mağaza</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="shopWallet">0</b><svg class="ico"><use href="#i-fish"/></svg><b id="shopFish">0</b></div></div>
-    <p class="shop-h">Balığı simite çevir</p>
-    <div class="shop-grid" id="shopSell"></div>
-    <p class="shop-h">Simitle balık al</p>
-    <div class="up shop-buy"><span class="up-i"><svg class="ico"><use href="#i-fish"/></svg></span><div class="up-m"><b>+1</b><small id="shopLeft"></small></div><button class="up-buy" id="shopBuy"></button></div>
+  <div class="card shop-card">
+    <div class="shop-awning"></div>
+    <div class="shop-head">
+      <h2>Mağaza</h2>
+      <div class="shop-art" aria-hidden="true"><svg class="ico a1"><use href="#i-simit"/></svg><svg class="ico a2"><use href="#i-fish"/></svg><svg class="ico a3"><use href="#i-simit"/></svg></div>
+    </div>
+    <div class="shop-bar"><span class="shop-coin"><svg class="ico"><use href="#i-simit"/></svg><b id="shopWallet">0</b></span><span class="shop-coin f"><svg class="ico"><use href="#i-fish"/></svg><b id="shopFish">0</b></span></div>
+    <div class="shop-grid" id="shopGrid"></div>
     <button class="btn primary" id="closeShop">Tamam</button>
+    <div class="shop-ask hidden" id="shopAsk">
+      <div class="shop-ask-box">
+        <h3>Emin misin?</h3>
+        <div class="shop-deal" id="shopDeal"></div>
+        <div class="shop-ask-btns"><button class="btn ghost" id="shopNo">Vazgeç</button><button class="btn primary" id="shopYes">Satın al</button></div>
+      </div>
+    </div>
   </div>
 </section>
 
