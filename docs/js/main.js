@@ -1169,9 +1169,9 @@ function renderRoad() {
     const d = document.createElement('div');
     d.className = 'road-row' + (done ? ' done' : '') + (ready ? ' ready' : done ? ' got' : '') + (big ? ' big' : ''); // got: alınmış, yeşil
     d.innerHTML = `<b class="road-lv">${fmt(lv)}</b><span class="road-m"><b>${p ? p.map(roadPrizeHtml).join('') : ''}</b><small></small></span><span class="road-r"></span>`;
-    d.querySelector('small').textContent = rankName(lv); // her satırda o seviyenin unvanı; yeni unvan altın renkli
-    if (title) d.classList.add('newrank');
+    d.querySelector('small').textContent = title ? tr(title[1]) : '';
     if (!p) d.querySelector('.road-m b').remove();
+    if (!title) d.querySelector('small').remove();
     const r = d.querySelector('.road-r');
     if (ready) { const b = document.createElement('button'); b.className = 'road-get'; b.textContent = tr('Al'); b.addEventListener('click', e => { e.stopPropagation(); claimRoad(lv); }); r.appendChild(b); }
     else if (done) r.innerHTML = '<span class="road-ok">✓</span>';
