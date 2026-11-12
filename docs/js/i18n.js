@@ -5,6 +5,16 @@
 (function () {
   'use strict';
   var EN = {
+    "Martı Yolu": "Gull Road",
+    "Her simit ve her 20 m seni yolda ilerletir.": "Every simit and every 20 m move you along the road.",
+    "Sonraki seviye": "Next level",
+    "Balıkçı şapkası": "Fisher hat",
+    "Can simidi": "Life ring",
+    "Korsan şapkası": "Pirate hat",
+    "Balık yakalama şansı +%10": "Fish catch chance +10%",
+    "Açlık %20 yavaş bastırır": "Hunger sets in 20% slower",
+    "Altın simitler cüzdana +1 simit": "Golden simits give +1 simit to the wallet",
+    "Al": "Claim",
     "Sonraki uçuş için": "For the next flight",
     "Sonraki uçuşa bununla başlarsın.": "Your next flight starts with it.",
     "Günün uçuşu": "Daily flight",
@@ -172,6 +182,15 @@
   };
   // DE / ES: aynı anahtarlar; {to} yalnız Türkçede (yönelme ekli iskele adı), diğer diller {s} kullanır
   var DE = {
+    "Martı Yolu": "Möwenweg",
+    "Her simit ve her 20 m seni yolda ilerletir.": "Jeder Simit und alle 20 m bringen dich auf dem Weg voran.",
+    "Sonraki seviye": "Nächstes Level",
+    "Balıkçı şapkası": "Fischerhut",
+    "Can simidi": "Rettungsring",
+    "Korsan şapkası": "Piratenhut",
+    "Balık yakalama şansı +%10": "Fangchance für Fische +10%",
+    "Açlık %20 yavaş bastırır": "Hunger kommt 20% langsamer",
+    "Altın simitler cüzdana +1 simit": "Goldene Simits bringen +1 Simit in die Börse",
     "Sonraki uçuş için": "Für den nächsten Flug",
     "Sonraki uçuşa bununla başlarsın.": "Dein nächster Flug startet damit.",
     "Günün uçuşu": "Tagesflug",
@@ -505,6 +524,15 @@
     "Simit Martısı'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?": "Ich hab in Simit-Möwe {s} Punkte geholt und {n} Simits geschnappt! Schaffst du mehr?",
   };
   var ES = {
+    "Martı Yolu": "Ruta de la gaviota",
+    "Her simit ve her 20 m seni yolda ilerletir.": "Cada simit y cada 20 m te hacen avanzar en la ruta.",
+    "Sonraki seviye": "Siguiente nivel",
+    "Balıkçı şapkası": "Sombrero de pescador",
+    "Can simidi": "Salvavidas",
+    "Korsan şapkası": "Sombrero pirata",
+    "Balık yakalama şansı +%10": "Probabilidad de atrapar peces +10%",
+    "Açlık %20 yavaş bastırır": "El hambre llega un 20% más lento",
+    "Altın simitler cüzdana +1 simit": "Los simits dorados dan +1 simit a la cartera",
     "Sonraki uçuş için": "Para el próximo vuelo",
     "Sonraki uçuşa bununla başlarsın.": "Tu próximo vuelo empieza con esto.",
     "Günün uçuşu": "Vuelo del día",

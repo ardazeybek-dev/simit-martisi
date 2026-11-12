@@ -112,7 +112,8 @@ function dayRun() {
 const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 // kostüm özellikleri: yalnızca giyili parça işler (panelde önizleme işlemez). Küçük tutuldu: cüzdana etkisi uçuş başı 1-2 simit
 const PERKS = { crown: 'Altın simit %20 daha sık çıkar', simitcrown: 'Simit kapma alanı %8 daha geniş', tophat: 'Güçlendirmeler +%10 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Yakaladığın simitler cüzdana +%10', kurye: 'Görev ödülleri +%15', taksi: 'Kıl payı puanı x2',
-  fes: 'Simit puanı +%3', beanie: 'Karda %20 yavaş üşür', chef: 'Çay molası +%15 süre', captain: 'Mıknatıs +%15 süre', tray: 'Görev ödülleri +%5', glasses: 'Kalkan +%15 süre', hearts: 'Kombo süresi +%5', bigglasses: 'Balık yakalama şansı +%5', mustache: 'Kıl payı puanı +%25', pacifier: 'Dirilince kalkan +%25 süre', bowtie: 'Yunus bonusu +%50', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %20 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%15', ice: 'Karda %50 yavaş üşür', durum: 'Balık daha sık zıplar' };
+  fes: 'Simit puanı +%3', beanie: 'Karda %20 yavaş üşür', chef: 'Çay molası +%15 süre', captain: 'Mıknatıs +%15 süre', tray: 'Görev ödülleri +%5', glasses: 'Kalkan +%15 süre', hearts: 'Kombo süresi +%5', bigglasses: 'Balık yakalama şansı +%5', mustache: 'Kıl payı puanı +%25', pacifier: 'Dirilince kalkan +%25 süre', bowtie: 'Yunus bonusu +%50', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %20 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%15', ice: 'Karda %50 yavaş üşür', durum: 'Balık daha sık zıplar',
+  fisher: 'Balık yakalama şansı +%10', buoy: 'Açlık %20 yavaş bastırır', pirate: 'Altın simitler cüzdana +1 simit' };
 const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } };
 const comboT0 = () => COMBO_T * (perk('hearts') ? 1.05 : 1); // Kalpli gözlük: kombo süresi +%5
 const PW_PERK = { magnet: 'captain', tea: 'chef', shield: 'glasses' }; // bu kostümler o gücü +%15 uzatır // açılışta look henüz yoksa (dünya üretimi) özellik yok
@@ -1118,6 +1119,12 @@ const RANKS = [[1, 'Yavru martı'], [3, 'Vapur martısı'], [6, 'Simit avcısı'
 const xpNeed = lv => 80 + lv * 40, lvGift = lv => Math.min(30, 5 + lv); // seviye ödülü cüzdan gelirini ezmesin: 7 → 30 simit
 const rank = Object.assign({ lv: 1, xp: 0 }, store.get(KEY_RANK, {}) || {});
 const rankName = lv => tr(RANKS.filter(r => lv >= r[0]).pop()[1]);
+// Martı Yolu: her seviye simit verir (addXp, otomatik); her 5 seviyede yolda elle alınan bir ödül daha: 10'un katlarında balık,
+// 15/25/35'te yalnız yoldan çıkan kostüm, kalan 5'lerde simit kesesi. Alınanlar rank.got'ta; geride kalan ödül sonradan da alınır.
+const ROAD_COS = { 15: 'fisher', 25: 'buoy', 35: 'pirate' }, ROAD_SIMIT = 50;
+const roadPrize = lv => (lv % 5 ? null : lv % 10 === 0 ? { k: 'fish', n: 1 } : ROAD_COS[lv] ? { k: 'cos', id: ROAD_COS[lv] } : { k: 'simit', n: ROAD_SIMIT });
+if (!Array.isArray(rank.got)) rank.got = [];
+const roadOpen = () => { let n = 0; for (let m = 5; m <= rank.lv; m += 5) if (!rank.got.includes(m)) n++; return n; };
 let xpGot = 0; // bu uçuştan şimdiye dek yazılan XP (ikinci şansta iki kez sayılmasın)
 const runXp = () => Math.round(simitCount + dist / 20);
 function addXp(n) {
@@ -1131,6 +1138,51 @@ function addXp(n) {
 function renderRank() {
   $('lvlN').textContent = fmt(rank.lv); $('lvlName').textContent = rankName(rank.lv);
   $('lvlFill').style.transform = `scaleX(${clamp(rank.xp / xpNeed(rank.lv), 0, 1)})`;
+  $('roadLv').textContent = fmt(rank.lv); $('roadName').textContent = rankName(rank.lv);
+  $('roadFill').style.transform = `scaleX(${clamp(rank.xp / xpNeed(rank.lv), 0, 1)})`;
+  show('roadDot', roadOpen() > 0);
+}
+// yol paneli: 5'in katları ve unvan seviyeleri; ödülü olan geçilmiş satırda "Al"
+function roadPrizeHtml(p) {
+  if (p.k === 'fish') return `<svg class="ico"><use href="#i-fish"/></svg>${fmt(p.n)}`;
+  if (p.k === 'simit') return `<svg class="ico"><use href="#i-simit"/></svg>${fmt(p.n)}`;
+  return `<span class="road-cos">${COSTUME_SVG[p.id]}</span>${esc(tr(COSTUMES.find(c => c.id === p.id).name))}`;
+}
+function renderRoad() {
+  const f = clamp(rank.xp / xpNeed(rank.lv), 0, 1);
+  $('roadLvN').textContent = fmt(rank.lv); $('roadRank').textContent = rankName(rank.lv);
+  $('roadBar').style.transform = `scaleX(${f})`; $('roadXp').textContent = `${fmt(rank.xp)}/${fmt(xpNeed(rank.lv))}`;
+  $('roadNext').innerHTML = `${esc(tr('Sonraki seviye'))}: +${fmt(lvGift(rank.lv + 1))} <svg class="ico"><use href="#i-simit"/></svg>`;
+  const box = $('roadList'); box.textContent = '';
+  const top = Math.max(50, Math.ceil((rank.lv + 10) / 5) * 5), lvls = new Set(RANKS.map(r => r[0]).filter(l => l > 1));
+  for (let i = 5; i <= top; i += 5) lvls.add(i);
+  let focus = null;
+  for (const lv of [...lvls].sort((a, b) => a - b)) {
+    const p = roadPrize(lv), title = RANKS.find(r => r[0] === lv), done = rank.lv >= lv, got = rank.got.includes(lv), ready = !!p && done && !got;
+    const d = document.createElement('div');
+    d.className = 'road-row' + (done ? ' done' : '') + (ready ? ' ready' : '');
+    d.innerHTML = `<b class="road-lv">${fmt(lv)}</b><span class="road-m"><b>${p ? roadPrizeHtml(p) : ''}</b><small></small></span><span class="road-r"></span>`;
+    d.querySelector('small').textContent = title ? tr(title[1]) : '';
+    if (!p) d.querySelector('.road-m b').remove();
+    if (!title) d.querySelector('small').remove();
+    const r = d.querySelector('.road-r');
+    if (ready) { const b = document.createElement('button'); b.className = 'road-get'; b.textContent = tr('Al'); b.addEventListener('click', e => { e.stopPropagation(); claimRoad(lv); }); r.appendChild(b); }
+    else if (done && p) r.innerHTML = '<span class="road-ok">✓</span>';
+    if (!focus && (ready || !done)) { focus = d; if (!done) d.classList.add('now'); }
+    box.appendChild(d);
+  }
+  if (focus) requestAnimationFrame(() => { box.scrollTop = Math.max(0, focus.offsetTop - box.offsetTop - 6); });
+}
+function claimRoad(lv) {
+  const p = roadPrize(lv);
+  if (!p || rank.lv < lv || rank.got.includes(lv)) return;
+  rank.got.push(lv); store.set(KEY_RANK, rank);
+  if (p.k === 'fish') setFish(fish + p.n);
+  else if (p.k === 'simit') { wallet += p.n; store.set(KEY_WALLET, wallet); }
+  else if (!look.owned.includes(p.id)) { look.owned.push(p.id); store.set(KEY_LOOK, look); }
+  sfx.record(); vibrate([20, 30, 20]); sparkle(gull.position, 30, 0xffd35a, 5, 0.7, 0.3);
+  const top = $('roadList').scrollTop; renderRoad(); $('roadList').scrollTop = top;
+  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); renderRank();
 }
 function renderXp(xp, f0, r) {
   const el = $('overXp'), f1 = clamp(rank.xp / xpNeed(rank.lv), 0, 1);
@@ -1312,9 +1364,9 @@ function showTitle() {
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions(); gullSize();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
-  show('profileBtn', !tutorialPending); renderNameChip(); renderMode();
+  show('profileBtn', !tutorialPending); show('roadBtn', !tutorialPending); renderNameChip(); renderMode();
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap(); renderRank();
-  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false);
+  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
   $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
@@ -1346,7 +1398,7 @@ function startGame() {
   resetWorld(daily || state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel']) show(id, false);
   shownScore = shownSimit = shownDist = shownFish = -1; shownMult = 0;
   ui.combo.classList.remove('on');
   renderPowers();
@@ -1429,7 +1481,7 @@ function showOver() {
   if (recGain) { recPaid += recGain; wallet += recGain; store.set(KEY_WALLET, wallet); }
   { const xp = Math.max(0, runXp() - xpGot), f0 = rank.xp / xpNeed(rank.lv); xpGot += xp; renderXp(xp, f0, addXp(xp)); }
   { // sıradaki kostüm: en ucuz alınmamış parçaya ne kadar kaldı
-    const next = COSTUMES.filter(c => !look.owned.includes(c.id)).map(c => [c, priceOf(c)]).sort((a, b) => a[1] - b[1])[0];
+    const next = COSTUMES.filter(c => !c.lv && !look.owned.includes(c.id)).map(c => [c, priceOf(c)]).sort((a, b) => a[1] - b[1])[0];
     show('overNext', false); // sıradaki kostüm çubuğu gösterilmez
     if (next) {
       const [c, p] = next, have = Math.min(wallet, p);
@@ -1534,7 +1586,7 @@ function saveName(inp = $('nameInput'), err = $('nameErr')) {
 
 // ---------------- cüzdan ve kostümler ----------------
 function bank() {
-  const units = carry0 + (simitCount + goldCount * 3) * (perk('golden') ? 1.1 : 1) + dist / WALLET_M * WALLET_RATE * (perk('sunset') ? 1.15 : 1); // Gün batımı: mesafeden +%15 // Altın martı: +%10; mesafe de kazandırır
+  const units = carry0 + (simitCount + goldCount * (perk('pirate') ? 4 : 3)) * (perk('golden') ? 1.1 : 1) + dist / WALLET_M * WALLET_RATE * (perk('sunset') ? 1.15 : 1); // Gün batımı: mesafeden +%15 // Altın martı: +%10; mesafe de kazandırır
   const earned = Math.floor(units / WALLET_RATE), gain = earned - banked;
   if (gain > 0) { banked = earned; wallet += gain; store.set(KEY_WALLET, wallet); }
   store.set(KEY_CARRY, Math.round((units - earned * WALLET_RATE) * 100) / 100); // artan kısım sonraki uçuşa
@@ -1553,7 +1605,7 @@ function dealToday() { // günün indirimi: yalnızca tarihten seçilir (gece 00
   if (d.day === day) return d.id;
   const h = hash('deal', day), n = COSTUMES.length;
   let id = '';
-  for (let i = 0; i < n; i++) { const c = COSTUMES[(h + i) % n]; if (!look.owned.includes(c.id)) { id = c.id; break; } }
+  for (let i = 0; i < n; i++) { const c = COSTUMES[(h + i) % n]; if (!c.lv && !look.owned.includes(c.id)) { id = c.id; break; } }
   store.set(KEY_DEAL, { day, id });
   return id;
 }
@@ -1562,7 +1614,7 @@ let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan 
 function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; cosSel = null; $('wardNote').textContent = '';
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe'); podEnter();
 }
 function reloadKeep() { try { sessionStorage.setItem('simit-martisi-keepw', weather); } catch (e) {} location.reload(); }
@@ -1589,12 +1641,13 @@ function renderWardrobe() {
     const own = look.owned.includes(c.id), on = look.on.includes(c.id);
     const b = document.createElement('button');
     const price = priceOf(c), deal = !own && price < c.price;
-    b.className = 'cos' + (on ? ' on' : '') + (own ? ' own' : wallet < price ? ' poor' : '') + (cosSel === c.id ? ' sel' : '') + (deal ? ' deal' : '');
+    b.className = 'cos' + (on ? ' on' : '') + (own ? ' own' : c.lv || wallet < price ? ' poor' : '') + (cosSel === c.id ? ' sel' : '') + (deal ? ' deal' : '');
     b.dataset.id = c.id;
     b.innerHTML = `<span class="cos-i">${COSTUME_SVG[c.id]}</span><b></b><small></small>`;
     b.querySelector('b').textContent = tr(c.name);
     const tag = b.querySelector('small');
     if (own) tag.textContent = on ? tr('Giyili') : tr('Giy');
+    else if (c.lv) tag.textContent = `${tr('Sv')} ${fmt(c.lv)}`; // Martı Yolu'ndan açılır
     else tag.innerHTML = `<svg class="ico"><use href="#i-simit"/></svg>${fmt(price)}` + (deal ? `<s>${fmt(c.price)}</s>` : '');
     if (deal) b.insertAdjacentHTML('beforeend', '<em class="cos-deal">-20%</em>');
     if (PERKS[c.id]) b.insertAdjacentHTML('beforeend', '<i class="cos-perk">★</i>');
@@ -1606,8 +1659,9 @@ function renderWardrobe() {
   show('cosAct', !!c);
   if (!c) return;
   const own = look.owned.includes(c.id);
-  act.classList.toggle('poor', !own && wallet < priceOf(c));
-  if (!own) act.innerHTML = `${tr('Satın al')} <svg class="ico"><use href="#i-simit"/></svg>${fmt(priceOf(c))}`;
+  act.classList.toggle('poor', !own && (c.lv || wallet < priceOf(c)));
+  if (!own && c.lv) act.textContent = `${tr('Martı Yolu')} · ${tr('Sv')} ${fmt(c.lv)}`;
+  else if (!own) act.innerHTML = `${tr('Satın al')} <svg class="ico"><use href="#i-simit"/></svg>${fmt(priceOf(c))}`;
   else act.textContent = look.on.includes(c.id) ? tr('Çıkar') : tr('Giy');
 }
 // dokununca yalnızca önizleme: martı o parçayla gösterilir, cüzdana dokunulmaz
@@ -1624,6 +1678,7 @@ let cosLock = 0, cosLockId = null; // satın alınca düğme "Çıkar"a döner: 
 function costumeAction() {
   const c = COSTUMES.find(x => x.id === cosSel);
   if (!c || (c.id === cosLockId && performance.now() < cosLock)) return;
+  if (!look.owned.includes(c.id) && c.lv) { sfx.click(); bump($('cosAct'), 'shake'); return; } // yoldan açılır, satılmaz
   if (!look.owned.includes(c.id)) {
     const price = priceOf(c);
     if (wallet < price) { sfx.click(); bump($('cosAct'), 'shake'); return; }
@@ -1815,6 +1870,7 @@ function renderMenuBadges() {
   $('misBadge').textContent = fresh; show('misBadge', fresh > 0);
   show('dailyDot', dailyState().ready || freeSpin());
   if (state === 'title') $('titleWallet').textContent = fmt(wallet);
+  show('roadDot', roadOpen() > 0);
   const ar = achReady() + badgesNew(); $('achBadge').textContent = ar; show('achBadge', ar > 0); // alınmamış başarım + bakılmamış rozet
 }
 // ---------------- başarımlar ----------------
@@ -2286,6 +2342,8 @@ onBtn('cityPrev', () => stepCity(-1));
 onBtn('cityNext', () => stepCity(1));
 onBtn('missionsBtn', () => { openMissions(); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
+onBtn('roadBtn', () => { if (state !== 'title') return; renderRoad(); show('roadPanel'); });
+onBtn('closeRoad', () => { show('roadPanel', false); renderRank(); renderMenuBadges(); });
 onBtn('achBtn', () => openAch());
 onBtn('closeAch', () => show('achPanel', false));
 onBtn('tabAch', () => achTab('ach'));
@@ -2913,7 +2971,7 @@ function frame() {
     if (u > 1.3) f.mesh.visible = false;
     if (!f.done && state === 'play' && u > 0.2 && u < 0.8 && Math.abs(g.x - x) < 1.7 && Math.abs(g.z - f.z) < 2 && Math.abs(g.y - y) < 1.8) {
       f.done = true;
-      if (!fishRun && dist >= FISH_MIN_M && fishToday() < FISH_DAY && Math.random() < fishCatch + (perk('bigglasses') ? 0.05 : 0)) catchFish(f); else slipFish(f); // ikinci kilit: erken ya da kotası dolmuşken asla yakalanmaz
+      if (!fishRun && dist >= FISH_MIN_M && fishToday() < FISH_DAY && Math.random() < fishCatch + (perk('bigglasses') ? 0.05 : 0) + (perk('fisher') ? 0.1 : 0)) catchFish(f); else slipFish(f); // ikinci kilit: erken ya da kotası dolmuşken asla yakalanmaz
     }
   }
   if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }
@@ -3116,7 +3174,7 @@ function judgeTurn(u) {
 function hungerTick(dt) {
   if (weather === 'snow' || tutorialPending) { if (shownFull >= 0) { show('hungry', false); shownFull = -1; } return; }
   const was = full;
-  if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 8));
+  if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 8) * (perk('buoy') ? 0.8 : 1)); // Can simidi: %20 yavaş acıkır
   if (was >= 0.25 && full < 0.25) { sfx.shiver(); vibrate(20); } // titreme başladı: 2 sn sonra düşer
   starve = full < 0.25; // son çeyrek (8 sn'lik barda son 2 sn): martı titrer, başı düşer
   if (full <= 0) { crash('açlıktan'); if (state === 'play') full = 0.35; } // açlıktan düşer (kalkan yutarsa biraz doyar)
@@ -3274,7 +3332,7 @@ window.__game = {
   addFish: (ahead = 40, x = 0) => { const dir = 1, mm = new THREE.Mesh(FISH, vcMat); mm.visible = false; scene.add(mm); fishes.push({ mesh: mm, dir, ax: x, z: gull.position.z - ahead, w: 3.2, T: 0.85, lag: 0, u: -1, done: false, spin: 0, splT: 0 }); },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
-  get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
+  get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },

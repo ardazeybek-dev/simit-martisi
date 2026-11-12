@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.70.3">
+<meta name="app-version" content="2.71.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -106,6 +106,7 @@
     <div class="stat-col">
       <div class="stat-card"><svg class="ico"><use href="#i-simit"/></svg><b id="titleWallet">0</b></div>
       <div class="stat-card fish"><svg class="ico"><use href="#i-fish"/></svg><b id="titleFish">0</b></div>
+      <button class="stat-card lvl-card road-chip no-steer" id="roadBtn" aria-label="Martı Yolu"><b class="lvl-n" id="roadLv">1</b><span class="lvl-m"><small id="roadName"></small><span class="lvl-bar"><i id="roadFill"></i></span></span><i class="badge dot hidden" id="roadDot"></i></button>
     </div>
     <div class="stat-card best"><svg class="ico"><use href="#i-trophy"/></svg><span id="titleBest"></span></div>
     <span class="grow"></span>
@@ -139,6 +140,17 @@
       <span><i class="dot ok"></i>Simitleri kap</span>
       <span><i class="dot bad"></i>Bacalara, direklere, martılara çarpma</span>
     </div>
+  </div>
+</section>
+
+<section id="roadPanel" class="screen modal hidden">
+  <div class="card">
+    <h2>Martı Yolu</h2>
+    <div class="road-head"><b class="lvl-n" id="roadLvN">1</b><span class="lvl-m"><small id="roadRank"></small><span class="lvl-bar"><i id="roadBar"></i></span></span><small class="road-xp" id="roadXp"></small></div>
+    <p class="road-how">Her simit ve her 20 m seni yolda ilerletir.</p>
+    <p class="road-next" id="roadNext"></p>
+    <div class="road-list" id="roadList"></div>
+    <button class="btn primary" id="closeRoad">Tamam</button>
   </div>
 </section>
 

@@ -17,8 +17,8 @@ if (!playwright) { console.error('Playwright not found: npm i -g playwright && n
 const PORT = 8765;
 const URL = `http://localhost:${PORT}/?q=0`;
 const ROOT = path.join(__dirname, '..');
-const MENU = ['settingsBtn', 'wardrobeBtn', 'missionsBtn', 'dailyBtn', 'achBtn', 'boardBtn', 'upsBtn', 'modeBtn'];
-const CLOSE = { missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' };
+const MENU = ['settingsBtn', 'roadBtn', 'wardrobeBtn', 'missionsBtn', 'dailyBtn', 'achBtn', 'boardBtn', 'upsBtn', 'modeBtn'];
+const CLOSE = { roadPanel: 'closeRoad', missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' };
 const CITIES = ['istanbul', 'izmir', 'antalya'];
 const FLY_MS = 20000;
 

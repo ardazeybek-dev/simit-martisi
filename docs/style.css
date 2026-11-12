@@ -333,6 +333,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #dailyPanel .card { --card-a: #8f3d2a; --card-b: #4a1a12; --card-sh: rgba(44, 8, 4, .5); --glass: rgba(40, 8, 4, .3); }
 #dayRunPanel .card { --card-a: #7f5a1f; --card-b: #422c0b; --card-sh: rgba(40, 24, 0, .5); --glass: rgba(36, 20, 0, .3); }
 #profilePanel .card { --card-a: #573766; --card-b: #2c1834; --card-sh: rgba(24, 6, 30, .5); --glass: rgba(22, 6, 28, .3); }
+#roadPanel .card { --card-a: #1f4f7a; --card-b: #0f2740; --card-sh: rgba(4, 16, 36, .5); --glass: rgba(4, 14, 32, .3); }
 #settings .card { --card-a: #39465a; --card-b: #1c2330; --card-sh: rgba(6, 10, 20, .5); --glass: rgba(4, 8, 18, .3); }
 /* .modal kaydırılabilir kutu: touch-action orada sıfırlanır, yana sürükleme kaydırma sanılıp pointercancel olur → martı çevrilemez */
 #wardrobe { touch-action: none; }
@@ -695,3 +696,32 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .lang-row select option { color: #1b1530; }
 /* panel içindeki satırlar: ince kenarlı cam kart yerine panelin koyusu, kenarsız (dosyanın sonunda: aynı ağırlıktaki satır kurallarını ezer; :where sayesinde durum sınıfları .on/.got yine üstün gelir) */
 .card :where(.ach, .up, .day, .vol, .toggle, .seg > div, .stats div, .mis-box, .tab:not(.on), .wallet, .board li, .mode-card:not(.on), .profile-row, .lang-row select) { background: var(--glass); border-color: transparent; }
+
+/* Martı Yolu: menüdeki seviye rozeti ve ödül yolu paneli */
+.road-chip { position: relative; }
+.road-chip .lvl-bar { width: 70px; }
+.road-chip .badge { top: -7px; right: -7px; }
+.road-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin: -4px 0 6px; }
+.road-head .lvl-n { min-width: 40px; height: 40px; font-size: 22px; border-radius: 12px; }
+.road-head .lvl-bar { width: 130px; height: 8px; }
+.road-head .lvl-m small { font-size: 14px; }
+.road-xp { font-weight: 800; color: #bfe3ff; font-size: 13px; }
+.road-how { margin: 0 0 2px; font-size: 13.5px; font-weight: 700; color: var(--cream-2); }
+.road-next { margin: 0 0 10px; font-weight: 800; color: var(--gold); display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 14.5px; }
+.road-next .ico { width: 16px; height: 16px; }
+.road-list { display: grid; gap: 6px; max-height: min(46vh, 360px); overflow-y: auto; padding: 2px 4px; margin: 0 -4px 12px; text-align: left; touch-action: pan-y; }
+.road-row { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; min-height: 46px; padding: 5px 10px 5px 6px; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); opacity: .55; }
+.road-row.done, .road-row.now { opacity: 1; }
+.road-row.now { border-color: rgba(58, 167, 255, .8); }
+.road-row.ready { border-color: var(--gold); background: rgba(255, 194, 58, .14); }
+.road-lv { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: rgba(255, 255, 255, .12); font-size: 17px; font-weight: 800; }
+.road-row.done .road-lv { background: linear-gradient(#a8dcff, var(--blue)); color: #fff; box-shadow: 0 2px 0 #1f6aa8; }
+.road-m { display: grid; gap: 1px; min-width: 0; }
+.road-m b { display: flex; align-items: center; gap: 5px; font-size: 15px; font-weight: 800; }
+.road-m b .ico { width: 20px; height: 20px; }
+.road-cos { display: inline-block; width: 28px; height: 28px; flex: none; }
+.road-cos svg { width: 100%; height: 100%; }
+.road-m small { font-size: 12.5px; font-weight: 800; color: var(--cream-2); }
+.road-get { padding: 7px 16px; border-radius: 12px; background: linear-gradient(#ffe08a, var(--gold)); color: #2a1503; font-weight: 800; font-size: 15px; box-shadow: 0 3px 0 #b07d10; animation: pulse 1.2s ease-in-out infinite; }
+.road-get:active { transform: translateY(2px); box-shadow: 0 1px 0 #b07d10; }
+.road-ok { color: #7fe3d6; font-size: 20px; font-weight: 800; }
