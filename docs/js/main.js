@@ -274,7 +274,7 @@ function throwVolleys(z0, len, first, dense) {
 }
 function addThrown(bt, cx, cz, gold, ry) { // ry: halkanın yüksekliği (vapur güvertesi); yoksa dalgada
   cx = clamp(cx, -THROW_X, THROW_X);
-  if (gold) return addSimit(cx, FLY_Y, cz, true, true); // altın parça atılmaz: yerinde asılı durur, olduğu yerde döner ve parlar
+  // altın parça da atılır (eskiden yerinde asılı kalıyordu): kavisle gelir, yakalanırsa altın sayılır
   if (genLog) genLog.push(`t${cx.toFixed(2)},${cz.toFixed(1)}${gold ? 'g' : ''}`);
   bt.left = (bt.left || 0) + 1; // atılacak parça sayısı: hepsi atılınca eli boşalır
   const m = makeSimitPiece(gold); m.visible = false; m.position.set(cx, FLY_Y, cz); if (ruleOn('giant')) m.scale.multiplyScalar(2); scene.add(m);
@@ -306,7 +306,7 @@ function flySimits(dt) {
       s.y = FLY_Y + v0 * k - 7 * k * k;
       const w = th.ry ?? waveAt(s.x, s.z, t); // güverteye atılan parça tahtaya düşer
       if (s.y < w) {
-        s.taken = true; scene.remove(s.mesh); scene.remove(th.ring); thrownStat.missed++; if (state === 'play') missSimit();
+        s.taken = true; scene.remove(s.mesh); scene.remove(th.ring); thrownStat.missed++; // denize düşen atılmış parça komboyu bozmaz: atışlar 2-4 parça, birini alıp yanındakini kaçırmak seriyi kesmesin
         chunks.emit(tmp.set(s.x, w + 0.1, s.z), 6, { speed: 2.5, up: 1, life: 0.6, size: 0.09, color: [0xffffff, 0xcfe9f2], gravity: 12, spin: 0.3 });
         continue;
       }
@@ -1233,7 +1233,7 @@ function claimRoad(lv) {
 function renderXp(xp, f0, r) {
   const el = $('overXp'), f1 = clamp(rank.xp / xpNeed(rank.lv), 0, 1);
   el.innerHTML = `<b>${tr('Sv')} ${fmt(rank.lv)}</b><span class="lvl-bar"><i></i></span><small>+${fmt(xp)} XP</small>`
-    + (r.ups ? `<em>${tr('Seviye atladın!')} ${rankName(rank.lv)} · <svg class="ico"><use href="#i-gift"/></svg>${esc(tr('Martı Yolu'))}</em>` : '');
+    + (r.ups ? `<em>${tr('Seviye atladın!')} ${rankName(rank.lv)}</em>` : '');
   const bar = el.querySelector('.lvl-bar i'); bar.style.transition = 'none'; bar.style.transform = `scaleX(${r.ups ? 0 : f0})`;
   requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = ''; bar.style.transform = `scaleX(${f1})`; }));
   if (r.ups) setTimeout(() => { if (state === 'over') { sfx.record(); vibrate([20, 30, 20]); bump(el.querySelector('em'), 'popin'); } }, 900);
@@ -1401,9 +1401,11 @@ function renderRouteMap() {
 }
 let dailyAuto = false; // kendiliğinden açılan ödül penceresi: sayfa açılışında bir kez
 function showTitle() {
-  if (window.__reloadOnTitle) { // yeni sürüm indi: menüye dönerken tazelen, ama önce gönderilmekte olan skor gitsin (en çok 3 sn)
+  if (window.__reloadOnTitle && !window.__reloadFailed) { // yeni sürüm indi: menüye dönerken tazelen, ama önce gönderilmekte olan skor gitsin (en çok 3 sn)
     if (window.__reloading) return; window.__reloading = true;
-    Promise.race([sync(), new Promise(r => setTimeout(r, 3000))]).finally(() => reloadKeep()); return;
+    // tazeleme gerçekleşmezse (telefonda olabiliyor) oyuncu oyun sonu ekranında kilitli kalmasın: 2.5 sn sonra menüye normal yoldan dönülür
+    Promise.race([Promise.resolve().then(sync).catch(() => {}), new Promise(r => setTimeout(r, 3000))]).finally(() => { reloadKeep(); setTimeout(() => { window.__reloadFailed = true; window.__reloading = false; showTitle(); }, 2500); });
+    return;
   }
   if (daily) { daily = false; const c = cityOf(store.get(KEY_CITY, 'istanbul')); useCity(cityOpen(c) ? c : CITIES[0]); }
   if (opened && cityOpen(opened)) { useCity(opened); store.set(KEY_CITY, opened.id); applyWeather(weather); } // yeni açılan şehir menüde seçili gelir
@@ -1668,7 +1670,7 @@ function openWardrobe() {
 }
 function reloadKeep() { try { sessionStorage.setItem('simit-martisi-keepw', weather); } catch (e) {} location.reload(); }
 function closeWardrobe() {
-  dressing = false; show('wardrobe', false);
+  seeTab(wardTab); dressing = false; show('wardrobe', false);
   if (window.__reloadOnTitle && state === 'title') return reloadKeep(); // bekleyen sürüm yenilemesi: menüye dönünce, hava aynı
   if (cosSel) { cosSel = null; applyLook(); } // satın alınmayan önizleme çıkarılır
   if (state === 'title') { $('titleWallet').textContent = fmt(wallet); renderMenuBadges(); show('title'); }
@@ -1677,11 +1679,19 @@ function closeWardrobe() {
 const tabOf = c => (c.slot === 'head' ? 'sapka' : c.slot === 'body' ? 'deri' : 'kiyafet');
 let wardTab = 'kiyafet';
 // sekme değişince önizleme bırakılır: alttaki düğme yalnız bu sekmede dokunulan kostümle çalışır
-function setWardTab(t) { if (wardTab === t) return; wardTab = t; if (cosSel) { cosSel = null; applyLook(); } $('wardNote').textContent = ''; sfx.click(); renderWardrobe(); }
+// sekmedeki yeni kostümler: sekme rozetinde sayılır; sekmeye bakıp ayrılınca (ya da gardırop kapanınca) görülmüş sayılır, "Yeni" etiketi bakarken durur
+const freshIn = t => look.fresh.filter(id => tabOf(COSTUMES.find(x => x.id === id)) === t).length;
+function seeTab(t) { if (!freshIn(t)) return; look.fresh = look.fresh.filter(id => tabOf(COSTUMES.find(x => x.id === id)) !== t); store.set(KEY_LOOK, look); }
+function setWardTab(t) { if (wardTab === t) return; seeTab(wardTab); wardTab = t; if (cosSel) { cosSel = null; applyLook(); } $('wardNote').textContent = ''; sfx.click(); renderWardrobe(); }
 for (const b of document.querySelectorAll('#wardTabs button')) b.addEventListener('click', e => { e.stopPropagation(); setWardTab(b.dataset.tab); });
 function renderWardrobe() {
   $('walletN').textContent = fmt(wallet);
-  for (const b of document.querySelectorAll('#wardTabs button')) b.classList.toggle('on', b.dataset.tab === wardTab);
+  for (const b of document.querySelectorAll('#wardTabs button')) {
+    b.classList.toggle('on', b.dataset.tab === wardTab);
+    const n = b.dataset.tab === wardTab ? 0 : freshIn(b.dataset.tab);
+    let i = b.querySelector('.badge'); if (!i) { i = document.createElement('i'); i.className = 'badge'; b.appendChild(i); }
+    i.textContent = n; i.classList.toggle('hidden', !n);
+  }
   renderSlots();
   const box = $('costumes'); box.textContent = '';
   for (const c of COSTUMES) {
@@ -3203,7 +3213,7 @@ const shoutT = { '-1': -1e9, '1': -1e9 }, shoutEl = {};
 let shoutAny = -1e9;
 function shout(p, s, cheer) {
   const now = performance.now(), side = Math.sign(s.x - gull.position.x) || (gull.position.x > 0 ? -1 : 1); // konuşanın tarafı
-  if (now - shoutT[side] < 650 || now - shoutAny < 250) return; // yolu kapatmıyor (şerit dışında): sık çıkabilir
+  if (now - shoutT[side] < 1400 || now - shoutAny < 700) return; // seyrek: ekran laf balonuyla dolmasın // yolu kapatmıyor (şerit dışında): sık çıkabilir
   const say = cheer ? line(CHEERS) || line(SHOUTS.genel) : line(SHOUTS[p.kind] || SHOUTS.amca) || line(SHOUTS.genel);
   if (!say) return; // bu uçuşta söylenecek söz kalmadı
   shoutT[side] = shoutAny = now;
@@ -3233,7 +3243,7 @@ function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = comboT0(); bestCombo = Math.max(bestCombo, combo);
   const m = mult() * (pw.double > 0 ? 2 : 1) * (perk('fes') ? 1.03 : 1) * (perk('pink') ? 1.05 : 1); // Fes +%3, Pembe tüy +%5 simit puanı (mesafe puanına dokunmaz)
   // simit parçası (atılan, çöpten çıkan) çeyrek simittir: puanın ve cüzdana katkısının dörtte biri
-  const q = (s.piece ? 0.25 : 1) * (ruleOn('giant') ? 2 : 1), base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
+  const q = (s.piece && !s.gold ? 0.25 : 1) * (ruleOn('giant') ? 2 : 1), base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
   points += gain; simitCount += q; countMission('simitTotal', q);
   if (s.turn) s.turn.got++;
   if (s.th) thrownStat.caught++;

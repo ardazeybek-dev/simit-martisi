@@ -164,12 +164,12 @@ export function popText(text, worldPos, cls = '', edge = null) { // edge: { p: d
   let w = el.offsetWidth;
   // yolcu lafı tek satır, genişliği içeriği kadar (dar boşluğa sıkıştırınca "Ciddi misin şu / an?" diye bölünüyordu);
   // ekrana sığmayan uzun çeviri kelime sınırında dengeli iki satıra iner. Açılışta balon 1,12 kat büyür: pay ona göre
-  const wMax = Math.floor((innerWidth - 12) / 1.12);
+  const wMax = Math.floor((edge ? innerWidth * 0.46 : innerWidth - 12) / 1.12); // laf balonu ekranın yarısını geçmez: yolu ve ekranı kapatmasın
   if (edge && w > wMax) { el.classList.add('wrap'); el.style.maxWidth = `${wMax}px`; w = el.offsetWidth; }
   // yolcu lafı: martının uçabildiği şeridin hemen dışında, martının yanında; iç kenarı sınırda, balon dışa taşar (yolu kapatmaz)
   const cx = edge ? x + edge.side * w / 2 : x, m = edge ? w * 0.56 + 6 : w / 2 + 8;
   el.style.left = `${Math.min(Math.max(cx, m), innerWidth - m)}px`; el.style.top = `${Math.max(y, innerHeight * 0.22)}px`;
-  setTimeout(() => el.remove(), 1650);
+  setTimeout(() => el.remove(), /shout/.test(cls) ? 1150 : 1650); // laf ve "Kaçtı!" kısa kalır
   return el;
 }
 export function clearFx() {
