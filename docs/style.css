@@ -754,3 +754,42 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 @media (orientation: portrait) { .slot-it, .slot-plus { width: 52px; height: 52px; } .slot-items { min-height: 52px; } }
 .cos-new { background: var(--teal); right: auto; left: 50%; transform: translateX(-50%); }
 .road-get.see { background: linear-gradient(#8ff0e2, var(--teal)); box-shadow: 0 3px 0 #17786d; color: #06302a; animation: none; }
+
+/* Başarımlar = vapur bileti: krem kağıt, sağda yırtma koçanı (iki yanda çentik + kesik çizgi);
+   kademe = koçandaki zımba delikleri, alınacak ödül = koçana basılmış kırmızı damga.
+   Simgenin ve çubuğun rengi sıradaki madalyanın rengi (bronz → gümüş → altın), böylece rengin bir anlamı var. */
+#achPanel { --paper: #f8e7c8; --paper-2: #efd7ae; --ink: #4b2416; --ink-2: rgba(75, 36, 22, .66); }
+#achPanel .tab.on { background: var(--paper); color: var(--ink); }
+#achPanel .achs { gap: 9px; }
+#achPanel .ach { position: relative; grid-template-columns: 46px 1fr 66px; gap: 11px; padding: 11px 0 11px 11px; border-radius: 9px;
+  background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(36, 10, 4, .45);
+  -webkit-mask: radial-gradient(circle 7px at calc(100% - 66px) 0, transparent 97%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 7px at calc(100% - 66px) 100%, transparent 97%, #000) bottom / 100% 51% no-repeat;
+          mask: radial-gradient(circle 7px at calc(100% - 66px) 0, transparent 97%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 7px at calc(100% - 66px) 100%, transparent 97%, #000) bottom / 100% 51% no-repeat; }
+#achPanel .ach::after { content: ""; position: absolute; right: 66px; top: 10px; bottom: 10px; border-left: 2px dashed rgba(75, 36, 22, .28); }
+#achPanel .ach[data-next="0"] { --tier: #b5672e; }
+#achPanel .ach[data-next="1"] { --tier: #7d899c; }
+#achPanel .ach[data-next="2"] { --tier: #cf9213; }
+#achPanel .ach.done { background: linear-gradient(100deg, #fbe7a6, var(--paper) 70%); }
+#achPanel .ach-i { position: relative; width: 46px; height: 46px; background: var(--paper-2); color: var(--tier); border: 2.5px solid var(--tier); box-shadow: none; }
+#achPanel .ach-i::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; border: 1.5px dashed currentColor; opacity: .4; }
+#achPanel .ach-i svg { width: 24px; height: 24px; }
+#achPanel .ach.done .ach-i { background: radial-gradient(circle at 35% 30%, #ffe48a, #cf9213); color: #fff8e4; border-color: #9a6a08; }
+#achPanel .ach.done .ach-i::after { opacity: .55; }
+#achPanel .ach-m b { font-size: 16px; }
+#achPanel .ach-m small { color: var(--ink-2); opacity: 1; }
+#achPanel .ach-bar { height: 6px; margin-top: 4px; border-radius: 0; background: repeating-linear-gradient(90deg, rgba(75, 36, 22, .25) 0 7px, transparent 7px 11px); }
+#achPanel .ach-bar i { border-radius: 3px; background: var(--tier); }
+#achPanel .ach.done .ach-bar { visibility: hidden; }
+.ach-stub { display: flex; justify-content: center; gap: 4px; }
+.ach-stub i { width: 13px; height: 13px; border-radius: 50%; border: 1.5px dashed rgba(75, 36, 22, .38); }
+.ach-stub i.on { border: 0; background: var(--card-b, #3f1b14); box-shadow: inset 0 2px 2px rgba(0, 0, 0, .55), 0 0 0 1.5px #b5672e; }
+.ach-stub i.on + i.on { box-shadow: inset 0 2px 2px rgba(0, 0, 0, .55), 0 0 0 1.5px #7d899c; }
+.ach-stub i.on + i.on + i.on { box-shadow: inset 0 2px 2px rgba(0, 0, 0, .55), 0 0 0 1.5px #cf9213; }
+#achPanel .ach-get { justify-self: center; flex-direction: column; gap: 0; padding: 4px 6px 2px; border-radius: 7px; font-size: 16px; line-height: 1;
+  background: rgba(196, 48, 43, .06); color: #c4302b; border: 2.5px solid currentColor; box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .5);
+  transform: rotate(-9deg); animation: stamp 1.8s ease-in-out infinite; }
+#achPanel .ach-get .ico { width: 17px; height: 17px; }
+#achPanel .ach-get:active { transform: rotate(-9deg) scale(.92); }
+@keyframes stamp { 0%, 100% { transform: rotate(-9deg) scale(1); } 50% { transform: rotate(-6deg) scale(1.08); } }

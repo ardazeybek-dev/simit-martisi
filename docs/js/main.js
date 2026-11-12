@@ -1929,6 +1929,8 @@ const ACH = [
   { id: 'owned', name: 'Moda martı', text: '{n} kostüm al', n: [3, 8, 17] },
 ];
 const ACH_R = [25, 75, 200];
+// her başarımın kendi simgesi (hepsi aynı madalya olunca liste şablon gibi duruyordu)
+const ACH_ICON = { simit: 'i-simit', gold: 'i-sun', maxDist: 'i-pin', maxScore: 'i-trophy', maxCombo: 'i-bolt', steal: 'i-hand', near: 'i-near', turn: 'i-turn', dolphin: 'i-wave', bridge: 'i-bridge', runs: 'i-play', owned: 'i-hanger' };
 const ach = Object.assign({ st: {}, got: {} }, store.get(KEY_ACH, {}));
 let achRun = {}; // bu uçuşta istatistiğe eklenmiş olan (ikinci şansta iki kez sayılmasın)
 function achVal(id) {
@@ -1955,9 +1957,9 @@ function renderAch() {
   for (const a of ACH) {
     const tier = achTier(a.id), got = ach.got[a.id] || 0, v = achVal(a.id), next = a.n[Math.min(got, 2)];
     const d = document.createElement('div');
-    d.className = 'ach'; d.dataset.t = got;
+    d.className = 'ach' + (got >= 3 ? ' done' : ''); d.dataset.t = got; d.dataset.next = Math.min(got, 2);
     const goal = tier > got ? a.n[got] : a.n[Math.min(tier, 2)];
-    d.innerHTML = `<span class="ach-i"><svg><use href="#i-medal"/></svg></span><div class="ach-m"><b></b><small></small><span class="ach-bar"><i style="width:${Math.min(1, v / goal) * 100}%"></i></span></div>`;
+    d.innerHTML = `<span class="ach-i"><svg><use href="#${ACH_ICON[a.id] || 'i-medal'}"/></svg></span><div class="ach-m"><b></b><small></small><span class="ach-bar"><i style="width:${Math.min(1, v / goal) * 100}%"></i></span></div>`;
     d.querySelector('b').textContent = tr(a.name);
     d.querySelector('small').textContent = `${tr(a.text).replace('{n}', fmt(goal))} · ${fmt(Math.min(v, goal))}/${fmt(goal)}`;
     if (tier > got) {
@@ -1965,7 +1967,7 @@ function renderAch() {
       b.innerHTML = `+${fmt(ACH_R[got])}<svg class="ico"><use href="#i-simit"/></svg>`;
       b.addEventListener('click', e => { e.stopPropagation(); claimAch(a.id); });
       d.appendChild(b);
-    } else d.insertAdjacentHTML('beforeend', `<span class="ach-stars">${[0, 1, 2].map(i => `<i class="${i < got ? 'on' : ''}">★</i>`).join('')}</span>`);
+    } else d.insertAdjacentHTML('beforeend', `<span class="ach-stub">${[0, 1, 2].map(i => `<i class="${i < got ? 'on' : ''}"></i>`).join('')}</span>`);
     void next; box.appendChild(d);
   }
 }
