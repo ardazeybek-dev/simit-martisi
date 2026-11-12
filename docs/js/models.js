@@ -96,19 +96,29 @@ function gullGeos_(type) {
   const handGeo = handKit.build();
   return (gullGeoCache[type] = { bodyGeo, armGeo, handGeo });
 }
+// rakip martı siste az kaybolur: yağmur/siste de uzaktan seçilsin
+const rivalMat = vcMat.clone();
+rivalMat.onBeforeCompile = function (sh) { // sisin yalnız %45'i: yağmurda/siste seçilir ama sis havası bozulmaz
+  THREE.Material.prototype.onBeforeCompile.call(this, sh);
+  sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', `#ifdef USE_FOG
+ gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(fogNear, fogFar, vFogDepth) * 0.45);
+#endif`);
+};
+rivalMat.customProgramCacheKey = () => 'rival';
 export function makeGull(type = 'player') {
   if (type === true) type = 'grey';
   const { bodyGeo, armGeo, handGeo } = gullGeos(type);
   const g = new THREE.Group();
-  const body = new THREE.Mesh(bodyGeo, vcMat);
+  const gm = type === 'player' ? vcMat : rivalMat; // rakip sise karışmasın (yağmurda gri kuş gri göğe gömülüyordu)
+  const body = new THREE.Mesh(bodyGeo, gm);
   body.castShadow = true;
   g.add(body);
   const wings = [];
   for (const s of [-1, 1]) {
     const arm = new THREE.Group(); arm.position.set(s * 0.28, 0.14, -0.1); arm.scale.x = s; g.add(arm);
-    const am = new THREE.Mesh(armGeo, vcMat); am.castShadow = true; arm.add(am);
+    const am = new THREE.Mesh(armGeo, gm); am.castShadow = true; arm.add(am);
     const hand = new THREE.Group(); hand.position.set(1.12, 0, 0.04); arm.add(hand);
-    const hm = new THREE.Mesh(handGeo, vcMat); hm.castShadow = true; hand.add(hm);
+    const hm = new THREE.Mesh(handGeo, gm); hm.castShadow = true; hand.add(hm);
     wings.push({ arm, hand, s });
   }
   g.userData.wings = wings;
@@ -1260,8 +1270,8 @@ export const FLAG = new THREE.PlaneGeometry(1.5, 1, 6, 1);
 const KITE_COLS = [[0xe5484d, 0xffd166], [0x2bb3a3, 0xfff4e2], [0x7d5ba6, 0xffb057], [0x3a6ea5, 0xff7b6b]];
 const kiteCache = [];
 const KITE_BOW = new THREE.PlaneGeometry(0.34, 0.16);
-const KITE_LINE = new THREE.CylinderGeometry(0.015, 0.015, 7, 3);
-const kiteLineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+const KITE_LINE = new THREE.CylinderGeometry(0.03, 0.03, 7, 4);
+const kiteLineMat = new THREE.MeshBasicMaterial({ color: 0x2a2630 }); // koyu ve kalın: yağmurda gri göğe karışmasın
 function kiteAssets(...a) { return pureCall(kiteAssets_, a); }
 function kiteAssets_(ci) {
   if (kiteCache[ci]) return kiteCache[ci];
@@ -1328,10 +1338,10 @@ export function makeChevron(dir) {
 
 // ---------------- güçlendirmeler ----------------
 export const POWER = {
-  magnet: { name: 'Mıknatıs', color: '#e5484d', dur: 8 },
-  shield: { name: 'Kalkan', color: '#3aa7ff', dur: 12 },
-  double: { name: '2x Puan', color: '#ffc23a', dur: 9 },
-  tea: { name: 'Çay Molası', color: '#d4502c', dur: 6 }, // dünya ağır çekime girer
+  magnet: { name: 'Mıknatıs', color: '#e5484d', dur: 7 },
+  shield: { name: 'Kalkan', color: '#3aa7ff', dur: 11 },
+  double: { name: '2x Puan', color: '#ffc23a', dur: 8 },
+  tea: { name: 'Çay Molası', color: '#d4502c', dur: 5 }, // dünya ağır çekime girer
 };
 // HUD ve 3D baloncuk aynı ikonları kullanır
 export const ICON_SVG = {

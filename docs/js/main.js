@@ -48,6 +48,9 @@ let genZ = 0, segCount = 0, sceneryZ = 0, maidenZ = 0, cruiseZ = 0, anchorZ = 0,
 // şehir zorluğu (cities.js hard): ilk 500 m her şehirde aynı; sonra İzmir/Antalya tavana daha erken varır, geç oyun tavanı da yüksek
 const HARD = () => (city && city.hard) || 0;
 const difficulty = () => clamp(-genZ / 650 + HARD() * 0.3 * Math.max(0, -genZ - 1000) / 650, 0, 5);
+// heat: tavandan sonra da sürüp giden sıklaşma (hız tavana vardıktan sonra da engel artar). İstanbul 600 m'den başlar, 6,6 km'de 3;
+// İzmir ilk metreden ısınır (≤3.75), Antalya en sert başlar ve en yükseğe çıkar (≤4.5)
+const heat = () => clamp((-genZ - 1200 + HARD() * 1600) / 4000, 0, 3) * (1 + HARD() * 0.25);
 const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HARD() * 0.3); // difficulty tavana vurduktan sonra yavaşça 0 → 1 (İzmir 1.3, Antalya 1.6)
 // ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
 // Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
@@ -338,15 +341,17 @@ function gapKind(first, quiet, z0, d) {
   if (first) return 'mix';
   if (quiet) { if (genLog) genLog.push('Gquiet'); return 'quiet'; }
   const tz = tempoAt(z0 - 20), calm = tz && tz.kind === 'calm';
-  const pool = calm ? ['rain', 'pod'] : ['mix', 'mix', 'rain'].concat(d > 0.6 ? ['pod'] : [], d > 1.6 ? ['flock'] : [], d > 1.3 ? ['kites'] : []);
+  const pool = calm ? ['rain', 'pod'] : ['mix', 'mix', 'rain'].concat(heat() > 0.8 ? ['mix'] : [], heat() > 1.6 ? ['mix', 'flock'] : [], d > 0.6 ? ['pod'] : [], d > 1.6 ? ['flock'] : [], d > 1.3 ? ['kites'] : []);
   const k = pick(pool.filter(k => k === 'mix' || k !== lastGap));
   lastGap = k; if (genLog) genLog.push('G' + k); return k;
 }
 let lastPw = '';
-const pickPw = arr => { const k = pick(arr.filter(x => x !== lastPw)); lastPw = k; return k; }; // aynı güç art arda çıkmaz
+const pickPw = arr => { const a = arr.filter(x => x !== lastPw), k = pick(a.length ? a : [null]); if (k) lastPw = k; return k; }; // aynı güç art arda çıkmaz
+// güç bitmeden yenisi gelmesin: martı oraya vardığında hâlâ sürecek güç ya da önde zaten bekleyen aynı güç üretilmez (uzun kalkan + nazar = sınırsız kalkan olmasın)
+const pwFree = (k, z) => !(pw[k] > (gull.position.z - z) / Math.max(speed, 15)) && !powerups.some(p => !p.taken && p.kind === k);
 function spawnGap(first, fixLen, quiet) {
   const d = difficulty();
-  let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, 56 - late() * 10));
+  let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, Math.max(36, 56 - late() * 10 - heat() * 3)));
   const z0 = genZ, kind = gapKind(first, quiet, z0, d);
   if (!fixLen && (kind === 'pod' || kind === 'rain')) len = Math.max(len, 46);
   const ph = Math.random() * 6, amp = rand(1.2, 3.4);
@@ -359,17 +364,20 @@ function spawnGap(first, fixLen, quiet) {
     const camp = campT > 3 ? campSide : 0;
     // engeller birbirine karışmasın: yelkenli gelen açıklık yalnızca onundur (rakip, uçurtma yok);
     // öbür açıklıklarda rakip ve uçurtmalar boyca en az 13 m arayla dizilir, aralarından geçilebilsin
-    const sail = kind === 'mix' && d > 0.9 && len > 34 && Math.random() < 0.18 + d * 0.05;
-    const used = [], freeZ = (lo, hi) => { for (let t = 0; t < 8; t++) { const z = z0 - rand(lo, hi); if (used.every(u => Math.abs(u - z) >= 13)) { used.push(z); return z; } } return null; };
+    const sail = (kind === 'mix' || kind === 'kites') && d > 0.7 && len > 32 && Math.random() < 0.3 + d * 0.05 + heat() * 0.08; // yelkenli sık: asıl çarpılan engel o
+    const used = [], freeZ = (lo, hi) => { for (let t = 0; t < 8; t++) { const z = z0 - rand(lo, hi); if (used.every(u => Math.abs(u - z) >= 13 - Math.min(heat(), 2) * 1.2)) { used.push(z); return z; } } return null; };
     if (sail) { // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
-      const side = pick([-1, 1]), z = z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
+      const two = len > 44 && Math.random() < heat() * 0.25, s0 = pick([-1, 1]); // geç oyunda uzun açıklıkta ikinci yelkenli karşı yönden
+      for (let j = 0; j < (two ? 2 : 1); j++) {
+      const side = j ? -s0 : s0, z = two ? z0 - (j ? rand(len * 0.6, len - 10) : rand(12, len * 0.4)) : z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
       const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b);
       const o = { x: xa + side * SAIL_OFF, z, hw: SAIL_HW, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // martı boyunda yelkenler gövdenin bir yanına uzanır: kutu yelkenlerin üstünde
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
+      }
     } else {
       const n = kind === 'flock' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : kind !== 'mix' ? (camp && d >= 0.6 && kind !== 'quiet' && !(tempoAt(z0 - 20)?.kind === 'calm') ? 1 : 0) : camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
-      for (let i = 0; i < n; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
-      if (kind === 'kites' || (kind === 'mix' && d > 1.3 && Math.random() < 0.14 + d * 0.04)) {
+      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+      if (kind === 'kites' || (kind === 'mix' && d > 1.3 && Math.random() < 0.14 + d * 0.04 + heat() * 0.05)) {
         const nk = kind === 'kites' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : d > 3 && Math.random() < 0.4 ? 2 : 1;
         for (let i = 0; i < nk; i++) {
           const z = freeZ(10, len - 8); if (z === null) continue;
@@ -396,10 +404,13 @@ function spawnGap(first, fixLen, quiet) {
     }
     seedAt('gf', genN); // balık atılıp atılmamasından bağımsız: günün uçuşunda güç ve şamandıralar herkes için aynı
     if (segCount > 2 && Math.random() < 0.33) {
-      const kind = pickPw((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield'] : [])); // Nazar: kalkan daha sık
-      const z = z0 - len * 0.5, x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
+      const z = z0 - len * 0.5;
+      const kind = pickPw((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield'] : []).filter(k => pwFree(k, z))); // Nazar: kalkan daha sık
+      if (kind) {
+      const x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
       const p = makePowerUp(kind); p.position.set(x, FLY_Y, z); scene.add(p);
       powerups.push({ g: p, kind, x, y: FLY_Y, z });
+      }
     }
     for (let i = 0; i < (THROW_ON ? 1 : 2); i++) {
       const b = new THREE.Mesh(BUOY, vcMat); b.position.set(pick([-1, 1]) * rand(7, 11), 0, z0 - rand(5, len));
@@ -719,10 +730,13 @@ function spawnFerry() {
     for (let z = sz + SALON_LEN / 2 - 1.5; z > sz - SALON_LEN / 2; z -= 2.6) addSimit(x0 + tx, FLY_Y, zc + z, goldRoll(0.06));
     salon = { tx, sz };
   }
-  const nCh = 1 + (d > 1 ? 1 : 0) + (d > 2.5 ? 1 : 0);
+  const nCh = 1 + (d > 1 ? 1 : 0) + (d > 2.5 ? 1 : 0) + (L >= 44 && heat() > 1 && Math.random() < 0.15 + heat() * 0.12 ? 1 : 0); // uzun vapurda geç oyunda dördüncü baca
   const chims = [];
+  // bacalar dizilir: biri sola yapışık, biri ortada, biri sağa yapışık (sırası karışık, ortadaki iki yanın arasında: martı kıvrılarak geçer)
+  const s0 = pick([-1, 1]), lay = [s0, 0, -s0, 0];
+  if (nCh === 2) lay.splice(1, 1);
   for (let i = 0; i < nCh; i++) {
-    let cx = rand(-2.6, 2.6); const cz = -L / 2 + 12 + (i + 0.5) * (L - 16) / nCh + rand(-3, 3);
+    let cx = lay[i] ? lay[i] * (EDGE - ft.hw) : rand(-0.6, 0.6); const cz = -L / 2 + 12 + (i + 0.5) * (L - 16) / nCh + rand(-3, 3);
     const stuck = EDGE - (Math.abs(cx) + ft.hw) < 0.9; // küpeşteyle arası martı sığmayacak kadar dar: baca küpeşteye yapışık durur (görüntü kurala uysun)
     if (stuck) cx = (Math.sign(cx) || 1) * (EDGE - ft.hw);
     if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın
@@ -1043,12 +1057,12 @@ function generateIn(limit) {
     if (!tn) {
       if (segCount % 2 === 1) {
         spawnFerry();
-        if (!convoy && difficulty() > 0.6 && Math.random() < 0.2) { convoy = true; spawnGap(false, rand(18, 24), true); continue; } // konvoy: hemen ardından bir vapur daha
+        if (!convoy && difficulty() > 0.6 && Math.random() < 0.2 + heat() * 0.1) { convoy = true; spawnGap(false, rand(18, 24), true); continue; } // konvoy: hemen ardından bir vapur daha
         convoy = false;
       } else if (genZ < bridgeZ) spawnBridge(); else if (genZ < imbatZ) spawnImbat(); else if (genZ < pirateZ) spawnPirate(); else if (genZ < fallsZ) spawnFalls(); else if (genZ < beachZ) spawnBeach();
       else {
         spawnGap(segCount === 0);
-        if (segCount > 2 && !longSea && Math.random() < 0.22) { longSea = true; continue; } // uzun açık su: vapur bu sefer gecikir
+        if (segCount > 2 && !longSea && Math.random() < Math.max(0.05, 0.22 - heat() * 0.06)) { longSea = true; continue; } // uzun açık su: vapur bu sefer gecikir
         longSea = false;
       }
       segCount++;
@@ -2262,6 +2276,7 @@ function renderFishBtn() {
   show('fishBtn', fish > 0 || fishRev > 0); // hiç balığı olmayana boş düğme gösterilmez
   b.classList.toggle('poor', fish < cost);
   $('fishCost').textContent = fmt(cost);
+  $('fishHave').textContent = `${tr('Elinde')}: ${fmt(fish)}`; // kaç balığın kaldığı görünsün
 }
 function fishRevive() {
   if (state !== 'over' || overLock > 0) return;
@@ -2897,6 +2912,13 @@ function frame() {
         if (p.taken || Math.abs(p.z - g.z) > HIT.power || Math.abs(p.x - g.x) > HIT.power) continue;
         p.taken = true; scene.remove(p.g);
         pw[p.kind] = dur(p.kind); renderPowers(); run.power++;
+        for (const q of powerups) { // öndeki aynı güç, bu bitmeden gelmesin: başka bir güce döner (hepsi sürüyorsa kalkar)
+          if (q.taken || q.kind !== p.kind) continue;
+          const alt = ['magnet', 'double', 'tea', 'shield'].find(k => k !== p.kind && !(pw[k] > 0) && !powerups.some(o => !o.taken && o.kind === k));
+          scene.remove(q.g);
+          if (!alt) { q.taken = true; continue; }
+          q.kind = alt; q.g = makePowerUp(alt); q.g.position.set(q.x, q.y, q.z); scene.add(q.g);
+        }
         hitStop = 0.05; trauma = Math.min(1, trauma + 0.2);
         sparkle(tmp.set(p.x, p.y, p.z), 40, new THREE.Color(POWER[p.kind].color).getHex(), 7, 0.8, 0.5);
         sfx.power(); vibrate(25);
@@ -2936,7 +2958,7 @@ function frame() {
         if (!u.entered && g.z < u.z0) { u.entered = true; sfx.whoosh(); trauma = Math.min(1, trauma + 0.12); }
         if (!u.done && g.z < u.z1) { u.done = true; judgeTurn(u); }
       }
-      if (comboT > 0) { comboT -= dt; if (comboT <= 0) combo = 0; }
+      if (comboT > 0) { comboT -= dt * (pw.tea > 0 ? 0.5 : 1); if (comboT <= 0) combo = 0; } // Çay Molası: dünya %60'a iner, kombo halkası ayrıca yarı hızda boşalır (simitlerle aynı oranda yavaşlayınca fark edilmiyordu)
       if ((cryT -= dt) < 0) { cryT = rand(6, 12); sfx.cry(0.08 + Math.random() * 0.05); }
       for (const k of Object.keys(pw)) if (pw[k] > 0) { pw[k] -= k === 'tea' ? dt / teaK : dt; if (pw[k] <= 0) { pw[k] = 0; renderPowers(); } } // çayın kendi süresi gerçek zamanla iner, diğer güçler yavaşlar
       if (invuln > 0) invuln -= dt;

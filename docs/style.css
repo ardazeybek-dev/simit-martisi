@@ -437,6 +437,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #fishBtn .ico { width: 26px; height: 26px; }
 #fishBtn b { font-size: 1.1em; }
 #fishBtn.poor { filter: saturate(.3); opacity: .7; }
+#fishBtn small { font-size: .72em; font-weight: 600; opacity: .8; margin-left: 4px; }
 .hud-fish { display: inline-flex; align-items: center; gap: 5px; }
 .hud-fish.hidden { display: none; }
 .hud-fish.bump .ico { animation: coinHit .3s cubic-bezier(.3, 1.8, .5, 1); }
