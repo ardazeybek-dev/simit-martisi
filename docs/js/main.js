@@ -3398,13 +3398,19 @@ function dolphinBonus(f) {
   const gain = 15 * mult() * (perk('bowtie') ? 1.5 : 1); // Papyon: yunus +%50
   points += gain; run.dolphin++;
   if (combo > 0) comboT = comboT0();
-  sfx.near(); vibrate(15);
+  sfx.near(); vibrate(15); flashScore('dolph');
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y + 0.5, f.z), 12, 0xcff0ff, 3.5, 0.5);
+}
+// yunus/kılpayı: uçuşta yazı yok, puan sayacı renkli parlar (yunus mavi, kılpayı beyaz)
+function flashScore(cls) {
+  ui.score.classList.remove('dolph', 'near');
+  ui.score.onanimationend = () => ui.score.classList.remove('dolph', 'near'); // kalırsa simit zıplamasını ezer
+  bump(ui.score, cls);
 }
 function nearMiss(x) {
   const gain = 5 * mult() * (perk('taksi') ? 2 : perk('mustache') ? 1.25 : 1); // Taksi x2, Bıyık +%25 (toplanmaz)
   points += gain; run.near++;
-  sfx.near(); trauma = Math.min(1, trauma + 0.12);
+  sfx.near(); trauma = Math.min(1, trauma + 0.12); flashScore('near');
   sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0xffffff, 3, 0.35);
 }
 
