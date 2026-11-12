@@ -1062,3 +1062,5 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #roadPanel .road-get.see::after { content: none; }
 #roadPanel .road-ok { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 15px; color: #fff; background: #1f9a62; }
 #roadPanel .road-row.got .road-ok { width: 26px; height: 26px; margin: 0; font-size: 15px; background: #1f9a62; box-shadow: none; }
+/* dar ekranda rekor ortada sabit durursa uzun simit sayısıyla çakışır: simit kutusunun yanına akar, yer yetmezse yazı kısalır */
+@media (max-width: 560px) { .stat-card.best { position: static; transform: none; flex: 0 1 auto; min-width: 0; } .stat-card.best span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; } }
