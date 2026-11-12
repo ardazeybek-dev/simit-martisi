@@ -570,9 +570,24 @@ function sailTri(w, h) {
   const g = new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: false }); g.rotateY(Math.PI / 2); // yelken y-z düzleminde, +z'ye uzanır
   return g;
 }
+// yelken motifleri: ana yelkenin iki yüzüne de (iskele ve sancaktan görünsün) düz şekiller. Yalnız görüntü: çarpışma kutusu (sailBox) değişmez.
+// Merkez: yelken düzleminde (y 3.6, z -1.55), yarıçap ~0.6 — yelkenin o boydaki genişliğinin içinde kalır
+const shapeOf = pts => { const s = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? s.lineTo(x, y) : s.moveTo(x, y))); s.closePath(); return new THREE.ShapeGeometry(s); };
+const starPts = (r, n = 5) => Array.from({ length: n * 2 }, (_, i) => { const a = Math.PI / 2 + i * Math.PI / n, q = i % 2 ? r * 0.45 : r; return [Math.cos(a) * q, Math.sin(a) * q]; });
+const HEART = (() => { const s = new THREE.Shape(); s.moveTo(0, -0.55); s.bezierCurveTo(-0.15, -0.35, -0.62, -0.1, -0.6, 0.2); s.bezierCurveTo(-0.58, 0.5, -0.2, 0.62, 0, 0.32); s.bezierCurveTo(0.2, 0.62, 0.58, 0.5, 0.6, 0.2); s.bezierCurveTo(0.62, -0.1, 0.15, -0.35, 0, -0.55); return new THREE.ShapeGeometry(s, 10); })();
+const SAIL_MOTIFS = [
+  [[new THREE.CircleGeometry(0.62, 22), 0x1f5fbf], [new THREE.CircleGeometry(0.44, 22), 0xffffff], [new THREE.CircleGeometry(0.27, 18), 0x7cc9f2], [new THREE.CircleGeometry(0.12, 14), 0x16161c]], // nazar boncuğu
+  [[new THREE.RingGeometry(0.3, 0.62, 22), 0xc98a42], ...[0, 1, 2, 3, 4, 5, 6].map(i => [new THREE.CircleGeometry(0.045, 6).translate(Math.cos(i * 0.9) * 0.46, Math.sin(i * 0.9) * 0.46, 0), 0xfff3d6])], // simit (susamlı)
+  [[HEART, 0xe2463b]], // kalp
+  [[shapeOf(starPts(0.66)), 0xffc23a]], // yıldız
+  [[new THREE.CircleGeometry(0.36, 18), 0xffb627], ...Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return [shapeOf([[Math.cos(a - 0.17) * 0.44, Math.sin(a - 0.17) * 0.44], [Math.cos(a) * 0.7, Math.sin(a) * 0.7], [Math.cos(a + 0.17) * 0.44, Math.sin(a + 0.17) * 0.44]]), 0xff8a3d]; })], // güneş
+  [[shapeOf([[-0.55, 0], [-0.3, 0.26], [0.1, 0.3], [0.38, 0.12], [0.38, -0.12], [0.1, -0.3], [-0.3, -0.26]]), 0xff8a3d], [shapeOf([[0.3, 0], [0.66, 0.3], [0.66, -0.3]]), 0xff8a3d], [new THREE.CircleGeometry(0.06, 8).translate(-0.33, 0.06, 0), 0x16161c]], // balık
+];
+const BUNTING = [0xe2463b, 0xffc23a, 0x2bb3a3, 0xff7eb6, 0xfdf7ec];
 export function sailboatGeo(...a) { return pureCall(sailboatGeo_, a); }
-function sailboatGeo_(ci) {
-  if (sailCache[ci]) return sailCache[ci];
+function sailboatGeo_(ci, mo = 0) {
+  const key = ci * 10 + mo;
+  if (sailCache[key]) return sailCache[key];
   const [hullC, band, sail] = SAIL_COLS[ci];
   const k = hullBands(new Kit(), [[0.35, 0x2b3a4c], [0.45, hullC], [0.16, band]], -0.3, 1.25, 1.35)
     .add(new THREE.BoxGeometry(2.1, 0.07, 5.4), 0xb98a5a, 0, 0.62, 0)
@@ -583,11 +598,19 @@ function sailboatGeo_(ci) {
     .add(sailTri(2.4, 6.2), sail, 0, 1.0, -0.75, 0, Math.PI, 0)                                   // flok
     .add(new THREE.BoxGeometry(0.05, 0.4, 0.7), band, 0, 8.7, -0.3);                               // flama
   for (const s of [-1, 1]) lifeRing(k, 0.32, s * 1.12, 0.55, 1.6);
-  return (sailCache[ci] = k.build());
+  // motif: katmanlar yelkenden azar azar uzaklaşır (üst üste titremesin); iki yüze ayna gibi. ×1,3: yarıçap ~0,8, yelkenin o boydaki eninde kalır
+  SAIL_MOTIFS[mo].forEach(([geo, col], i) => { const d = 0.012 + i * 0.006; k.add(geo, col, 0.06 + d, 3.7, -1.55, 0, Math.PI / 2, 0, 1.3); k.add(geo, col, -d, 3.7, -1.55, 0, -Math.PI / 2, 0, 1.3); });
+  // bayrak dizisi: direk tepesinden pruvaya, flokun önünde (x 0.14); her bayrak iki yüzlü küçük üçgen
+  const top = new THREE.Vector3(0, 8.4, -0.6), bow = new THREE.Vector3(0, 1.05, 2.55), FLAG = shapeOf([[-0.16, 0], [0.16, 0], [0, -0.32]]);
+  for (let i = 1; i <= 9; i++) {
+    const u = i / 10, y = top.y + (bow.y - top.y) * u - Math.sin(u * Math.PI) * 0.35, z = top.z + (bow.z - top.z) * u, col = BUNTING[(i + ci) % BUNTING.length];
+    for (const sd of [1, -1]) k.add(FLAG, col, sd * 0.14, y, z, 0, sd * Math.PI / 2, 0);
+  }
+  return (sailCache[key] = k.build());
 }
-export function makeSailboat(ci = (Math.random() * SAIL_COLS.length) | 0) {
+export function makeSailboat(ci = (Math.random() * SAIL_COLS.length) | 0, mo = (Math.random() * SAIL_MOTIFS.length) | 0) {
   const g = new THREE.Group();
-  const h = new THREE.Mesh(sailboatGeo(ci), vcMat); h.castShadow = true; g.add(h);
+  const h = new THREE.Mesh(sailboatGeo(ci, mo), vcMat); h.castShadow = true; g.add(h);
   addCrew(g, [[0.35, 0.66, 2.0, 0], ...(Math.random() < 0.5 ? [[-0.4, 0.66, -1.8, 0.4]] : [])]);
   return g;
 }
@@ -1304,7 +1327,7 @@ export function makeKite() {
   // ip: aşağıya, denize
   const line = new THREE.Mesh(KITE_LINE, kiteLineMat);
   line.position.set(0, -4.2, 1.4); line.rotation.x = 0.35; g.add(line);
-  g.userData.tail = tail;
+  g.userData.tail = tail; g.userData.line = line; // ip her kare main.js'te uçurtmanın ucundan denizdeki sabit noktaya gerilir
   return g;
 }
 

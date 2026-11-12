@@ -314,7 +314,7 @@ function flySimits(dt) {
       s.y = FLY_Y + v0 * k - 7 * k * k;
       const w = th.ry ?? waveAt(s.x, s.z, t); // güverteye atılan parça tahtaya düşer
       if (s.y < w) {
-        s.taken = true; scene.remove(s.mesh); scene.remove(th.ring); thrownStat.missed++; // denize düşen atılmış parça komboyu bozmaz: atışlar 2-4 parça, birini alıp yanındakini kaçırmak seriyi kesmesin
+        s.taken = true; scene.remove(s.mesh); scene.remove(th.ring); thrownStat.missed++; // denize düşmek ayrıca bozmaz: martının yanından kaçtıysa yukarıdaki kontrol zaten saydı, uzaktaki parça seriyi kesmez
         chunks.emit(tmp.set(s.x, w + 0.1, s.z), 6, { speed: 2.5, up: 1, life: 0.6, size: 0.09, color: [0xffffff, 0xcfe9f2], gravity: 12, spin: 0.3 });
         continue;
       }
@@ -335,6 +335,9 @@ function flySimits(dt) {
 // h 4.6..5.7): iç kenar -0.04 + 0.39·(h-5.15), dış kenar 2.05 - 0.51·(h-5.15) m. Tekne dalgayla ±0.5 m inip kalktığından kutu her
 // kare o anki yüksekliğe göre kurulur; sabit kutu en geniş hâle göre 0.43 m fazla tutuyordu. Pay 0.17 + obsK 0.08 = martı gövdesinin yarı eni.
 const SAIL_OFF = 1.0, SAIL_HW = 1.35, SAIL_PAD = 0.17;
+// kayan yelkenlinin x'i (çizim ve çarpışma kutusu aynı formül): martı geldiğinde xa'da. En fazla 9 m açıkta bekler —
+// uzakken 15-45 m dışarı çıkıp kenardaki tekne ve gemilerin içinden geçiyordu
+const sailX = (c, gz) => c.xa + c.side * clamp((gz - c.z) * c.k, -6, 9);
 function sailBox(c, cx, gy) {
   const h = clamp(gy - c.mesh.position.y - 5.15, -1.5, 2), a = -0.04 + h * 0.39 - SAIL_PAD, b = 2.05 - h * 0.51 + SAIL_PAD;
   c.o.x = cx + c.side * (a + b) / 2; c.o.hw = Math.max(0.3, (b - a) / 2);
@@ -370,9 +373,10 @@ function spawnGap(first, fixLen, quiet) {
     // engeller birbirine karışmasın: yelkenli gelen açıklık yalnızca onundur (rakip, uçurtma yok);
     // öbür açıklıklarda rakip ve uçurtmalar boyca en az 13 m arayla dizilir, aralarından geçilebilsin
     const sail = kind === 'mix' && d > 0.7 && len > 32 && Math.random() < 0.3 + d * 0.05 + heat() * 0.08; // yelkenli sık: asıl çarpılan engel o. Uçurtma açıklığını almaz (2.81'de alıyordu, uçurtma %25 azalmıştı)
+    const longX = Math.max(0, Math.floor((len - 56) / 28)); // iskele öncesi uzun dolgu (130'a kadar): engel sayısı boyla artsın, upuzun boş su kalmasın
     const used = [], freeZ = (lo, hi) => { for (let t = 0; t < 8; t++) { const z = z0 - rand(lo, hi); if (used.every(u => Math.abs(u - z) >= 13 - Math.min(heat(), 2) * 1.2)) { used.push(z); return z; } } return null; };
     if (sail) { // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
-      const two = len > 44 && Math.random() < heat() * 0.25, s0 = pick([-1, 1]); // geç oyunda uzun açıklıkta ikinci yelkenli karşı yönden
+      const two = len > 44 && Math.random() < heat() * 0.25 + (len > 80 ? 0.6 : 0), s0 = pick([-1, 1]); // iskele öncesi uzun dolgu (80+) çoğunlukla iki yelkenli // geç oyunda uzun açıklıkta ikinci yelkenli karşı yönden
       for (let j = 0; j < (two ? 2 : 1); j++) {
       const side = j ? -s0 : s0, z = two ? z0 - (j ? rand(len * 0.6, len - 10) : rand(12, len * 0.4)) : z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
       const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b); addShipLights(b, 'sail');
@@ -381,9 +385,9 @@ function spawnGap(first, fixLen, quiet) {
       }
     } else {
       const n = kind === 'flock' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : kind !== 'mix' ? (camp && d >= 0.6 && kind !== 'quiet' && !(tempoAt(z0 - 20)?.kind === 'calm') ? 1 : 0) : camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
-      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) : 0) + (kind !== 'quiet' && kind !== 'rain' && kind !== 'pod' ? longX : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
       if (kind === 'kites' || (kind === 'mix' && d > 1.3 && Math.random() < 0.14 + d * 0.04 + heat() * 0.05)) {
-        const nk = kind === 'kites' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : d > 3 && Math.random() < 0.4 ? 2 : 1;
+        const nk = (kind === 'kites' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : d > 3 && Math.random() < 0.4 ? 2 : 1) + longX;
         for (let i = 0; i < nk; i++) {
           const z = freeZ(10, len - 8); if (z === null) continue;
           addKite(rand(-2.6, 2.6), z, rand(1, 2));
@@ -695,6 +699,16 @@ function spawnBridge() {
 }
 
 // uçurtma: vapurun ya da korsan teknesinin üstüne düşerse konmaz (geminin içinden çıkıp görünmez engel oluyordu)
+const KITE_TIP = new THREE.Vector3(0, -1.2, 0), _kd = new THREE.Vector3(), _UP = new THREE.Vector3(0, 1, 0); // uçurtmanın alt ucu (ipin bağlandığı yer)
+// z'de simitlerden (atılanın iniş yeri dahil) en uzak x: oraya konan uçurtma simit yolunu kapatmaz
+function clearX(z) {
+  let best = 0, bd = -1;
+  for (let x = -3; x <= 3; x += 0.25) {
+    let m = 9; for (const s of simits) if (!s.taken && Math.abs((s.th ? s.th.cz : s.z) - z) < 6) m = Math.min(m, Math.abs((s.th ? s.th.cx : s.x) - x));
+    if (m > bd) { bd = m; best = x; }
+  }
+  return best;
+}
 function addKite(x, z, sw) {
   if (ferries.some(f => z > f.zFront - 6 && z < f.zBack + 6) || pirates.some(p => Math.abs(p.z - z) < 16)) return false;
   const k = makeKite(); k.position.set(x, FLY_Y + 0.2, z); scene.add(k); addShipLights(k, 'kite', { tail: k.userData.tail });
@@ -1012,12 +1026,13 @@ function spawnPier() {
   for (let k = 0, x = gx; throwers.length && k < 9; k++) { x = clamp(x + rand(-2.2, 2.2), -THROW_X, THROW_X); addThrown(throwers[k % 2], x, gz - 5 - k * 3.4, k === 8); }
   // yeni ilçe boş geçiş olmasın: kapıdan sonra simit yağmurunun içinde engeller (ilerideki ilçelerde daha çok)
   if (i >= 1 && !last) {
-    const n = 1 + (i >= 3 ? 1 : 0) + (i >= 5 ? 1 : 0);
+    const n = 1 + (i >= 2 ? 1 : 0) + (i >= 3 ? 1 : 0) + (i >= 5 ? 1 : 0); // ilk iskele hafif (erken engel seyrek)
     for (let k = 0; k < n; k++) {
-      const z = gz - 12 - k * 14, x = rand(-3, 3);
-      if (k === 1 && i >= 2 && addKite(x, z, rand(0.8, 1.4))) { /* uçurtma */ }
-      else addRival(z, x, rand(0.6, 1.3), undefined, gz + 4);
+      const z = gz - 9 - k * (26 / n);
+      if (k % 2 === 1 && addKite(clearX(z), z, 0.5)) { /* uçurtma: atılan parçaların iniş yerinden en uzakta, az sallanır */ }
+      else addRival(z, rand(-3, 3), rand(0.6, 1.3), undefined, gz + 4);
     }
+    if (i >= 2) addRival(gz + rand(15, 24), rand(-3, 3), rand(0.6, 1.2), undefined, gz + 30); // kapıdan önceki boş su: bir rakip (simit yolunu rivalClear boş bırakır)
   }
   piers.push({ g, z: gz, i, side });
   genZ = z0 - PIER_HALF * 2;
@@ -3013,7 +3028,8 @@ function frame() {
       if (s.taken || (s.th && s.th.u < 0) || (s.bin && s.bin.u < 0)) continue; // henüz atılmamış simit tepside / kapalı çöp kutusunda
       const dzs = g.z - s.z;
       // geride kalan simit = kaçırıldı: seri biter (yolcunun elindeki, çöp kutusundaki ve martının boyunda olmayan sayılmaz; atılan parçalar suya düşünce)
-      if (!s.missed && dzs < -HIT.simZ - 0.4 && !s.pulled && !s.person && !s.bin && !s.th) { s.missed = true; if (state === 'play' && Math.abs(s.y - g.y) < HIT.simY * 1.5 && Math.abs(s.x - g.x) < LANE * 0.5) missSimit(); } // yalnızca martının önünden geçen; yan şeritteki seriyi bozmaz
+      // atılan parça da sayılır (inerken martının yanından kaçarsa): yoksa simitlerin yarısı seriyi hiç bozmuyor, kombo hiç düşmüyordu
+      if (!s.missed && dzs < -HIT.simZ - 0.4 && !s.pulled && !s.person && !s.bin && !(s.th && s.th.u < 0.5)) { s.missed = true; if (state === 'play' && Math.abs(s.y - g.y) < HIT.simY * 1.5 && Math.abs(s.x - g.x) < LANE * 0.5) missSimit(); } // yalnızca martının önünden geçen; yan şeritteki seriyi bozmaz
       if (magnet && dzs > -2 && dzs < 16 && Math.abs(s.x - g.x) < 7) {
         if (!s.free) { // yolcunun elinden kopar
           s.mesh.getWorldPosition(tmp); s.mesh.removeFromParent(); s.mesh.position.copy(tmp); scene.add(s.mesh);
@@ -3050,7 +3066,7 @@ function frame() {
       const gz0 = g.z + speed * dt; // bu karede martının geçtiği z aralığı: [g.z, gz0]
       const swept = (z, h) => g.z < z + h && gz0 > z - h;
       // kayan teknelerin kutusu bu karenin martı konumuyla: çizilen yelkenle aynı yerde (bir kare geriden gelmesin)
-      for (const c of crossers) sailBox(c, c.xa + c.side * Math.max(-40, g.z - c.z) * c.k, g.y);
+      for (const c of crossers) sailBox(c, sailX(c, g.z), g.y);
       for (const p of pirates) { const x = p.xa + p.side * Math.max(-40, g.z - p.z) * p.k; for (const q of p.os) q.o.x = x + q.off; }
       for (const o of obstacles) {
         const dx = Math.abs(g.x - o.x);
@@ -3120,6 +3136,13 @@ function frame() {
     kp.y = FLY_Y + 0.2 + Math.sin(t * 2.6 + k.ph) * 0.3;
     k.g.rotation.z = Math.cos(t * 1.9 + k.ph) * 0.4;
     k.g.userData.tail.forEach((b, i) => { b.position.x = Math.sin(t * 5 - i * 0.8) * 0.18 * (i + 1); b.rotation.z = Math.sin(t * 6 - i) * 0.6; });
+    // ip denizdeki sabit noktaya bağlı: uçurtma sallanırken alt ucu savrulmaz (eskiden grupla birlikte dönüp havada uçuyordu)
+    const ln = k.g.userData.line;
+    if (ln) {
+      const r = -k.g.rotation.z, c = Math.cos(r), sn = Math.sin(r), ax = k.bx - kp.x, ay = -0.3 - kp.y; // çapa: sallanmanın ortası, su hizası, uçurtmanın 2,6 m önü
+      _kd.set(ax * c - ay * sn, ax * sn + ay * c, 2.6).sub(KITE_TIP); const len = _kd.length();
+      ln.position.copy(KITE_TIP).addScaledVector(_kd, 0.5); ln.quaternion.setFromUnitVectors(_UP, _kd.divideScalar(len)); ln.scale.y = len / 7;
+    }
   }
   for (const p of powerups) {
     p.g.position.y = p.y + Math.sin(t * 3 + p.z) * 0.22;
@@ -3165,7 +3188,7 @@ function frame() {
   }
   updatePirates(g.z); updateFalls(dt, g.z);
   for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar
-    const cx = c.xa + c.side * Math.max(-40, g.z - c.z) * c.k;
+    const cx = sailX(c, g.z);
     c.mesh.position.set(cx, waveAt(cx + c.side * SAIL_OFF, c.z, t) - 0.1, c.z); sailBox(c, cx, g.y); c.mesh.rotation.x = Math.sin(t * 1.3 + c.ph) * 0.06;
   }
   for (const b of bins) { // martı yaklaşınca kapak fırlar, kırık simit tam önüne zıplar
