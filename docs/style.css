@@ -184,6 +184,19 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   background: var(--glass); border: 1px solid var(--line); font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums;
   box-shadow: 0 4px 0 rgba(15, 13, 36, .35); }
 .stat-card .ico { width: 24px; height: 24px; }
+.stat-plus { display: grid; place-items: center; width: 26px; height: 26px; margin: 0 -6px 0 2px; padding: 0; border-radius: 9px; font: 900 20px/1 inherit; color: #2a1503; background: var(--simit); box-shadow: 0 2px 0 var(--simit-d); pointer-events: auto; }
+.shop-h { margin: 10px 0 6px; text-align: left; font-weight: 800; font-size: 14px; opacity: .75; }
+.shop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 420px) { .shop-grid { grid-template-columns: repeat(2, 1fr); } }
+.shop-t { position: relative; display: grid; justify-items: center; gap: 4px; padding: 12px 6px 10px; border-radius: 16px; background: rgba(255, 255, 255, .06); border: 1px solid var(--line); color: var(--cream); font-weight: 800; }
+.shop-t .fishes { display: flex; color: #bfe9ff; } .shop-t .fishes .ico { width: 22px; height: 22px; margin: 0 -3px; }
+.shop-t .gets { display: inline-flex; align-items: center; gap: 4px; font-size: 18px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.shop-t .gets .ico { width: 18px; height: 18px; }
+.shop-t .tag { position: absolute; top: -7px; right: -4px; padding: 2px 6px; border-radius: 8px; font-size: 11px; background: #3fb6a8; color: #fff; }
+.shop-t.poor { filter: grayscale(.7); opacity: .55; }
+.shop-t.arm, .up-buy.arm { outline: 2px solid var(--gold); background: rgba(255, 194, 58, .18); }
+.shop-buy { text-align: left; }
+.shop-buy .up-i { color: #bfe9ff; }
 .stat-card.best { font-size: 15px; color: var(--gold); }
 .stat-card.best span { color: var(--cream); }
 .menu-side { position: absolute; left: calc(14px + var(--sal)); top: 46%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; }

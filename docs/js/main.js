@@ -1429,7 +1429,7 @@ function showTitle() {
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
   show('profileBtn', !tutorialPending); renderNameChip(); renderMode();
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap(); renderRank();
-  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false);
+  show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false); show('shopPanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
   $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
@@ -1462,7 +1462,7 @@ function startGame() {
   resetWorld(daily || state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel']) show(id, false);
   shownScore = shownSimit = shownDist = shownFish = -1; shownMult = 0;
   ui.combo.classList.remove('on');
   renderPowers();
@@ -1679,7 +1679,7 @@ let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan 
 function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; cosSel = null; $('wardNote').textContent = '';
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe'); podEnter();
 }
 function reloadKeep() { try { sessionStorage.setItem('simit-martisi-keepw', weather); } catch (e) {} location.reload(); }
@@ -1824,6 +1824,41 @@ function buyUp(k, el) {
   sfx.power(); vibrate([20, 30, 20]);
   renderUps(); $('titleWallet').textContent = fmt(wallet);
   bump($('ups').children[Object.keys(ups).indexOf(k)], 'bump');
+}
+// ---------------- mağaza ----------------
+// Balık → simit: toplu satışta balık başı artar (250, 260, 270, 280). Simit → balık: 300, günde SHOP_DAY kez.
+// Alış (300) en iyi satıştan (280) pahalı: al-sat ile simit basılamaz. Çarkta 1 balık = 280 simit.
+const SHOP_SELL = [250, 520, 810, 1120], SHOP_FISH = 300, SHOP_DAY = 3, KEY_SHOPDAY = 'simit-martisi-shopday';
+const shopBought = () => { const f = store.get(KEY_SHOPDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
+let shopArm = '', shopArmT = 0;
+function disarmShop() { clearTimeout(shopArmT); shopArmT = 0; shopArm = ''; }
+function renderShop() {
+  $('shopWallet').textContent = fmt(wallet); $('shopFish').textContent = fmt(fish);
+  const box = $('shopSell'); box.textContent = '';
+  SHOP_SELL.forEach((get, i) => {
+    const n = i + 1, b = document.createElement('button'), bonus = Math.round((get / n / SHOP_SELL[0] - 1) * 100);
+    b.className = 'shop-t' + (fish < n ? ' poor' : '') + (shopArm === 's' + n ? ' arm' : '');
+    b.innerHTML = `<span class="fishes">${'<svg class="ico"><use href="#i-fish"/></svg>'.repeat(n)}</span><span class="gets"><svg class="ico"><use href="#i-simit"/></svg>${shopArm === 's' + n ? tr('Emin misin?') : fmt(get)}</span>` + (bonus > 0 ? `<i class="tag">+%${bonus}</i>` : '');
+    b.addEventListener('click', e => { e.stopPropagation(); shopTap('s' + n, b); });
+    box.appendChild(b);
+  });
+  const left = SHOP_DAY - shopBought(), bb = $('shopBuy');
+  $('shopLeft').textContent = tr('Bugün {n}/{m} hak').replace('{n}', fmt(left)).replace('{m}', fmt(SHOP_DAY));
+  bb.innerHTML = shopArm === 'b' ? tr('Emin misin?') : `<svg class="ico"><use href="#i-simit"/></svg>${fmt(SHOP_FISH)}`;
+  bb.classList.toggle('arm', shopArm === 'b'); bb.classList.toggle('poor', wallet < SHOP_FISH || left <= 0); bb.disabled = left <= 0;
+}
+// iki dokunuş: ilki "Emin misin?", ikincisi takası yapar (yanlışlıkla balık harcanmasın)
+function shopTap(k, el) {
+  const n = +k.slice(1) || 0, ok = k === 'b' ? wallet >= SHOP_FISH && shopBought() < SHOP_DAY : fish >= n;
+  if (!ok) { sfx.click(); bump(el, 'shake'); vibrate(30); return; }
+  if (shopArm !== k) { sfx.click(); shopArm = k; clearTimeout(shopArmT); shopArmT = setTimeout(() => { shopArm = ''; renderShop(); }, 2500); renderShop(); return; }
+  disarmShop();
+  if (k === 'b') { wallet -= SHOP_FISH; setFish(fish + 1); store.set(KEY_SHOPDAY, { day: dayKey(), n: shopBought() + 1 }); }
+  else { setFish(fish - n); wallet += SHOP_SELL[n - 1]; }
+  store.set(KEY_WALLET, wallet);
+  sfx.power(); vibrate([20, 30, 20]);
+  renderShop(); bump($('shopPanel').querySelector('.wallet'), 'bump');
+  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
 }
 // ---------------- görevler ----------------
 // Aynı anda üç görev; biten görev hemen simit kazandırır, yerine bir sonraki uçuşta yenisi gelir.
@@ -2418,7 +2453,7 @@ function setTx(v) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
-const menuModal = () => !$('dayRunPanel').classList.contains('hidden') || !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden') || !$('roadPanel').classList.contains('hidden');
+const menuModal = () => !$('dayRunPanel').classList.contains('hidden') || !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden') || !$('roadPanel').classList.contains('hidden') || !$('shopPanel').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -2469,6 +2504,9 @@ onBtn('closeAch', () => show('achPanel', false));
 onBtn('tabAch', () => achTab('ach'));
 onBtn('tabBdg', () => achTab('bdg'));
 onBtn('upsBtn', () => { renderUps(); show('upPanel'); });
+onBtn('shopBtn', () => { disarmShop(); renderShop(); show('shopPanel'); });
+$('shopBuy').addEventListener('click', e => { e.stopPropagation(); shopTap('b', $('shopBuy')); });
+onBtn('closeShop', () => { disarmShop(); show('shopPanel', false); $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); });
 onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
 onBtn('dailyBtn', () => openDaily());
 onBtn('modeBtn', () => openDayRun());
@@ -2507,7 +2545,7 @@ onBtn('quitBtn', () => { audio.resume(); show('pause', false); for (const k of O
 onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
 onBtn('closeSettings', () => show('settings', false));
 // panelin dışına (karartılmış boşluğa) dokunmak paneli kapatır; kendi kapatma düğmesine basılmış gibi, oyun başlamaz
-for (const [panel, btn] of Object.entries({ roadPanel: 'closeRoad', missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' }))
+for (const [panel, btn] of Object.entries({ roadPanel: 'closeRoad', missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', shopPanel: 'closeShop', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' }))
   $(panel).addEventListener('click', e => { if (e.target === e.currentTarget) { e.stopPropagation(); $(btn).click(); } });
 // paylaşım kartı: o anki sahnenin karesi üstüne puan, simit, metre ve şehir (1080x1080). Telefonda görsel olarak paylaşılır.
 function scoreCard() {
@@ -3472,7 +3510,7 @@ window.__game = {
   addFish: (ahead = 40, x = 0) => { const dir = 1, mm = new THREE.Mesh(FISH, vcMat); mm.visible = false; scene.add(mm); fishes.push({ mesh: mm, dir, ax: x, z: gull.position.z - ahead, w: 3.2, T: 0.85, lag: 0, u: -1, done: false, spin: 0, splT: 0 }); },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
-  get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
+  get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
