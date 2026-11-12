@@ -1274,6 +1274,7 @@ function planTempo(limit) {
 const tempoAt = z => tempos.find(u => z < u.z0 && z > u.z1) || null;
 // hava (weather.js): yağmurda rüzgâr esintisi martıyı yana iter, karda simit yemezsen üşürsün, siste ufuk kısalır
 let full = 1, starve = false, shownFull = -1; // tokluk: simit yemeden uçan martı acıkır; çubuk biterse düşer (starve: son anlar, titrer)
+let boltFx = 0;
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
 const GUST = 6.5, COLD_S = 8; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
 const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0 }; // görevler ve başarımlar için uçuş sayaçları
@@ -1294,6 +1295,7 @@ function resetWorld(newWeather = true) {
   for (const k in run) run[k] = 0; tempos = []; tempoZ = 0; tempoN = 0; tempoK = 1; tempoIn = null; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   Math.random = R0;
   if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
+  boltFx = 0; renderer.toneMappingExposure = 1;
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
   full = 1; starve = false; shownFull = -1; markAt = 400; show('hungry', false); $('hungry').classList.remove('cold');
@@ -2851,6 +2853,8 @@ function frame() {
   timeScale = damp(timeScale, 1, 2.2, realDt);
   dt *= state === 'dead' ? timeScale : 1;
   if (slowT > 0) { slowT -= realDt; dt *= 0.4; }
+  // şimşek sahnenin pozlamasıyla çakar (tek uniform): tam ekran beyaz DOM katmanı telefonda her şimşekte takılma yapıyordu
+  if (boltFx > 0) { boltFx = Math.max(0, boltFx - realDt * 2.4); renderer.toneMappingExposure = 1 + 1.5 * boltFx * boltFx; }
   teaK = damp(teaK, pw.tea > 0 && state === 'play' ? 0.6 : 1, 3, realDt); dt *= teaK; // Çay Molası: her şey yavaşlar, engeller ve simitler kolay tutturulur
   if (state === 'countdown') {
     countdown -= realDt;
@@ -3382,7 +3386,7 @@ function weatherTick(dt) {
     }
     gustT -= dt;
     wind = damp(wind, gustDir * (gustT > 0 ? GUST * (pz ? 1.2 : 1) : 1), gustT > 0 ? 2.5 : 1.2, dt);
-    if (weather === 'rain') { boltNext -= dt; if (boltNext <= 0) { boltNext = rand(9, 18); bump(ui.flash, 'flashing'); sfx.thunder(); } }
+    if (weather === 'rain') { boltNext -= dt; if (boltNext <= 0) { boltNext = rand(9, 18); boltFx = 1; sfx.thunder(); } }
   } else wind = damp(wind, 0, 2, dt);
   if (weather === 'fog') { hornNext -= dt; if (hornNext <= 0) { hornNext = rand(12, 20); sfx.horn(); } }
   if (weather === 'snow' && !tutorialPending) {
@@ -3539,6 +3543,7 @@ window.__game = {
   get city() { return city.id; }, get full() { return +full.toFixed(3); }, get starve() { return starve; }, get warmth() { return +warmth.toFixed(3); }, setFull: v => (full = v), get arriveText() { return $('arriveSub').textContent; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
   get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
+  bolt() { boltFx = 1; },
   setCity(id) { useCity(cityOf(id)); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },
   get marks() { return marks.map(k => ({ kind: k.kind, m: -k.z / 2, passed: k.passed })); }, get vs() { return vs && { ...vs }; },
   get route() { return { next: STOPS[stopI] ? STOPS[stopI].name : null, at: stopM[stopI] ?? null, dist, z: gull.position.z, piers: piers.map(p => ({ i: p.i, ahead: +(gull.position.z - p.z).toFixed(1) })) }; },
