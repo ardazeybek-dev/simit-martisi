@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="2.84.0">
+<meta name="app-version" content="2.85.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -196,7 +196,9 @@
 <section id="boardPanel" class="screen modal hidden">
   <div class="card board-card">
     <h2>Sıralama</h2>
+    <button class="board-help" id="boardHelp" aria-label="?">?</button>
     <p class="fine" id="boardInfo"></p>
+    <div class="board-prize hidden" id="boardPrize"></div>
     <ol class="board" id="boardList"></ol>
     <div class="board-tier" id="boardTier"></div>
     <div class="board-acts"><button class="btn ghost" id="boardName"></button><button class="btn ghost" id="inviteBtn">Arkadaşlarını çağır</button></div>

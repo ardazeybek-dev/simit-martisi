@@ -1601,7 +1601,22 @@ function boardMsg(info, line, tier = '') {
   $('boardList').innerHTML = line ? `<li class="gap msg">${line}</li>` : '';
   $('boardTier').innerHTML = tier;
 }
+// haftalık ödül (sunucu: give_weekly_prizes, her pazar 00:00 UTC). Rakamlar SQL ile aynı kalmalı.
+const WEEK_PRIZE = [['1.', 3000, 3], ['2.', 2000, 2], ['3.', 1500, 1], ['4–10.', 750, 0], ['', 100, 0]];
+const nextPrizeAt = (now = new Date()) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + ((7 - now.getUTCDay()) % 7 || 7)));
+function renderPrize() {
+  const sim = '<svg class="ico"><use href="#i-simit"/></svg>', fi = '<svg class="ico"><use href="#i-fish"/></svg>';
+  const when = nextPrizeAt().toLocaleString(window.I18N.locale, { weekday: 'long', hour: '2-digit', minute: '2-digit' });
+  $('boardPrize').innerHTML = `<h3>${esc(tr('Haftalık ödül'))}</h3><p>${esc(tr('Her hafta, o hafta uçmuş herkes sırasına göre ödül alır.'))}</p><ul>` +
+    WEEK_PRIZE.map(([r, s, f]) => `<li><b>${esc(r || tr('Diğerleri'))}</b>${sim}${fmt(s)}${f ? `<span class="f">${fi}</span>${fmt(f)}` : ''}</li>`).join('') +
+    `</ul><p class="next">${esc(tr('Sonraki ödül: {t}').replace('{t}', when))}</p>`;
+}
+function togglePrize(on = $('boardPrize').classList.contains('hidden')) {
+  if (on) renderPrize();
+  show('boardPrize', on); show('boardList', !on); show('boardTier', !on); $('boardHelp').classList.toggle('on', on);
+}
 async function renderBoard() {
+  togglePrize(false);
   const seq = ++boardSeq, bestLine = best > 0 ? `${tr('Rekor')} ${fmt(best)}` : '';
   $('boardName').textContent = myName() ? `${myName()} ✎` : tr('Ad seç');
   boardMsg(tr('Yükleniyor…'), '');
@@ -2504,6 +2519,7 @@ onBtn('closeAch', () => show('achPanel', false));
 onBtn('tabAch', () => achTab('ach'));
 onBtn('tabBdg', () => achTab('bdg'));
 onBtn('upsBtn', () => { renderUps(); show('upPanel'); });
+onBtn('boardHelp', () => togglePrize());
 onBtn('shopBtn', () => { disarmShop(); renderShop(); show('shopPanel'); });
 $('shopBuy').addEventListener('click', e => { e.stopPropagation(); shopTap('b', $('shopBuy')); });
 onBtn('closeShop', () => { disarmShop(); show('shopPanel', false); $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); });
@@ -3476,9 +3492,15 @@ showTitle();
 if (netOn()) refreshBoard();
 // hediye simit geldi: cüzdana eklenir, menüde turuncu hap çıkar (dokununca ya da uçuş başlayınca kapanır)
 onGift(() => {
-  const n = Math.max(0, Math.floor(+store.get('simit-martisi-gift', 0) || 0)); if (!n) return;
-  store.set('simit-martisi-gift', 0); wallet += n; store.set(KEY_WALLET, wallet); $('titleWallet').textContent = fmt(wallet);
-  $('giftPill').textContent = '🎁 ' + tr('Hediye geldi: {n} simit!').replace('{n}', fmt(n)); show('giftPill'); sfx.record();
+  const n = Math.max(0, Math.floor(+store.get('simit-martisi-gift', 0) || 0)), f = Math.max(0, Math.floor(+store.get('simit-martisi-gift-fish', 0) || 0)), wk = +store.get('simit-martisi-gift-week', 0) || 0;
+  if (!n && !f) return;
+  store.set('simit-martisi-gift', 0); store.set('simit-martisi-gift-fish', 0); store.set('simit-martisi-gift-week', 0);
+  wallet += n; store.set(KEY_WALLET, wallet); if (f) setFish(fish + f);
+  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
+  const got = [n ? tr('+{n} simit').replace('{n}', fmt(n)) : '', f ? tr('+{f} balık').replace('{f}', fmt(f)) : ''].filter(Boolean).join(', ');
+  $('giftPill').textContent = wk ? `🏆 ${wk <= 10 ? tr('Haftalık ödül: {r}. sıra!').replace('{r}', fmt(wk)) : tr('Haftalık ödül')} ${got}`
+    : f ? '🎁 ' + tr('Hediye geldi: {n} simit, {f} balık!').replace('{n}', fmt(n)).replace('{f}', fmt(f)) : '🎁 ' + tr('Hediye geldi: {n} simit!').replace('{n}', fmt(n));
+  show('giftPill'); sfx.record();
 });
 $('giftPill').addEventListener('click', () => show('giftPill', false));
 addEventListener('online', () => sync());

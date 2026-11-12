@@ -87,7 +87,7 @@ export function setCountry(cc) {
 
 let giftDone = false, giftCb = null; // hediye sayfa başına bir kez sorulur
 // hediye: sunucu (gifts tablosu) teslim edilmemiş hediyeleri bir kez verir; önce cihaza yazılır, sonra main.js cüzdana ekler
-export const onGift = cb => { giftCb = cb; if (+store.get(KEY_GIFT, 0) > 0) cb(); };
+export const onGift = cb => { giftCb = cb; if (+store.get(KEY_GIFT, 0) > 0 || +store.get('simit-martisi-gift-fish', 0) > 0) cb(); };
 let syncing = null, lastRank = null, edits = 0; // edits: oyuncunun ad/ülke değişiklik sayacı
 // await arasında oyuncu ad/ülke değiştirebilir: eski kopyayı yazmak yeni ülkeyi ezerdi → yazarken taze profile birleştirilir
 const save = patch => { const p = Object.assign(profile(), patch); store.set(KEY_PROFILE, p); return p; };
@@ -136,8 +136,17 @@ async function syncOnce() {
       p = save({ claimed: true });
     }
     if (!giftDone) {
-      const g = await rpc('claim_gifts', { p_id: p.id, p_secret: p.secret });
-      if (g !== null) { giftDone = true; if (typeof g === 'number' && g > 0) { store.set(KEY_GIFT, (+store.get(KEY_GIFT, 0) || 0) + g); if (giftCb) giftCb(); } }
+      // claim_gifts2: { simit, fish, notes: ['week:N', ...] } (haftalık ödülde N = sıra)
+      const g = await rpc('claim_gifts2', { p_id: p.id, p_secret: p.secret });
+      if (g !== null && g !== REJECT) {
+        giftDone = true;
+        const s = Math.max(0, +(g && g.simit) || 0), f = Math.max(0, +(g && g.fish) || 0);
+        const wk = ((g && g.notes) || []).map(x => /^week:(\d+)$/.exec(x)).filter(Boolean).map(m => +m[1]);
+        if (wk.length) store.set('simit-martisi-gift-week', Math.min(...wk));
+        if (f) store.set('simit-martisi-gift-fish', (+store.get('simit-martisi-gift-fish', 0) || 0) + f);
+        if (s) store.set(KEY_GIFT, (+store.get(KEY_GIFT, 0) || 0) + s);
+        if ((s || f) && giftCb) giftCb();
+      }
     }
     const q = store.get(KEY_PENDING, null);
     if (q) {

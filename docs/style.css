@@ -374,6 +374,16 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .board li.top b { color: var(--gold); opacity: 1; }
 .board li.me { background: var(--teal); color: #fff; }
 .board li.me em { color: #fff; }
+.board-help { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 50%; font: 900 19px/1 inherit; color: #2a1503; background: var(--gold); box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+.board-help.on { background: var(--teal); color: #fff; }
+.board-prize { margin: 10px 0 6px; text-align: left; }
+.board-prize h3 { margin: 0 0 4px; font-size: 18px; }
+.board-prize p { margin: 0 0 10px; font-size: 13.5px; opacity: .8; font-weight: 700; }
+.board-prize ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.board-prize li { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; background: var(--glass); font-weight: 800; font-variant-numeric: tabular-nums; }
+.board-prize li b { min-width: 74px; color: var(--gold); }
+.board-prize li .ico { width: 18px; height: 18px; } .board-prize li .f { color: #bfe9ff; margin-left: 6px; }
+.board-prize .next { margin: 10px 0 0; text-align: center; }
 .board li.gap { display: block; background: none; text-align: center; padding: 0; opacity: .45; line-height: 1; }
 .board li.msg { padding: 14px 8px; font-size: 14px; font-weight: 600; line-height: 1.4; opacity: .7; }
 .board-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; }

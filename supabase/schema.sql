@@ -364,3 +364,63 @@ begin
 end $$;
 revoke all on function claim_gifts(uuid, uuid) from public;
 grant execute on function claim_gifts(uuid, uuid) to anon, authenticated;
+
+-- hediyede balık ve açıklama (note: 'week:N' = haftalık ödül, N. sıra); büyük hediye için sınır genişletildi
+alter table gifts add column if not exists fish int not null default 0;
+alter table gifts add column if not exists note text;
+alter table gifts drop constraint if exists gifts_amount_check;
+alter table gifts drop constraint if exists gifts_amount_ok;
+alter table gifts add constraint gifts_amount_ok check (amount between 0 and 10000000 and fish between 0 and 100000 and amount + fish > 0);
+-- eski istemci yalnız simit alabilir: balıklı satıra dokunmaz (yeni istemci claim_gifts2 ile alır)
+create or replace function claim_gifts(p_id uuid, p_secret uuid) returns int
+language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
+  with c as (update gifts set claimed_at = now() where player_id = p_id and claimed_at is null and fish = 0 and note is null returning amount)
+  select coalesce(sum(amount), 0) into n from c;
+  return n;
+end $$;
+create or replace function claim_gifts2(p_id uuid, p_secret uuid) returns json
+language plpgsql security definer set search_path = public as $$
+declare r json;
+begin
+  if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
+  with c as (update gifts set claimed_at = now() where player_id = p_id and claimed_at is null returning amount, fish, note)
+  select json_build_object('simit', coalesce(sum(amount), 0), 'fish', coalesce(sum(fish), 0),
+                           'notes', coalesce(json_agg(note) filter (where note is not null), '[]'::json)) into r from c;
+  return r;
+end $$;
+revoke all on function claim_gifts2(uuid, uuid) from public;
+grant execute on function claim_gifts2(uuid, uuid) to anon, authenticated;
+
+-- haftalık ödül: her pazar 00:00 UTC (TR 03:00) kalıcı sıralamaya göre; yalnız son 7 günde uçmuş oyuncular alır
+-- 1.: 3000 simit + 3 balık, 2.: 2000 + 2, 3.: 1500 + 1, 4-10.: 750, diğerleri: 100
+create table if not exists weekly_prizes (day date primary key, n int, given_at timestamptz not null default now());
+alter table weekly_prizes enable row level security;
+revoke all on weekly_prizes from anon, authenticated;
+create or replace function give_weekly_prizes() returns int
+language plpgsql security definer set search_path = public as $$
+declare d date := (now() at time zone 'UTC')::date; n int;
+begin
+  if exists (select 1 from weekly_prizes where day = d) then return 0; end if; -- aynı gün iki kez verilmez
+  with b as (
+    select distinct on (s.player_id) s.player_id, s.score, s.updated_at from scores s order by s.player_id, s.score desc, s.updated_at
+  ), ranked as (
+    select b.player_id, row_number() over (order by b.score desc, b.updated_at) as rank
+    from b join players p on p.id = b.player_id where not p.hidden
+  ), ins as (
+    insert into gifts(player_id, amount, fish, note)
+    select r.player_id,
+           case when r.rank = 1 then 3000 when r.rank = 2 then 2000 when r.rank = 3 then 1500 when r.rank <= 10 then 750 else 100 end,
+           case when r.rank = 1 then 3 when r.rank = 2 then 2 when r.rank = 3 then 1 else 0 end,
+           'week:' || r.rank
+    from ranked r where exists (select 1 from runs u where u.player_id = r.player_id and u.started_at > now() - interval '7 days')
+    returning 1
+  ) select count(*) into n from ins;
+  insert into weekly_prizes(day, n) values (d, n);
+  return n;
+end $$;
+revoke all on function give_weekly_prizes() from public, anon, authenticated;
+create extension if not exists pg_cron;
+select cron.schedule('weekly-prizes', '0 0 * * 0', 'select public.give_weekly_prizes()');
