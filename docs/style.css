@@ -735,3 +735,4 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .road-row.got .road-lv { background: linear-gradient(#8ff0e2, var(--teal)); box-shadow: 0 2px 0 #17786d; }
 .road-row.got .road-m b { color: #bff5ec; }
 .road-row.got .road-ok { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--teal); color: #fff; font-size: 17px; }
+.road-row.newrank .road-m small { color: var(--gold); font-weight: 700; }
