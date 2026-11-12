@@ -826,3 +826,24 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .bdg.f-sim { --st: #d07e22; } .bdg.f-city { --st: #c9971a; } .bdg.f-wx { --st: #6c57c9; }
 #achPanel .bdg.on .bdg-c { background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, .22), transparent 60%), var(--st); }
 #achPanel .bdg-info { margin-bottom: 14px; }
+
+/* Günlük ödül = vapur abonman kartı: krem kart, kesik çizgili gün kutuları; alınan gün zımbalanmış (delik), bugünün kutusu kırmızı kesik çizgiyle işaretli */
+.card { --paper: #f8e7c8; --paper-2: #efd7ae; --ink: #4b2416; }
+#dailyPanel .tab.on { background: var(--paper); color: var(--ink); }
+#dailyPanel .days { gap: 0; padding: 8px; border-radius: 10px; background: var(--paper); box-shadow: 0 3px 0 rgba(44, 8, 4, .45);
+  -webkit-mask: radial-gradient(circle 8px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 8px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat; }
+#dailyPanel .day { position: relative; margin: 3px; padding: 9px 2px 8px; border-radius: 6px; background: transparent; border: 2px dashed rgba(75, 36, 22, .22); color: var(--ink); transform: none; }
+#dailyPanel .day span { font-weight: 800; font-size: 13px; color: rgba(75, 36, 22, .75); }
+#dailyPanel .day b { color: var(--ink); font-size: 17px; }
+#dailyPanel .day .day-fish { color: #1f7f9e; }
+#dailyPanel .day.got { opacity: 1; }
+#dailyPanel .day.got b, #dailyPanel .day.got span { opacity: .4; }
+#dailyPanel .day.got b::after { content: none; }
+#dailyPanel .day.got::after { content: ""; position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%;
+  background: var(--card-b, #4a1a12); box-shadow: inset 0 3px 3px rgba(0, 0, 0, .6), 0 0 0 2px rgba(75, 36, 22, .25); }
+#dailyPanel .day.now { border: 2.5px dashed #c4302b; background: rgba(196, 48, 43, .07); animation: playpulse 1.6s ease-in-out infinite; }
+#dailyPanel .day.now span { color: #c4302b; }
+#dailyPanel .day:last-child { background: linear-gradient(100deg, rgba(207, 146, 19, .16), transparent 70%); }
+#dailyPanel .day.got b { visibility: hidden; }
+#dailyPanel .day.got::after { left: 50%; top: auto; bottom: 9px; width: 22px; height: 22px; margin: 0 0 0 -11px; }
