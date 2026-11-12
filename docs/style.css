@@ -707,7 +707,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .road-p + .road-p::before { content: '+'; opacity: .6; margin-right: 2px; }
 .road-row.big { border-color: rgba(255, 194, 58, .45); }
 .road-row.big .road-m b { font-size: 17px; color: var(--gold); }
-.road-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin: -4px 0 6px; }
+.road-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin: -4px 0 12px; }
 .road-head .lvl-n { min-width: 40px; height: 40px; font-size: 22px; border-radius: 12px; }
 .road-head .lvl-bar { width: 130px; height: 8px; }
 .road-head .lvl-m small { font-size: 14px; }
