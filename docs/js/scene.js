@@ -39,16 +39,16 @@ export const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 900);
 // Sisli malzemeler bükülür; gökyüzü, uzak siluet ve gölge geçişi bükülmez.
 export const BEND = { value: new THREE.Vector4(0, 1e4, 1e4, 16) };  // x: eğrilik, y-z: virajın başı ve sonu, w: martının derinliği
 export const BEND2 = { value: new THREE.Vector4(0, 1e4, 1e4, 0) }; // ilk virajdan sonraki viraj (S-viraj)
-// Bükme kameranın eğiminden arındırılmış yatay çerçevede yapılır (uLevel: göz uzayı → yalnız yönü kalan kamera).
-// Göz uzayında bükülse, aşağı bakan kamerada yaklaşan uzak su ekranda ufkun üstüne çıkar, siluetin arkasına deniz bandı biner.
+// Bükme dünya çerçevesinde yapılır (uLevel: göz uzayı → dünya eksenleri, yanal başlangıç şeridin ortası).
+// Göz uzayında bükülse, aşağı bakan kamerada uzak su ufkun üstüne çıkar; kameranın yönünde bükülse direksiyonla her dönüşte uzak gemiler lastik gibi uzayıp kısalır.
 export const LEVEL = { value: new THREE.Matrix3() };
 const BEND_GLSL = `
 #ifdef USE_FOG
   {
-    vec3 lv = uLevel * mvPosition.xyz;
+    vec3 lv = uLevel * mvPosition.xyz; // dünya eksenlerinde kameradan uzaklık
     if (-lv.z > uBend.w) {
-      vec2 bxd = bendArc(bendArc(vec2(lv.x, -lv.z - uBend.w), uBend2), uBend);
-      lv.x = bxd.x; lv.z = -(bxd.y + uBend.w);
+      vec2 bxd = bendArc(bendArc(vec2(lv.x + uBend2.w, -lv.z - uBend.w), uBend2), uBend); // yanal: şeridin ortasından (uBend2.w = kameranın x'i)
+      lv.x = bxd.x - uBend2.w; lv.z = -(bxd.y + uBend.w);
       mvPosition.xyz = lv * uLevel;
     }
   }

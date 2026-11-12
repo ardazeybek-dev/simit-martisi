@@ -941,20 +941,23 @@ function makeStopGate_(name) {
 
 // ---------------- yunus ----------------
 // Boğaz yunusu: burun +x yönünde; sırtı koyu gri-mavi, karnı açık. Tek geometri, bütün yunuslar paylaşır.
-export const DOLPHIN = (() => {
-  const k = new Kit(), back = 0x7a97ae, flank = 0xa9bfcf, belly = 0xf1f4f5;
-  k.add(new THREE.SphereGeometry(0.5, 12, 8), (f, y) => (y < -0.1 ? belly : y < 0.08 ? flank : back), 0, 0, 0, 0, 0, 0, 1.8, 0.7, 0.64);
-  k.add(new THREE.ConeGeometry(0.14, 0.36, 7), (f, y) => (y < -0.04 ? belly : back), 0.98, -0.06, 0, 0, 0, -Math.PI / 2); // gaga
-  k.add(new THREE.SphereGeometry(0.035, 5, 4), 0x111418, 0.72, 0.06, 0.24);
-  k.add(new THREE.SphereGeometry(0.035, 5, 4), 0x111418, 0.72, 0.06, -0.24);
-  const fin = new THREE.Shape(); fin.moveTo(-0.3, 0); fin.lineTo(0.12, 0); fin.quadraticCurveTo(-0.05, 0.25, -0.32, 0.46); fin.quadraticCurveTo(-0.22, 0.2, -0.3, 0);
-  const finG = new THREE.ExtrudeGeometry(fin, { depth: 0.06, bevelEnabled: false }); finG.translate(0, 0, -0.03);
-  k.add(finG, back, 0.0, 0.27, 0); // sırt yüzgeci
-  for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.34, 0.04, 0.16), back, 0.35, -0.2, s * 0.3, s * 0.5, 0.5 * s, -0.3); // yan yüzgeçler
-  k.add(new THREE.ConeGeometry(0.2, 0.7, 7), back, -1.15, 0.02, 0, 0, 0, Math.PI / 2, 1, 1, 0.75); // kuyruk sapı
-  const fl = new THREE.Shape(); fl.moveTo(0, 0); fl.lineTo(-0.28, 0.42); fl.lineTo(-0.12, 0); fl.lineTo(-0.28, -0.42); fl.closePath();
+export const DOLPHIN = (() => { // balıktan ayırt edilsin: tombul gövde, yuvarlak alın (kavun), kısa küt gaga, gülen ağız, gri sırt / beyaz karın (balık mavi-turkuaz), kıvrık sırt yüzgeci, geniş kuyruk
+  const k = new Kit(), back = 0x6b7f90, flank = 0xaab7c3, belly = 0xf2f4f5;
+  const tone = Object.assign((f, y) => (y < -0.1 ? belly : y < 0.06 ? flank : back), { vert: true }); // köşe başına: karın çizgisi dişli değil düz geçer
+  k.add(new THREE.SphereGeometry(0.5, 16, 10), tone, 0, 0, 0, 0, 0, 0, 2.3, 0.8, 0.72); // gövde
+  k.add(new THREE.SphereGeometry(0.34, 14, 9), tone, 0.8, 0.08, 0, 0, 0, 0, 1.25, 0.92, 0.9); // yuvarlak alın (kavun)
+  k.add(new THREE.CylinderGeometry(0.075, 0.13, 0.42, 10), (f, y) => (y < -0.06 ? belly : flank), 1.36, -0.08, 0, 0, 0, -Math.PI / 2); // kısa küt gaga
+  k.add(new THREE.SphereGeometry(0.076, 8, 6), (f, y) => (y < -0.08 ? belly : flank), 1.57, -0.08, 0);
+  k.add(new THREE.BoxGeometry(0.42, 0.024, 0.22), 0x2c333a, 1.3, -0.115, 0, 0, 0, 0.14); // gülen ağız çizgisi
+  for (const z of [0.27, -0.27]) k.add(new THREE.SphereGeometry(0.045, 6, 4), 0x111418, 0.98, 0.06, z);
+  const fin = new THREE.Shape(); fin.moveTo(-0.32, 0); fin.lineTo(0.14, 0); fin.quadraticCurveTo(-0.04, 0.28, -0.4, 0.5); fin.quadraticCurveTo(-0.26, 0.22, -0.32, 0);
+  const finG = new THREE.ExtrudeGeometry(fin, { depth: 0.07, bevelEnabled: false }); finG.translate(0, 0, -0.035);
+  k.add(finG, back, -0.1, 0.3, 0); // kıvrık sırt yüzgeci
+  for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.42, 0.045, 0.2), back, 0.5, -0.26, s * 0.34, s * 0.5, 0.5 * s, -0.35); // yan yüzgeçler
+  k.add(new THREE.ConeGeometry(0.3, 0.75, 10), tone, -1.36, 0.03, 0, 0, 0, Math.PI / 2, 1, 1, 0.75); // kuyruk sapı
+  const fl = new THREE.Shape(); fl.moveTo(0, 0); fl.quadraticCurveTo(-0.18, 0.28, -0.4, 0.56); fl.lineTo(-0.16, 0); fl.lineTo(-0.4, -0.56); fl.quadraticCurveTo(-0.18, -0.28, 0, 0);
   const flG = new THREE.ExtrudeGeometry(fl, { depth: 0.05, bevelEnabled: false }); flG.rotateX(Math.PI / 2);
-  k.add(flG, back, -1.45, 0.05, 0); // kuyruk yüzgeci (yatay)
+  k.add(flG, back, -1.68, 0.05, 0, 0, 0, 0.18); // geniş kuyruk (yatay, hafif kalkık: yandan da görünsün)
   return k.build();
 })();
 

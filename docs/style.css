@@ -326,9 +326,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   border: 3px solid var(--card-line, #f3e3c6);
   box-shadow: 0 7px 0 var(--card-b, #15122e), 0 22px 44px var(--card-sh, rgba(10, 8, 30, .5)); animation: cardin .4s cubic-bezier(.2, 1.4, .4, 1); }
 /* her panelin kendi rengi: mat, düz tonlar (parlak degrade yok); --card-b sert gölge, iç kutular (--glass) panelin koyusu */
-#boardPanel .card { --card-a: #1d5a66; --card-b: #0f3138; --card-sh: rgba(4, 30, 36, .5); --glass: rgba(4, 26, 30, .32); }
+#boardPanel .card { --card-a: #343a42; --card-b: #1a1d22; --card-sh: rgba(6, 8, 12, .55); --glass: rgba(0, 0, 0, .28); } /* iskele binası: tabelanın asılı olduğu koyu kurşuni duvar */
 #achPanel .card { --card-a: #7a3a2c; --card-b: #3f1b14; --card-sh: rgba(40, 10, 4, .5); --glass: rgba(36, 10, 4, .3); }
-#upPanel .card { --card-a: #2b4479; --card-b: #15223f; --card-sh: rgba(6, 14, 40, .5); --glass: rgba(6, 14, 38, .3); }
+#upPanel .card { --card-a: #4a4a33; --card-b: #24241a; --card-sh: rgba(12, 12, 4, .55); --glass: rgba(12, 12, 4, .3); } /* makine dairesi: koyu zeytin endüstri boyası, çelik paneller ve yanan ampuller üstünde parlasın */
 #missionsPanel .card { --card-a: #2a6248; --card-b: #133226; --card-sh: rgba(4, 28, 16, .5); --glass: rgba(4, 26, 14, .3); }
 #dailyPanel .card { --card-a: #8f3d2a; --card-b: #4a1a12; --card-sh: rgba(44, 8, 4, .5); --glass: rgba(40, 8, 4, .3); }
 #dayRunPanel .card { --card-a: #7f5a1f; --card-b: #422c0b; --card-sh: rgba(40, 24, 0, .5); --glass: rgba(36, 20, 0, .3); }
@@ -887,24 +887,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #dailyPanel .day.now b:first-of-type { padding: 3px 7px 1px; border-radius: 7px; color: #c4302b; border: 2.5px solid currentColor;
   box-shadow: inset 0 0 0 1.5px #fff4de, inset 0 0 0 3px rgba(196, 48, 43, .45); animation: stamp 1.8s ease-in-out infinite; }
 
-/* Martı Yolu = sefer biletleri: bulunduğun seviyenin bileti kırmızı kesik çizgiyle işaretli (günlük karttaki "bugün" gibi),
-   alınacak ödül kırmızı damga, alınmış ödülün bileti kraft kahvesi ve zımbalanmış; ulaşılmamış seviyeler soluk */
-#roadPanel .road-list { gap: 8px; }
-#roadPanel .road-row { border: 0; border-radius: 9px; background: var(--paper); color: var(--ink); }
-#roadPanel .road-row.big { background: linear-gradient(100deg, #fbe7a6, var(--paper) 70%); }
-#roadPanel .road-row.big .road-m b { color: #a15c12; }
-#roadPanel .road-row.now { outline: 2.5px dashed #c4302b; outline-offset: -3px; }
-#roadPanel .road-lv { border-radius: 50%; background: var(--paper-2); color: var(--ink); border: 2px dashed rgba(75, 36, 22, .35); }
-#roadPanel .road-row.done .road-lv { background: var(--paper-2); color: var(--ink); border: 2.5px solid #2f86c9; box-shadow: none; }
-#roadPanel .road-m small { color: #a15c12 !important; }
-#roadPanel .road-row.got { background: linear-gradient(100deg, #e2c393, #d6b281); }
-#roadPanel .road-row.got .road-lv { background: none; border-color: rgba(75, 36, 22, .45); box-shadow: none; }
-#roadPanel .road-row.got .road-m b { color: rgba(75, 36, 22, .72); }
-#roadPanel .road-row.got .road-ok { width: 22px; height: 22px; margin-right: 6px; font-size: 0; background: var(--card-b); box-shadow: inset 0 3px 3px rgba(0, 0, 0, .6), 0 0 0 2px rgba(75, 36, 22, .25); }
-#roadPanel .road-get { padding: 4px 10px 2px; border-radius: 7px; background: rgba(196, 48, 43, .06); color: #c4302b; border: 2.5px solid currentColor;
-  box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .5); animation: stamp 1.8s ease-in-out infinite; }
-#roadPanel .road-get:active { transform: rotate(-9deg) scale(.92); box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .5); }
-#roadPanel .road-get.see { color: #1d7f78; background: rgba(29, 127, 120, .06); box-shadow: inset 0 0 0 1.5px #ddc08f, inset 0 0 0 3px rgba(29, 127, 120, .45); animation: none; transform: rotate(-9deg); }
 
 /* Mod seç: her mod iki yanı çentikli bir bilet; seçili modun biletine kırmızı "Seçili" damgası basılır */
 #dayRunPanel .mode-card { position: relative; border: 0; border-radius: 10px; background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(40, 24, 0, .55);
@@ -925,18 +907,11 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #settings .profile-row { border: 0; border-radius: 10px; background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(6, 10, 20, .55); }
 #settings .prof-txt { align-self: stretch; align-content: center; padding-left: 10px; border-left: 2px dashed rgba(75, 36, 22, .28); }
 #settings .profile-row .ico { opacity: .55; }
-#profilePanel .name-input { border: 2px dashed rgba(75, 36, 22, .35); border-radius: 8px; background: var(--paper); color: var(--ink); }
-#profilePanel .name-input:focus { border-color: #c4302b; }
-#profilePanel .name-input::placeholder { color: var(--ink); opacity: .4; }
 
 /* gelecek günler ve ulaşılmamış seviyeler: saydamlık yerine soluk kağıt (kart rengi altından sızıp griye çevirmesin); zımba deliği kesik çizginin üstünde */
 #dailyPanel .day { opacity: 1; }
 #dailyPanel .day.got::after { left: 50%; right: auto; top: 23px; margin-left: -6px; }
-#roadPanel .road-row { opacity: 1; }
-#roadPanel .road-row:not(.done):not(.now) { background: #e7d6b8; color: rgba(75, 36, 22, .6); }
-#roadPanel .road-row:not(.done):not(.now) .road-m b .ico, #roadPanel .road-row:not(.done):not(.now) .road-cos { opacity: .6; }
 /* kağıda basılı yazı gölgesiz (kartın kabartma gölgesi kağıtta hayalet kopya gibi görünür) */
-#roadPanel .road-row, #dayRunPanel .mode-card, #settings .profile-row, #profilePanel .name-input, #wheelBox .btn, #dailyPanel .day { text-shadow: none; }
 
 /* Sıralama = iskeledeki kalkış tabelası: siyah tabela, her oyuncu ayrı bir şerit; sıra numarası ortasından ikiye bölünmüş paletli kutucuk (split-flap),
    yazılar tabela sarısı, ilk üçün paleti madalya renginde; senin şeridinin solundaki yeşil lamba yanıp söner (sen buradasın) */
@@ -1001,3 +976,54 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #missionsPanel .mis.done .mis-t::before { color: #2b59c3; }
 #missionsPanel .mis.done .mis-bar { visibility: hidden; }
 #missionsPanel .mis.done .mis-r { color: #2b59c3; }
+
+/* gardırop kutuları büyük ve geniş: podyum küçülüp yukarı çıktı, açılan yer kutulara */
+.ward-slots { width: min(96vw, 540px); gap: 10px; }
+#wardSlots .ward-slot { padding: 10px 8px 11px; gap: 8px; }
+#wardSlots .ward-slot small { font-size: 15px; padding: 2px 12px 1px; }
+#wardSlots .slot-items { min-height: 76px; }
+#wardSlots .slot-it, #wardSlots .slot-plus { width: 68px; height: 68px; }
+@media (orientation: portrait) { #wardSlots .slot-it, #wardSlots .slot-plus { width: 64px; height: 64px; } #wardSlots .slot-items { min-height: 72px; } }
+#dayRunPanel .mode-card, #settings .profile-row, #wheelBox .btn, #dailyPanel .day { text-shadow: none; }
+
+/* Martı Yolu = deniz haritasında sefer rotası: açık mavi harita kağıdı (enlem çizgileri); solda boydan boya rota çizgisi, her seviye bir durak.
+   Geçilen yol dolu lacivert, gelecek yol kesik çizgi; bulunduğun durak kırmızı iğne (nabız gibi atar); alınacak ödülün düğmesi fener gibi sarı yanar; alınmış durak dolu ve ✓ işaretli */
+#roadPanel .road-list { gap: 0; padding: 6px 10px 6px 6px; border-radius: 10px; text-shadow: none;
+  background: repeating-linear-gradient(0deg, transparent 0 27px, rgba(40, 90, 130, .1) 27px 28px), repeating-linear-gradient(90deg, transparent 0 27px, rgba(40, 90, 130, .07) 27px 28px), #dcedf2;
+  box-shadow: inset 0 0 0 2px #b9d3dd, 0 3px 0 rgba(4, 16, 36, .55); }
+#roadPanel .road-row { position: relative; min-height: 50px; padding: 4px 8px 4px 2px; border: 0; border-radius: 0; background: none; color: #1d3550; opacity: 1; }
+#roadPanel .road-row::before { content: ""; position: absolute; left: 20px; top: 0; bottom: 0; border-left: 3px dashed rgba(29, 53, 80, .35); }
+#roadPanel .road-row.done::before { border-left: 3px solid #1d3550; }
+#roadPanel .road-row:first-child::before { top: 50%; }
+#roadPanel .road-row:last-child::before { bottom: 50%; }
+#roadPanel .road-lv { position: relative; z-index: 1; width: 32px; height: 32px; margin-left: 4px; border-radius: 50%; font-size: 15px; color: #1d3550; background: #dcedf2; border: 2.5px solid rgba(29, 53, 80, .45); box-shadow: none; }
+#roadPanel .road-row.done .road-lv { color: #fff; background: #1d3550; border-color: #1d3550; box-shadow: none; }
+#roadPanel .road-row.got .road-lv { color: #fff; background: #1d3550; border-color: #1d3550; box-shadow: none; }
+#roadPanel .road-row.now .road-lv { color: #fff; background: #d33b32; border-color: #fff; box-shadow: 0 0 0 2px #d33b32; animation: roadPin 1.4s ease-out infinite; }
+@keyframes roadPin { 0% { box-shadow: 0 0 0 2px #d33b32, 0 0 0 2px rgba(211, 59, 50, .5); } 100% { box-shadow: 0 0 0 2px #d33b32, 0 0 0 12px rgba(211, 59, 50, 0); } }
+#roadPanel .road-row:not(.done):not(.now) .road-m { opacity: .55; }
+#roadPanel .road-m b { color: #1d3550; }
+#roadPanel .road-row.big .road-m b { color: #8a5a00; }
+#roadPanel .road-m small { color: #8a5a00 !important; }
+#roadPanel .road-row.got .road-m b { color: rgba(29, 53, 80, .6); }
+#roadPanel .road-row.got .road-ok { width: auto; height: auto; margin-right: 4px; background: none; box-shadow: none; color: #1d7f5a; font-size: 20px; }
+#roadPanel .road-get { padding: 6px 14px 5px; border: 0; border-radius: 99px; color: #3a2a00; background: radial-gradient(circle at 50% 35%, #fff6c4, #ffd24a 60%, #f0a91c);
+  box-shadow: 0 0 0 2px #fff, 0 0 14px 4px rgba(255, 210, 74, .75); transform: none; animation: roadBeam 1.6s ease-in-out infinite; }
+#roadPanel .road-get:active { transform: scale(.94); }
+@keyframes roadBeam { 0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 8px 2px rgba(255, 210, 74, .55); } 50% { box-shadow: 0 0 0 2px #fff, 0 0 18px 7px rgba(255, 210, 74, .9); } }
+#roadPanel .road-get.see { color: #fff; background: #1d7f78; box-shadow: 0 2px 0 #105a55; animation: none; }
+
+/* Profil = martı pasaportu: bordo kapak, başlık altın yaldız; içi guilloche desenli açık yeşil pasaport sayfası, ad ve ülke formdaki çizgili alana yazılır (yazarken çizgi koyulaşır) */
+#profilePanel .card { --card-a: #5e1f2c; --card-b: #2e0d14; --card-sh: rgba(30, 4, 10, .55); --glass: rgba(30, 4, 10, .3); }
+#profilePanel h2 { color: #f1cf72; text-shadow: 0 1px 0 #8a5d12, 0 2px 0 rgba(0, 0, 0, .35); letter-spacing: .04em; }
+#profilePanel .prof-h { display: block; margin: 0 -2px; padding: 12px 14px 0; border-radius: 10px 10px 0 0; text-align: left; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #4f6b55;
+  background: radial-gradient(circle at 20% 30%, rgba(80, 140, 110, .1) 0 2px, transparent 2px) 0 0 / 14px 14px, #eaf3e6; text-shadow: none; }
+#profilePanel .prof-h + .name-row, #profilePanel .prof-h + .cc-select { margin: 0 -2px 10px; padding: 4px 14px 14px; border-radius: 0 0 10px 10px; background: #eaf3e6; }
+#profilePanel .name-row { gap: 10px; }
+#profilePanel .name-input { margin: 0; padding: 6px 2px 4px; border: 0; border-bottom: 2px solid rgba(43, 63, 52, .35); border-radius: 0; background: none; color: #1f2d25; text-align: left; text-shadow: none; }
+#profilePanel .name-input:focus { border-bottom-color: #1f2d25; }
+#profilePanel .name-input::placeholder { color: #1f2d25; opacity: .35; }
+#profilePanel .cc-select.name-input { width: calc(100% + 4px); box-sizing: border-box; padding: 8px 14px 14px; border-bottom: 0; background-color: #eaf3e6;
+  background-image: linear-gradient(rgba(43, 63, 52, .35), rgba(43, 63, 52, .35)); background-size: calc(100% - 28px) 2px; background-position: 14px calc(100% - 12px); background-repeat: no-repeat; }
+#profilePanel .cc-flag { border-radius: 3px; box-shadow: 0 0 0 2px #fff, 0 1px 3px rgba(0, 0, 0, .3); }
+#roadPanel .road-list * { text-shadow: none; }

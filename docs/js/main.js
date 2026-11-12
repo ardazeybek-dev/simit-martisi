@@ -722,12 +722,14 @@ function spawnFerry() {
   const nCh = 1 + (d > 1 ? 1 : 0) + (d > 2.5 ? 1 : 0);
   const chims = [];
   for (let i = 0; i < nCh; i++) {
-    const cx = rand(-2.6, 2.6), cz = -L / 2 + 12 + (i + 0.5) * (L - 16) / nCh + rand(-3, 3);
+    let cx = rand(-2.6, 2.6); const cz = -L / 2 + 12 + (i + 0.5) * (L - 16) / nCh + rand(-3, 3);
+    const stuck = EDGE - (Math.abs(cx) + ft.hw) < 0.9; // küpeşteyle arası martı sığmayacak kadar dar: baca küpeşteye yapışık durur (görüntü kurala uysun)
+    if (stuck) cx = (Math.sign(cx) || 1) * (EDGE - ft.hw);
     if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın
     const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(cx, DECK, cz); c.castShadow = c.receiveShadow = true; g.add(c);
-    // kenara yakın bacanın dış yanındaki dar koridor kapalı: engel şerit sınırının ötesine uzar, küpeşte dışından kaytarılmaz; geçit iç taraftaki geniş boşluk
+    // yapışık bacanın dış yanı kapalı: engel küpeştenin ötesine uzar, dışarıdan kaytarılmaz; yapışık olmayanın iki yanı da geçilir
     const bIn = Math.abs(cx) - ft.hw, bOut = EDGE + 0.6, sx = Math.sign(cx) || 1;
-    if (EDGE - (Math.abs(cx) + ft.hw) < 1.6) obstacle(sx * (bIn + bOut) / 2, cz, (bOut - bIn) / 2, ft.hd, DECK + ft.top, 'bacaya');
+    if (stuck) obstacle(sx * (bIn + bOut) / 2, cz, (bOut - bIn) / 2, ft.hd, DECK + ft.top, 'bacaya');
     else obstacle(cx, cz, ft.hw, ft.hd, DECK + ft.top, 'bacaya');
     const dark = d > 1.2 && Math.random() < clamp((d - 1) * 0.22, 0, 0.55);
     chims.push({ x: x0 + cx, z: zc + cz, dark, t: Math.random() });
@@ -789,7 +791,8 @@ function spawnFerry() {
     if (free(x, lz, 0.6)) { const r = new THREE.Mesh(ROPE, vcMat); r.position.set(x, DECK, lz); g.add(r); blocked.push({ x, z: lz, r: 0.8 }); }
   }
   // simit ikram eden yolcu: küpeşteden simidi martıya uzatır; ondan almak serbest, kızmaz, sevinir (bonus)
-  if (d > 0.2 && Math.random() < 0.55) {
+  // vapur başına bir-iki ikramcı (eskiden en çok bir, %55): "ikramcılardan N simit al" görevi tek uçuşta yapılabilsin
+  for (let k = 0; k < 2; k++) if (Math.random() < (k ? 0.45 : 0.85)) {
     const s = pick([-1, 1]), lz = rand(-L / 2 + 12, L / 2 - 6);
     if (!blocked.some(b => Math.hypot(b.x - s * 3.35, b.z - lz) < b.r)) { seat(s * 3.35, lz, 'feed', true); blocked.push({ x: s * 3.35, z: lz, r: 1.2 }); }
   }
@@ -802,7 +805,7 @@ function spawnFerry() {
       const p = seat(s * 3.2, lz, '', true, vendor ? SIMITCI_LOOK : undefined); p.thrower = true; p.mesh.rotation.y = -s * 0.5;
       blocked.push({ x: s * 3.2, z: lz, r: 1.2 });
       if (vendor) { const cart = makeSimitCart(); cart.position.set(s * 2.25, DECK, lz); g.add(cart); blocked.push({ x: s * 2.25, z: lz, r: 1.3 }); }
-      const bt = { g: p.mesh, side: s, person: p, tray: [{ visible: true }, { visible: true }], z: zc + lz, hand: 0, thrown: 0 };
+      const bt = { g: p.mesh, side: s, person: p, tray: [{ visible: true }, { visible: true }], z: zc + lz, hand: 0, thrown: 0, ikram: true }; // vapur yolcusunun attığı da ikram sayılır
       boats.push(bt);
       let x = rand(-1.5, 1.5);
       for (let k = 0, n = pick([2, 3, 4]), z = lz - 6; k < n && z > -L / 2 + 4; z -= rand(3, 4)) {
@@ -2652,11 +2655,12 @@ pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncB
   const wood = new THREE.MeshStandardMaterial({ color: 0x7a5232, roughness: 0.85 });
   const top = new THREE.MeshStandardMaterial({ map: plank, roughness: 0.8 });
   const rope = new THREE.MeshStandardMaterial({ color: 0xd8bf88, roughness: 0.95 });
-  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.95, 0.36, 40), [wood, top, wood]); p1.position.y = -0.18;
-  const p2 = new THREE.Mesh(new THREE.TorusGeometry(1.93, 0.07, 6, 56), rope); p2.rotation.x = Math.PI / 2; p2.position.y = -0.03;
-  const p2b = new THREE.Mesh(new THREE.TorusGeometry(1.96, 0.06, 6, 56), rope); p2b.rotation.x = Math.PI / 2; p2b.position.y = -0.17;
-  const p3 = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.75, 0.6, 32), wood); p3.position.y = -0.62;
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(4.2, 48), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  const PR = 1.2; // podyum yarıçapı: martıdan biraz geniş, ekranı kaplamasın (kostüm kutularına yer kalsın)
+  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(PR, PR + 0.05, 0.3, 40), [wood, top, wood]); p1.position.y = -0.15;
+  const p2 = new THREE.Mesh(new THREE.TorusGeometry(PR + 0.03, 0.06, 6, 48), rope); p2.rotation.x = Math.PI / 2; p2.position.y = -0.03;
+  const p2b = new THREE.Mesh(new THREE.TorusGeometry(PR + 0.06, 0.05, 6, 48), rope); p2b.rotation.x = Math.PI / 2; p2b.position.y = -0.15;
+  const p3 = new THREE.Mesh(new THREE.CylinderGeometry(PR - 0.15, PR - 0.1, 0.45, 32), wood); p3.position.y = -0.52;
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(2.8, 48), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     map: canvasTex(128, 128, (g) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,190,130,.35)'); r.addColorStop(1, 'rgba(255,190,130,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); }) }));
   glow.rotation.x = -Math.PI / 2; glow.position.y = SEA_Y + 0.01;
   s.add(p1, p2, p2b, p3, glow);
@@ -2711,12 +2715,12 @@ function podDraw(dt) {
   const vis = land ? 0.5 : 0.46, fit = Math.max(H / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * vis), span / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect * (land ? 0.42 : 0.86)));
   const d = fit * 0.95 + 1;
   cam.position.set(0, H * 0.55 + d * 0.1, d); cam.lookAt(0, H * 0.48, 0); // neredeyse yandan: ufuk ve karşı kıyı görünsün
-  if (land) cam.setViewOffset(w, h, w * 0.24, 0, w, h); else cam.setViewOffset(w, h, 0, h * 0.4, w, h); // dikeyde martı yukarıda: altında cam kutulara yer kalsın
+  if (land) cam.setViewOffset(w, h, w * 0.24, 0, w, h); else cam.setViewOffset(w, h, 0, h * 0.4, w, h); // dikeyde martı yukarıda; podyum küçük olduğundan altındaki büyük kutular martıya yakın durur
   cam.updateProjectionMatrix();
   renderer.render(pod.scene, cam);
   // cam kutular martının ayağının altında (podyumun önünde); dikeyde alttaki panelin üstüne binmez
   const sl = $('wardSlots'), card = sl.nextElementSibling;
-  _podC.set(0, -0.95, 1.75).project(cam); // podyumun ön alt kenarı: kutular onun altından başlar, podyuma değmez
+  _podC.set(0, -0.75, 1.15).project(cam); // podyumun ön alt kenarı: kutular onun altından başlar, podyuma değmez
   let y = (1 - _podC.y) / 2 * h + 10; const x = w / 2 + (land ? -w * 0.24 : 0), sh = sl.offsetHeight;
   y = Math.min(y, land ? h - sh - 12 : card.getBoundingClientRect().top - sh - 8); // ekrandan / alttaki panelden taşmasın
   sl.style.left = `${x.toFixed(1)}px`; sl.style.top = `${y.toFixed(1)}px`;
@@ -3125,10 +3129,8 @@ function frame() {
     const u = ahead[i];
     if (u) B.value.set(u.k * bendOn, Math.max(0, g.z - u.z0), g.z - u.z1, wD); else B.value.set(0, 1e4, 1e4, wD);
   }
-  // bükme çerçevesi: kameranın eğimi ve yatışı çıkarılır, yalnız yönü kalır (scene.js LEVEL)
-  _fw.set(0, 0, -1).applyQuaternion(camera.quaternion);
-  _qy.setFromAxisAngle(_up, Math.atan2(-_fw.x, -_fw.z)).invert().multiply(camera.quaternion);
-  LEVEL.value.setFromMatrix4(_m4.makeRotationFromQuaternion(_qy));
+  // bükme çerçevesi: kameranın bütün dönüşü çıkarılır (dünya eksenleri), yanal başlangıç şeridin ortası (scene.js LEVEL, BEND2.w)
+  LEVEL.value.setFromMatrix4(_m4.makeRotationFromQuaternion(camera.quaternion)); BEND2.value.w = camera.position.x;
   far.position.set(camera.position.x * 0.9, 0, camera.position.z);
   far.rotation.y = heading * bendOn;
   setHeading(heading * bendOn);
@@ -3224,7 +3226,7 @@ function takeSimit(s) {
   if (weather === 'snow') warmth = Math.min(1, warmth + (s.gold ? 0.6 : 0.25) * (s.piece ? 0.5 : 1)); // sıcak simit ısıtır
   full = Math.min(1, full + (s.gold ? 0.6 : 0.25) * (s.piece ? 0.5 : 1)); // simit doyurur
   if (s.person) run.steal++;
-  if (s.person && s.person.feeder) run.feed++;
+  if ((s.person && s.person.feeder) || (s.th && s.th.bt.ikram)) run.feed++;
   if (s.th) run.piece++;
   if (s.beach) beachCatch(s.beach, m);
   if (s.gold) {
