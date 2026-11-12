@@ -41,9 +41,10 @@ const points = new THREE.Points(geo, mat); points.frustumCulled = false; points.
 // tür: 0 pencere (sıcak, hafif kıpırtı, bazıları ağır ağır söner yanar), 1 beyaz direk/demir feneri, 2 kırmızı, 3 yeşil, 4 yanıp sönen kırmızı, 5 korkuluk LED'i,
 // 6 gaz feneri (turuncu, alev gibi titrer), 7 renkli LED (rengi lambada: l.c; sırayla koşar), 8 deniz feneri (çift çakar)
 const COL = [[1, 0.7, 0.34], [1, 0.96, 0.88], [1, 0.16, 0.1], [0.25, 1, 0.45], [1, 0.12, 0.08], [1, 0.84, 0.55], [1, 0.58, 0.2], [1, 1, 1], [1, 0.95, 0.75]];
-const BASE = [1.7, 1.2, 1.2, 1.2, 1.3, 1.25, 1.6, 1.5, 1.6], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7, 0.42, 1.15, 0.5, 3.2];
+const BASE = [1.7, 1.2, 1.2, 1.2, 1.3, 1.25, 1.6, 2.4, 1.6], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7, 0.42, 1.15, 0.95, 3.2];
 const LED = [[1, 0.25, 0.6], [0.2, 0.9, 1], [1, 0.85, 0.15], [0.35, 1, 0.35]];
 const WEATHER_K = { rain: 1 }; // yalnız yağmurda yanar: gündüz açık havada ışık olmaz
+const LED_K = { rain: 1, fog: 0.9 }; // uçurtma LED'i siste de yanar: engel puslu havada seçilsin
 
 const ships = new Set();
 const L = (x, y, z, k, size) => ({ x, y, z, k, s: (size || SIZE[k]), ph: Math.random() * 40, r: 0.6 + Math.random() * 0.8, lazy: k === 0 && Math.random() < 0.18 });
@@ -146,8 +147,8 @@ let time = 0;
 const wob = (t, p) => 0.5 + 0.3 * Math.sin(t + p) + 0.2 * Math.sin(t * 1.93 + p * 2.1); // iki oranlı kıpırtı, düzgün sinüs değil
 export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
   time += dt;
-  const k = WEATHER_K[weather] || 0, fog = scene.fog;
-  if (!k) { points.visible = false; for (const sh of ships) if (!rootOf(sh.obj).parent) ships.delete(sh); return; } // yağmursuz havada da sahneden çıkan gemi kayıttan düşsün (sızıntı)
+  const k = WEATHER_K[weather] || 0, kLed = LED_K[weather] || 0, fog = scene.fog;
+  if (!k && !kLed) { points.visible = false; for (const sh of ships) if (!rootOf(sh.obj).parent) ships.delete(sh); return; } // yağmursuz havada da sahneden çıkan gemi kayıttan düşsün (sızıntı)
   const far = fog ? fog.far * 1.8 : 400, near = fog ? fog.near * 0.6 : 60;
   renderer.getDrawingBufferSize(_sz); mat.uniforms.uHalfH.value = _sz.y / 2; mat.uniforms.uMinPx.value = 2.2 * renderer.getPixelRatio();
   const cam = camera.position;
@@ -161,7 +162,9 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
     for (const l of sh.lamps) {
       if (n >= MAX) break;
       if (l.ref) _p.copy(l.ref.position).applyMatrix4(_m); else _p.set(l.x, l.y, l.z).applyMatrix4(_m);
-      if (_p.z > cam.z + 0.5) continue; // geçen geminin kameranın arkasında kalan lambası
+      const kk = l.k === 7 ? kLed : k; if (!kk) continue;
+      // kameraya çok yaklaşan lamba (gemiden ayrılırken yanından geçenler) koca bir leke olup birden sönmesin: yaklaştıkça yumuşakça söner
+      const nf = Math.min(1, Math.max(0, (cam.z - _p.z - 1.5) / 7)); if (nf <= 0) continue;
       const d = _p.distanceTo(cam), f = Math.min(1, Math.max(0, (far - d) / (far - near)));
       if (f <= 0) continue;
       const tt = time * l.r;
@@ -172,10 +175,10 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
       else if (l.k === 7) { const c = ((time * 6 - l.i) % 13 + 13) % 13; v = 0.35 + 0.65 * Math.max(0, 1 - c / 3); } // koşan ışık: başta parlak, ardında söner
       else if (l.k === 8) { const c = (time / 4.2 + l.ph) % 1; v = c < 0.06 || (c > 0.14 && c < 0.2) ? 1 : 0.18; } // çift çakar
       else v = 0.88 + 0.12 * wob(tt * 2.6, l.ph);
-      const c = l.c || COL[l.k], w = v * BASE[l.k] * k * f;
+      const c = l.c || COL[l.k], w = v * BASE[l.k] * kk * f * nf;
       pos[n * 3] = _p.x; pos[n * 3 + 1] = _p.y; pos[n * 3 + 2] = _p.z;
       col[n * 3] = c[0] * w; col[n * 3 + 1] = c[1] * w; col[n * 3 + 2] = c[2] * w;
-      siz[n] = l.s * sc * (0.8 + 0.4 * k); n++;
+      siz[n] = l.s * sc * (0.8 + 0.4 * kk) * (0.4 + 0.6 * nf); n++;
     }
   }
   geo.setDrawRange(0, n); points.visible = n > 0;

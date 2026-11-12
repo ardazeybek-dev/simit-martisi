@@ -230,7 +230,8 @@ export const GEO = {
 };
 // altın simit: düz sarı leke değil, simidin kendi dokusu (susam, kızarık yer) altın tonlarına çevrilir; az ışıma, biraz metal
 export const goldMat = new THREE.MeshStandardMaterial({ vertexColors: true, emissive: 0x8a5600, emissiveIntensity: 0.45, metalness: 0.35, roughness: 0.38, flatShading: true });
-goldMat.onBeforeCompile = sh => {
+goldMat.onBeforeCompile = function (sh) {
+  THREE.Material.prototype.onBeforeCompile.call(this, sh); // viraj bükmesi (uBend/uLevel): çağrılmazsa altın simit virajda yolla kıvrılmaz, dümdüz ileride ufukta belirir
   sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
     float gl = smoothstep(0.03, 0.75, dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114)));
     diffuseColor.rgb = mix(vec3(0.80, 0.48, 0.06), vec3(1.0, 0.92, 0.55), gl);`);
