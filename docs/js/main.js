@@ -40,6 +40,7 @@ blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 // ---------------- dünya ----------------
 // deneme adresleri (?city ?stop ?rule ?turn ...) yalnız bilgisayardaki sunucuda çalışır: canlıda kilitli şehir ya da kısa hat açılmasın
 const QS = new URLSearchParams(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.search : '');
+const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
 let bridgeZ = 0;
@@ -52,9 +53,10 @@ const difficulty = () => clamp(-genZ / 650 + HARD() * 0.3 * Math.max(0, -genZ - 
 // İzmir ilk metreden ısınır (≤3.75), Antalya en sert başlar ve en yükseğe çıkar (≤4.5)
 const heat = () => clamp((-genZ - 1200 + HARD() * 1600) / 4000, 0, 3) * (1 + HARD() * 0.25);
 const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HARD() * 0.3); // difficulty tavana vurduktan sonra yavaşça 0 → 1 (İzmir 1.3, Antalya 1.6)
-// sonsuz rampa: 6,5 km'den sonra hiç durmayan sertleşme (0 → 10 km'de 0,5 → 13,5 km'de 1 → 24 km'de 2,5). Usta oyuncu bitmeyen uçuş yapamasın:
-// 10 km nadir, 20 km neredeyse imkânsız. m: uçulan metre (hız için dist, üretim için -genZ/2)
-const overAt = m => clamp((m - 6500) / 7000, 0, 2.5), overG = () => overAt(-genZ / 2);
+// geç oyun rampası: 6,5 km'den sonra sertleşir (0 → 10 km'de 0,5 → 13,5 km'de 1 → 20,5 km'de 2) ve orada DURUR: 10 km nadir, 20 km çok zor
+// ama hiçbir yer imkânsız değil (tavan hız ~57, iki engel arası medyan ~0,3 sn; 24 km'de 60 hız / 0,26 sn ölçüldü, insan tepkisinin sınırı → kesildi).
+// m: uçulan metre (hız için dist, üretim için -genZ/2)
+const overAt = m => clamp((m - 6500) / 7000, 0, 2), overG = () => overAt(-genZ / 2);
 // ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
 // Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
 const STOP_K = QS.has('stop') ? (+QS.get('stop') || 0.15) : 1; // ?stop → duraklar çok yakın, ?stop=0.02 daha da yakın (deneme için)
@@ -367,7 +369,7 @@ function spawnGap(first, fixLen, quiet) {
     const camp = campT > 3 ? campSide : 0;
     // engeller birbirine karışmasın: yelkenli gelen açıklık yalnızca onundur (rakip, uçurtma yok);
     // öbür açıklıklarda rakip ve uçurtmalar boyca en az 13 m arayla dizilir, aralarından geçilebilsin
-    const sail = (kind === 'mix' || kind === 'kites') && d > 0.7 && len > 32 && Math.random() < 0.3 + d * 0.05 + heat() * 0.08; // yelkenli sık: asıl çarpılan engel o
+    const sail = kind === 'mix' && d > 0.7 && len > 32 && Math.random() < 0.3 + d * 0.05 + heat() * 0.08; // yelkenli sık: asıl çarpılan engel o. Uçurtma açıklığını almaz (2.81'de alıyordu, uçurtma %25 azalmıştı)
     const used = [], freeZ = (lo, hi) => { for (let t = 0; t < 8; t++) { const z = z0 - rand(lo, hi); if (used.every(u => Math.abs(u - z) >= 13 - Math.min(heat(), 2) * 1.2)) { used.push(z); return z; } } return null; };
     if (sail) { // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
       const two = len > 44 && Math.random() < heat() * 0.25, s0 = pick([-1, 1]); // geç oyunda uzun açıklıkta ikinci yelkenli karşı yönden
@@ -1302,8 +1304,21 @@ function resetWorld(newWeather = true) {
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
   full = 1; starve = false; shownFull = -1; markAt = 400; show('hungry', false); $('hungry').classList.remove('cold');
-  generate(-280); placeMarks();
-  camera.position.set(0, FLY_Y + 5.4, 13.5);
+  if (AT_M > 0) warpTo(AT_M);
+  generate(gull.position.z - 280); placeMarks();
+  camera.position.set(0, FLY_Y + 5.4, gull.position.z + 13.5);
+}
+// deneme: ?at=10000 → uçuş o metreden başlar. Hız (playT), zorluk ve üretim o mesafeye göre; geçilmiş iskeleler atlanır
+function warpTo(m) {
+  const z = -2 * m, far = (v, a, b) => (Number.isFinite(v) ? z - rand(a, b) : -Infinity);
+  gull.position.z = z; dist = m; markAt = m + 400;
+  genZ = z - 8; sceneryZ = z + 10; turnZ = z; tempoZ = z; cruiseZ = z - rand(40, 120); anchorZ = z - rand(10, 60); maidenZ = far(maidenZ, 300, 500);
+  bridgeZ = far(bridgeZ, 300, 700); imbatZ = far(imbatZ, 300, 600); pirateZ = far(pirateZ, 300, 600); fallsZ = far(fallsZ, 400, 800); beachZ = far(beachZ, 300, 600);
+  let t = 0, d = 0; // uçuş süresi: hız formülüyle o mesafeye kaç saniyede varılır
+  while (d < m) { d += Math.min(SPEED_MAX * (1 + 0.16 * overAt(d)), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032) / 2 / 30; t += 1 / 30; }
+  playT = t;
+  while (stopI < STOPS.length && stopM[stopI] <= m) stopI++;
+  pierI = stopI;
 }
 // suda bayraklı şamandıralar: altın olan en uzun uçuşun, mavi olan meydan okuyan arkadaşının metresi. Şeridin dışında durur, çarpmaz.
 // Yanından geçmek: kendi rekorunda ses ve parıltı, arkadaşınınkinde ayrıca küçük bonus ve konfeti.
