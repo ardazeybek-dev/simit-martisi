@@ -804,3 +804,25 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #achPanel .ach-m small { font-size: 13px; color: rgba(75, 36, 22, .84); }
 .ach-stub i { width: 14px; height: 14px; border-color: rgba(75, 36, 22, .5); }
 #achPanel .ach-get { font-size: 17px; }
+/* Rozetler = pul albümü: krem sayfa; kazanılan rozet tırtıklı kenarlı, hafif yamuk yapışmış bir pul, kazanılmayan kesik çizgili boş yuva */
+#achPanel .bdg-count { color: var(--paper); opacity: .9; }
+#achPanel .bdg-grid { background: var(--paper); border-radius: 10px; padding: 14px 8px; gap: 14px 6px; box-shadow: 0 3px 0 rgba(36, 10, 4, .45); }
+#achPanel .bdg-c { position: relative; width: 56px; height: 62px; padding: 4px; border-radius: 2px; border: 2px dashed rgba(75, 36, 22, .3); background: rgba(75, 36, 22, .06); color: rgba(75, 36, 22, .4); box-shadow: none; }
+#achPanel .bdg:not(.on) .bdg-c svg { filter: none; opacity: .55; }
+#achPanel .bdg em { color: var(--ink); opacity: .55; }
+#achPanel .bdg.on em { opacity: 1; }
+#achPanel .bdg.on .bdg-c { border: 0; color: #fff;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle at 4px 4px, #0000 2.4px, #000 2.9px) -4px -4px / 8px 8px round;
+          mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle at 4px 4px, #0000 2.4px, #000 2.9px) -4px -4px / 8px 8px round;
+  filter: drop-shadow(0 2px 0 rgba(75, 36, 22, .35)); transform: rotate(-3deg); }
+#achPanel .bdg.on:nth-child(3n) .bdg-c { transform: rotate(2.5deg); }
+#achPanel .bdg.on:nth-child(3n + 1) .bdg-c { transform: rotate(-1deg); }
+#achPanel .bdg.on .bdg-c::after { content: ""; position: absolute; inset: 7px; border: 1.5px solid rgba(255, 255, 255, .55); }
+#achPanel .bdg.sel .bdg-c { transform: scale(1.12) rotate(0); }
+#achPanel .bdg.new .bdg-c { box-shadow: none; }
+#achPanel .bdg-info { margin-top: 10px; padding: 9px 12px; min-height: 52px; border-radius: 8px; background: var(--paper-2); color: var(--ink); opacity: 1; place-content: center; }
+#achPanel .bdg-info small { color: rgba(75, 36, 22, .84); opacity: 1; }
+.bdg.f-km { --st: #2f86c9; } .bdg.f-day { --st: #d6533c; } .bdg.f-run { --st: #4f9a3a; } .bdg.f-fish { --st: #1f9893; }
+.bdg.f-sim { --st: #d07e22; } .bdg.f-city { --st: #c9971a; } .bdg.f-wx { --st: #6c57c9; }
+#achPanel .bdg.on .bdg-c { background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, .22), transparent 60%), var(--st); }
+#achPanel .bdg-info { margin-bottom: 14px; }
