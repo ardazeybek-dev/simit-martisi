@@ -1116,20 +1116,22 @@ const fishSync = take => fishDayRpc(take).then(n => { if (typeof n === 'number')
 // Uçuşta gösterilmez, yalnız oyun sonunda çubuk dolar; menüde rozet. Ayar: xpNeed, lvGift, RANKS
 const KEY_RANK = 'simit-martisi-rank';
 const RANKS = [[1, 'Yavru martı'], [3, 'Vapur martısı'], [6, 'Simit avcısı'], [10, 'Boğaz kurdu'], [15, 'İskele reisi'], [20, 'Kaptan martı'], [30, 'Efsane martı']];
-const xpNeed = lv => 80 + lv * 40, lvGift = lv => 10 + lv * 2; // her seviyenin simiti (Martı Yolu'nda alınır): Sv 2 → 14, Sv 20 → 50, Sv 45 → 100
+// her seviye bir öncekinden belirgin zor: 150 + 25·Sv² (Sv 1→2: 180 XP, Sv 20→21: 10.150; Sv 1'den 50'ye toplam ~1 milyon XP)
+const xpNeed = lv => Math.round((150 + 25 * lv * lv) / 10) * 10;
+const lvGift = lv => Math.max(10, Math.round(xpNeed(lv - 1) / 150) * 5); // seviyenin simiti ≈ o seviyenin XP'si / 30 (Martı Yolu'nda alınır): Sv 10 → 75, Sv 20 → 305, Sv 50 → 2.005
 const rank = Object.assign({ lv: 1, xp: 0 }, store.get(KEY_RANK, {}) || {});
 const rankName = lv => tr(RANKS.filter(r => lv >= r[0]).pop()[1]);
 // Martı Yolu (Ayarlar → Profil): her seviyenin ödülü yolda elle alınır. Her seviye lvGift simit; 10'un katlarında Sv/10 balık,
-// 15/25/35'te yalnız yoldan çıkan kostüm, kalan 5'lerde büyük simit kesesi (100 + 10·Sv). Alınanlar rank.got'ta, geride kalan sonradan da alınır.
+// 5/15/25'te yalnız yoldan çıkan kostüm, kalan 5'lerde büyük simit kesesi. Alınanlar rank.got'ta, geride kalan sonradan da alınır.
 // rank.paid: yol gelmeden önce seviye simiti otomatik ödenmişti; o seviyelerin simiti yeniden verilmez (yalnız ekstrası).
-const ROAD_COS = { 15: 'fisher', 25: 'buoy', 35: 'pirate' };
+const ROAD_COS = { 5: 'fisher', 15: 'buoy', 25: 'pirate' };
 if (!Array.isArray(rank.got)) rank.got = [];
 if (typeof rank.paid !== 'number') { rank.paid = rank.lv; store.set(KEY_RANK, rank); }
 function roadPrize(lv, all = false) { // all: ödenmiş seviye simitini de göster (panelde boş satır kalmasın)
   if (lv < 2) return [];
   let simit = all || lv > rank.paid ? lvGift(lv) : 0;
   const out = [];
-  if (lv % 5 === 0 && lv % 10 && !ROAD_COS[lv]) simit += 100 + lv * 10;
+  if (lv % 5 === 0 && lv % 10 && !ROAD_COS[lv]) simit += Math.round(xpNeed(lv - 1) / 500) * 50; // kese: o seviyenin XP'si / 10 (Sv 35 → 2.900, Sv 45 → 5.050)
   if (simit) out.push({ k: 'simit', n: simit });
   if (lv % 10 === 0) out.push({ k: 'fish', n: lv / 10 });
   if (ROAD_COS[lv]) out.push({ k: 'cos', id: ROAD_COS[lv] });

@@ -1399,9 +1399,9 @@ export const COSTUMES = [
   { id: 'kurye', name: 'Kurye martı', slot: 'body', price: 1600 },
   { id: 'taksi', name: 'Taksi martı', slot: 'body', price: 1600 },
   // Martı Yolu'ndan açılır (lv), satılmaz
-  { id: 'fisher', name: 'Balıkçı şapkası', slot: 'head', price: 0, lv: 15 },
-  { id: 'buoy', name: 'Can simidi', slot: 'neck', price: 0, lv: 25 },
-  { id: 'pirate', name: 'Korsan şapkası', slot: 'head', price: 0, lv: 35 },
+  { id: 'fisher', name: 'Balıkçı şapkası', slot: 'head', price: 0, lv: 5 },
+  { id: 'buoy', name: 'Can simidi', slot: 'neck', price: 0, lv: 15 },
+  { id: 'pirate', name: 'Korsan şapkası', slot: 'head', price: 0, lv: 25 },
 ];
 // kalp: gözlük camı ve simge için (x-y düzleminde, ortası 0)
 function heartGeo(r) {
