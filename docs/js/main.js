@@ -1115,7 +1115,7 @@ const fishSync = take => fishDayRpc(take).then(n => { if (typeof n === 'number')
 // martı rütbesi: her uçuşun simiti ve mesafesi XP olur (simit başına 1, 20 m başına 1); her seviye simit ödüller, belli seviyelerde unvan değişir.
 // Uçuşta gösterilmez, yalnız oyun sonunda çubuk dolar; menüde rozet. Ayar: xpNeed, lvGift, RANKS
 const KEY_RANK = 'simit-martisi-rank';
-const RANKS = [[1, 'Yavru martı'], [3, 'Vapur martısı'], [6, 'Simit avcısı'], [10, 'Boğaz kurdu'], [15, 'İskele reisi'], [20, 'Kaptan martı'], [30, 'Efsane martı']];
+const RANKS = [[1, 'Yavru martı'], [3, 'Vapur martısı'], [6, 'Simit avcısı'], [10, 'Boğaz kurdu'], [15, 'İskele reisi'], [20, 'Kaptan martı'], [30, 'Efsane martı'], [40, 'Martılar kralı'], [50, 'Simit sultanı']];
 // her seviye bir öncekinden belirgin zor: 150 + 25·Sv² (Sv 1→2: 180 XP, Sv 20→21: 10.150; Sv 1'den 50'ye toplam ~1 milyon XP)
 const xpNeed = lv => Math.round((150 + 25 * lv * lv) / 10) * 10;
 const lvGift = lv => 10 + lv * 3; // seviyenin simiti (Martı Yolu'nda elle alınır): Sv 2 → 16, Sv 20 → 70, Sv 50 → 160

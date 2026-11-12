@@ -5,6 +5,8 @@
 (function () {
   'use strict';
   var EN = {
+    "Martılar kralı": "Gull king",
+    "Simit sultanı": "Simit sultan",
     "Martı Yolu": "Gull Road",
     "Her simit ve her 20 m seni yolda ilerletir.": "Every simit and every 20 m move you along the road.",
     "Sonraki seviye": "Next level",
@@ -182,6 +184,8 @@
   };
   // DE / ES: aynı anahtarlar; {to} yalnız Türkçede (yönelme ekli iskele adı), diğer diller {s} kullanır
   var DE = {
+    "Martılar kralı": "Möwenkönig",
+    "Simit sultanı": "Simit-Sultan",
     "Martı Yolu": "Möwenweg",
     "Her simit ve her 20 m seni yolda ilerletir.": "Jeder Simit und alle 20 m bringen dich auf dem Weg voran.",
     "Sonraki seviye": "Nächstes Level",
@@ -524,6 +528,8 @@
     "Simit Martısı'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?": "Ich hab in Simit-Möwe {s} Punkte geholt und {n} Simits geschnappt! Schaffst du mehr?",
   };
   var ES = {
+    "Martılar kralı": "Rey de las gaviotas",
+    "Simit sultanı": "Sultán del simit",
     "Martı Yolu": "Ruta de la gaviota",
     "Her simit ve her 20 m seni yolda ilerletir.": "Cada simit y cada 20 m te hacen avanzar en la ruta.",
     "Sonraki seviye": "Siguiente nivel",
