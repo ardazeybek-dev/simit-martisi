@@ -116,7 +116,7 @@ A free Supabase project holds three tables, `players`, `scores` and `runs`. All 
 | `start_run(p_id, p_secret)` | called when a flight starts, returns a run id (one per 2 s per player) |
 | `submit_score(p_id, p_secret, p_run, p_score, p_dist, p_city)` | keeps the best (stored per week), returns the all-time rank |
 | `claim_best(p_id, p_secret, p_score)` | once per player created before 2 Nov 2026: stores the device record (≤ 12,000) |
-| `run_mark(p_id, p_secret, p_run, p_dist)` | flight checkpoint every 400 m: at most 40·Δt + 40 m since the last one, ignored if under 10 s apart |
+| `run_mark(p_id, p_secret, p_run, p_dist)` | flight checkpoint every 400 m: at most 40·Δt + 40 m since the last one, ignored if under 10 s apart; `submit_score` rejects more than 1,500 m (or over 40 m/s) past the last checkpoint |
 | `claim_gifts(p_id, p_secret)` | once per page load: returns the total of the player's unclaimed gift simits and marks them claimed; the game adds it to the wallet and shows *Hediye geldi* on the title screen |
 | `get_board(p_id)` | `{ total, top[50], me }` ranked by each player's best ever (`week`, `ends`, `prev` stay null for old clients) |
 

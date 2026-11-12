@@ -124,14 +124,17 @@ end $$;
 drop function if exists submit_score(uuid, uuid, int, int, text);
 create or replace function submit_score(p_id uuid, p_secret uuid, p_run uuid, p_score int, p_dist int default 0, p_city text default null) returns int
 language plpgsql security definer set search_path = public as $$
-declare w date := sm_week(); best int; t float8; d int := greatest(0, coalesce(p_dist, 0));
+declare w date := sm_week(); best int; t float8; r runs; d int := greatest(0, coalesce(p_dist, 0));
   cm float8 := case p_city when 'izmir' then 1.1 when 'antalya' then 1.2 else 1 end; pts float8;
 begin
   if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
-  select extract(epoch from now() - started_at) into t from runs where id = p_run and player_id = p_id and started_at > now() - interval '1 day';
-  if t is null then raise exception 'unknown run'; end if;
+  select * into r from runs where id = p_run and player_id = p_id and started_at > now() - interval '1 day';
+  if not found then raise exception 'unknown run'; end if;
+  t := extract(epoch from now() - r.started_at);
   pts := p_score / cm - d / 10;
   if p_score is null or p_score < d / 10 or d > 40 * t + 100 or pts > 600 * t + 1500 or pts > 12 * d + 1500 then raise exception 'implausible score'; end if;
+  -- kontrol noktası: son onaylı noktadan (run_mark) bu yana en çok 1500 m ve 40 m/sn
+  if d - r.md > 1500 or d - r.md > 40 * extract(epoch from now() - coalesce(r.mt, r.started_at)) + 100 then raise exception 'implausible score'; end if;
   insert into scores(player_id, week, city, score, dist) values (p_id, w, left(p_city, 16), p_score, d)
   on conflict (player_id, week) do update set score = excluded.score, dist = excluded.dist, city = excluded.city, updated_at = now()
     where scores.score < excluded.score;
@@ -140,7 +143,7 @@ begin
 end $$;
 
 -- uçuş kontrol noktası: istemci her 400 m'de çağırır. Bir öncekinden bu yana en çok 40·Δt + 40 m ilerlenebilir, 10 sn'den sık
--- gelen nokta yok sayılır. submit_score henüz buna bakmıyor (eski istemciler güncellenince bakacak).
+-- gelen nokta yok sayılır. submit_score son noktadan bu yana 1500 m'den fazlasını ya da 40 m/sn üstünü reddeder.
 create or replace function run_mark(p_id uuid, p_secret uuid, p_run uuid, p_dist int) returns void
 language plpgsql security definer set search_path = public as $$
 declare r runs; d int := greatest(0, coalesce(p_dist, 0));
