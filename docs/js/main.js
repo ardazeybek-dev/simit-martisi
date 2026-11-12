@@ -52,6 +52,9 @@ const difficulty = () => clamp(-genZ / 650 + HARD() * 0.3 * Math.max(0, -genZ - 
 // İzmir ilk metreden ısınır (≤3.75), Antalya en sert başlar ve en yükseğe çıkar (≤4.5)
 const heat = () => clamp((-genZ - 1200 + HARD() * 1600) / 4000, 0, 3) * (1 + HARD() * 0.25);
 const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HARD() * 0.3); // difficulty tavana vurduktan sonra yavaşça 0 → 1 (İzmir 1.3, Antalya 1.6)
+// sonsuz rampa: 6,5 km'den sonra hiç durmayan sertleşme (0 → 10 km'de 0,5 → 13,5 km'de 1 → 24 km'de 2,5). Usta oyuncu bitmeyen uçuş yapamasın:
+// 10 km nadir, 20 km neredeyse imkânsız. m: uçulan metre (hız için dist, üretim için -genZ/2)
+const overAt = m => clamp((m - 6500) / 7000, 0, 2.5), overG = () => overAt(-genZ / 2);
 // ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
 // Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
 const STOP_K = QS.has('stop') ? (+QS.get('stop') || 0.15) : 1; // ?stop → duraklar çok yakın, ?stop=0.02 daha da yakın (deneme için)
@@ -351,7 +354,7 @@ const pickPw = arr => { const a = arr.filter(x => x !== lastPw), k = pick(a.leng
 const pwFree = (k, z) => !(pw[k] > (gull.position.z - z) / Math.max(speed, 15)) && !powerups.some(p => !p.taken && p.kind === k);
 function spawnGap(first, fixLen, quiet) {
   const d = difficulty();
-  let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, Math.max(36, 56 - late() * 10 - heat() * 3)));
+  let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, Math.max(36, 56 - late() * 10 - heat() * 3 - overG() * 4)));
   const z0 = genZ, kind = gapKind(first, quiet, z0, d);
   if (!fixLen && (kind === 'pod' || kind === 'rain')) len = Math.max(len, 46);
   const ph = Math.random() * 6, amp = rand(1.2, 3.4);
@@ -376,7 +379,7 @@ function spawnGap(first, fixLen, quiet) {
       }
     } else {
       const n = kind === 'flock' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : kind !== 'mix' ? (camp && d >= 0.6 && kind !== 'quiet' && !(tempoAt(z0 - 20)?.kind === 'calm') ? 1 : 0) : camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
-      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
       if (kind === 'kites' || (kind === 'mix' && d > 1.3 && Math.random() < 0.14 + d * 0.04 + heat() * 0.05)) {
         const nk = kind === 'kites' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : d > 3 && Math.random() < 0.4 ? 2 : 1;
         for (let i = 0; i < nk; i++) {
@@ -442,7 +445,7 @@ function rivalClear(z, bx, sw, kind) {
 // mavi düzensiz zikzak çizer (her an yön değiştirebilir). Zorluk arttıkça renkliler çoğalır.
 function addRival(z, bx, sw, kind, zMax = Infinity) {
   const d = difficulty();
-  const L = late();
+  const L = late() + overG() * 0.4;
   kind = kind || (d > 1.6 && Math.random() < 0.25 + L * 0.2 ? 'red' : d > 2.2 && Math.random() < 0.3 + L * 0.2 ? 'blue' : 'grey'); // renkliler Beşiktaş'tan sonra
   const c = rivalClear(z, bx, sw, kind);
   if (!c) return; // simit yolunda yer yok: bu rakip gelmez
@@ -2923,7 +2926,7 @@ function frame() {
       const tz = tempoAt(gull.position.z);
       if (tz !== tempoIn) { tempoIn = tz; if (tz && tz.kind === 'tail') gearUp(); } // efekt yalnız gerçek hız sıçramasında
       tempoK = damp(tempoK, tz ? TEMPO_K[tz.kind] : 1, 0.9, dt); // ~2,5 sn'de oturur
-      speed = Math.min(SPEED_MAX * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1)) * tempoK + slingV; // Hızlı vapurlar: %15 hızlı
+      speed = Math.min(SPEED_MAX * (1 + 0.16 * overAt(dist)) * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1)) * tempoK + slingV; // Hızlı vapurlar: %15 hızlı
       if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();
     } else { speed = 15; autopilot(); }
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)
@@ -3243,7 +3246,9 @@ function frame() {
   const followZ = state === 'dead' || state === 'over' ? camera.position.z - back : g.z;
   let cx = g.x * 0.85 - lean * 1.3, cy = FLY_Y + up + fallsLift * 0.45, cz = followZ + back;
   // kamera direğin/yelkenin içinden geçmesin: martının önündeki ve kamerayla martı arasındaki yüksek engellerin üstüne çıkar
-  for (const o of obstacles) if (o.top < 30 && o.top + 1.3 > cy && o.z > followZ - 14 && o.z < camera.position.z + 2.5 && Math.abs(o.x - camera.position.x) < o.hw + 2.6) cy = o.top + 1.3;
+  // dikey ekranda kamera 1,2 m daha yüksekte durur: aynı payı ekle ki direkte telefonda da masaüstündeki kadar yükselip insin (eskiden 0,25 m kalıyordu)
+  const clr = 1.3 + (up - 4.2);
+  for (const o of obstacles) if (o.top < 30 && o.top + clr > cy && o.z > followZ - 14 && o.z < camera.position.z + 2.5 && Math.abs(o.x - camera.position.x) < o.hw + 2.6) cy = o.top + clr;
   showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' ? 4 : 1.6, realDt);
   if (dressing) { cx = g.x + (land ? 1.6 : 1.6); cy = FLY_Y + (land ? 1.9 : 1.5); cz = g.z - (land ? 6.8 : 5.2); } // kostüm paneli: önden yakın çekim
   else if (showcase > 0.001) {
