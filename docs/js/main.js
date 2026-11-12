@@ -1118,20 +1118,18 @@ const KEY_RANK = 'simit-martisi-rank';
 const RANKS = [[1, 'Yavru martı'], [3, 'Vapur martısı'], [6, 'Simit avcısı'], [10, 'Boğaz kurdu'], [15, 'İskele reisi'], [20, 'Kaptan martı'], [30, 'Efsane martı']];
 // her seviye bir öncekinden belirgin zor: 150 + 25·Sv² (Sv 1→2: 180 XP, Sv 20→21: 10.150; Sv 1'den 50'ye toplam ~1 milyon XP)
 const xpNeed = lv => Math.round((150 + 25 * lv * lv) / 10) * 10;
-const lvGift = lv => Math.max(10, Math.round(xpNeed(lv - 1) / 150) * 5); // seviyenin simiti ≈ o seviyenin XP'si / 30 (Martı Yolu'nda alınır): Sv 10 → 75, Sv 20 → 305, Sv 50 → 2.005
+const lvGift = lv => 10 + lv * 3; // seviyenin simiti (Martı Yolu'nda elle alınır): Sv 2 → 16, Sv 20 → 70, Sv 50 → 160
 const rank = Object.assign({ lv: 1, xp: 0 }, store.get(KEY_RANK, {}) || {});
 const rankName = lv => tr(RANKS.filter(r => lv >= r[0]).pop()[1]);
 // Martı Yolu (Ayarlar → Profil): her seviyenin ödülü yolda elle alınır. Her seviye lvGift simit; 10'un katlarında Sv/10 balık,
 // 5/15/25'te yalnız yoldan çıkan kostüm, kalan 5'lerde büyük simit kesesi. Alınanlar rank.got'ta, geride kalan sonradan da alınır.
-// rank.paid: yol gelmeden önce seviye simiti otomatik ödenmişti; o seviyelerin simiti yeniden verilmez (yalnız ekstrası).
 const ROAD_COS = { 5: 'fisher', 15: 'buoy', 25: 'pirate' };
 if (!Array.isArray(rank.got)) rank.got = [];
-if (typeof rank.paid !== 'number') { rank.paid = rank.lv; store.set(KEY_RANK, rank); }
-function roadPrize(lv, all = false) { // all: ödenmiş seviye simitini de göster (panelde boş satır kalmasın)
+function roadPrize(lv) { // geçilmiş seviyeler dahil hepsi elle alınır
   if (lv < 2) return [];
-  let simit = all || lv > rank.paid ? lvGift(lv) : 0;
+  let simit = lvGift(lv);
   const out = [];
-  if (lv % 5 === 0 && lv % 10 && !ROAD_COS[lv]) simit += Math.round(xpNeed(lv - 1) / 500) * 50; // kese: o seviyenin XP'si / 10 (Sv 35 → 2.900, Sv 45 → 5.050)
+  if (lv % 5 === 0 && lv % 10 && !ROAD_COS[lv]) simit += 50 + lv * 20; // kese: Sv 35 → 750, Sv 45 → 950
   if (simit) out.push({ k: 'simit', n: simit });
   if (lv % 10 === 0) out.push({ k: 'fish', n: lv / 10 });
   if (ROAD_COS[lv]) out.push({ k: 'cos', id: ROAD_COS[lv] });
@@ -1167,7 +1165,7 @@ function renderRoad() {
   const top = Math.max(50, Math.ceil((rank.lv + 10) / 5) * 5);
   let focus = null;
   for (let lv = 2; lv <= top; lv++) {
-    const ps = roadPrize(lv, !roadReady(lv)), p = ps.length ? ps : null, title = RANKS.find(r => r[0] === lv), done = rank.lv >= lv, ready = roadReady(lv), big = lv % 5 === 0;
+    const ps = roadPrize(lv), p = ps.length ? ps : null, title = RANKS.find(r => r[0] === lv), done = rank.lv >= lv, ready = roadReady(lv), big = lv % 5 === 0;
     const d = document.createElement('div');
     d.className = 'road-row' + (done ? ' done' : '') + (ready ? ' ready' : done ? ' got' : '') + (big ? ' big' : ''); // got: alınmış, yeşil
     d.innerHTML = `<b class="road-lv">${fmt(lv)}</b><span class="road-m"><b>${p ? p.map(roadPrizeHtml).join('') : ''}</b><small></small></span><span class="road-r"></span>`;
