@@ -181,6 +181,19 @@ begin
   return s;
 end $$;
 
+-- martı seviyesi (sıralamada bayrağın solunda): istemci değişince gönderir, yalnız artış kabul edilir (doğrulanamaz, 99 tavan)
+alter table players add column if not exists lv int not null default 0;
+create or replace function set_level(p_id uuid, p_secret uuid, p_lv int) returns int
+language plpgsql security definer set search_path = public as $$
+declare v int;
+begin
+  update players set lv = greatest(lv, least(greatest(coalesce(p_lv, 0), 0), 99)) where id = p_id and secret = p_secret returning lv into v;
+  if v is null then raise exception 'unknown player'; end if;
+  return v;
+end $$;
+revoke all on function set_level(uuid, uuid, int) from public;
+grant execute on function set_level(uuid, uuid, int) to anon, authenticated;
+
 -- tablo: herkesin en iyi skoruyla ilk 50 ve oyuncunun sırası (week/ends/prev eski istemciler için null)
 create or replace function get_board(p_id uuid default null) returns json
 language sql stable security definer set search_path = public as $$
@@ -189,15 +202,15 @@ language sql stable security definer set search_path = public as $$
     from scores s order by s.player_id, s.score desc, s.updated_at
   ),
   ranked as (
-    select b.player_id, b.score, p.name, p.cc, row_number() over (order by b.score desc, b.updated_at) as rank
+    select b.player_id, b.score, p.name, p.cc, p.lv, row_number() over (order by b.score desc, b.updated_at) as rank
     from b join players p on p.id = b.player_id where not p.hidden
   )
   select json_build_object(
     'week', null, 'ends', null, 'prev', null,
     'total', (select count(*) from ranked),
-    'top', coalesce((select json_agg(json_build_object('rank', rank, 'name', name, 'cc', cc, 'score', score, 'me', player_id = p_id) order by rank)
+    'top', coalesce((select json_agg(json_build_object('rank', rank, 'name', name, 'cc', cc, 'lv', lv, 'score', score, 'me', player_id = p_id) order by rank)
                      from ranked where rank <= 50), '[]'::json),
-    'me', (select json_build_object('rank', rank, 'score', score, 'name', name) from ranked where player_id = p_id)
+    'me', (select json_build_object('rank', rank, 'score', score, 'name', name, 'lv', lv) from ranked where player_id = p_id)
   )
 $$;
 

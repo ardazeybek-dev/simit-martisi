@@ -122,6 +122,12 @@ async function syncOnce() {
       // reddedilirse yerelde kalır, sonraki sync'te yeniden denenir; istek giderken ülke yine değiştiyse işaret kalır
       if (c !== null && c !== REJECT && profile().cc === sent) p = save({ ccDirty: false });
     }
+    // martı seviyesi sıralamada görünür: değiştikçe bir kez gönderilir (sunucu yalnız artışı kabul eder)
+    const lv = +((store.get('simit-martisi-rank', null) || {}).lv) || 0;
+    if (p.id && lv > (p.lvSent || 0)) {
+      const r = await rpc('set_level', { p_id: p.id, p_secret: p.secret, p_lv: lv });
+      if (r !== null) p = save({ lvSent: r === REJECT ? lv : r });
+    }
     // sıralama kalıcı oldu: bilet gelmeden (ya da çevrimdışı) yapılmış cihaz rekoru sunucuda yoktu → bir kez yüklenir
     const best = +store.get('simit-martisi-best', 0) || 0;
     if (!p.claimed && best > 0) {

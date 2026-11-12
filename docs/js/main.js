@@ -1609,12 +1609,12 @@ async function renderBoard() {
   if (seq !== boardSeq) return;
   if (!b) return boardMsg(tr('Bağlantı yok'), tr('Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.'), bestLine);
   $('boardInfo').textContent = tr('{n} oyuncu').replace('{n}', fmt(b.total)); // kalıcı sıralama: herkesin en iyi skoru, hafta sıfırlanmaz
-  const li = (r, cc, name, score, cls = '') => `<li class="${cls}${r >= 1 && r <= 3 ? ' rk' + r : ''}"><b>${r ? '#' + fmt(r) : '—'}</b><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`;
+  const li = (r, cc, name, score, cls = '', lv = 0) => `<li class="${cls}${r >= 1 && r <= 3 ? ' rk' + r : ''}"><b>${r ? '#' + fmt(r) : '—'}</b><i class="blv">${lv > 0 ? fmt(lv) : ''}</i><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`; // seviye bayrağın solunda
   const top = b.top || [], me = b.me;
-  let html = top.map(t => li(t.rank, t.me ? ccOf() : t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '')).join('');
+  let html = top.map(t => li(t.rank, t.me ? ccOf() : t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '', t.me ? rank.lv : t.lv)).join('');
   if (!top.length) html = `<li class="gap msg">${tr('Henüz kimse uçmadı. İlk sen ol!')}</li>`;
-  if (me && !top.some(t => t.me)) html += `<li class="gap">⋮</li>` + li(me.rank, ccOf(), shownName(), fmt(me.score), 'me');
-  if (!me) html += li(0, ccOf(), shownName() || tr('Sen'), tr('Henüz uçmadın'), 'me');
+  if (me && !top.some(t => t.me)) html += `<li class="gap">⋮</li>` + li(me.rank, ccOf(), shownName(), fmt(me.score), 'me', rank.lv);
+  if (!me) html += li(0, ccOf(), shownName() || tr('Sen'), tr('Henüz uçmadın'), 'me', rank.lv);
   const list = $('boardList'); list.innerHTML = html;
   const meEl = list.querySelector('.me'); if (meEl) setTimeout(() => meEl.scrollIntoView({ block: 'nearest' }), 0);
   $('boardTier').innerHTML = '';
