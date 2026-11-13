@@ -2370,7 +2370,7 @@ async function claimDaily() {
 // ---------------- şans çarkı (günlük ödül panelinin ikinci sekmesi) ----------------
 // Balıkla ya da simitle çevrilir; ödül çevirir çevirmez cüzdana yazılır (panel kapansa da kaybolmaz), çark durunca gösterilir.
 // Ayar: WHEEL (tür s=simit / f=balık, miktar, ağırlık), SPIN_FISH, SPIN_SIMIT. Ortalama kazanç bedelin altında: çark kazandırmaz, heyecan verir.
-const WHEEL = [['s', 100, 42], ['f', 1, 6], ['s', 150, 26], ['s', 500, 6], ['s', 250, 14], ['f', 3, 2], ['s', 1000, 3], ['s', 3000, 1]]; // balık dilimi seyrek: çıkan balıkla yeniden çevrilir, sık olunca çark kâr ettiriyordu
+const WHEEL = [['s', 100, 50], ['f', 1, 2.5], ['s', 150, 28], ['s', 500, 5], ['s', 250, 14], ['f', 3, 0.3], ['s', 1000, 0.15], ['s', 3000, 0.05]]; // kumar kazandırmaz: ortalama ~170 simit (bedelin ~%60'ı); 1000 ~667'de, 3000 ~2000'de bir. Balık seyrek: çıkan balıkla yeniden çevrilir
 let spinArmT = 0, spinArmK = ''; // ücretli çevirme onayı bekliyor mu, hangi düğme ('f' balık, 's' simit) (aşağıda spinWheel)
 // her ücretli çevirmeden önce sorulur; o gün kaçıncı çevirmeyse o laf gelir, liste bitince 4. laftan başa döner (kumardan tatlı bir uzak durma)
 const SPIN_WARN = ['Emin misin?', 'Yapma!!?', 'Kumar kötüdür, git buradan -_-', 'Kasa hep kazanır :)', 'O simitle bir martı doyardı…', 'Annen bunu biliyor mu?', 'Bak, martılar sana bakıyor.', 'Çark döner, simit gider.', 'Son kez soruyorum: emin misin?', 'Tamam, ben karışmam ¯\_(ツ)_/¯'];
