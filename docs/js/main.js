@@ -1531,7 +1531,7 @@ function startGame() {
   audio.unlock();
   sfx.click();
   misPending = false; refillMissions(); startRun(); fishSync(false); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
-  achRun = {}; saidRun.clear(); recRun = false;
+  achRun = {}; saidRun.clear(); recRun = false; recPend = 0;
   for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; m.v = null; } // görevler panelinde çubuk buradan dolar
   misPending = true;
   resetWorld(daily || state !== 'title'); state = 'play';
@@ -1652,7 +1652,7 @@ function showOver() {
     requestAnimationFrame(step);
   };
   // rekor ekranı: uçuş başına bir kez, ilk birkaç uçuşun küçük rekorlarında yok (?rekor ile her uçuşta, yalnız yerelde)
-  if ((isBest && prevBest >= 150 && !recRun) || REC_TEST) { recRun = true; recShowStart(final, reveal); } else reveal();
+  reveal(); if ((isBest && prevBest >= 150) || REC_TEST) recPend = final; // rekor ekranı uçuş gerçekten bitince (Tekrar uç / Ana menü): önce bitiş kartı, balıkla devam etme şansı
   audio.duck(false);
 }
 // oyun sonu: kazanılan simit sayarak artar, her adımda tıkırdar
@@ -1675,7 +1675,9 @@ function earnFlow(gain) {
 // sayan puan. Dokununca (ya da tuşla) bitiş kartı açılır.
 // Kostüm podyumu gibi: martı her karenin sonunda bu sahneye taşınır, karenin başında dünyadaki yerine döner (oyun mantığı bozulmaz).
 // Sis aynı türde ama çok uzakta: gölgelendiriciler dünyadakiyle aynı kalır, rekor anında yeniden derleme (telefonda takılma) olmaz.
-let recRun = false; // bu uçuşta rekor ekranı gösterildi mi (yeniden doğuşla ikinci rekorda tekrar çıkmaz)
+let recRun = false, recPend = 0; // recPend: bu uçuşun bekleyen rekoru (yeniden doğuşla daha da büyürse son hâli)
+// bitiş kartından çıkış (Tekrar uç / Ana menü / tuş): rekor bekliyorsa önce rekor ekranı, dokununca seçilen yere
+function leaveOver(next) { if (overLock > 0) return; if (!recPend) return next(); const f = recPend; recPend = 0; show('over', false); recShowStart(f, next); }
 const recS = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(40, 1, 0.1, 200), on: false, t: 0, lock: 0, snap: [], parent: null, ring: null, bits: [], done: null, final: 0 };
 recS.cam.layers.enable(1); // toplu çizime alınmış martı parçaları burada tek tek çizilir
 {
@@ -1712,9 +1714,12 @@ function recShowClose() { if (!recS.on) return; recRestore(); recS.on = false; r
 function recShowDone() {
   if (!recS.on || recS.lock > 0) return;
   recRestore(); recS.on = false; show('recShow', false);
-  const f = recS.done; recS.done = null; if (f) f();
+  const f = recS.done; recS.done = null; if (f) setTimeout(f, 60); // dokunuş bitsin, sonra bitiş kartı / menü / yeni uçuş
 }
-$('recShow').addEventListener('pointerdown', e => { e.stopPropagation(); recShowDone(); });
+// dokunuşun tamamı burada yutulur: ekran parmak kalkınca (click) kapanır, sonraki yer bir sonraki karede açılır.
+// pointerdown'da kapanınca parmağın kalkışı açılan ana menüye düşüyor, "ekrana dokun" uçuşu başlatıyordu
+for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup']) $('recShow').addEventListener(ev, e => e.stopPropagation());
+$('recShow').addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); recShowDone(); });
 const easeIO = u => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
 function recDraw(dt) {
   recS.t += dt; recS.lock -= dt; const t2 = recS.t;
@@ -2688,15 +2693,15 @@ addEventListener('keydown', e => {
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) { if (state === 'play' || state === 'countdown') pause(); else if (state === 'paused') resume(); }
   if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) {
     if (state === 'title' && !menuModal()) { e.preventDefault(); playSel(); }
-    else if (state === 'over' && overLock <= 0) { e.preventDefault(); replay(); }
+    else if (state === 'over' && overLock <= 0) { e.preventDefault(); leaveOver(replay); }
     else if (state === 'paused') { e.preventDefault(); resume(); }
   }
 });
 addEventListener('keyup', e => (keys[e.code] = false));
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; }); // pencere odağı giderken basılı kalan ok tuşu martıyı kenara sürüklemesin
 const onBtn = (id, fn) => $(id).addEventListener('click', e => { e.stopPropagation(); sfx.click(); fn(e); });
-onBtn('againBtn', () => replay());
-onBtn('homeBtn', () => showTitle());
+onBtn('againBtn', () => leaveOver(replay));
+onBtn('homeBtn', () => leaveOver(showTitle));
 onBtn('reviveBtn', () => askRevive());
 onBtn('fishBtn', () => fishRevive());
 onBtn('wardrobeBtn', () => openWardrobe());
