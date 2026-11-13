@@ -479,7 +479,7 @@ function addRival(z, bx, sw, kind, zMax = Infinity) {
   ({ bx, sw, kind } = c);
   if (kind === 'red') z -= 18; // hızlı gelir: daha uzaktan başlar
   const r = makeGull(kind); r.scale.setScalar(0.72); r.rotation.y = Math.PI; // oyuncudan küçük ama uzaktan seçilsin (çarpma yarıçapı aynı: görüntü biraz bağışlayıcı)
-  r.position.set(bx, FLY_Y, z); scene.add(r); addShipLights(r, 'gull', { kind }); // yağmur/siste gövdesinde renkli fener
+  r.position.set(bx, FLY_Y, z); scene.add(r);
   if (genLog) genLog.push(`r${kind}${bx.toFixed(2)},${z.toFixed(1)}`);
   rivals.push({ mesh: r, kind, bx, z, zMax, ph: Math.random() * 6, sw, hit: false, spin: 0, tx: bx, zt: 0, dive: 15 + L * 4 });
 }
@@ -1561,6 +1561,18 @@ if (location.hash.startsWith('#acik=') && window.crypto && crypto.subtle) {
     for (const c of CITIES) if (c.routeKey && !c.soon) store.set(c.routeKey, c.stops.length - 1);
     for (const c of COSTUMES) if (!look.owned.includes(c.id)) look.owned.push(c.id);
     store.set(KEY_LOOK, look); location.reload();
+  }).catch(() => {});
+}
+// yalnız şehirler (#iller=…): Arda'nın ana hesabı (Penguu, PC) için. Simit, puan, kostüm vermez; önce eski rota kayıtları yedeklenir
+const CITIES_H = '3d23c93cb9c2c6aaa35ac7a3397c454c4ac0d5f5654da131aa61e3e8118f2959';
+if (location.hash.startsWith('#iller=') && window.crypto && crypto.subtle) {
+  const tok = decodeURIComponent(location.hash.slice(7)); history.replaceState(null, '', location.pathname + location.search);
+  crypto.subtle.digest('SHA-256', new TextEncoder().encode(tok)).then(b => {
+    if ([...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('') !== CITIES_H) return;
+    const bk = 'simit-martisi-route-backup-2026-11-14';
+    if (!store.get(bk, null)) store.set(bk, Object.fromEntries(CITIES.filter(c => c.routeKey).map(c => [c.routeKey, store.get(c.routeKey, null)])));
+    for (const c of CITIES) if (c.routeKey && !c.soon) store.set(c.routeKey, Math.max(+store.get(c.routeKey, 0) || 0, c.stops.length - 1));
+    location.reload();
   }).catch(() => {});
 }
 let tutorialPending = !store.get(KEY_TUT, false);

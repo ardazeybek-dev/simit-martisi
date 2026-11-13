@@ -39,11 +39,9 @@ const mat = new THREE.ShaderMaterial({
 const points = new THREE.Points(geo, mat); points.frustumCulled = false; points.renderOrder = 4;
 
 // tür: 0 pencere (sıcak, hafif kıpırtı, bazıları ağır ağır söner yanar), 1 beyaz direk/demir feneri, 2 kırmızı, 3 yeşil, 4 yanıp sönen kırmızı, 5 korkuluk LED'i,
-// 6 gaz feneri (turuncu, alev gibi titrer), 7 renkli LED (rengi lambada: l.c; sırayla koşar), 8 deniz feneri (çift çakar),
-// 9 rakip martı feneri (rengi türünden: gri beyaz, kırmızı kırmızı, mavi mavi; yağmur/siste uzaktan hangisi geldiği okunur)
+// 6 gaz feneri (turuncu, alev gibi titrer), 7 renkli LED (rengi lambada: l.c; sırayla koşar), 8 deniz feneri (çift çakar)
 const COL = [[1, 0.7, 0.34], [1, 0.96, 0.88], [1, 0.16, 0.1], [0.25, 1, 0.45], [1, 0.12, 0.08], [1, 0.84, 0.55], [1, 0.58, 0.2], [1, 1, 1], [1, 0.95, 0.75]];
-const BASE = [1.7, 1.2, 1.2, 1.2, 1.3, 1.25, 1.6, 2.4, 1.6, 2.2], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7, 0.42, 1.15, 0.95, 3.2, 1.5];
-const GULL_C = { grey: [1, 0.97, 0.9], red: [1, 0.18, 0.12], blue: [0.3, 0.65, 1] };
+const BASE = [1.7, 1.2, 1.2, 1.2, 1.3, 1.25, 1.6, 1.1, 1.6], SIZE = [1.5, 1.35, 1.05, 1.7, 1.7, 0.42, 1.15, 0.6, 3.2]; // uçurtma LED'i (7) kısık ve küçük: uçurtmanın biçimi seçilsin
 const LED = [[1, 0.25, 0.6], [0.2, 0.9, 1], [1, 0.85, 0.15], [0.35, 1, 0.35]];
 const WEATHER_K = { rain: 1 }; // yalnız yağmurda yanar: gündüz açık havada ışık olmaz
 const LED_K = { rain: 1, fog: 0.9, snow: 0.8 }; // uçurtma LED'i siste de yanar: engel puslu havada seçilsin
@@ -95,10 +93,9 @@ function lampsOf(kind, o = {}) {
     for (const s of [-1, 1]) for (let z = -len / 2 + 5; z < len / 2 - 4; z += 1.1) a.push(L(s * 3.85, DECK_Y + 0.8, z, 5)); // korkuluk boyunca LED dizisi
   } else if (kind === 'simitboat') { // pruvada gaz feneri: yağmurda simidin nereden atılacağı uzaktan seçilir
     a.push(L(0, 1.3, -1.95, 6), L(0, 0.95, 1.85, 6, 0.7));
-  } else if (kind === 'kite') { // kenarlarda koşan renkli LED, kuyruğun her fiyonkunda bir tane: karanlıkta engel seçilsin
-    const e = [[0, 1.05], [0.37, 0.62], [0.75, 0.2], [0.37, -0.5], [0, -1.2], [-0.37, -0.5], [-0.75, 0.2], [-0.37, 0.62]];
-    e.forEach(([x, y], i) => a.push(D(x, y, 0.06, i)));
-    (o.tail || []).forEach((b, i) => a.push(D(0, 0, 0.05, 8 + i, b)));
+  } else if (kind === 'kite') { // köşelerde dört kısık LED (sırayla yanar); uçurtmanın kendisi de kötü havada parlar (models.js setKiteGlow)
+    const e = [[0, 1.05], [0.75, 0.2], [0, -1.2], [-0.75, 0.2]]; // yalnız dört köşe: kenar boyu LED dizisi uçurtmanın biçimini örtüyordu
+    e.forEach(([x, y], i) => a.push(D(x, y, 0.06, i * 3)));
   } else if (kind === 'bridge') { // tabliye fenerleri, alt kat lokanta pencereleri, köprü altında koridoru aydınlatan lambalar
     for (const s of [-1, 1]) {
       for (let x = -44; x <= 44; x += 11) a.push(L(x, 16.3, s * 2.6, 1, 1.25));
@@ -112,8 +109,6 @@ function lampsOf(kind, o = {}) {
     a.push(L(-2.56, 10.3, 0, 1, 1.4));
   } else if (kind === 'lighthouse') {
     a.push(L(0, 13, 0, 8));
-  } else if (kind === 'gull') { // rakip martı: gövdede renkli fener
-    a.push(Object.assign(L(0, 0.35, 0, 9), { c: GULL_C[o.kind] || GULL_C.grey }));
   } else if (kind === 'pirate') { // korsan gemisi (pruva -z): kıç köşkü feneri, köşk pencereleri, seyir fenerleri, direk tepesinde beyaz
     a.push(L(0, 6.45, 6.3, 6, 1.6), L(0, 11.3, -4.5, 1, 1.2)); nav(a, 1.75, 1.9, -5.5, -1);
     for (const s of [-1, 1]) for (const z of [4.6, 5.9]) a.push(L(s * 1.6, 3.6, z, 0, 1.2));
@@ -170,7 +165,7 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
     for (const l of sh.lamps) {
       if (n >= MAX) break;
       if (l.ref) _p.copy(l.ref.position).applyMatrix4(_m); else _p.set(l.x, l.y, l.z).applyMatrix4(_m);
-      const kk = l.k === 7 || l.k === 9 ? kLed : k; if (!kk) continue;
+      const kk = l.k === 7 ? kLed : k; if (!kk) continue;
       // kameraya çok yaklaşan lamba (gemiden ayrılırken yanından geçenler) koca bir leke olup birden sönmesin: yaklaştıkça yumuşakça söner
       const nf = Math.min(1, Math.max(0, (cam.z - _p.z - 1) / 5)); // martıyı geçtikten sonra da ~7 m yanık kalır if (nf <= 0) continue;
       const d = _p.distanceTo(cam), f = Math.min(1, Math.max(0, (far - d) / (far - near)));
@@ -181,7 +176,6 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
       else if (l.k === 4) { const c = (time / (1.5 + 0.5 * (l.r - 1)) + l.ph) % 1; v = c < 0.1 ? 1 : c < 0.2 ? 1 - (c - 0.1) * 9 : 0.1; }
       else if (l.k === 6) v = 0.7 + 0.3 * wob(tt * 7.3, l.ph) * (0.75 + 0.25 * wob(tt * 13.1, l.ph * 1.7)); // alev: hızlı ve düzensiz
       else if (l.k === 7) { const c = ((time * 6 - l.i) % 13 + 13) % 13; v = 0.35 + 0.65 * Math.max(0, 1 - c / 3); } // koşan ışık: başta parlak, ardında söner
-      else if (l.k === 9) v = 0.8 + 0.2 * wob(tt * 3.1, l.ph);
       else if (l.k === 8) { const c = (time / 4.2 + l.ph) % 1; v = c < 0.06 || (c > 0.14 && c < 0.2) ? 1 : 0.18; } // çift çakar
       else v = 0.88 + 0.12 * wob(tt * 2.6, l.ph);
       const c = l.c || COL[l.k], w = v * BASE[l.k] * kk * f * nf;

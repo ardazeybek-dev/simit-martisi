@@ -1458,7 +1458,7 @@ function kiteAssets_(ci) {
   });
 }
 // kötü havada uçurtmanın kendisi de parlar (yalnız kenar LED'i yetmiyordu): main.js her kare 0 → 1 verir
-export function setKiteGlow(v) { for (const c of kiteCache) if (c) c.mat.emissiveIntensity = v * 0.75; }
+export function setKiteGlow(v) { for (const c of kiteCache) if (c) c.mat.emissiveIntensity = v * 0.55; }
 export function makeKite() {
   const A = kiteAssets((Math.random() * KITE_COLS.length) | 0);
   const g = new THREE.Group();
