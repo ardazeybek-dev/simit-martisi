@@ -1902,9 +1902,9 @@ function upgrade(k, lv) {
   bump($('ups').children[Object.keys(ups).indexOf(k)], 'bump');
 }
 // ---------------- mağaza ----------------
-// Balık → simit: toplu satışta balık başı artar (250, 260, 270, 280). Simit → balık: 300, günde SHOP_DAY kez.
-// Alış (300) en iyi satıştan (280) pahalı: al-sat ile simit basılamaz. Çarkta 1 balık = 280 simit.
-const SHOP_SELL = [250, 520, 810, 1120], SHOP_FISH = 300, SHOP_DAY = 3, KEY_SHOPDAY = 'simit-martisi-shopday';
+// Balık → simit: toplu satışta balık başı artar (253, 259, 269, 281). Simit → balık: 501, günde SHOP_DAY kez. Fiyatlar bilerek yuvarlak değil (sonu 0 olmasın)
+// Alış (501) en iyi satıştan (281) pahalı: al-sat ile simit basılamaz. Çarkta 1 balık = 280 simit.
+const SHOP_SELL = [253, 518, 807, 1124], SHOP_FISH = 501, SHOP_DAY = 3, KEY_SHOPDAY = 'simit-martisi-shopday';
 const shopBought = () => { const f = store.get(KEY_SHOPDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
 const SIM_ICO = '<svg class="ico"><use href="#i-simit"/></svg>', FISH_ICO = '<svg class="ico fish"><use href="#i-fish"/></svg>';
 let askFn = null; // onay penceresi: "Satın al" bunu çalıştırır (mağaza, kostüm, yükseltme, seri kurtarma)
