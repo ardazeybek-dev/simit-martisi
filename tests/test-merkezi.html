@@ -42,17 +42,37 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
   <h1>Simit Martısı · Test Merkezi</h1>
   <p class="sub">Her yeni değişiklik burada. Linke bas, oyunda bak, sonra "Tamam" ya da "Sorun var" (notunu yaz).</p>
   <div class="bar">
-    <a class="btn main" href="/?hepsi" target="_blank">🔓 Her şeyi aç ve oyna</a>
+    <a class="btn main" href="/?hepsi" target="_blank">🔓 Bütün şehirleri aç ve oyna</a>
     <a class="btn" href="/" target="_blank">Normal oyun</a>
     <button id="copy">📋 Notlarımı kopyala</button>
   </div>
-  <p class="tip">"Her şeyi aç" yalnız bu bilgisayardaki oyunda bütün şehirleri açar, en az 50 bin simit ve 20 balık verir (canlıdaki hesabına dokunmaz). Linkler yeni sekmede açılır; oyun eski görünürse <b>Ctrl+F5</b>. Linkteki <code>?</code> ayarları yalnız bu bilgisayarda çalışır.</p>
+  <p class="tip">"Bütün şehirleri aç" yalnız bu bilgisayardaki oyunda 3 şehri de açar; simit ya da balık vermez (canlıdaki hesabına dokunmaz). Linkler yeni sekmede açılır; oyun eski görünürse <b>Ctrl+F5</b>. Linkteki <code>?</code> ayarları yalnız bu bilgisayarda çalışır.</p>
   <p class="prog" id="prog"></p>
   <div id="list"></div>
 </main>
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'v3.2.1 · 13 Kasım gece · senin notların', id: 'kopru-kivrim', t: '🌉 Köprü altında simit yolu hep kıvrımlı', look: [
+      'Köprüye yandan girip iki misina sırası arasında kıvrılıyor, çıkışta da kıvrılıp gidiyor mu? Hiç dümdüz geçiş kalmadı mı?'],
+    links: [['Hemen köprü', '/?city=istanbul&bridge']] },
+  { id: 'korsan-altin', t: '🏴‍☠️ Korsanlar yalnız altın simit atıyor', look: [
+      'Korsan teknesindeki iki turist birer altın simit atıyor (kapının içine). Ekonomi şişmesin diye tekne başına 2 altın.'],
+    links: [['Hemen korsan', '/?city=antalya&pirate']] },
+  { id: 'kizgin', t: '😠 Yolcuların hepsi kızmıyor', look: [
+      'Simidini kaptığın yolcuların kabaca beşte ikisi kızarıp laf ediyor, öbürleri sakin kalıyor. Oran iyi mi?'],
+    links: [['İstanbul', '/?city=istanbul'], ['İzmir', '/?city=izmir']] },
+  { id: 'viraj-firlama', t: '🚀 Virajdan fırlama daha hissedilir', look: [
+      'Virajın simit çizgisini toplayınca (Mükemmel viraj) görüş açısı, hız çizgileri daha güçlü ve 2 sn sürüyor. Oyunun başında hissediliyor mu?',
+      'Gerçek hız eklemedim: eskiden eklenince viraj çıkışındaki baca geçilmez oluyordu.'],
+    links: [['İstanbul baştan', '/?city=istanbul&weather=clear']] },
+  { id: 'zor-kalici', t: '📈 Zamanla hafif kalabalık artık kalıcı', look: [
+      '6 km denemesinde ?zor daha iyi geldiği için kalıcı yaptım. 2 km\'den sonra kalabalık yavaşça artar, 6 km\'de tavana varır.',
+      '4 km\'de normal daha zor geldiyse sebep büyük ihtimalle hava (sis/yağmur) ve rastgelelik. Karşılaştırırken havayı sabitle (aşağıdaki linkler açık hava).'],
+    links: [['Yeni hâl 6 km', '/?city=istanbul&at=6000&weather=clear'], ['Eski hâl 6 km (?zor=0)', '/?city=istanbul&at=6000&weather=clear&zor=0']] },
+  { id: 'antalya-hepsi', t: '🏖️ Antalya\'nın 4 özelliği', look: ['Korsan teknesi, Düden şelalesi, plaj şemsiyeleri ve paraşüt. Antalya kilitli görünürse önce yukarıdaki "Her şeyi aç" linkine bas.'],
+    links: [['Korsan', '/?city=antalya&pirate'], ['Şelale', '/?city=antalya&duden'], ['Plaj', '/?city=antalya&beach'], ['Paraşüt', '/?city=antalya&parasut'], ['Antalya baştan', '/?city=antalya']] },
+
   { g: 'v3.2.0 · 13 Kasım · şehirlere özel şeyler', id: 'balon', t: '🎈 İzmir: Kordon balonları', look: [
       'Balonlar rıhtımdaki balonacıdan kalkıp gevrek tam martının boyuna gelecek şekilde süzülüyor mu?',
       'Gevreği kapınca balon patlıyor mu? Geç kalınca balon gevrekle yükselip gidiyor mu?',
@@ -80,16 +100,10 @@ const ITEMS = [
       'Özel şeyler çok mu sık, çok mu seyrek? İzmir eskisinden kolay hissettiriyor mu? (rakip sayısı eskisiyle aynı ölçüldü)'],
     links: [['İzmir baştan', '/?city=izmir'], ['Antalya baştan', '/?city=antalya']] },
 
-  { g: 'Deneme · karar senin', id: 'zor', t: '📈 Zamanla hafif engel artışı (?zor)', look: [
-      'Senin önerin: başta orta-kolay, ilerledikçe orta/orta-zor. Bu deneme 2 km\'den sonra rakip/uçurtma/konvoy sıklığını yavaşça artırır (6 km\'de tavan). Hız aynı.',
-      'Aynı yerden iki kez uç: biri normal, biri ?zor. Fark hissediliyor mu, fazla mı az mı?',
-      'Beğenirsen kalıcı yaparım; az gelirse artırırım.'],
-    links: [['Normal 4 km', '/?city=istanbul&at=4000'], ['?zor 4 km', '/?city=istanbul&at=4000&zor'], ['Normal İzmir 6 km', '/?city=izmir&at=6000'], ['?zor İzmir 6 km', '/?city=izmir&at=6000&zor']] },
-
   { g: 'Önceden bekleyenler', id: '20km', t: '🔥 20 km: imkânsızın bir tık altı mı?', look: ['Hız basamakları 5/10/15 km\'de. 20 km neredeyse imkânsız olmalı.'],
     links: [['19,5 km\'den başla', '/?at=19500'], ['14,5 km\'den başla', '/?at=14500']] },
-  { id: 'altin', t: '✨ Virajda altın simit parıltısı', look: ['Altın simit uzaktan yıldız gibi parlıyor mu, "uzaktan geliyor" hissi sorun mu?'],
-    links: [['Her virajda altın (?rule=gold)', '/?rule=gold']] },
+  { id: 'altin', t: '✨ Virajda altın simit parıltısı', look: ['?rule=gold yalnız Günün uçuşu modunda çalışır: menüde mod düğmesinden Günün uçuşu\'nu seç. Bilinen hata: virajda parıltı simitten kopuyor, sıradaki işte düzelecek.'],
+    links: [['Günün uçuşu kuralı: altın saat', '/?city=istanbul&rule=gold']] },
   { id: 'arkadas', t: '💬 Menüde "Bir arkadaşın X puan yaptı" yazısı', look: ['Ana menüdeki bu yazı kalsın mı, kalksın mı?'], links: [['Ana menü', '/']] },
 ];
 const KEY = 'test-merkezi', S = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();

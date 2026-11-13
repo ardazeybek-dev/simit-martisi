@@ -42,7 +42,7 @@ blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 const QS = new URLSearchParams(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.search : '');
 // menüdeki cüzdan: 100 binden sonra kısa yazılır (123,5 B · 1,2 Mn; dilin kendi kısaltması), rekor ortada kalsın. Tam sayı mağazada görünür
 const walletTxt = () => (wallet >= 1e5 ? new Intl.NumberFormat(window.I18N.locale, { notation: 'compact', maximumFractionDigits: 1 }).format(wallet) : fmt(wallet));
-if (QS.has('hepsi')) { for (const c of CITIES) store.set(c.routeKey, c.stops.length - 1); store.set(KEY_WALLET, Math.max(+store.get(KEY_WALLET, 0) || 0, 50000)); store.set(KEY_FISH, Math.max(+store.get(KEY_FISH, 0) || 0, 20)); } // deneme (yalnız yerelde, test merkezi): ?hepsi → bütün şehirler açık, en az 50 bin simit ve 20 balık
+if (QS.has('hepsi')) for (const c of CITIES) store.set(c.routeKey, c.stops.length - 1); // deneme (yalnız yerelde, test merkezi): ?hepsi → bütün şehirler açık (cüzdana dokunmaz)
 const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → her uçuş sonunda rekor ekranı çıkar, gerçek rekora dokunmaz
 const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
@@ -61,8 +61,8 @@ const difficulty = () => clamp(-genZ / 650 + HARD() * 0.3 * Math.max(0, -genZ - 
 const endBm = m => { const n = STOPS ? STOPS.length : 0; if (n < 4 || daily) return 0; const a = STOPS[n - 4].m, z = STOPS[n - 1].m;
   return m <= a ? 0 : m <= z ? 1 + 2 * (m - a) / (z - a) : Math.max(0, 3 - (m - z) / 170); };
 const endB = () => endBm(-genZ / 2), END_SPD = 0.02; // hız da kademe başına +%2 (son iskelede +%6): bölge dolu, asıl hissedilen kaldıraç bu
-// ?zor (deneme, yalnız yerelde): 2 km'den sonra kalabalık km başına biraz daha artar (6 km'de +0,4 tavan) — Arda 'zamanla ufak engel artışı' dedi, beğenirse kalıcı olur
-const ZOR = QS.has('zor'), zorG = () => (ZOR ? clamp((-genZ / 2 - 2000) / 10000, 0, 0.4) : 0);
+// zamanla hafif kalabalık: 2 km'den sonra kalabalık biraz daha artar (6 km'de +0,4 tavan; Arda 6 km'de denedi, beğendi). ?zor=0 → eski hâl (yalnız yerelde, karşılaştırma)
+const ZOR = QS.get('zor') !== '0', zorG = () => (ZOR ? clamp((-genZ / 2 - 2000) / 10000, 0, 0.4) : 0);
 const heat = () => clamp((-genZ - 1200 + HARD() * 1600) / 4000, 0, 3) * (1 + HARD() * 0.25) + endB() * 0.3 + tierG() * 0.35 + zorG();
 const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HARD() * 0.3); // difficulty tavana vurduktan sonra yavaşça 0 → 1 (İzmir 1.3, Antalya 1.6)
 // geç oyun rampası: 6,5 km'den sonra sertleşir (0 → 10 km'de 0,5 → 13,5 km'de 1 → 20,5 km'de 2) ve orada DURUR: 10 km nadir, 20 km çok zor
@@ -574,7 +574,7 @@ function spawnPirate() {
   for (const [i, p] of throwers.entries()) {
     const bt = { g: p.mesh, side, person: p, tray: [{ visible: true }, { visible: true }], z: pz, hand: 0, thrown: 0 };
     boats.push(bt);
-    for (const dz of i ? [-0.6, -2.6] : [3.2, 1.3]) addThrown(bt, gapX + rand(-0.3, 0.3), pz + dz, !i && Math.random() < 0.15);
+    addThrown(bt, gapX + rand(-0.3, 0.3), pz + (i ? -1.6 : 2.2), true); // korsan zengin: yalnız altın atar (atıcı başına bir tane, ekonomi şişmesin)
   }
   pirates.push({ g, xa, side, k: rand(0.08, 0.12), z: pz, os, gapX, ph: Math.random() * 6 });
   pirateZ = pz - rand(700, 1000);
@@ -948,12 +948,13 @@ function spawnBridge() {
   }
   // simit yolu geniş boşluklardan geçer; arka sıradaki boşluk öndekine çok uzak olmaz (yetişilebilsin)
   const wide = row => { const w = row.filter(r => r.w > 1.15 && Math.abs(r.c) < LANE - 0.6); return w.length ? w : row; };
-  const gF = pick(wide(gaps[0])).c, near = wide(gaps[1]).filter(r => Math.abs(r.c - gF) < 3.6);
-  const gB = near.length ? pick(near).c : gaps[1].reduce((m, r) => (Math.abs(r.c - gF) < Math.abs(m.c - gF) ? r : m)).c;
+  const gF = pick(wide(gaps[0])).c, near = wide(gaps[1]).filter(r => Math.abs(r.c - gF) < 3.6), bend = near.filter(r => Math.abs(r.c - gF) >= 1.3); // iki sıra arası hep kıvrılır
+  const gB = bend.length ? pick(bend).c : near.length ? pick(near).c : gaps[1].reduce((m, r) => (Math.abs(r.c - gF) < Math.abs(m.c - gF) ? r : m)).c;
   const zF = bz + rz, zB = bz - rz;
-  for (const dz of [10, 6.8, 3.6]) addSimit(gF, FLY_Y, zF + dz, false);
+  const aF = clamp(gF + pick([-1, 1]) * rand(1.3, 2.1), -THROW_X, THROW_X), eB = clamp(gB + (gB - gF > 0 ? 1 : -1) * rand(1.2, 1.9), -THROW_X, THROW_X); // girişte yandan gelir, çıkışta kıvrılıp gider: köprü altında simit yolu hiç düz değil
+  for (const [dz, x] of [[10, aF], [6.8, gF + (aF - gF) * 0.45], [3.6, gF]]) addSimit(x, FLY_Y, zF + dz, false);
   for (const u of [0.3, 0.7]) addSimit(gF + (gB - gF) * u, FLY_Y, zF - (zF - zB) * u, u > 0.5 && goldRoll(0.35));
-  for (const dz of [3.4, 6.6]) addSimit(gB, FLY_Y, zB - dz, false);
+  for (const [dz, x] of [[3.4, gB], [6.6, gB + (eB - gB) * 0.6]]) addSimit(x, FLY_Y, zB - dz, false);
   br.path = { gF: +gF.toFixed(2), gB: +gB.toFixed(2), zF, zB, xs: br.lines.map(l => +l.x.toFixed(2) + (l.o.z > bz ? 'F' : 'B')).join(' ') };
   bridges.push(br);
   bridgeZ = bz - rand(1100, 1600);
@@ -3370,7 +3371,7 @@ function frame() {
     if (state === 'play') {
       playT += dt;
       sling = Math.max(0, sling - dt);
-      const slingMax = 11;
+      const slingMax = 17;
       slingV = damp(slingV, sling > 0 ? slingMax : 0, sling > 0 ? 8 : 1.6, dt); // virajdan fırlama hissi (hıza eklenmez)
       // ilerledikçe hızlanır: önce hızlı tırmanır, sonra tavana (SPEED_MAX) kadar yavaşça artmayı sürdürür
       const tz = tempoAt(gull.position.z);
@@ -3455,7 +3456,7 @@ function frame() {
       if (magnet && dzs > -2 && dzs < 16 && Math.abs(s.x - g.x) < 7) {
         if (!s.free) { // yolcunun elinden kopar
           s.mesh.getWorldPosition(tmp); s.mesh.removeFromParent(); s.mesh.position.copy(tmp); scene.add(s.mesh);
-          s.x = tmp.x; s.y = tmp.y; s.z = tmp.z; s.free = true; angry(s.person);
+          s.x = tmp.x; s.y = tmp.y; s.z = tmp.z; s.free = true; if (Math.random() < 0.4) angry(s.person);
         }
         s.pulled = true;
       }
@@ -3737,7 +3738,7 @@ function frame() {
   }
   const fovBase = (land ? 56 : 68) - showcase * (land ? 10 : 14);
   const boost = pw.magnet > 0 || pw.double > 0 ? 2 : 0;
-  camera.fov = damp(camera.fov, fovBase + (speed - 15) * 0.42 + boost + slingV * 0.5, 3, realDt);
+  camera.fov = damp(camera.fov, fovBase + (speed - 15) * 0.42 + boost + slingV * 0.7, 3, realDt);
   camera.updateProjectionMatrix();
   sky.position.copy(camera.position);
   // önümüzdeki en fazla iki viraj çizimde yay olarak bükülür; ufuk, güneş ve siluet yönle döner
@@ -3756,7 +3757,7 @@ function frame() {
   if (sign !== shownSign) { shownSign = sign; $('turnSign').classList.toggle('on', !!sign); $('turnSign').classList.toggle('left', sign < 0); }
   updateWater(t, camera.position.x, camera.position.z);
   updateWeatherFx(dt, t, camera.position.x, camera.position.z, wind);
-  updateSpeedLines(dt, g.x, g.y, g.z, speed, state === 'play' ? (speed - 20) / 12 + (pw.double > 0 ? 0.4 : 0) + slingV / 6 + Math.max(0, tempoK - 1) * 7 : 0);
+  updateSpeedLines(dt, g.x, g.y, g.z, speed, state === 'play' ? (speed - 20) / 12 + (pw.double > 0 ? 0.4 : 0) + slingV / 4 + Math.max(0, tempoK - 1) * 7 : 0);
 
   // ---- ses, arayüz ----
   audio.tick();
@@ -3864,7 +3865,7 @@ function takeSimit(s) {
   bump(ui.score); // kapılan simit ekranda uçmaz: puan sayacı zıplar, o kadar
   flapBurst = Math.max(flapBurst, 0.4);
   if (s.person && s.person.feeder) { angry(s.person); points += 15 * m; shout(s.person, s, true); }
-  else if (s.person) { angry(s.person); shout(s.person, s); }
+  else if (s.person && (s.person.angry > 0 || Math.random() < 0.4)) { angry(s.person); shout(s.person, s); } // herkes kızmaz: kabaca beşte ikisi
 }
 // viraj çıkışı: çizgideki simitlerin çoğu alındıysa bonus ve sapan gibi fırlama
 function judgeTurn(u) {
@@ -3872,7 +3873,7 @@ function judgeTurn(u) {
   const r = u.got / u.total;
   if (r >= 0.8) {
     const gain = 40 * mult() * (pw.double > 0 ? 2 : 1);
-    points += gain; run.turn++; sling = 1.5;
+    points += gain; run.turn++; sling = 2;
     sfx.sling(); vibrate([15, 30, 25]); trauma = Math.min(1, trauma + 0.3); flapBurst = 1;
     sparkle(gull.position, 30, 0xffe7a8, 6, 0.7, 0.3);
   } else if (r >= 0.5) {
