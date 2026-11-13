@@ -8,7 +8,7 @@ import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryG
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
-import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc } from './net.js';
+import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc, makeMoveCode, claimMoveCode, fmtCode } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -1809,7 +1809,7 @@ function fillCountries() {
 function openProfile() {
   backTo.profilePanel = null;
   const inp = $('nameInput');
-  inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false); fillCountries();
+  inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false); fillCountries(); moveReset();
   show('profilePanel');
   setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
 }
@@ -2689,7 +2689,7 @@ addEventListener('pointerup', padUp);
 addEventListener('pointercancel', padUp);
 $('title').addEventListener('pointerup', e => { if (state === 'title' && !isUi(e) && !menuModal()) playSel(); });
 addEventListener('keydown', e => {
-  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); if (e.target.id === 'overNameInput') saveName(e.target, $('overNameErr')); else saveName(); } else if (e.code === 'Escape') show('profilePanel', false); return; }
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); if (e.target.id === 'overNameInput') saveName(e.target, $('overNameErr')); else if (e.target.id === 'moveInput') moveGo(); else saveName(); } else if (e.code === 'Escape') show('profilePanel', false); return; }
   keys[e.code] = true;
   if (dressing) { if (e.code === 'Escape') closeWardrobe(); return; }
   if (recS.on) { if (!e.repeat) recShowDone(); return; } // rekor ekranı: tuş da geçer
@@ -2747,6 +2747,34 @@ onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
 $('ccSelect').addEventListener('change', e => { $('ccFlag').src = flag(e.target.value); }); // ülke yalnız Kaydet'le kaydolur; Kapat'ta panel açılırken eski ülkeye döner
 onBtn('skipName', () => { show('profilePanel', false); goBack('profilePanel'); });
+// hesap taşıma (net.js): eski cihaz kod alır, yeni cihaz kodu girer; ilk "Getir" uyarır, ikincisi taşır ve sayfayı yeniler
+const MOVE_NOTE = 'Kod gelen hesabın simitleri, kostümleri ve rekoru bu cihaza gelir; buradaki ilerleme silinir.', MOVE_NET = 'Bağlantı yok, biraz sonra yeniden dene.';
+let moveArm = '', moveBusy = false;
+function moveNote(t, err = false) { const n = $('moveNote'); n.textContent = tr(t); n.classList.toggle('err', err); }
+function moveReset() { show('moveBox', false); show('moveCode', false); $('moveInput').value = ''; $('moveInput').placeholder = 'XXXX-XXXX'; moveNote(MOVE_NOTE); moveArm = ''; }
+onBtn('moveOpen', () => show('moveBox', $('moveBox').classList.contains('hidden')));
+onBtn('moveMake', async () => {
+  if (moveBusy) return;
+  moveBusy = true; $('moveMake').disabled = true;
+  const r = await makeMoveCode();
+  moveBusy = false; $('moveMake').disabled = false;
+  if (r === 'net' || r === 'err') { moveNote(r === 'net' ? MOVE_NET : 'Kod alınamadı, biraz sonra yeniden dene.', true); return; }
+  const c = $('moveCode'), sm = document.createElement('small');
+  c.textContent = fmtCode(r); sm.textContent = tr('15 dakika geçerli, bir kez kullanılır. Yeni cihazında: Profil → Hesabını başka cihaza taşı → Getir.'); c.appendChild(sm);
+  show('moveCode'); moveNote(MOVE_NOTE); sfx.gold();
+});
+async function moveGo() {
+  const v = $('moveInput').value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if (v.length !== 8) { moveNote('Kod 8 harf ve rakamdan oluşur.', true); vibrate(40); return; }
+  if (moveArm !== v) { moveArm = v; moveNote('Bu cihazdaki ilerleme silinecek. Emin misin? Bir daha bas.', true); vibrate(40); return; }
+  if (moveBusy || state !== 'title') return;
+  moveBusy = true;
+  const r = await claimMoveCode(v);
+  moveBusy = false;
+  if (r === 'ok') { moveNote('Hesap geldi! Yükleniyor…'); sfx.gold(); setTimeout(() => location.reload(), 700); return; }
+  moveArm = ''; moveNote(r === 'net' ? MOVE_NET : 'Kod yanlış ya da süresi dolmuş. Eski cihazında yeni kod al.', true); vibrate(40);
+}
+onBtn('moveGo', () => moveGo());
 onBtn('overNameSave', () => saveName($('overNameInput'), $('overNameErr')));
 onBtn('inviteBtn', async () => {
   const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];

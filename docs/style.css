@@ -1173,3 +1173,15 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   .best-lbl { display: none; }
 }
 @media (max-width: 380px) and (min-height: 501px) { .menu-top { grid-template-columns: auto 1fr auto; } } /* dar telefonda rekor tam ortaya sığmaz: aradaki boşluğun ortasında */
+/* hesap taşıma: pasaportun son sayfası */
+#profilePanel .move-open { display: block; margin: 6px auto 0; font-size: 14px; }
+#profilePanel .move-box { margin: 8px -2px 0; padding: 10px 14px 12px; border-radius: 10px; background: #eaf3e6; color: #1f2d25; text-align: left; text-shadow: none; }
+#profilePanel .move-h { margin: 6px 0 4px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #4f6b55; }
+#profilePanel .move-box .btn.ghost { width: 100%; margin: 0; padding: 10px; font-size: 16px; color: #1f2d25; background: rgba(43, 63, 52, .08); border-color: rgba(43, 63, 52, .3); }
+#profilePanel .move-box .btn.ghost.move-go { width: auto; flex: none; padding: 8px 18px; }
+#profilePanel .move-box .name-input { font: 800 20px/1.2 ui-monospace, Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; }
+#profilePanel .move-box .name-input::placeholder { letter-spacing: .1em; }
+#profilePanel .move-code { margin: 8px 0 2px; font: 800 28px/1.2 ui-monospace, Consolas, monospace; letter-spacing: .12em; text-align: center; user-select: all; -webkit-user-select: all; }
+#profilePanel .move-code small { display: block; margin-top: 4px; font-family: var(--font, inherit); font-size: 12.5px; font-weight: 600; line-height: 1.35; letter-spacing: 0; opacity: .7; user-select: none; }
+#profilePanel .move-note { margin: 8px 0 0; font-size: 12.5px; line-height: 1.35; opacity: .75; }
+#profilePanel .move-note.err { color: #a3242e; opacity: 1; font-weight: 700; }

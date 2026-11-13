@@ -15,7 +15,8 @@ export const hash = (...parts) => { let h = 2166136261; for (const ch of parts.j
 // küçük, güvenli localStorage sarmalayıcısı (gizli sekmede patlamasın)
 export const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  set(k, v) { if (store.locked) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  locked: false, // hesap taşınınca sayfa yenilenene dek kimse yazmasın (kapanırken eski bellek taşınan kaydı ezmesin)
 };
 // tek seferlik sıfırlama: işaret anahtarı yoksa bu cihazdaki bütün kayıtlar (cüzdan, rekor, görev, rozet...) silinir, ayarlar kalır.
 // Herkesi yeniden sıfırdan başlatmak gerekirse RESET_MARK değiştirilir. util.js ilk yüklenen modül: main.js kayıtları okumadan çalışır.

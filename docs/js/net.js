@@ -218,3 +218,38 @@ export async function fetchBoard() {
   if (sn && p.id && !p.dirty && sn !== p.srv) { p.srv = sn; if (p.name || !/^Martı \d{4}$/.test(sn)) p.name = sn; store.set(KEY_PROFILE, p); } // "Martı ####" verildiyse ad yeniden sorulur
   return b;
 }
+
+// ---------------- cihaz taşıma (yeni telefon, mağaza uygulaması, başka tarayıcı) ----------------
+// Eski cihaz kod alır: simit-martisi* kayıtlarının ham kopyası sunucuya gider (transfer_make, 15 dk, tek kullanım).
+// Yeni cihaz kodu girer: kimlik + kopya gelir, buradaki ilerleme silinir, sayfa yenilenir. Taşınmayanlar: profil (sunucudan
+// yeniden kurulur), bekleyen skor, gelmiş hediyeler (iki cihazda birden cüzdana eklenmesin), cihaz ayarları, sıfırlama işaretleri.
+const NO_MOVE = /^simit-martisi-(profile|pending|gift|gift-fish|gift-week|settings|spin-warn)$|-reset-/;
+const movable = k => !!k && k.startsWith('simit-martisi') && !NO_MOVE.test(k);
+export const fmtCode = c => String(c || '').replace(/^(.{4})(.{4})$/, '$1-$2');
+// dönen: kod | 'net' (ağ yok) | 'err' (sunucu reddetti)
+export async function makeMoveCode() {
+  if (!netOn()) return 'net';
+  await sync();
+  const p = profile();
+  if (!p.id) return 'net';
+  const data = {};
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (movable(k)) data[k] = localStorage.getItem(k); } } catch (e) { return 'err'; }
+  const r = await rpc('transfer_make', { p_id: p.id, p_secret: p.secret, p_data: data });
+  return typeof r === 'string' ? r : r === null ? 'net' : 'err';
+}
+// dönen: 'ok' (yükleniyor) | 'net' | 'bad' (kod yanlış ya da süresi geçti)
+export async function claimMoveCode(code) {
+  if (!netOn()) return 'net';
+  const p = profile();
+  const r = await rpc('transfer_claim', { p_code: String(code || ''), p_old_id: p.id || null, p_old_secret: p.secret || null });
+  if (r === null) return 'net';
+  if (r === REJECT || !r || !r.id || !r.secret || !r.data || typeof r.data !== 'object') return 'bad';
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (movable(k) || /^simit-martisi-(profile|pending|gift|gift-fish|gift-week)$/.test(k)) localStorage.removeItem(k); }
+    for (const [k, v] of Object.entries(r.data)) if (movable(k) && typeof v === 'string') localStorage.setItem(k, v);
+    const auto = /^Martı \d{4}$/.test(r.name || ''); // otomatik ad taşınırsa menü yine ad sorar
+    localStorage.setItem(KEY_PROFILE, JSON.stringify({ id: r.id, secret: r.secret, name: auto ? '' : r.name, srv: r.name, auto: auto ? r.name : '', cc: r.cc, claimed: true, dirty: false, ccDirty: false }));
+  } catch (e) { return 'bad'; }
+  store.locked = true;
+  return 'ok';
+}
