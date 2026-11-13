@@ -9,7 +9,16 @@ import os
 import sys
 
 
+TESTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests')
+
+
 class NoCache(http.server.SimpleHTTPRequestHandler):
+    # /test → tests/test-merkezi.html (yalnız yerelde: docs/ dışında, canlıya gitmez)
+    def translate_path(self, path):
+        if path.split('?')[0].rstrip('/') == '/test':
+            return os.path.join(TESTS, 'test-merkezi.html')
+        return super().translate_path(path)
+
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store')
         super().end_headers()

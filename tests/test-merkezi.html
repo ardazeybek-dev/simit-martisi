@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Merkezi</title>
+<!-- Yalnız yerelde: python serve.py → http://localhost:8765/test . docs/ dışında durur, canlıya gitmez.
+     Her yeni değişiklik ITEMS listesine eklenir (en yeni üstte). İşaretler ve notlar tarayıcıda (localStorage) kalır. -->
+<style>
+:root { --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2a28; --soft: #77706a; --line: #e6dccb; --acc: #d9622b; --ok: #2e9c6a; --bad: #d23b3b; --chip: #f1e6d3; }
+@media (prefers-color-scheme: dark) { :root { --bg: #1d1b19; --card: #272421; --ink: #f1ebe2; --soft: #a9a196; --line: #3a352f; --chip: #34302a; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, "Segoe UI", sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+h1 { font-size: 24px; margin: 0 0 4px; }
+.sub { color: var(--soft); margin: 0 0 16px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+a.btn, button { display: inline-block; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 8px 12px; border-radius: 10px; text-decoration: none; font: inherit; cursor: pointer; }
+a.btn.main { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+.prog { margin: 0 0 18px; color: var(--soft); }
+.prog b { color: var(--ink); }
+h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--soft); margin: 26px 0 10px; }
+.item { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.item.done { border-left: 5px solid var(--ok); }
+.item.bad { border-left: 5px solid var(--bad); }
+.top { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+.top h3 { margin: 0; font-size: 17px; }
+.tag { font-size: 12px; background: var(--chip); padding: 2px 8px; border-radius: 99px; color: var(--soft); white-space: nowrap; }
+ul { margin: 8px 0; padding-left: 20px; }
+li { margin: 2px 0; }
+.links { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.links a { font-size: 14px; }
+.st { display: flex; gap: 6px; flex-wrap: wrap; }
+.st button.on.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.st button.on.bad { background: var(--bad); border-color: var(--bad); color: #fff; }
+textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--bg); color: var(--ink); font: inherit; resize: vertical; }
+.tip { background: var(--chip); border-radius: 12px; padding: 10px 12px; color: var(--soft); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Simit Martısı · Test Merkezi</h1>
+  <p class="sub">Her yeni değişiklik burada. Linke bas, oyunda bak, sonra "Tamam" ya da "Sorun var" (notunu yaz).</p>
+  <div class="bar">
+    <a class="btn main" href="/?hepsi" target="_blank">🔓 Her şeyi aç ve oyna</a>
+    <a class="btn" href="/" target="_blank">Normal oyun</a>
+    <button id="copy">📋 Notlarımı kopyala</button>
+  </div>
+  <p class="tip">"Her şeyi aç" yalnız bu bilgisayardaki oyunda bütün şehirleri açar, en az 50 bin simit ve 20 balık verir (canlıdaki hesabına dokunmaz). Linkler yeni sekmede açılır; oyun eski görünürse <b>Ctrl+F5</b>. Linkteki <code>?</code> ayarları yalnız bu bilgisayarda çalışır.</p>
+  <p class="prog" id="prog"></p>
+  <div id="list"></div>
+</main>
+<script>
+// En yeni üstte. g: grup başlığı, links: [etiket, adres]
+const ITEMS = [
+  { g: 'v3.2.0 · 13 Kasım · şehirlere özel şeyler', id: 'balon', t: '🎈 İzmir: Kordon balonları', look: [
+      'Balonlar rıhtımdaki balonacıdan kalkıp gevrek tam martının boyuna gelecek şekilde süzülüyor mu?',
+      'Gevreği kapınca balon patlıyor mu? Geç kalınca balon gevrekle yükselip gidiyor mu?',
+      'Demetin hepsini patlatınca puan sayacı parlıyor mu (bonus)?',
+      'Balonların arasında bazen bir rakip martı olur (2. zorluk basamağından sonra): adil mi?'],
+    links: [['Hemen balon', '/?city=izmir&balon'], ['Balon + zor yerde', '/?city=izmir&balon&at=3000']] },
+  { id: 'regatta', t: '⛵ İzmir: yelken yarışı', look: [
+      'Yelkenler uzaktan seçiliyor mu, hangi yana açık oldukları belli mi?',
+      'Gevrek çizgisini izleyince yelkenlerin arasından rahat geçiliyor mu (slalom)?',
+      'Yelkene çarpınca "Yelkene takıldın!" çıkıyor mu, çarpma gerçekten değince mi oluyor?',
+      'Çizginin çoğunu toplayınca bitişte puan sayacı parlıyor mu?'],
+    links: [['Hemen yarış', '/?city=izmir&regatta'], ['Hızlıyken yarış', '/?city=izmir&regatta&at=6000']] },
+  { id: 'flamingo', t: '🦩 İzmir: flamingolar (Kuş Cenneti)', look: [
+      'Sığlıkta duran sürü flamingo gibi okunuyor mu (pembe, uzun bacak)?',
+      'Martı yaklaşınca sırayla havalanıyorlar mı, görüntü güzel mi?',
+      'Yanlarından geçince puan sayacı parlıyor mu? Çarpmak yok, doğru mu?'],
+    links: [['Hemen flamingo', '/?city=izmir&flamingo']] },
+  { id: 'parasut', t: '🪂 Antalya: paraşüt teknesi', look: [
+      'Koyu ip ve turuncu flamalar yeterince görünüyor mu? (Engel olan yer ip)',
+      'İpe çarpınca "Paraşüt ipine takıldın!" çıkıyor mu?',
+      'Paraşütteki turist simit parçası atıyor mu, yakalanıyor mu?'],
+    links: [['Hemen paraşüt', '/?city=antalya&parasut'], ['Hızlıyken paraşüt', '/?city=antalya&parasut&at=6000']] },
+  { id: 'izmir-akis', t: '🧭 İzmir: normal akış ve sıklık', look: [
+      'Normal uçuşta ilk balonlar ~800 m, ilk yarış ~1,7 km, ilk flamingolar ~2,6 km civarı gelir.',
+      'Özel şeyler çok mu sık, çok mu seyrek? İzmir eskisinden kolay hissettiriyor mu? (rakip sayısı eskisiyle aynı ölçüldü)'],
+    links: [['İzmir baştan', '/?city=izmir'], ['Antalya baştan', '/?city=antalya']] },
+
+  { g: 'Deneme · karar senin', id: 'zor', t: '📈 Zamanla hafif engel artışı (?zor)', look: [
+      'Senin önerin: başta orta-kolay, ilerledikçe orta/orta-zor. Bu deneme 2 km\'den sonra rakip/uçurtma/konvoy sıklığını yavaşça artırır (6 km\'de tavan). Hız aynı.',
+      'Aynı yerden iki kez uç: biri normal, biri ?zor. Fark hissediliyor mu, fazla mı az mı?',
+      'Beğenirsen kalıcı yaparım; az gelirse artırırım.'],
+    links: [['Normal 4 km', '/?city=istanbul&at=4000'], ['?zor 4 km', '/?city=istanbul&at=4000&zor'], ['Normal İzmir 6 km', '/?city=izmir&at=6000'], ['?zor İzmir 6 km', '/?city=izmir&at=6000&zor']] },
+
+  { g: 'Önceden bekleyenler', id: '20km', t: '🔥 20 km: imkânsızın bir tık altı mı?', look: ['Hız basamakları 5/10/15 km\'de. 20 km neredeyse imkânsız olmalı.'],
+    links: [['19,5 km\'den başla', '/?at=19500'], ['14,5 km\'den başla', '/?at=14500']] },
+  { id: 'altin', t: '✨ Virajda altın simit parıltısı', look: ['Altın simit uzaktan yıldız gibi parlıyor mu, "uzaktan geliyor" hissi sorun mu?'],
+    links: [['Her virajda altın (?rule=gold)', '/?rule=gold']] },
+  { id: 'arkadas', t: '💬 Menüde "Bir arkadaşın X puan yaptı" yazısı', look: ['Ana menüdeki bu yazı kalsın mı, kalksın mı?'], links: [['Ana menü', '/']] },
+];
+const KEY = 'test-merkezi', S = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function render() {
+  let h = '';
+  for (const it of ITEMS) {
+    const st = S[it.id] || {};
+    if (it.g) h += `<h2>${esc(it.g)}</h2>`;
+    h += `<div class="item ${st.s === 'ok' ? 'done' : st.s === 'bad' ? 'bad' : ''}" data-id="${it.id}"><div class="top"><h3>${esc(it.t)}</h3><span class="tag">${it.id}</span></div>
+      <ul>${it.look.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+      <div class="links">${it.links.map(([l, u]) => `<a class="btn" href="${u}" target="_blank">▶ ${esc(l)}</a>`).join('')}</div>
+      <div class="st"><button data-s="ok" class="${st.s === 'ok' ? 'on ok' : ''}">✓ Tamam</button><button data-s="bad" class="${st.s === 'bad' ? 'on bad' : ''}">✗ Sorun var</button></div>
+      <textarea placeholder="Not (ne gördün, ne olmalı?)">${esc(st.n || '')}</textarea></div>`;
+  }
+  document.getElementById('list').innerHTML = h;
+  const ok = ITEMS.filter(i => (S[i.id] || {}).s === 'ok').length, bad = ITEMS.filter(i => (S[i.id] || {}).s === 'bad').length;
+  document.getElementById('prog').innerHTML = `<b>${ok}</b> tamam · <b>${bad}</b> sorunlu · <b>${ITEMS.length - ok - bad}</b> bakılmadı`;
+}
+document.getElementById('list').addEventListener('click', e => {
+  const b = e.target.closest('button[data-s]'); if (!b) return;
+  const id = b.closest('.item').dataset.id, st = S[id] = S[id] || {};
+  st.s = st.s === b.dataset.s ? '' : b.dataset.s; save(); render();
+});
+document.getElementById('list').addEventListener('input', e => {
+  if (e.target.tagName !== 'TEXTAREA') return;
+  const id = e.target.closest('.item').dataset.id; (S[id] = S[id] || {}).n = e.target.value; save();
+});
+document.getElementById('copy').addEventListener('click', async () => {
+  const txt = ITEMS.filter(i => S[i.id] && (S[i.id].s || S[i.id].n)).map(i => `${i.t}: ${S[i.id].s === 'ok' ? 'TAMAM' : S[i.id].s === 'bad' ? 'SORUN' : '-'}${S[i.id].n ? ' — ' + S[i.id].n : ''}`).join('\n') || 'Henüz not yok';
+  try { await navigator.clipboard.writeText(txt); document.getElementById('copy').textContent = '✓ Kopyalandı, sohbete yapıştır'; } catch (e) { prompt('Kopyala:', txt); }
+});
+render();
+</script>
+</body>
+</html>

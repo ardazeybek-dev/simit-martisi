@@ -42,6 +42,7 @@ blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 const QS = new URLSearchParams(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.search : '');
 // menüdeki cüzdan: 100 binden sonra kısa yazılır (123,5 B · 1,2 Mn; dilin kendi kısaltması), rekor ortada kalsın. Tam sayı mağazada görünür
 const walletTxt = () => (wallet >= 1e5 ? new Intl.NumberFormat(window.I18N.locale, { notation: 'compact', maximumFractionDigits: 1 }).format(wallet) : fmt(wallet));
+if (QS.has('hepsi')) { for (const c of CITIES) store.set(c.routeKey, c.stops.length - 1); store.set(KEY_WALLET, Math.max(+store.get(KEY_WALLET, 0) || 0, 50000)); store.set(KEY_FISH, Math.max(+store.get(KEY_FISH, 0) || 0, 20)); } // deneme (yalnız yerelde, test merkezi): ?hepsi → bütün şehirler açık, en az 50 bin simit ve 20 balık
 const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → her uçuş sonunda rekor ekranı çıkar, gerçek rekora dokunmaz
 const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
@@ -60,7 +61,9 @@ const difficulty = () => clamp(-genZ / 650 + HARD() * 0.3 * Math.max(0, -genZ - 
 const endBm = m => { const n = STOPS ? STOPS.length : 0; if (n < 4 || daily) return 0; const a = STOPS[n - 4].m, z = STOPS[n - 1].m;
   return m <= a ? 0 : m <= z ? 1 + 2 * (m - a) / (z - a) : Math.max(0, 3 - (m - z) / 170); };
 const endB = () => endBm(-genZ / 2), END_SPD = 0.02; // hız da kademe başına +%2 (son iskelede +%6): bölge dolu, asıl hissedilen kaldıraç bu
-const heat = () => clamp((-genZ - 1200 + HARD() * 1600) / 4000, 0, 3) * (1 + HARD() * 0.25) + endB() * 0.3 + tierG() * 0.35;
+// ?zor (deneme, yalnız yerelde): 2 km'den sonra kalabalık km başına biraz daha artar (6 km'de +0,4 tavan) — Arda 'zamanla ufak engel artışı' dedi, beğenirse kalıcı olur
+const ZOR = QS.has('zor'), zorG = () => (ZOR ? clamp((-genZ / 2 - 2000) / 10000, 0, 0.4) : 0);
+const heat = () => clamp((-genZ - 1200 + HARD() * 1600) / 4000, 0, 3) * (1 + HARD() * 0.25) + endB() * 0.3 + tierG() * 0.35 + zorG();
 const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HARD() * 0.3); // difficulty tavana vurduktan sonra yavaşça 0 → 1 (İzmir 1.3, Antalya 1.6)
 // geç oyun rampası: 6,5 km'den sonra sertleşir (0 → 10 km'de 0,5 → 13,5 km'de 1 → 20,5 km'de 2) ve orada DURUR: 10 km nadir, 20 km çok zor
 // ama hiçbir yer imkânsız değil (tavan hız ~57, iki engel arası medyan ~0,3 sn; 24 km'de 60 hız / 0,26 sn ölçüldü, insan tepkisinin sınırı → kesildi).
