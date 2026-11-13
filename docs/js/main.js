@@ -150,7 +150,7 @@ function planTurns(limit) {
     const last = turns[turns.length - 1], ess = !!last && !last.ess && Math.random() < S_CHANCE;
     let z0 = turnZ - (ess ? rand(14, 22) : last ? rand(...TURN_GAP) : rand(150, 190));
     const len = rand(...TURN_LEN), ang = rand(...TURN_ANG);
-    for (const s of STOPS) { const sz = -2 * s.m; if (s.m && z0 + PIER_HALF + 20 > sz && z0 - len - PIER_HALF - 20 < sz) z0 = sz - PIER_HALF - 25; } // virajı iskelenin ötesine at
+    for (const s of STOPS) { const sz = -2 * s.m; if (s.m && z0 + PIER_HALF + 20 > sz && z0 - len - PIER_HALF - 150 < sz) z0 = sz - PIER_HALF - 25; } // virajı iskelenin ötesine at: iskele önündeki 130 m düz dolgu da virajsız (dolgu virajı görmez, üretim geri sarıp vapuru dolgunun yelkenlisine basıyordu)
     const dir = ess ? -last.dir : Math.abs(planYaw) > 0.5 ? -Math.sign(planYaw) : pick([-1, 1]);
     planYaw += dir * ang;
     turns.push({ z0, z1: z0 - len, dir, k: (dir * ang) / len, ess, total: 0, got: 0, built: false, entered: false, done: false });
@@ -1074,6 +1074,7 @@ function generateIn(limit) {
       if (genZ - pz < 130) { if (genZ - pz > 30) spawnGap(segCount === 0, genZ - pz); else spawnPier(); continue; }
     }
     const tn = turns.find(u => !u.built && u.z0 > genZ - 75); // yaklaşan virajın öncesini düz suyla doldur
+    if (tn && tn.z1 - 6 >= genZ) { tn.built = true; continue; } // geride kalmış viraj üretimi geri sarmasın (kurulu parçaların üstüne vapur basılırdı)
     if (!tn) {
       if (segCount % 2 === 1) {
         spawnFerry();
