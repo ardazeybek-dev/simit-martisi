@@ -2747,11 +2747,17 @@ onBtn('boardName', () => openProfile());
 onBtn('saveName', () => saveName());
 $('ccSelect').addEventListener('change', e => { $('ccFlag').src = flag(e.target.value); }); // ülke yalnız Kaydet'le kaydolur; Kapat'ta panel açılırken eski ülkeye döner
 onBtn('skipName', () => { show('profilePanel', false); goBack('profilePanel'); });
-// hesap taşıma (net.js): eski cihaz kod alır, yeni cihaz kodu girer; ilk "Getir" uyarır, ikincisi taşır ve sayfayı yeniler
-const MOVE_NOTE = 'Kod gelen hesabın simitleri, kostümleri ve rekoru bu cihaza gelir; buradaki ilerleme silinir.', MOVE_NET = 'Bağlantı yok, biraz sonra yeniden dene.';
-let moveArm = '', moveBusy = false;
+// hesap taşıma (net.js): her cihaz tek şey görür. Uçmuş cihaz yalnız kod alır; hiç uçmamış (rekoru 0) cihaz yalnız kod girer.
+// Böylece uçmuş cihaza başka hesap gelmez, sıralamada ikinci satır açılmaz (sunucu da reddeder).
+const MOVE_NET = 'Bağlantı yok, biraz sonra yeniden dene.', MOVE_NEW = 'Eski cihazından aldığın kodu yaz.';
+let moveBusy = false;
+const moveFresh = () => !(best > 0);
 function moveNote(t, err = false) { const n = $('moveNote'); n.textContent = tr(t); n.classList.toggle('err', err); }
-function moveReset() { show('moveBox', false); show('moveCode', false); $('moveInput').value = ''; $('moveInput').placeholder = 'XXXX-XXXX'; moveNote(MOVE_NOTE); moveArm = ''; }
+function moveReset() {
+  const fresh = moveFresh();
+  show('moveBox', false); show('moveCode', false); show('moveOld', !fresh); show('moveNew', fresh);
+  $('moveInput').value = ''; $('moveInput').placeholder = 'XXXX-XXXX'; moveNote(fresh ? MOVE_NEW : '');
+}
 onBtn('moveOpen', () => show('moveBox', $('moveBox').classList.contains('hidden')));
 onBtn('moveMake', async () => {
   if (moveBusy) return;
@@ -2760,20 +2766,19 @@ onBtn('moveMake', async () => {
   moveBusy = false; $('moveMake').disabled = false;
   if (r === 'net' || r === 'err') { moveNote(r === 'net' ? MOVE_NET : 'Kod alınamadı, biraz sonra yeniden dene.', true); return; }
   const c = $('moveCode'), sm = document.createElement('small');
-  c.textContent = fmtCode(r); sm.textContent = tr('15 dakika geçerli, bir kez kullanılır. Yeni cihazında: Profil → Hesabını başka cihaza taşı → Getir.'); c.appendChild(sm);
-  show('moveCode'); moveNote(MOVE_NOTE); sfx.gold();
+  c.textContent = fmtCode(r); sm.textContent = tr("15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz."); c.appendChild(sm);
+  show('moveCode'); moveNote(''); sfx.gold();
 });
 async function moveGo() {
   const v = $('moveInput').value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
   if (v.length !== 8) { moveNote('Kod 8 harf ve rakamdan oluşur.', true); vibrate(40); return; }
-  if (moveArm !== v) { moveArm = v; moveNote('Bu cihazdaki ilerleme silinecek. Emin misin? Bir daha bas.', true); vibrate(40); return; }
-  if (moveBusy) return;
+  if (moveBusy || !moveFresh()) return;
   if (state !== 'title') { moveNote('Ana menüye dön, oradan taşı.', true); return; }
   moveBusy = true;
   const r = await claimMoveCode(v);
   moveBusy = false;
   if (r === 'ok') { moveNote('Hesap geldi! Yükleniyor…'); sfx.gold(); setTimeout(() => location.reload(), 700); return; }
-  moveArm = ''; moveNote(r === 'net' ? MOVE_NET : 'Kod yanlış ya da süresi dolmuş. Eski cihazında yeni kod al.', true); vibrate(40);
+  moveNote(r === 'net' ? MOVE_NET : 'Kod yanlış ya da süresi dolmuş. Eski cihazında yeni kod al.', true); vibrate(40);
 }
 onBtn('moveGo', () => moveGo());
 onBtn('overNameSave', () => saveName($('overNameInput'), $('overNameErr')));

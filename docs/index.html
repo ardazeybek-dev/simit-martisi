@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="3.1.1">
+<meta name="app-version" content="3.1.2">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -220,12 +220,9 @@
     <button class="btn primary" id="saveName">Kaydet</button>
     <button class="link move-open" id="moveOpen">Hesabını başka cihaza taşı</button>
     <div class="move-box hidden" id="moveBox">
-      <p class="move-h">Eski cihazında</p>
-      <button class="btn ghost" id="moveMake">Taşıma kodu al</button>
-      <p class="move-code hidden" id="moveCode"></p>
-      <p class="move-h">Yeni cihazında</p>
-      <div class="name-row"><input id="moveInput" class="name-input" type="text" maxlength="12" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><button class="btn ghost move-go" id="moveGo">Getir</button></div>
-      <p class="move-note" id="moveNote">Kod gelen hesabın simitleri, kostümleri ve rekoru bu cihaza gelir; buradaki ilerleme silinir.</p>
+      <div id="moveOld"><button class="btn ghost" id="moveMake">Taşıma kodu al</button><p class="move-code hidden" id="moveCode"></p></div>
+      <div class="name-row" id="moveNew"><input id="moveInput" class="name-input" type="text" maxlength="12" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"><button class="btn ghost move-go" id="moveGo">Getir</button></div>
+      <p class="move-note" id="moveNote"></p>
     </div>
     <button class="link" id="skipName">Kapat</button>
   </div>

@@ -987,6 +987,9 @@
   Object.assign(EN, {"Ana menüye dön, oradan taşı.": "Go back to the main menu and move it from there."});
   Object.assign(DE, {"Ana menüye dön, oradan taşı.": "Geh zurück ins Hauptmenü und übertrage es dort."});
   Object.assign(ES, {"Ana menüye dön, oradan taşı.": "Vuelve al menú principal y pásala desde allí."});
+  Object.assign(EN, {"Eski cihazından aldığın kodu yaz.": "Type the code from your old device.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "Valid for 15 minutes. On your new device, before flying, open Profile and type this code."});
+  Object.assign(DE, {"Eski cihazından aldığın kodu yaz.": "Gib den Code von deinem alten Gerät ein.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "15 Minuten gültig. Öffne auf dem neuen Gerät vor dem ersten Flug das Profil und gib diesen Code ein."});
+  Object.assign(ES, {"Eski cihazından aldığın kodu yaz.": "Escribe el código de tu dispositivo antiguo.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "Válido 15 minutos. En tu dispositivo nuevo, antes de volar, abre Perfil y escribe este código."});
   var TABLES = { en: EN, de: DE, es: ES };
   // dil menüsünde kendi adıyla görünür; sırası menünün sırası
   var NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', ro: 'Română',

@@ -1176,7 +1176,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 /* hesap taşıma: pasaportun son sayfası */
 #profilePanel .move-open { display: block; margin: 6px auto 0; font-size: 14px; }
 #profilePanel .move-box { margin: 8px -2px 0; padding: 10px 14px 12px; border-radius: 10px; background: #eaf3e6; color: #1f2d25; text-align: left; text-shadow: none; }
-#profilePanel .move-h { margin: 6px 0 4px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #4f6b55; }
 #profilePanel .move-box .btn.ghost { width: 100%; margin: 0; padding: 10px; font-size: 16px; color: #1f2d25; background: rgba(43, 63, 52, .08); border-color: rgba(43, 63, 52, .3); }
 #profilePanel .move-box .btn.ghost.move-go { width: auto; flex: none; padding: 8px 18px; }
 #profilePanel .move-box .name-input { font: 800 20px/1.2 ui-monospace, Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; }

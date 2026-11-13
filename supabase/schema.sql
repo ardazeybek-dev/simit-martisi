@@ -427,7 +427,8 @@ select cron.schedule('weekly-prizes', '0 0 * * 0', 'select public.give_weekly_pr
 
 -- cihaz taşıma (yeni telefon, iOS uygulaması, başka tarayıcı): eski cihaz kod alır, ilerlemesinin anlık kopyası kodla saklanır;
 -- yeni cihaz kodu girince kimlik (id + secret) ve kopya gelir. Kod 8 karakter (31 harf/rakam, karışan 0 O 1 I L yok),
--- 15 dk geçerli, tek kullanımlık. Kopya en çok 200 KB. Yeni cihazın kendi (puansız) kaydı silinir, sıralamada ikinci satır kalmaz.
+-- 15 dk geçerli, tek kullanımlık. Kopya en çok 200 KB. Skoru olan cihaz kod giremez (sıralamada ikinci satır açılmasın);
+-- yeni cihazın kendi (puansız) kaydı silinir.
 create table if not exists transfers (
   code text primary key,
   player_id uuid not null references players(id) on delete cascade,
@@ -456,11 +457,12 @@ language plpgsql security definer set search_path = public as $$
 declare c text := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g')); t transfers; p players;
 begin
   if char_length(c) <> 8 then raise exception 'bad code'; end if;
+  if p_old_id is not null and exists (select 1 from scores where player_id = p_old_id) then raise exception 'device has score'; end if;
   delete from transfers where code = c and expires > now() returning * into t;
   if t.code is null then raise exception 'bad code'; end if;
   select * into p from players where id = t.player_id;
   if p.id is null then raise exception 'bad code'; end if;
-  if p_old_id is not null and p_old_id <> p.id and not exists (select 1 from scores where player_id = p_old_id) then
+  if p_old_id is not null and p_old_id <> p.id then
     begin delete from players where id = p_old_id and secret = p_old_secret; exception when others then null; end; -- temizlik taşımayı bozmasın
   end if;
   return json_build_object('id', p.id, 'secret', p.secret, 'name', p.name, 'cc', p.cc, 'data', t.data);
