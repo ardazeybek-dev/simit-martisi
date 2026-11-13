@@ -40,6 +40,7 @@ blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 // ---------------- dünya ----------------
 // deneme adresleri (?city ?stop ?rule ?turn ...) yalnız bilgisayardaki sunucuda çalışır: canlıda kilitli şehir ya da kısa hat açılmasın
 const QS = new URLSearchParams(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.search : '');
+const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → ilk virajdan çıkınca rekor kutlaması, gerçek rekora dokunmaz
 const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
@@ -3129,7 +3130,7 @@ function frame() {
       }
       for (const u of turns) {
         if (!u.entered && g.z < u.z0) { u.entered = true; sfx.whoosh(); trauma = Math.min(1, trauma + 0.12); }
-        if (!u.done && g.z < u.z1) { u.done = true; judgeTurn(u); }
+        if (!u.done && g.z < u.z1) { u.done = true; judgeTurn(u); if (REC_TEST && !recRun && state === 'play') { recRun = true; recordBurst(); } } // ?rekor: ilk viraj çıkışında kutlama (deneme)
       }
       if (comboT > 0) { comboT -= dt * (pw.tea > 0 ? 0.5 : 1); if (comboT <= 0) combo = 0; } // Çay Molası: dünya %60'a iner, kombo halkası ayrıca yarı hızda boşalır (simitlerle aynı oranda yavaşlayınca fark edilmiyordu)
       if ((cryT -= dt) < 0) { cryT = rand(6, 12); sfx.cry(0.08 + Math.random() * 0.05); }
