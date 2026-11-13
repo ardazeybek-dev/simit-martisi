@@ -378,6 +378,9 @@ let lastPw = '';
 const pickPw = arr => { const a = arr.filter(x => x !== lastPw), k = pick(a.length ? a : [null]); if (k) lastPw = k; return k; }; // aynı güç art arda çıkmaz
 // güç bitmeden yenisi gelmesin: martı oraya vardığında hâlâ sürecek güç ya da önde zaten bekleyen aynı güç üretilmez (uzun kalkan + nazar = sınırsız kalkan olmasın)
 const pwFree = (k, z) => !(pw[k] > (gull.position.z - z) / Math.max(speed, 15)) && !powerups.some(p => !p.taken && p.kind === k);
+// İzmir/Antalya'da özel parçalar sık (açık suyun yerini alır): kalan açık suda ara sıra bir rakip daha, 10 km'deki rakip sayısı eskisiyle aynı kalsın
+const SPECIAL_RIV = () => (difficulty() < 0.6 ? 0 : city.regatta || city.balloons ? RIV_K.izmir : city.parasail ? RIV_K.antalya : 0);
+const RIV_K = { izmir: 0.55, antalya: 0.4 };
 function spawnGap(first, fixLen, quiet) {
   const d = difficulty();
   let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, Math.max(36, 56 - late() * 10 - heat() * 3 - overG() * 4)));
@@ -406,7 +409,7 @@ function spawnGap(first, fixLen, quiet) {
       }
     } else {
       const n = kind === 'flock' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : kind !== 'mix' ? (camp && d >= 0.6 && kind !== 'quiet' && !(tempoAt(z0 - 20)?.kind === 'calm') ? 1 : 0) : camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
-      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) + (Math.random() < endB() * 0.3 ? 1 : 0) + (Math.random() < tierG() * 0.15 ? 1 : 0) : 0) + (kind !== 'quiet' && kind !== 'rain' && kind !== 'pod' ? longX : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) + (Math.random() < endB() * 0.3 ? 1 : 0) + (Math.random() < tierG() * 0.15 ? 1 : 0) + (Math.random() < SPECIAL_RIV() ? 1 : 0) : 0) + (kind !== 'quiet' && kind !== 'rain' && kind !== 'pod' ? longX : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
       if (kind === 'kites' || (kind === 'mix' && d > 1.3 && Math.random() < 0.14 + d * 0.04 + heat() * 0.05)) {
         const nk = (kind === 'kites' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : d > 3 && Math.random() < 0.4 ? 2 : 1) + longX + (Math.random() < endB() * 0.15 ? 1 : 0); // son 3 iskelede ara sıra bir uçurtma daha
         for (let i = 0; i < nk; i++) {
@@ -720,7 +723,7 @@ function spawnRegatta() {
   for (const [mz, mx] of [[z0 - 10, 7.6], [last - 6, 7.6]]) for (const sg of [-1, 1]) { const m = new THREE.Mesh(MARK, vcMat); m.position.set(sg * mx, 0, mz); m.castShadow = true; g.add(m); r.boats.push({ g: m, s: 0, ph: Math.random() * 6, mark: true }); }
   r.z1 = last - 4;
   regattas.push(r);
-  regattaZ = last - rand(2300, 3000); // seyrek: her özel parça bir açık suyun yerini alır (İzmir kolaylaşmasın)
+  regattaZ = last - rand(1600, 2100); // 0,8-1,05 km (Arda: yeni şeyler daha sık çıksın)
   genZ = last - 12;
 }
 function updateRegattas(gz) {
@@ -767,7 +770,7 @@ function spawnBalloons() {
   }
   if (difficulty() > 0.8) addRival(z0 - rand(18, len - 8), -side * rand(1.5, 3), rand(0.4, 0.9), undefined, z0 - 4); // balonların arasında bir rakip (rivalClear gevrek yolundan uzak tutar)
   balloonSets.push(set);
-  balloonZ = z0 - len - rand(2000, 2700);
+  balloonZ = z0 - len - rand(1400, 1900); // 0,7-0,95 km
   genZ = z0 - len;
 }
 function updateBalloons(dt, gz) {
@@ -833,7 +836,7 @@ function spawnFlamingos() {
     birds.push({ g: bg, body, wings, z, u: -1, lead: rand(0.35, 0.75), vx: away * rand(2.4, 4.4), vy: rand(2.4, 3.4), vz: -rand(3, 6), f: rand(7, 9.5), ph: Math.random() * 6, got: false, rz: 0 });
   }
   flamFlocks.push({ g, z0, z1: z0 - len, birds, n: 0 });
-  flamingoZ = z0 - len - rand(2700, 3500);
+  flamingoZ = z0 - len - rand(1900, 2500); // 0,95-1,25 km
   genZ = z0 - len;
 }
 function updateFlamingos(dt, gz) {
@@ -902,7 +905,7 @@ function spawnParasail() {
   const c = { g, boat, chute, rope, flags, rider, o, xa, side, k, z: pz, ph: Math.random() * 6, fl: [0.35, f0, 0.8] };
   placeChute(c, gull.position.z, FLY_Y);
   chutes.push(c);
-  chuteZ = pz - rand(1300, 1800);
+  chuteZ = pz - rand(900, 1300); // 0,45-0,65 km
   genZ = z0 - 56;
 }
 // ipin martı boyunu kestiği yer: engel kutusu her karede martının konumu ve yüksekliğiyle (çizilen iple aynı yerde)
@@ -1606,10 +1609,10 @@ function resetWorld(newWeather = true) {
   pirateZ = !city.pirate ? -Infinity : PIRATE_SOON ? -90 : -rand(1050, 1300); // ilk korsan teknesi Kaleiçi'nden sonra
   fallsZ = !city.falls ? -Infinity : FALLS_SOON ? -90 : -rand(1600, 1900); // ilk şelale Mermerli'den önce
   beachZ = !city.beach ? -Infinity : BEACH_SOON ? -90 : -rand(550, 750); // ilk plaj Konyaaltı açıklarında
-  balloonZ = !city.balloons ? -Infinity : BALLOON_SOON ? -90 : -rand(1500, 1800); // ilk balonlar Göztepe'den sonra (Kordon)
-  regattaZ = !city.regatta ? -Infinity : REGATTA_SOON ? -90 : -rand(3200, 3700); // ilk yarış Konak–Pasaport arası
-  flamingoZ = !city.flamingo ? -Infinity : FLAMINGO_SOON ? -90 : -rand(5000, 5600); // ilk flamingolar Pasaport'tan sonra
-  chuteZ = !city.parasail ? -Infinity : PARA_SOON ? -90 : -rand(2600, 3000); // ilk paraşüt Mermerli'den sonra
+  balloonZ = !city.balloons ? -Infinity : BALLOON_SOON ? -90 : -rand(1000, 1300); // ilk balonlar ~0,5-0,65 km (Kordon)
+  regattaZ = !city.regatta ? -Infinity : REGATTA_SOON ? -90 : -rand(2500, 2800); // ilk yarış ~1,25-1,4 km
+  flamingoZ = !city.flamingo ? -Infinity : FLAMINGO_SOON ? -90 : -rand(1700, 2000); // ilk flamingolar ~0,85-1 km: İzmir'in dört özelliği de ilk 1,4 km'de görünsün
+  chuteZ = !city.parasail ? -Infinity : PARA_SOON ? -90 : -rand(1800, 2200); // ilk paraşüt ~0,9-1,1 km
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
   speed = 18; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
