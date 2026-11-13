@@ -3558,7 +3558,7 @@ function dolphinBonus(f) {
   sfx.near(); vibrate(15); flashScore('dolph');
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y + 0.5, f.z), 12, 0xcff0ff, 3.5, 0.5);
 }
-// yunus/kılpayı: uçuşta yazı yok, puan sayacı renkli parlar (yunus mavi, kılpayı beyaz)
+// yunus/kılpayı: uçuşta yazı yok, puan sayacı renkli parlar (yunus açık mavi zıplar, kılpayı koyu mavi sarsılır)
 function flashScore(cls) {
   ui.score.classList.remove('dolph', 'near');
   ui.score.onanimationend = () => ui.score.classList.remove('dolph', 'near'); // kalırsa simit zıplamasını ezer
@@ -3568,7 +3568,7 @@ function nearMiss(x) {
   const gain = 5 * mult() * (perk('taksi') ? 2 : perk('mustache') ? 1.25 : 1); // Taksi x2, Bıyık +%25 (toplanmaz)
   points += gain; run.near++;
   sfx.near(); trauma = Math.min(1, trauma + 0.12); flashScore('near');
-  sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0xffffff, 3, 0.35);
+  sparkle(tmp2.set((gull.position.x + x) / 2, gull.position.y, gull.position.z), 6, 0x6cc0ff, 3, 0.35);
 }
 
 // başlık ekranında martı kendi kendine uçar

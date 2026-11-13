@@ -577,10 +577,10 @@ const starPts = (r, n = 5) => Array.from({ length: n * 2 }, (_, i) => { const a 
 const HEART = (() => { const s = new THREE.Shape(); s.moveTo(0, -0.55); s.bezierCurveTo(-0.15, -0.35, -0.62, -0.1, -0.6, 0.2); s.bezierCurveTo(-0.58, 0.5, -0.2, 0.62, 0, 0.32); s.bezierCurveTo(0.2, 0.62, 0.58, 0.5, 0.6, 0.2); s.bezierCurveTo(0.62, -0.1, 0.15, -0.35, 0, -0.55); return new THREE.ShapeGeometry(s, 10); })();
 const SAIL_MOTIFS = [
   [[new THREE.CircleGeometry(0.62, 22), 0x1f5fbf], [new THREE.CircleGeometry(0.44, 22), 0xffffff], [new THREE.CircleGeometry(0.27, 18), 0x7cc9f2], [new THREE.CircleGeometry(0.12, 14), 0x16161c]], // nazar boncuğu
-  [[new THREE.RingGeometry(0.3, 0.62, 22), 0xc98a42], ...[0, 1, 2, 3, 4, 5, 6].map(i => [new THREE.CircleGeometry(0.045, 6).translate(Math.cos(i * 0.9) * 0.46, Math.sin(i * 0.9) * 0.46, 0), 0xfff3d6])], // simit (susamlı)
+  [[new THREE.RingGeometry(0.3, 0.62, 22), 0xb06a24], ...[0, 1, 2, 3, 4, 5, 6].map(i => [new THREE.CircleGeometry(0.045, 6).translate(Math.cos(i * 0.9) * 0.46, Math.sin(i * 0.9) * 0.46, 0), 0xfff3d6])], // simit (susamlı)
   [[HEART, 0xe2463b]], // kalp
-  [[shapeOf(starPts(0.66)), 0xffc23a]], // yıldız
-  [[new THREE.CircleGeometry(0.36, 18), 0xffb627], ...Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return [shapeOf([[Math.cos(a - 0.17) * 0.44, Math.sin(a - 0.17) * 0.44], [Math.cos(a) * 0.7, Math.sin(a) * 0.7], [Math.cos(a + 0.17) * 0.44, Math.sin(a + 0.17) * 0.44]]), 0xff8a3d]; })], // güneş
+  [[shapeOf(starPts(0.66)), 0xffa800]], // yıldız
+  [[new THREE.CircleGeometry(0.36, 18), 0xffa800], ...Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return [shapeOf([[Math.cos(a - 0.17) * 0.44, Math.sin(a - 0.17) * 0.44], [Math.cos(a) * 0.7, Math.sin(a) * 0.7], [Math.cos(a + 0.17) * 0.44, Math.sin(a + 0.17) * 0.44]]), 0xff5e1a]; })], // güneş
   [[shapeOf([[-0.55, 0], [-0.3, 0.26], [0.1, 0.3], [0.38, 0.12], [0.38, -0.12], [0.1, -0.3], [-0.3, -0.26]]), 0xff8a3d], [shapeOf([[0.3, 0], [0.66, 0.3], [0.66, -0.3]]), 0xff8a3d], [new THREE.CircleGeometry(0.06, 8).translate(-0.33, 0.06, 0), 0x16161c]], // balık
 ];
 const BUNTING = [0xe2463b, 0xffc23a, 0x2bb3a3, 0xff7eb6, 0xfdf7ec];
@@ -599,6 +599,8 @@ function sailboatGeo_(ci, mo = 0) {
     .add(new THREE.BoxGeometry(0.05, 0.4, 0.7), band, 0, 8.7, -0.3);                               // flama
   for (const s of [-1, 1]) lifeRing(k, 0.32, s * 1.12, 0.55, 1.6);
   // motif: katmanlar yelkenden azar azar uzaklaşır (üst üste titremesin); iki yüze ayna gibi. ×1,3: yarıçap ~0,8, yelkenin o boydaki eninde kalır
+  // kontur: her parça koyu lacivert ve %15 büyük olarak en alta (açık yelkende renk kaybolmasın; iç katmanların konturu üsttekinin altında kalır)
+  for (const [geo] of SAIL_MOTIFS[mo]) { k.add(geo, 0x1d2a44, 0.066, 3.7, -1.55, 0, Math.PI / 2, 0, 1.5); k.add(geo, 0x1d2a44, -0.006, 3.7, -1.55, 0, -Math.PI / 2, 0, 1.5); }
   SAIL_MOTIFS[mo].forEach(([geo, col], i) => { const d = 0.012 + i * 0.006; k.add(geo, col, 0.06 + d, 3.7, -1.55, 0, Math.PI / 2, 0, 1.3); k.add(geo, col, -d, 3.7, -1.55, 0, -Math.PI / 2, 0, 1.3); });
   // bayrak dizisi: direk tepesinden pruvaya, flokun önünde (x 0.14); her bayrak iki yüzlü küçük üçgen
   const top = new THREE.Vector3(0, 8.4, -0.6), bow = new THREE.Vector3(0, 1.05, 2.55), FLAG = shapeOf([[-0.16, 0], [0.16, 0], [0, -0.32]]);
