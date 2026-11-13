@@ -1098,7 +1098,7 @@ function generateIn(limit) {
       segCount++;
     }
     else if (genZ - tn.z0 > 30) spawnGap(segCount === 0, genZ - tn.z0);
-    else { spawnTurn(tn); if (segCount % 2 === 0) segCount++; }
+    else { spawnTurn(tn); if (segCount % 2 === 0) segCount++; if (difficulty() > 0.6) spawnGap(false, Math.max(18, spdAt(-genZ / 2) * 0.6), true); } // viraj çıkışında ~0,6 sn engelsiz su: martı savrulmadan toparlansın, vapurun ilk bacası hemen gelmesin
   }
   purge();
 }
@@ -2969,14 +2969,14 @@ function frame() {
     if (state === 'play') {
       playT += dt;
       sling = Math.max(0, sling - dt);
-      const slingMax = 11 * clamp((46 - speed + slingV) / 16, 0.25, 1);
-      slingV = damp(slingV, sling > 0 ? slingMax : 0, sling > 0 ? 8 : 1.6, dt); // virajdan fırlama: yavaşken +11, hızlandıkça küçülür (10 km'de +11 engelleri geçilmez yapıyordu)
+      const slingMax = 11;
+      slingV = damp(slingV, sling > 0 ? slingMax : 0, sling > 0 ? 8 : 1.6, dt); // virajdan fırlama hissi (hıza eklenmez)
       // ilerledikçe hızlanır: önce hızlı tırmanır, sonra tavana (SPEED_MAX) kadar yavaşça artmayı sürdürür
       const tz = tempoAt(gull.position.z);
       if (tz !== tempoIn) { tempoIn = tz; if (tz && tz.kind === 'tail') gearUp(); } // efekt yalnız gerçek hız sıçramasında
       tempoK = damp(tempoK, tz ? (tz.kind === 'tail' ? 1 + (TEMPO_K.tail - 1) * (1 - 0.6 * Math.min(1, overAt(dist))) : TEMPO_K[tz.kind]) : 1, 0.9, dt); // arka rüzgâr geç oyunda yumuşar (×1,14 → ×1,06) // ~2,5 sn'de oturur
       const base = Math.min(spdCap(dist) * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1));
-      speed = base * tempoK + slingV; // Hızlı vapurlar: %15 hızlı
+      speed = base * tempoK; // virajdan fırlama (slingV) yalnız görüntü: görüş açısı ve hız çizgileri. Gerçek hız eklenince viraj çıkışındaki baca geçilmez oluyordu // Hızlı vapurlar: %15 hızlı
       if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();
     } else { speed = 15; autopilot(); }
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)
