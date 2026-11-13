@@ -1379,8 +1379,16 @@ function placeMarks() {
 // üç katman (ön kıyı, orta yamaç, arka karşı kıyı) salınımı farklı oranda izler: ön çok kayar, arka gök gibi neredeyse durur (2.5D)
 const titleSets = {};
 const TITLE_LAYERS = { near: 0.12, mid: 0.28, far: 0.5 };
+// vitrinde dünyanın büyük gemileri (yolcu gemisi, şilep, açıktan geçen gemi, Kız Kulesi) gizlenir: vitrin kıyısıyla aynı uzaklıkta durup karanın içine giriyorlardı
+let titleHid = false;
+function hideWorldShips(on) {
+  if (!on && !titleHid) return; titleHid = on; // vitrindeyken her kare (dünya yeniden kurulunca gelen yeni gemi de gizlensin), çıkınca bir kez geri açılır
+  for (const l of land) l.mesh.visible = !on;
+  for (const d of decor) if (d.calm) d.mesh.visible = !on;
+}
 function updateTitleSet(gz) {
   for (const id in titleSets) titleSets[id].visible = false;
+  hideWorldShips(state === 'title' && !!TITLE_SETS[city.id]);
   if (state !== 'title' || !TITLE_SETS[city.id]) return;
   let set = titleSets[city.id];
   if (!set) {
