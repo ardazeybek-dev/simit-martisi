@@ -739,6 +739,129 @@ function makeBeach_(len) {
   return m;
 }
 
+// iki nokta arası ince çubuk (ip, halat, askı): Kit'e dönüşümsüz eklenir
+const _ya = new THREE.Vector3(0, 1, 0), _sq = new THREE.Quaternion();
+function stick(a, b, r = 0.03, seg = 4) {
+  const d = new THREE.Vector3().subVectors(b, a), g = new THREE.CylinderGeometry(r, r, d.length(), seg, 1);
+  g.translate(0, d.length() / 2, 0); g.applyQuaternion(_sq.setFromUnitVectors(_ya, d.clone().normalize())); g.translate(a.x, a.y, a.z);
+  return g;
+}
+
+// ---------------- yarış yelkenlisi (İzmir körfez regatası) ----------------
+// Optimist gibi küçük tekne, dörtgen yelken: martı boyunda da geniş kalır (üçgen yelken o boyda direğe incelirdi).
+// s: yelkenin açıldığı yan (+1 sağ). Yelken direkten kıça (+z) ve s yanına açılır. Pruva -z. REGATTA_BOX: çarpışma kutusu [x kayması, yarı en, z kayması, yarı boy]
+export const REGATTA_COLS = [[0xfdf7ec, 0xe5484d], [0xffd23f, 0x2b3a4c], [0xe5484d, 0xfdf7ec], [0x3a8ee6, 0xffd23f]];
+export const REGATTA_BOX = [0.94, 1.06, 0.4, 0.75]; // martı boyunda yelken: direk -0.12..+1.72 yana (yatma payıyla 2.0), kıça 1.37
+const regCache = {};
+export function regattaGeo(...a) { return pureCall(regattaGeo_, a); }
+function regattaGeo_(ci, s) {
+  const key = ci * 2 + (s > 0 ? 1 : 0);
+  if (regCache[key]) return regCache[key];
+  const [sail, band] = REGATTA_COLS[ci], ry = s * 0.9; // yelken iyice açık: arkadan gelen martı yelkeni yüzünden görsün
+  const q = new THREE.Shape(); q.moveTo(0, 0); q.lineTo(2.4, 0); q.lineTo(2.15, 5.3); q.lineTo(0, 5.0); q.closePath();
+  const sq = new THREE.ExtrudeGeometry(q, { depth: 0.05, bevelEnabled: false }); sq.rotateY(Math.PI / 2); // y-z düzleminde, +z'ye uzanır
+  const k = hullBands(new Kit(), [[0.22, 0x2b3a4c], [0.34, 0xfdf7ec], [0.08, band]], -0.2, 0.62, 0.66)
+    .add(new THREE.BoxGeometry(1.1, 0.05, 2.6), 0xc49a6c, 0, 0.42, 0.1)
+    .add(new THREE.CylinderGeometry(0.05, 0.06, 6.2, 5), 0xe8e4da, 0, 3.4, -0.3)
+    .add(new THREE.CylinderGeometry(0.035, 0.035, 2.3, 4), 0xe8e4da, Math.sin(ry) * 1.15, 1.0, -0.3 + Math.cos(ry) * 1.15, Math.PI / 2, 0, 0, 1, 1, 1)
+    .add(sq, (f, y) => (y > 3.3 && y < 3.9 ? band : sail), 0, 0.9, -0.3, 0, ry, 0)
+    .add(new THREE.BoxGeometry(0.04, 0.3, 0.55), band, 0, 6.6, -0.1);
+  // yelken numarası: iki yüzde renkli daire (uzaktan hangi tekne olduğu okunsun)
+  for (const sd of [1, -1]) k.add(new THREE.CircleGeometry(0.42, 12), band, Math.sin(ry) * 1.05 + sd * Math.cos(ry) * 0.05, 2.5, -0.3 + Math.cos(ry) * 1.05 - sd * Math.sin(ry) * 0.05, 0, ry + sd * Math.PI / 2, 0);
+  return (regCache[key] = k.build());
+}
+export function makeRegattaBoat(ci, s) {
+  const g = new THREE.Group(), h = new THREE.Mesh(regattaGeo(ci, s), vcMat); h.castShadow = true; g.add(h);
+  addCrew(g, [[-s * 0.45, 0.45, 0.9, 0, true]]); // denizci yelkenin karşı yanında oturur (tekneyi dengeler)
+  return g;
+}
+// yarış şamandırası: turuncu, bayraklı (start ve bitiş)
+export const MARK = new Kit().add(new THREE.CylinderGeometry(0.42, 0.55, 1.4, 8), (f, y) => (y > 0.25 ? 0xff7a1a : 0xfdf7ec), 0, 0.3, 0)
+  .add(new THREE.CylinderGeometry(0.04, 0.04, 2.6, 4), 0x2b3a4c, 0, 1.6, 0).add(new THREE.BoxGeometry(0.04, 0.5, 0.8), 0xffd23f, 0, 2.6, 0.4).build();
+
+// ---------------- Kordon balonları (İzmir) ----------------
+// Balonun ipinin ucunda gevrek asılı: gevrek balonla süzülür, gevreği kapan balonu da patlatır. Yerel: gevrek (0,0,0), balon üstte.
+export const BALLOON_COLS = [0xe5484d, 0xffc23a, 0x2f7fd6, 0x2e9c6a, 0xff7eb6, 0x9b5de5];
+export const BALLOONS = BALLOON_COLS.map(c => new Kit()
+  .add(new THREE.SphereGeometry(0.55, 10, 8), c, 0, 1.55, 0, 0, 0, 0, 1, 1.18, 1)
+  .add(new THREE.SphereGeometry(0.12, 6, 4), 0xffffff, -0.22, 1.85, -0.38)
+  .add(new THREE.ConeGeometry(0.1, 0.16, 5), c, 0, 0.9, 0, Math.PI)
+  .add(new THREE.CylinderGeometry(0.012, 0.012, 0.75, 3), 0xf4f1e8, 0, 0.45, 0).build());
+// Kordon rıhtımı: taş kenar, demir korkuluk, Kordon feneri, bank. Yerel: rıhtım kenarı x=0, kara +x'e
+export const KORDON = (() => {
+  const k = new Kit().add(new THREE.BoxGeometry(5, 1.4, 14), 0xcfc2a6, 2.5, 0.2, 0).add(new THREE.BoxGeometry(5, 0.08, 14), 0xb9ab8e, 2.5, 0.94, 0)
+    .add(new THREE.BoxGeometry(0.06, 0.06, 14), 0x2b3a4c, 0.25, 1.9, 0);
+  for (let z = -6.5; z <= 6.5; z += 1.3) k.add(new THREE.BoxGeometry(0.07, 1, 0.07), 0x2b3a4c, 0.25, 1.45, z);
+  for (const z of [-4.5, 4.5]) k.add(new THREE.CylinderGeometry(0.08, 0.12, 4.6, 6), 0x23303f, 1.2, 3.2, z).add(new THREE.SphereGeometry(0.32, 8, 6), 0xfff1c4, 1.2, 5.6, z)
+    .add(new THREE.ConeGeometry(0.36, 0.3, 6), 0x23303f, 1.2, 5.95, z);
+  k.add(new THREE.BoxGeometry(0.5, 0.08, 1.8), 0x9c6a3e, 2.6, 1.4, 2).add(new THREE.BoxGeometry(0.08, 0.5, 1.8), 0x9c6a3e, 2.85, 1.7, 2);
+  return k.build();
+})();
+
+// ---------------- flamingo (İzmir Kuş Cenneti) ----------------
+// Ayakta: ayaklar y=0'da, gövde göğüste, S boyun. Uçarken: boyun ileri, bacaklar geride uzanır; kanatlar ayrı parça (çırpar). Pruva -z.
+const FL_P = 0xf7a1b5, FL_D = 0xec7c9b, FL_LEG = 0xe0688a;
+const flHead = (k, x, y, z, down) => k.add(new THREE.SphereGeometry(0.13, 7, 5), FL_P, x, y, z)
+  .add(new THREE.ConeGeometry(0.055, 0.22, 5), 0xf3e3d3, x, y - 0.05, z - 0.14, -Math.PI / 2 - down, 0, 0)
+  .add(new THREE.ConeGeometry(0.04, 0.12, 5), 0x1d1d1d, x, y - 0.05 - Math.cos(down) * 0.0 - Math.sin(down) * 0.16, z - 0.14 - Math.cos(down) * 0.16, -Math.PI / 2 - down, 0, 0)
+  .add(new THREE.SphereGeometry(0.025, 4, 3), 0x1d1d1d, 0.08, y + 0.03, z - 0.04).add(new THREE.SphereGeometry(0.025, 4, 3), 0x1d1d1d, -0.08, y + 0.03, z - 0.04);
+const tube = pts => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 10, 0.06, 5);
+export const FLAMINGO = (() => {
+  const k = new Kit();
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.035, 0.03, 2.05, 4), FL_LEG, s * 0.09, 1.02, 0.08).add(new THREE.SphereGeometry(0.05, 4, 3), FL_LEG, s * 0.09, 1.05, 0.08);
+  k.add(new THREE.SphereGeometry(0.5, 10, 7), (f, y) => (y > 2.2 ? FL_P : FL_D), 0, 2.2, 0.05, 0, 0, 0, 0.5, 0.42, 0.85)
+    .add(new THREE.ConeGeometry(0.18, 0.5, 5), 0x2a2228, 0, 2.25, 0.75, Math.PI / 2 + 0.3, 0, 0)
+    .add(tube([[0, 2.35, -0.3], [0, 2.85, -0.5], [0, 3.25, -0.22], [0, 3.6, -0.3], [0, 3.8, -0.5]]), FL_P);
+  flHead(k, 0, 3.85, -0.56, 0.9);
+  return k.build();
+})();
+export const FLAMINGO_FLY = (() => {
+  const k = new Kit();
+  k.add(new THREE.SphereGeometry(0.5, 10, 7), (f, y) => (y > 0 ? FL_P : FL_D), 0, 0, 0, 0, 0, 0, 0.48, 0.4, 0.9)
+    .add(tube([[0, 0.05, -0.55], [0, 0.04, -1.2], [0, -0.02, -1.75]]), FL_P)
+    .add(new THREE.ConeGeometry(0.16, 0.45, 5), 0x2a2228, 0, 0.02, 0.75, Math.PI / 2, 0, 0);
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.03, 0.025, 1.9, 4), FL_LEG, s * 0.08, -0.06, 1.55, Math.PI / 2 + 0.06, 0, 0);
+  flHead(k, 0, -0.04, -1.85, 0.5);
+  return k.build();
+})();
+// kanat: kökü x=0'da; uçtaki kara uçuş tüyleri flamingonun uçarken en çok seçilen yeri
+const flWing = s => { const q = new THREE.Shape(); q.moveTo(0, -0.32); q.lineTo(s * 1.25, -0.22); q.lineTo(s * 1.75, 0.02); q.lineTo(s * 1.55, 0.3); q.lineTo(0, 0.38); q.closePath();
+  const g = new THREE.ExtrudeGeometry(q, { depth: 0.04, bevelEnabled: false }); g.rotateX(Math.PI / 2);
+  return new Kit().add(g, vert((f, y, x) => (Math.abs(x) > 1.05 ? 0x1f1a1e : Math.abs(x) > 0.75 ? FL_D : FL_P))).build(); };
+let flW = null;
+export const flamingoWing = i => (flW ||= [flWing(-1), flWing(1)])[i]; // tembel: vert/mixHex dosyanın sonunda tanımlı
+// sığlık: suyun hemen altında çamurlu kum lekesi (flamingolar üstünde durur)
+let shoalG = null;
+export const shoalGeo = () => shoalG ||= (new Kit().add(new THREE.SphereGeometry(1, 20, 6), vert((f, y, x, z) => mixHex(0xc9b48a, 0xa89a72, fbm(x * 2, z * 2))), 0, -0.12, 0, 0, 0, 0, 1, 0.2, 1).build());
+
+// ---------------- paraşüt teknesi (Antalya) ----------------
+// Sürat teknesi şeridi yandan keser, arkasında yüksekte paraşüt; paraşütte asılı turist simit atar. Pruva -z.
+// Teknenin kıçındaki çekme direği (PARA_TOW) ile paraşüt askısı arasındaki ip engel (main.js ipi her karede yeniden kurar).
+export const PARA_TOW = new THREE.Vector3(0, 1.7, 2.1);
+export const SPEEDBOAT = (() => {
+  const k = hullBands(new Kit(), [[0.3, 0x2b3a4c], [0.42, 0xfdf7ec], [0.12, 0xe5484d]], -0.25, 0.95, 1.05)
+    .add(new THREE.BoxGeometry(1.75, 0.07, 4.2), 0xe8e2d4, 0, 0.62, 0.2)
+    .add(new THREE.BoxGeometry(1.5, 0.5, 0.8), 0xfdf7ec, 0, 0.9, -0.6)
+    .add(new THREE.BoxGeometry(1.45, 0.45, 0.06), 0x2b4a66, 0, 1.35, -0.95, -0.5, 0, 0)
+    .add(new THREE.CylinderGeometry(0.06, 0.08, 1.2, 5), 0xc9ced6, 0, 1.15, 2.1)
+    .add(new THREE.BoxGeometry(0.9, 0.5, 0.6), 0x2b3a4c, 0, 0.55, 2.55);
+  return k.build();
+})();
+const CHUTE_COLS = [0xe5484d, 0xffd23f, 0xfdf7ec, 0x2f7fd6];
+let chuteG = null;
+export const chuteGeo = () => chuteG ||= (() => {
+  const cap = new THREE.SphereGeometry(1, 16, 5, 0, Math.PI * 2, 0, Math.PI * 0.42);
+  const col = vert((f, y, x, z) => CHUTE_COLS[((Math.atan2(x, z) / Math.PI + 1) * 4 | 0) % 4]);
+  const k = new Kit().add(cap, col, 0, 3.0, 0, 0, 0, 0, 3.4, 1.3, 2.1).add(cap, col, 0, 3.0, 0, 0, 0, 0, -3.36, 1.27, 2.07); // iç yüz: aynalanmış kopya (alttan bakınca görünsün)
+  const rimY = 3.0 + 1.3 * Math.cos(Math.PI * 0.42), rs = Math.sin(Math.PI * 0.42), o = new THREE.Vector3(0, 0.15, 0);
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; k.add(stick(new THREE.Vector3(Math.sin(a) * 3.4 * rs * 0.92, rimY, Math.cos(a) * 2.1 * rs * 0.92), o, 0.015, 3), 0xf4f1e8); }
+  k.add(new THREE.BoxGeometry(0.7, 0.06, 0.06), 0x2b3a4c, 0, 0.15, 0);
+  return k.build();
+})();
+export const ROPE_UNIT = new THREE.CylinderGeometry(0.09, 0.09, 1, 5, 1).translate(0, 0.5, 0);
+export const ropeMat = new THREE.MeshBasicMaterial({ color: 0x2a2f3a }); // koyu: açık denizde ve gökte seçilsin (engel)
+export const PENNANT = new Kit().add(new THREE.BoxGeometry(0.06, 0.55, 0.8), 0xff6a10, 0, -0.32, 0.3).build();
+
 // ---------------- dev yolcu gemisi (uzakta, sağ kıyıda) ----------------
 // Beyaz gövde, kat kat pencere bantları, balkon sıraları, iki kalın baca. Pruva -z.
 // Uzakta olduğu için sis yarı güçte: yoksa ufkun rengine gömülüp şekilsiz bir bloğa döner.
