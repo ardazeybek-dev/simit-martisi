@@ -57,8 +57,10 @@ const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HAR
 // ama hiçbir yer imkânsız değil (tavan hız ~57, iki engel arası medyan ~0,3 sn; 24 km'de 60 hız / 0,26 sn ölçüldü, insan tepkisinin sınırı → kesildi).
 // m: uçulan metre (hız için dist, üretim için -genZ/2)
 const overAt = m => clamp((m - 6500) / 7000, 0, 2), overG = () => overAt(-genZ / 2);
+// hız tavanı: 13,5 km'de ~50'de durur (20,5 km'ye kadar artınca 10 km üstü oynanmaz oluyordu); yoğunluk rampası (overG) sürer
+const spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1, overAt(m)));
 // o metrede beklenen uçuş hızı (birim/sn, tempo hariç): hız formülü 100 m'lik tabloya bir kez işlenir. Engel aralığını saniyeyle kurmak için
-const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { const v = Math.min(SPEED_MAX * (1 + 0.16 * overAt(d)), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032); if (d >= a.length * 100) a.push(v); d += v / 2 / 30; t += 1 / 30; } return a; })();
+const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { const v = Math.min(spdCap(d), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032); if (d >= a.length * 100) a.push(v); d += v / 2 / 30; t += 1 / 30; } return a; })();
 const spdAt = m => SPD_TAB[clamp(Math.round(m / 100), 0, SPD_TAB.length - 1)];
 // ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
 // Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
@@ -1338,7 +1340,7 @@ function warpTo(m) {
   genZ = z - 8; sceneryZ = z + 10; turnZ = z; tempoZ = z; cruiseZ = z - rand(40, 120); anchorZ = z - rand(10, 60); maidenZ = far(maidenZ, 300, 500);
   bridgeZ = far(bridgeZ, 300, 700); imbatZ = far(imbatZ, 300, 600); pirateZ = far(pirateZ, 300, 600); fallsZ = far(fallsZ, 400, 800); beachZ = far(beachZ, 300, 600);
   let t = 0, d = 0; // uçuş süresi: hız formülüyle o mesafeye kaç saniyede varılır
-  while (d < m) { d += Math.min(SPEED_MAX * (1 + 0.16 * overAt(d)), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032) / 2 / 30; t += 1 / 30; }
+  while (d < m) { d += Math.min(spdCap(d), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032) / 2 / 30; t += 1 / 30; }
   playT = t;
   while (stopI < STOPS.length && stopM[stopI] <= m) stopI++;
   pierI = stopI;
@@ -2959,12 +2961,14 @@ function frame() {
     if (state === 'play') {
       playT += dt;
       sling = Math.max(0, sling - dt);
-      slingV = damp(slingV, sling > 0 ? 11 : 0, sling > 0 ? 8 : 1.6, dt);
+      const slingMax = 11 * clamp((46 - speed + slingV) / 16, 0.25, 1);
+      slingV = damp(slingV, sling > 0 ? slingMax : 0, sling > 0 ? 8 : 1.6, dt); // virajdan fırlama: yavaşken +11, hızlandıkça küçülür (10 km'de +11 engelleri geçilmez yapıyordu)
       // ilerledikçe hızlanır: önce hızlı tırmanır, sonra tavana (SPEED_MAX) kadar yavaşça artmayı sürdürür
       const tz = tempoAt(gull.position.z);
       if (tz !== tempoIn) { tempoIn = tz; if (tz && tz.kind === 'tail') gearUp(); } // efekt yalnız gerçek hız sıçramasında
-      tempoK = damp(tempoK, tz ? TEMPO_K[tz.kind] : 1, 0.9, dt); // ~2,5 sn'de oturur
-      speed = Math.min(SPEED_MAX * (1 + 0.16 * overAt(dist)) * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1)) * tempoK + slingV; // Hızlı vapurlar: %15 hızlı
+      tempoK = damp(tempoK, tz ? (tz.kind === 'tail' ? 1 + (TEMPO_K.tail - 1) * (1 - 0.6 * Math.min(1, overAt(dist))) : TEMPO_K[tz.kind]) : 1, 0.9, dt); // arka rüzgâr geç oyunda yumuşar (×1,14 → ×1,06) // ~2,5 sn'de oturur
+      const base = Math.min(spdCap(dist) * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1));
+      speed = base * tempoK + slingV; // Hızlı vapurlar: %15 hızlı
       if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();
     } else { speed = 15; autopilot(); }
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)
