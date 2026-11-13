@@ -4,7 +4,7 @@ import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, update
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
-import { syncBatches, goldMat, makeGull, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT } from './models.js';
+import { syncBatches, goldMat, makeGull, RIVAL_POP, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
@@ -611,6 +611,7 @@ function spawnFalls() {
   falls.push({ g, z: fz, zA, zB, dir, acc: 0, felt: false });
   fallsZ = zB - rand(800, 1100);
   genZ = zB - 4;
+  spawnGap(false, Math.round(speed * 1.3 + 8), true); // şelaleden çıkan martı hâlâ havada: hemen ardından vapur gelirse bacanın/camın içinden geçerdi → önce sakin su (yalnız simit)
 }
 function updateFalls(dt, gz) {
   let on = 0;
@@ -624,7 +625,7 @@ function updateFalls(dt, gz) {
       if (!f.felt && state === 'play') { f.felt = true; sfx.splash(); vibrate(20); }
     }
   }
-  fallsLift = damp(fallsLift, on ? FALLS_LIFT : 0, on ? 3 : 1.8, dt);
+  fallsLift = damp(fallsLift, on ? FALLS_LIFT : 0, on ? 3 : 2.6, dt); // çıkışta ~0,7 sn'de iner
   fallsW = damp(fallsW, -on * FALLS_PUSH, on ? 3 : 2, dt);
 }
 // ---------------- plaj şemsiyeleri (Antalya) ----------------
@@ -3750,6 +3751,7 @@ function frame() {
   }
   // bükme çerçevesi: kameranın bütün dönüşü çıkarılır (dünya eksenleri), yanal başlangıç şeridin ortası (scene.js LEVEL, BEND2.w)
   LEVEL.value.setFromMatrix4(_m4.makeRotationFromQuaternion(camera.quaternion)); BEND2.value.w = camera.position.x;
+  RIVAL_POP.value += ((weather === 'rain' || weather === 'fog' || weather === 'snow' ? 1 : 0) - RIVAL_POP.value) * Math.min(1, realDt * 1.5); // yağmurda rakip martı seçilsin (models.js)
   far.position.set(camera.position.x * 0.9, 0, camera.position.z);
   far.rotation.y = heading * bendOn;
   setHeading(heading * bendOn);

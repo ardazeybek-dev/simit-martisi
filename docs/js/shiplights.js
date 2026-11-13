@@ -31,7 +31,7 @@ const mat = new THREE.ShaderMaterial({
       vec3 transformed = position;
       #include <project_vertex>
       float px = lsize * projectionMatrix[1][1] * uHalfH / max(-mvPosition.z, 0.5);
-      gl_PointSize = max(px, uMinPx); vC = lcol * min(1.0, px / uMinPx * 0.6 + 0.4); // uzakta küçülen ışık kaybolmaz, yalnız söner
+      gl_PointSize = clamp(px, uMinPx, uHalfH * 0.3); vC = lcol * min(1.0, px / uMinPx * 0.6 + 0.4); // uzakta küçülen ışık kaybolmaz, yalnız söner
     }`,
   fragmentShader: `uniform sampler2D map; varying vec3 vC;
     void main() { float a = texture2D(map, gl_PointCoord).a; gl_FragColor = vec4(vC * a, smoothstep(0.35, 0.9, a) * min(0.9, max(vC.r, vC.g))); }`,
@@ -149,7 +149,7 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
   time += dt;
   const k = WEATHER_K[weather] || 0, kLed = LED_K[weather] || 0, fog = scene.fog;
   if (!k && !kLed) { points.visible = false; for (const sh of ships) if (!rootOf(sh.obj).parent) ships.delete(sh); return; } // yağmursuz havada da sahneden çıkan gemi kayıttan düşsün (sızıntı)
-  const far = fog ? fog.far * 1.8 : 400, near = fog ? fog.near * 0.6 : 60;
+  const far = fog ? fog.far * 1.8 : 400, near = fog ? fog.far * 0.5 : 130; // ışık sisin yarısında tam parlak: gemi sisten çıkmadan yanar (eskiden 18 m'de doluyordu)
   renderer.getDrawingBufferSize(_sz); mat.uniforms.uHalfH.value = _sz.y / 2; mat.uniforms.uMinPx.value = 2.2 * renderer.getPixelRatio();
   const cam = camera.position;
   let n = 0;
@@ -164,7 +164,7 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
       if (l.ref) _p.copy(l.ref.position).applyMatrix4(_m); else _p.set(l.x, l.y, l.z).applyMatrix4(_m);
       const kk = l.k === 7 ? kLed : k; if (!kk) continue;
       // kameraya çok yaklaşan lamba (gemiden ayrılırken yanından geçenler) koca bir leke olup birden sönmesin: yaklaştıkça yumuşakça söner
-      const nf = Math.min(1, Math.max(0, (cam.z - _p.z - 1.5) / 7)); if (nf <= 0) continue;
+      const nf = Math.min(1, Math.max(0, (cam.z - _p.z - 1) / 5)); // martıyı geçtikten sonra da ~7 m yanık kalır if (nf <= 0) continue;
       const d = _p.distanceTo(cam), f = Math.min(1, Math.max(0, (far - d) / (far - near)));
       if (f <= 0) continue;
       const tt = time * l.r;
@@ -186,25 +186,42 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
   for (const name of ['position', 'lcol', 'lsize']) { const at = geo.attributes[name]; at.clearUpdateRanges(); at.addUpdateRange(0, n * at.itemSize); at.needsUpdate = true; }
 }
 
-// güverte lambaları: martıya en yakın 6 nokta göz uzayına çevrilip shader'a gider (scene.js LAMPS). Kamera bu karenin yerine
+// güverte lambaları: martıya en yakın 8 nokta göz uzayına çevrilip shader'a gider (scene.js LAMPS). Kamera bu karenin yerine
 // oturduktan sonra, çizimden hemen önce çağrılır; yoksa hızlı uçuşta ışık gemiden bir kare geride kalır.
-const _l = new THREE.Vector3(), best = [];
+// Her noktanın kendi açılıp sönmesi var (p.lf): gemi ~150 m'den yumuşakça yanar, martı geçtikten sonra ~60 m daha yanık kalır;
+// listeye girip çıkan nokta (simitçi teknesi yer kaptı) bir anda sönmez/patlamaz, ışık çapı ağır ağır büyüyüp küçülür.
+const LAMP_SLOTS = 8, LAMP_R = 10, LAMP_IN = [-150, -85], LAMP_OUT = [22, 60];
+const _l = new THREE.Vector3(), cand = [], live = new Set();
+const ramp = (x, a, b) => Math.min(1, Math.max(0, (x - a) / (b - a)));
 let lampK = 0;
 export function tickLamps(dt, camera, weather, g) {
   lampK += ((WEATHER_K[weather] || 0) - lampK) * Math.min(1, dt * 2);
-  if (lampK < 0.01) { LAMP_N.value = 0; return; }
-  best.length = 0;
+  if (lampK < 0.01) { LAMP_N.value = 0; for (const p of live) p.lf = 0; live.clear(); return; }
+  cand.length = 0;
   for (const sh of ships) {
-    const o = sh.obj; if (!sh.lit || !rootOf(o).parent || hidden(o) || rootOf(o).userData.park) continue;
-    const e = worldOf(o, _m).elements, dz = e[14] - g.z; if (dz > 25 || dz < -110) continue;
+    const o = sh.obj; if (!sh.lit || !rootOf(o).parent) continue;
+    const park = rootOf(o).userData.park || hidden(o); // sisin ötesinde gizli gemi: ışığı yanmaz, sisten çıkınca yumuşakça yanar
+    const e = worldOf(o, _m).elements, dz = e[14] - g.z; if (dz > LAMP_OUT[1] + 40 || dz < LAMP_IN[0] - 40) continue;
     for (const p of sh.lit) {
       _l.copy(p).applyMatrix4(_m);
-      const d = _l.distanceToSquared(g);
-      if (best.length < 6) best.push({ d, x: _l.x, y: _l.y, z: _l.z });
-      else { let w = 0; for (let i = 1; i < 6; i++) if (best[i].d > best[w].d) w = i; if (d < best[w].d) Object.assign(best[w], { d, x: _l.x, y: _l.y, z: _l.z }); }
+      const pz = _l.z - g.z, want = park ? 0 : ramp(pz, LAMP_IN[0], LAMP_IN[1]) * (1 - ramp(pz, LAMP_OUT[0], LAMP_OUT[1]));
+      if (want <= 0 && !(p.lf > 0.01)) continue;
+      p.wx = _l.x; p.wy = _l.y; p.wz = _l.z; p.seen = true;
+      cand.push({ p, d: _l.distanceToSquared(g), want, x: _l.x, y: _l.y, z: _l.z });
     }
   }
+  // gemisi sahneden çıkan ya da listeden düşen nokta son yerinde söner (bir anda kararmaz)
+  for (const p of live) if (!p.seen && p.lf > 0.002) cand.push({ p, d: _l.set(p.wx, p.wy, p.wz).distanceToSquared(g), want: 0, x: p.wx, y: p.wy, z: p.wz });
+  // en yakın 8 nokta seçilir; seçilmeyenin hedefi 0 (yavaşça söner)
+  cand.sort((a, b) => a.d - b.d);
+  const k = Math.min(1, dt * 1.6), seen = new Set();
   camera.updateMatrixWorld();
-  for (let i = 0; i < best.length; i++) { const b = best[i]; _l.set(b.x, b.y, b.z).applyMatrix4(camera.matrixWorldInverse); LAMPS.value[i].set(_l.x, _l.y, _l.z, 10); }
-  LAMP_N.value = best.length; LAMP_C.value.setRGB(1.0, 0.74, 0.44).multiplyScalar(1.7 * lampK);
+  let n = 0;
+  for (let i = 0; i < cand.length; i++) {
+    const c = cand[i], p = c.p, tgt = i < LAMP_SLOTS ? c.want : 0;
+    p.lf = (p.lf || 0) + (tgt - (p.lf || 0)) * k; p.seen = false; if (p.lf > 0.002) seen.add(p);
+    if (n < LAMPS.value.length && p.lf > 0.002) { _l.set(c.x, c.y, c.z).applyMatrix4(camera.matrixWorldInverse); LAMPS.value[n++].set(_l.x, _l.y, _l.z, LAMP_R * p.lf); }
+  }
+  live.clear(); for (const p of seen) live.add(p);
+  LAMP_N.value = n; LAMP_C.value.setRGB(1.0, 0.74, 0.44).multiplyScalar(1.6 * lampK);
 }

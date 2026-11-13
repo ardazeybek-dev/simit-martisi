@@ -96,12 +96,21 @@ function gullGeos_(type) {
   const handGeo = handKit.build();
   return (gullGeoCache[type] = { bodyGeo, armGeo, handGeo });
 }
-// rakip martı siste az kaybolur: yağmur/siste de uzaktan seçilsin
+// rakip martı siste az kaybolur: yağmur/siste de uzaktan seçilsin.
+// RIVAL_POP (0 açık hava → 1 yağmur/sis/kar, main.js yumuşak geçirir): renk doyar, açık gri koyulaşır (açık gri göğe karşı koyu siluet), sis payı %45 → %12.
+export const RIVAL_POP = { value: 0 };
 const rivalMat = vcMat.clone();
-rivalMat.onBeforeCompile = function (sh) { // sisin yalnız %45'i: yağmurda/siste seçilir ama sis havası bozulmaz
+rivalMat.onBeforeCompile = function (sh) {
   THREE.Material.prototype.onBeforeCompile.call(this, sh);
-  sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', `#ifdef USE_FOG
- gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(fogNear, fogFar, vFogDepth) * 0.45);
+  sh.uniforms.uRivalPop = RIVAL_POP;
+  sh.fragmentShader = 'uniform float uRivalPop;\n' + sh.fragmentShader.replace('#include <fog_fragment>', `{
+  vec3 c = gl_FragColor.rgb; float l = dot(c, vec3(0.299, 0.587, 0.114)), ch = length(c - vec3(l));
+  c = clamp(mix(vec3(l), c, 1.0 + 0.9 * uRivalPop), 0.0, 1.0);
+  c *= 1.0 - uRivalPop * 0.42 * smoothstep(0.3, 0.8, l) * (1.0 - smoothstep(0.06, 0.2, ch));
+  gl_FragColor.rgb = c;
+}
+#ifdef USE_FOG
+ gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(fogNear, fogFar, vFogDepth) * mix(0.45, 0.12, uRivalPop));
 #endif`);
 };
 rivalMat.customProgramCacheKey = () => 'rival';
@@ -801,28 +810,37 @@ export const KORDON = (() => {
 // ---------------- flamingo (İzmir Kuş Cenneti) ----------------
 // Ayakta: ayaklar y=0'da, gövde göğüste, S boyun. Uçarken: boyun ileri, bacaklar geride uzanır; kanatlar ayrı parça (çırpar). Pruva -z.
 const FL_P = 0xf7a1b5, FL_D = 0xec7c9b, FL_LEG = 0xe0688a;
-const flHead = (k, x, y, z, down) => k.add(new THREE.SphereGeometry(0.13, 7, 5), FL_P, x, y, z)
-  .add(new THREE.ConeGeometry(0.055, 0.22, 5), 0xf3e3d3, x, y - 0.05, z - 0.14, -Math.PI / 2 - down, 0, 0)
-  .add(new THREE.ConeGeometry(0.04, 0.12, 5), 0x1d1d1d, x, y - 0.05 - Math.cos(down) * 0.0 - Math.sin(down) * 0.16, z - 0.14 - Math.cos(down) * 0.16, -Math.PI / 2 - down, 0, 0)
-  .add(new THREE.SphereGeometry(0.025, 4, 3), 0x1d1d1d, 0.08, y + 0.03, z - 0.04).add(new THREE.SphereGeometry(0.025, 4, 3), 0x1d1d1d, -0.08, y + 0.03, z - 0.04);
-const tube = pts => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 10, 0.06, 5);
+// Oyunun büyük kafalı tarzı: tombul gövde, kalın boyun, iri kafa ve parlak iri göz, kısa kalın bacak.
+const flHead = (k, x, y, z, down) => {
+  const R = 0.24, dy = -Math.sin(down), dz = -Math.cos(down), rx = -Math.PI / 2 - down;
+  k.add(new THREE.SphereGeometry(R, 10, 8), FL_P, x, y, z)
+    .add(new THREE.ConeGeometry(0.1, 0.3, 6), 0xf3e3d3, x, y + dy * (R + 0.1), z + dz * (R + 0.1), rx, 0, 0)
+    .add(new THREE.ConeGeometry(0.065, 0.14, 6), 0x1d1d1d, x, y + dy * (R + 0.27), z + dz * (R + 0.27), rx, 0, 0);
+  for (const s of [-1, 1]) k.add(new THREE.SphereGeometry(0.085, 7, 5), 0xffffff, x + s * 0.17, y + 0.06, z - 0.1)
+    .add(new THREE.SphereGeometry(0.055, 6, 4), 0x1d1d1d, x + s * 0.2, y + 0.06, z - 0.15)
+    .add(new THREE.SphereGeometry(0.018, 4, 3), 0xffffff, x + s * 0.22, y + 0.09, z - 0.19);
+  return k;
+};
+const tube = (pts, r = 0.06) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 10, r, 6);
 export const FLAMINGO = (() => {
   const k = new Kit();
-  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.035, 0.03, 2.05, 4), FL_LEG, s * 0.09, 1.02, 0.08).add(new THREE.SphereGeometry(0.05, 4, 3), FL_LEG, s * 0.09, 1.05, 0.08);
-  k.add(new THREE.SphereGeometry(0.5, 10, 7), (f, y) => (y > 2.2 ? FL_P : FL_D), 0, 2.2, 0.05, 0, 0, 0, 0.5, 0.42, 0.85)
-    .add(new THREE.ConeGeometry(0.18, 0.5, 5), 0x2a2228, 0, 2.25, 0.75, Math.PI / 2 + 0.3, 0, 0)
-    .add(tube([[0, 2.35, -0.3], [0, 2.85, -0.5], [0, 3.25, -0.22], [0, 3.6, -0.3], [0, 3.8, -0.5]]), FL_P);
-  flHead(k, 0, 3.85, -0.56, 0.9);
-  return k.build();
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.07, 0.06, 1.25, 6), FL_LEG, s * 0.15, 0.62, 0.08).add(new THREE.SphereGeometry(0.095, 6, 4), FL_LEG, s * 0.15, 0.66, 0.08)
+    .add(new THREE.SphereGeometry(0.16, 6, 4), FL_LEG, s * 0.15, 0.03, -0.02, 0, 0, 0, 1, 0.3, 1.4);
+  k.add(new THREE.SphereGeometry(0.6, 12, 9), (f, y) => (y > 1.7 ? FL_P : FL_D), 0, 1.7, 0.05, 0, 0, 0, 0.78, 0.7, 0.92)
+    .add(new THREE.ConeGeometry(0.2, 0.36, 6), FL_D, 0, 1.82, 0.62, Math.PI / 2 + 0.35, 0, 0)
+    .add(tube([[0, 1.95, -0.32], [0, 2.35, -0.5], [0, 2.65, -0.28], [0, 2.9, -0.35]], 0.12), FL_P);
+  flHead(k, 0, 3.03, -0.45, 0.75);
+  return k.build({ smooth: true });
 })();
 export const FLAMINGO_FLY = (() => {
   const k = new Kit();
-  k.add(new THREE.SphereGeometry(0.5, 10, 7), (f, y) => (y > 0 ? FL_P : FL_D), 0, 0, 0, 0, 0, 0, 0.48, 0.4, 0.9)
-    .add(tube([[0, 0.05, -0.55], [0, 0.04, -1.2], [0, -0.02, -1.75]]), FL_P)
-    .add(new THREE.ConeGeometry(0.16, 0.45, 5), 0x2a2228, 0, 0.02, 0.75, Math.PI / 2, 0, 0);
-  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.03, 0.025, 1.9, 4), FL_LEG, s * 0.08, -0.06, 1.55, Math.PI / 2 + 0.06, 0, 0);
-  flHead(k, 0, -0.04, -1.85, 0.5);
-  return k.build();
+  k.add(new THREE.SphereGeometry(0.6, 12, 9), (f, y) => (y > 0 ? FL_P : FL_D), 0, 0, 0, 0, 0, 0, 0.75, 0.68, 0.95)
+    .add(tube([[0, 0.08, -0.5], [0, 0.1, -0.95], [0, 0.06, -1.3]], 0.11), FL_P)
+    .add(new THREE.ConeGeometry(0.18, 0.4, 6), FL_D, 0, 0.04, 0.68, Math.PI / 2, 0, 0);
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.06, 0.05, 1.2, 6), FL_LEG, s * 0.12, -0.08, 1.1, Math.PI / 2 + 0.06, 0, 0)
+    .add(new THREE.SphereGeometry(0.12, 6, 4), FL_LEG, s * 0.12, -0.12, 1.72, 0, 0, 0, 1, 0.4, 1.2);
+  flHead(k, 0, 0.1, -1.45, 0.4);
+  return k.build({ smooth: true });
 })();
 // kanat: kökü x=0'da; uçtaki kara uçuş tüyleri flamingonun uçarken en çok seçilen yeri
 const flWing = s => { const q = new THREE.Shape(); q.moveTo(0, -0.32); q.lineTo(s * 1.25, -0.22); q.lineTo(s * 1.75, 0.02); q.lineTo(s * 1.55, 0.3); q.lineTo(0, 0.38); q.closePath();
