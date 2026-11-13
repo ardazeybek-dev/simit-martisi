@@ -1453,10 +1453,12 @@ function kiteAssets_(ci) {
   k.add(new THREE.BoxGeometry(1.5, 0.05, 0.05), 0x5a3b26, 0, 0.2, 0.02);
   return (kiteCache[ci] = {
     geo: k.build(),
-    mat: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, roughness: 0.7 }),
+    mat: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, roughness: 0.7, emissive: new THREE.Color(a).lerp(new THREE.Color(b), 0.5), emissiveIntensity: 0 }),
     bows: [a, b].map(c => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide })),
   });
 }
+// kötü havada uçurtmanın kendisi de parlar (yalnız kenar LED'i yetmiyordu): main.js her kare 0 → 1 verir
+export function setKiteGlow(v) { for (const c of kiteCache) if (c) c.mat.emissiveIntensity = v * 0.75; }
 export function makeKite() {
   const A = kiteAssets((Math.random() * KITE_COLS.length) | 0);
   const g = new THREE.Group();

@@ -4,7 +4,7 @@ import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, update
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
-import { syncBatches, goldMat, makeGull, RIVAL_POP, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT } from './models.js';
+import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
@@ -479,7 +479,7 @@ function addRival(z, bx, sw, kind, zMax = Infinity) {
   ({ bx, sw, kind } = c);
   if (kind === 'red') z -= 18; // hızlı gelir: daha uzaktan başlar
   const r = makeGull(kind); r.scale.setScalar(0.72); r.rotation.y = Math.PI; // oyuncudan küçük ama uzaktan seçilsin (çarpma yarıçapı aynı: görüntü biraz bağışlayıcı)
-  r.position.set(bx, FLY_Y, z); scene.add(r);
+  r.position.set(bx, FLY_Y, z); scene.add(r); addShipLights(r, 'gull', { kind }); // yağmur/siste gövdesinde renkli fener
   if (genLog) genLog.push(`r${kind}${bx.toFixed(2)},${z.toFixed(1)}`);
   rivals.push({ mesh: r, kind, bx, z, zMax, ph: Math.random() * 6, sw, hit: false, spin: 0, tx: bx, zt: 0, dive: 15 + L * 4 });
 }
@@ -566,7 +566,7 @@ function spawnPirate() {
   const z0 = genZ, pz = z0 - 40, side = pick([-1, 1]), gapX = rand(-1.8, 1.8), xa = gapX - side * PIRATE_GAP;
   if (THROW_ON) throwVolleys(z0, 24, false);
   decor = decor.filter(d => (Math.abs(d.z - pz) < 22 && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // kayarken yan teknelerin içinden geçmesin
-  const { g, throwers } = makePirateShip(); g.rotation.y = side * Math.PI / 2; scene.add(g); // pruva gidiş yönüne (-side) bakar
+  const { g, throwers } = makePirateShip(); g.rotation.y = side * Math.PI / 2; scene.add(g); addShipLights(g, 'pirate'); // pruva gidiş yönüne (-side) bakar
   const os = PIRATE_GATE.map(([lz, hl, hb, top]) => {
     const o = { x: xa + side * lz, z: pz, hw: hl, hd: hb, top, kind: 'korsana', passed: false };
     obstacles.push(o); return { o, off: side * lz };
@@ -611,7 +611,7 @@ function spawnFalls() {
   falls.push({ g, z: fz, zA, zB, dir, acc: 0, felt: false });
   fallsZ = zB - rand(800, 1100);
   genZ = zB - 4;
-  spawnGap(false, Math.round(speed * 1.3 + 8), true); // şelaleden çıkan martı hâlâ havada: hemen ardından vapur gelirse bacanın/camın içinden geçerdi → önce sakin su (yalnız simit)
+  spawnGap(false, Math.max(36, Math.round(speed * 1.3 + 8))); // şelaleden çıkan martı hâlâ havada: hemen ardından vapur gelirse bacanın/camın içinden geçerdi → önce vapursuz açık su (rakip, uçurtma, yelkenli olabilir)
 }
 function updateFalls(dt, gz) {
   let on = 0;
@@ -1600,7 +1600,7 @@ function resetWorld(newWeather = true) {
   chuteZ = !city.parasail ? -Infinity : PARA_SOON ? -90 : -rand(2600, 3000); // ilk paraşüt Mermerli'den sonra
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
-  speed = 15; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
+  speed = 18; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashObs = null; crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishTry = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; tempos = []; tempoZ = 0; tempoN = 0; tempoK = 1; tempoIn = null; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
@@ -2785,7 +2785,7 @@ function renderFishBtn() {
   show('fishBtn', fish > 0 || fishRev > 0); // hiç balığı olmayana boş düğme gösterilmez
   b.classList.toggle('poor', fish < cost);
   $('fishCost').textContent = fmt(cost);
-  $('fishHave').textContent = `${tr('Elinde')}: ${fmt(fish)}`; // kaç balığın kaldığı görünsün
+  $('fishHave').textContent = ''; // bitiş ekranında elindeki balık sayısı görünmez (Arda)
 }
 function fishRevive() {
   if (state !== 'over' || overLock > 0) return;
@@ -2883,6 +2883,7 @@ function hideTutorial() {
 function pause() {
   if (state !== 'play' && state !== 'countdown') return;
   state = 'paused'; show('pause'); show('countdown', false);
+  $('pauseWallet').textContent = fmt(Math.floor(wallet)); $('pauseFish').textContent = fmt(fish); // cüzdan: elindeki simit ve balık
   { // kalan görevler: bu uçuşun ilerlemesiyle birlikte (nerede olduğun, kaç görev kaldığı)
     const left = missions.filter(m => !m.done && misProgress(m) < m.n).length;
     $('pauseMis').parentElement.classList.toggle('hidden', !missions.length); renderMissions($('pauseMis'));
@@ -3378,7 +3379,8 @@ function frame() {
       const tz = tempoAt(gull.position.z);
       if (tz !== tempoIn) { tempoIn = tz; if (tz && tz.kind === 'tail') gearUp(); } // efekt yalnız gerçek hız sıçramasında
       tempoK = damp(tempoK, tz ? (tz.kind === 'tail' ? 1 + (TEMPO_K.tail - 1) * (1 - 0.6 * Math.min(1, overAt(dist))) : TEMPO_K[tz.kind]) : 1, 0.9, dt); // arka rüzgâr geç oyunda yumuşar (×1,14 → ×1,06) // ~2,5 sn'de oturur
-      const base = Math.min(spdCap(dist) * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1));
+      // başlangıç 18 m/sn (eskiden 15, sıkıcıydı); 11'lik tırmanış 2,5 dk'da eski eğriye (15 + 14) oturur: geç oyun hızı ve zorluk aynı
+      const base = Math.min(spdCap(dist) * (ruleOn('fast') ? 1.1 : 1), (18 + 11 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1));
       speed = base * tempoK * (1 + END_SPD * endBm(dist)) * (1 + TIER_SPD * tierAt(dist));
       { const tn = Math.floor(tierAt(dist) + 1e-6); if (tn > tierN) { tierN = tn; gearUp(); } } // basamağa girerken vites // virajdan fırlama (slingV) yalnız görüntü: görüş açısı ve hız çizgileri. Gerçek hız eklenince viraj çıkışındaki baca geçilmez oluyordu // Hızlı vapurlar: %15 hızlı
       if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();
@@ -3751,7 +3753,7 @@ function frame() {
   }
   // bükme çerçevesi: kameranın bütün dönüşü çıkarılır (dünya eksenleri), yanal başlangıç şeridin ortası (scene.js LEVEL, BEND2.w)
   LEVEL.value.setFromMatrix4(_m4.makeRotationFromQuaternion(camera.quaternion)); BEND2.value.w = camera.position.x;
-  RIVAL_POP.value += ((weather === 'rain' || weather === 'fog' || weather === 'snow' ? 1 : 0) - RIVAL_POP.value) * Math.min(1, realDt * 1.5); // yağmurda rakip martı seçilsin (models.js)
+  RIVAL_POP.value += ((weather === 'rain' || weather === 'fog' || weather === 'snow' ? 1 : 0) - RIVAL_POP.value) * Math.min(1, realDt * 1.5); setKiteGlow(RIVAL_POP.value); // yağmurda rakip martı ve uçurtma seçilsin (models.js)
   far.position.set(camera.position.x * 0.9, 0, camera.position.z);
   far.rotation.y = heading * bendOn;
   setHeading(heading * bendOn);

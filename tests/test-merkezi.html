@@ -53,7 +53,25 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
-  { g: 'v3.2.1 · 13 Kasım gece · notların 2. kısım', id: 'flamingo-tatli', t: '🦩 Flamingolar tombul ve tatlı', look: [
+  { g: 'v3.2.1 · 13 Kasım gece · notların 3. kısım', id: 'pause-cuzdan', t: '⏸️ Duraklatınca simit ve balık sayın görünüyor', look: [
+      'Uçarken duraklat: başlığın altında cüzdanındaki simit ve balık. Bitiş ekranındaki "Uçmaya devam" düğmesinde elindeki balık sayısı artık yok.'],
+    links: [['İstanbul', '/?city=istanbul&weather=clear']] },
+  { id: 'baslangic-hiz', t: '🏁 Başlangıç daha hızlı', look: [
+      'Uçuş 15 yerine 18 m/sn başlıyor, ~2,5 dakikada eski hıza oturuyor: geç oyun hızı ve zorluk aynı. İlk iskeleye daha çabuk varıyor musun?'],
+    links: [['İstanbul', '/?city=istanbul&weather=clear']] },
+  { id: 'rakip-fener', t: '🔦 Yağmurda rakip martılarda renkli fener', look: [
+      'Yağmur/sis/karda her rakibin gövdesinde türünün renginde ışık var (gri beyaz, kırmızı kırmızı, mavi mavi). Uzaktan görünüyorlar mı?'],
+    links: [['Yağmur 6 km', '/?weather=rain&at=6000'], ['Sis 6 km', '/?weather=fog&at=6000']] },
+  { id: 'ucurtma-parla', t: '🪁 Kötü havada uçurtmanın kendisi parlıyor', look: [
+      'Yağmurda/siste uçurtma yelkeni kendi renginde parlıyor, yalnız kenar LED’i değil. Seçiliyor mu?'],
+    links: [['Yağmur 6 km', '/?weather=rain&at=6000']] },
+  { id: 'korsan-isik', t: '🏴‍☠️ Korsan gemisinde ışıklar, gemi ışıkları daha erken', look: [
+      'Yağmurda korsan gemisinde fener, pencere ve küpeşte ışıkları var. Öndeki gemilerin ışıkları gemi belirdiği an görünüyor, sisin sınırında tam parlak.'],
+    links: [['Yağmurda korsan', '/?city=antalya&pirate&weather=rain'], ['Yağmur', '/?weather=rain&at=3000']] },
+  { id: 'selale-engel', t: '💦 Şelaleden sonra boş değil, hafif engelli', look: [
+      'Şelale çıkışında yine vapur yok (bug çözüldü) ama artık normal açık su var: rakip, uçurtma, yelkenli gelebilir.'],
+    links: [['Hemen şelale', '/?city=antalya&duden']] },
+  { id: 'flamingo-tatli', t: '🦩 Flamingolar tombul ve tatlı', look: [
       'Çubuk kraker gibi değil: yuvarlak gövde, kalın boyun, büyük kafa, iri göz, kısa kalın bacak. Havalanınca da tombul mu?'],
     links: [['Hemen flamingo', '/?city=izmir&flamingo&weather=clear']] },
   { id: 'altin-parilti', t: '✨ Virajda altın simidin parıltısı simitte kalıyor', look: [
@@ -119,7 +137,7 @@ const ITEMS = [
     links: [['19,5 km\'den başla', '/?at=19500'], ['14,5 km\'den başla', '/?at=14500']] },
   { id: 'altin', t: '✨ Virajda altın simit parıltısı', look: ['?rule=gold yalnız Günün uçuşu modunda çalışır: menüde mod düğmesinden Günün uçuşu\'nu seç. Bilinen hata: virajda parıltı simitten kopuyor, sıradaki işte düzelecek.'],
     links: [['Günün uçuşu kuralı: altın saat', '/?city=istanbul&rule=gold']] },
-  { id: 'arkadas', t: '💬 Menüde "Bir arkadaşın X puan yaptı" yazısı', look: ['Ana menüdeki bu yazı kalsın mı, kalksın mı?'], links: [['Ana menü', '/']] },
+  { id: 'arkadas', t: '💬 Menüde "Bir arkadaşın X puan yaptı" yazısı', look: ['Yazı yalnız arkadaşın paylaştığı meydan okuma linkiyle açınca çıkar (düz ana menüde çıkmaz). Kalsın mı, kalksın mı?'], links: [['Meydan okuma linki (12.345 puan)', '/#c=12345-800-istanbul']] },
 ];
 const KEY = 'test-merkezi', S = (() => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } })();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
