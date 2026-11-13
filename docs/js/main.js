@@ -1505,7 +1505,7 @@ function showTitle() {
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions(); gullSize();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
-  show('profileBtn', !tutorialPending); renderNameChip(); renderMode();
+  show('profileBtn'); renderNameChip(); // yeni cihaz ilk uçuştan önce de hesabını taşıyabilsin renderMode();
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap(); renderRank();
   show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false); show('shopPanel', false);
   ui.powers.textContent = '';
@@ -2767,7 +2767,8 @@ async function moveGo() {
   const v = $('moveInput').value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
   if (v.length !== 8) { moveNote('Kod 8 harf ve rakamdan oluşur.', true); vibrate(40); return; }
   if (moveArm !== v) { moveArm = v; moveNote('Bu cihazdaki ilerleme silinecek. Emin misin? Bir daha bas.', true); vibrate(40); return; }
-  if (moveBusy || state !== 'title') return;
+  if (moveBusy) return;
+  if (state !== 'title') { moveNote('Ana menüye dön, oradan taşı.', true); return; }
   moveBusy = true;
   const r = await claimMoveCode(v);
   moveBusy = false;
