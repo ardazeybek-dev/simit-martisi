@@ -1919,7 +1919,7 @@ function renderSlots() {
     const d = document.createElement('div'), on = look.on.filter(id => tabOf(COSTUMES.find(x => x.id === id)) === t);
     d.className = 'ward-slot' + (t === wardTab ? ' cur' : '') + (on.length ? '' : ' empty');
     d.innerHTML = '<small></small><span class="slot-items"></span>';
-    d.querySelector('small').textContent = document.querySelector(`#wardTabs [data-tab="${t}"]`).textContent;
+    d.querySelector('small').textContent = document.querySelector(`#wardTabs [data-tab="${t}"]`).firstChild.textContent; // yalnız sekmenin adı: içindeki yeni kostüm rozeti ("0") yazıya karışmasın
     const box = d.querySelector('.slot-items');
     // Kıyafet üç ayrı yuva: göz, surat (bıyık/emzik), boyun (atkı/kolye); her birine bir parça. Boş yuvada o bölgenin silik ikonu durur
     const parts = t === 'kiyafet' ? ['eyes', 'face', 'neck'] : null;
