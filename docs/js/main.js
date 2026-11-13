@@ -716,7 +716,7 @@ function spawnRegatta() {
   for (const [mz, mx] of [[z0 - 10, 7.6], [last - 6, 7.6]]) for (const sg of [-1, 1]) { const m = new THREE.Mesh(MARK, vcMat); m.position.set(sg * mx, 0, mz); m.castShadow = true; g.add(m); r.boats.push({ g: m, s: 0, ph: Math.random() * 6, mark: true }); }
   r.z1 = last - 4;
   regattas.push(r);
-  regattaZ = last - rand(1300, 1800);
+  regattaZ = last - rand(2300, 3000); // seyrek: her özel parça bir açık suyun yerini alır (İzmir kolaylaşmasın)
   genZ = last - 12;
 }
 function updateRegattas(gz) {
@@ -731,7 +731,7 @@ function updateRegattas(gz) {
     if (!r.done && state === 'play' && gz < r.z1) {
       r.done = true;
       if (r.got >= Math.ceil(r.total * 0.75)) { // yarışı bitirdin: çizginin çoğu
-        points += 25 * mult(); run.regatta = (run.regatta || 0) + 1;
+        points += 25 * mult();
         sfx.power(); vibrate(20); flashScore('dolph');
         sparkle(tmp2.set(gull.position.x, gull.position.y + 0.5, gull.position.z), 18, 0xffd23f, 4.5, 0.6);
       }
@@ -761,8 +761,9 @@ function spawnBalloons() {
     set.list.push(s);
     z -= rand(3.4, 4.4); x = clamp(x + rand(-2.2, 2.2), -THROW_X, THROW_X);
   }
+  if (difficulty() > 0.8) addRival(z0 - rand(18, len - 8), -side * rand(1.5, 3), rand(0.4, 0.9), undefined, z0 - 4); // balonların arasında bir rakip (rivalClear gevrek yolundan uzak tutar)
   balloonSets.push(set);
-  balloonZ = z0 - len - rand(1100, 1600);
+  balloonZ = z0 - len - rand(2000, 2700);
   genZ = z0 - len;
 }
 function updateBalloons(dt, gz) {
@@ -776,7 +777,7 @@ function updateBalloons(dt, gz) {
         if (state === 'play') {
           sparkle(tmp2.set(b.m.position.x, b.m.position.y + 1.5, b.m.position.z), 12, BALLOON_COLS[b.c], 4, 0.45, 0.3); sfx.click();
           if (set.got === set.n && !set.done) { // demetin hepsi
-            set.done = true; points += 20 * mult(); run.balloon = (run.balloon || 0) + 1;
+            set.done = true; points += 20 * mult();
             sfx.power(); vibrate(18); flashScore('dolph');
             chunks.emit(gull.position, 16, { speed: 5, life: 0.9, size: 0.12, color: BALLOON_COLS, gravity: 6 });
           }
@@ -828,7 +829,7 @@ function spawnFlamingos() {
     birds.push({ g: bg, body, wings, z, u: -1, lead: rand(0.35, 0.75), vx: away * rand(2.4, 4.4), vy: rand(2.4, 3.4), vz: -rand(3, 6), f: rand(7, 9.5), ph: Math.random() * 6, got: false, rz: 0 });
   }
   flamFlocks.push({ g, z0, z1: z0 - len, birds, n: 0 });
-  flamingoZ = z0 - len - rand(1500, 2100);
+  flamingoZ = z0 - len - rand(2700, 3500);
   genZ = z0 - len;
 }
 function updateFlamingos(dt, gz) {
@@ -856,7 +857,7 @@ function updateFlamingos(dt, gz) {
       const wy = p.y + 2.2, rz = gz - p.z, crossed = b.rz > 0 && rz <= 0; b.rz = rz;
       if (!b.got && state === 'play' && Math.abs(gp.x - p.x) < 3.2 && Math.abs(gp.y - wy) < 2.2 && (crossed || Math.abs(rz) < 1.2)) {
         b.got = true; fl.n++;
-        points += 5 * mult(); run.flamingo = (run.flamingo || 0) + 1;
+        points += 5 * mult();
         if (combo > 0) comboT = comboT0();
         if (fl.n === 1) sfx.near();
         vibrate(10); flashScore('dolph');
