@@ -57,6 +57,9 @@ const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HAR
 // ama hiçbir yer imkânsız değil (tavan hız ~57, iki engel arası medyan ~0,3 sn; 24 km'de 60 hız / 0,26 sn ölçüldü, insan tepkisinin sınırı → kesildi).
 // m: uçulan metre (hız için dist, üretim için -genZ/2)
 const overAt = m => clamp((m - 6500) / 7000, 0, 2), overG = () => overAt(-genZ / 2);
+// o metrede beklenen uçuş hızı (birim/sn, tempo hariç): hız formülü 100 m'lik tabloya bir kez işlenir. Engel aralığını saniyeyle kurmak için
+const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { const v = Math.min(SPEED_MAX * (1 + 0.16 * overAt(d)), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032); if (d >= a.length * 100) a.push(v); d += v / 2 / 30; t += 1 / 30; } return a; })();
+const spdAt = m => SPD_TAB[clamp(Math.round(m / 100), 0, SPD_TAB.length - 1)];
 // ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
 // Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
 const STOP_K = QS.has('stop') ? (+QS.get('stop') || 0.15) : 1; // ?stop → duraklar çok yakın, ?stop=0.02 daha da yakın (deneme için)
@@ -749,13 +752,17 @@ function spawnFerry() {
     for (let z = sz + SALON_LEN / 2 - 1.5; z > sz - SALON_LEN / 2; z -= 2.6) addSimit(x0 + tx, FLY_Y, zc + z, goldRoll(0.06));
     salon = { tx, sz };
   }
-  const nCh = 1 + (d > 1 ? 1 : 0) + (d > 2.5 ? 1 : 0) + (L >= 44 && heat() > 1 && Math.random() < 0.15 + heat() * 0.12 ? 1 : 0); // uzun vapurda geç oyunda dördüncü baca
+  // bacalar arası en az ~0,3 sn uçuş (hızla büyür): bir yandan öbür yana kıvrılacak zaman kalsın. Sığmayan baca konmaz;
+  // rastgele kaydırma bu payı yemez (eskiden ±3 m kayınca bacalar 0,1 sn arayla, hatta üst üste geliyordu)
+  const gapMin = Math.max(8, spdAt(-genZ / 2) * (ruleOn('fast') ? 1.15 : 1) * 0.3), span = L - 15;
+  const nCh = Math.min(1 + Math.floor(span / gapMin), 1 + (d > 1 ? 1 : 0) + (d > 2.5 ? 1 : 0) + (L >= 44 && heat() > 1 && Math.random() < 0.15 + heat() * 0.12 ? 1 : 0)); // uzun vapurda geç oyunda dördüncü baca
+  const step = nCh > 1 ? span / (nCh - 1) : 0, jit = nCh > 1 ? clamp((step - gapMin) / 2, 0, 3) : 3;
   const chims = [];
   // bacalar dizilir: biri sola yapışık, biri ortada, biri sağa yapışık (sırası karışık, ortadaki iki yanın arasında: martı kıvrılarak geçer)
   const s0 = pick([-1, 1]), lay = [s0, 0, -s0, 0];
   if (nCh === 2) lay.splice(1, 1);
   for (let i = 0; i < nCh; i++) {
-    let cx = lay[i] ? lay[i] * (EDGE - ft.hw) : rand(-0.6, 0.6); const cz = -L / 2 + 12 + (i + 0.5) * (L - 16) / nCh + rand(-3, 3);
+    let cx = lay[i] ? lay[i] * (EDGE - ft.hw) : rand(-0.6, 0.6); const cz = nCh > 1 ? clamp(-L / 2 + 11 + i * step + rand(-jit, jit), -L / 2 + 9, L / 2 - 3) : -L / 2 + 12 + (L - 16) / 2 + rand(-3, 3);
     const stuck = EDGE - (Math.abs(cx) + ft.hw) < 0.9; // küpeşteyle arası martı sığmayacak kadar dar: baca küpeşteye yapışık durur (görüntü kurala uysun)
     if (stuck) cx = (Math.sign(cx) || 1) * (EDGE - ft.hw);
     if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın

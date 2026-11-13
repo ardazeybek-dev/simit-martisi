@@ -1,5 +1,5 @@
 // Simit Martısı service worker: oyunu çevrimdışı da açılabilir yapar.
-const VERSION = 'simit-martisi-v2.92.1';
+const VERSION = 'simit-martisi-v2.93.0';
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const CORE = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
