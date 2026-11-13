@@ -125,19 +125,19 @@ function dayRun() {
 const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 // kostüm özellikleri: yalnızca giyili parça işler (panelde önizleme işlemez). Küçük tutuldu: cüzdana etkisi uçuş başı 1-2 simit
 const PERKS = { crown: 'Altın simit %20 daha sık çıkar', simitcrown: 'Simit kapma alanı %8 daha geniş', tophat: 'Güçlendirmeler +%10 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %40 yavaş üşür', golden: 'Yakaladığın simitler cüzdana +%10', kurye: 'Görev ödülleri +%15', taksi: 'Kıl payı puanı x2',
-  fes: 'Simit puanı +%3', beanie: 'Karda %20 yavaş üşür', chef: 'Çay molası +%15 süre', captain: 'Mıknatıs +%15 süre', tray: 'Görev ödülleri +%5', glasses: 'Kalkan +%15 süre', hearts: 'Kombo süresi +%5', bigglasses: 'Balık yakalama şansı +%5', mustache: 'Kıl payı puanı +%25', pacifier: 'Dirilince kalkan +%25 süre', bowtie: 'Yunus bonusu +%50', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %20 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%15', ice: 'Karda %50 yavaş üşür', durum: 'Balık daha sık zıplar',
+  fes: 'Simit puanı +%5', beanie: 'Karda %20 yavaş üşür', chef: 'Çay molası +%15 süre', captain: 'Mıknatıs +%15 süre', tray: 'Görev ödülleri +%10', glasses: 'Kalkan +%15 süre', hearts: 'Kombo süresi +%10', bigglasses: 'Kıl payı alanı %20 daha geniş', mustache: 'Kıl payı puanı +%25', pacifier: 'Dirilince kalkan +%25 süre', bowtie: 'Yunus bonusu +%50', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %20 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%15', ice: 'Karda %50 yavaş üşür', durum: 'Açlık %30 yavaş bastırır',
   fisher: 'Balık yakalama şansı +%10', buoy: 'Açlık %20 yavaş bastırır', pirate: 'Altın simitler cüzdana +1 simit' };
 const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } };
-const comboT0 = () => COMBO_T * (perk('hearts') ? 1.05 : 1); // Kalpli gözlük: kombo süresi +%5
+const comboT0 = () => COMBO_T * (perk('hearts') ? 1.1 : 1); // Kalpli gözlük: kombo süresi +%10
 const PW_PERK = { magnet: 'captain', tea: 'chef', shield: 'glasses' }; // bu kostümler o gücü +%15 uzatır // açılışta look henüz yoksa (dünya üretimi) özellik yok
 // mod boyları: Tombul martı iri ve hantal, Hıçkıran martı hıçkırınca bir an şişer
 const gullBase = () => (ruleOn('chubby') ? 1.2 : 0.95);
-let catchK = 1, obsK = HIT.obs; // simit kapma alanı çarpanı, engel çarpma payı (moda göre)
+let catchK = 1, obsK = HIT.obs, nearK = 1; // simit kapma alanı çarpanı, engel çarpma payı (moda göre)
 function gullSize(puff = 0) {
   gull.scale.setScalar(gullBase() * (1 + puff * 0.18));
   const fat = ruleOn('chubby'); // tombul: kanatlar aynı, gövde (ve üstündeki kostümler) şişko
   if (fat !== gull.userData.fat) { gull.userData.fat = fat; for (const m of [gull.userData.body, ...Object.values(outfit)]) m.scale.set(fat ? 1.45 : 1, fat ? 1.35 : 1, fat ? 1.15 : 1); }
-  catchK = (ruleOn('chubby') ? 1.35 : ruleOn('giant') ? 1.3 : 1) * (perk('simitcrown') ? 1.08 : 1); obsK = HIT.obs + (ruleOn('chubby') ? 0.25 : 0);
+  catchK = (ruleOn('chubby') ? 1.35 : ruleOn('giant') ? 1.3 : 1) * (perk('simitcrown') ? 1.08 : 1); nearK = perk('bigglasses') ? 1.2 : 1; obsK = HIT.obs + (ruleOn('chubby') ? 0.25 : 0);
 }
 
 // ---------------- virajlar ----------------
@@ -411,7 +411,7 @@ function spawnGap(first, fixLen, quiet) {
     }
     // zıplayan balık (nadir): önce suda çırpınır, martı gelince martının yüksekliğine sıçrar.
     // Değersen ya yakalarsın (balık cüzdana) ya da elinden kayar: "Kaçtı!"
-    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && (Math.random() < (fishSpawn + fishTry++ * 0.05) * (perk('durum') ? 1.15 : 1) * (ruleOn('fish') ? 3 : 1))) { // balık nadir: uçuş başına en çok bir balık zıplar; balıksız geçen her açık suda şans +%5 (kimine hiç çıkmamasın)
+    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && (Math.random() < (fishSpawn + fishTry++ * 0.05) * (ruleOn('fish') ? 3 : 1))) { // balık nadir: uçuş başına en çok bir balık zıplar; balıksız geçen her açık suda şans +%5 (kimine hiç çıkmamasın)
       fishEarly = true;
       const dir = pick([-1, 1]), m = new THREE.Mesh(FISH, vcMat); m.visible = false; m.scale.setScalar(1.35); scene.add(m);
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
@@ -1509,7 +1509,7 @@ function startGame() {
   audio.unlock();
   sfx.click();
   misPending = false; refillMissions(); startRun(); fishSync(false); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
-  achRun = {}; saidRun.clear();
+  achRun = {}; saidRun.clear(); recRun = false; show('recBurst', false);
   for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; m.v = null; } // görevler panelinde çubuk buradan dolar
   misPending = true;
   resetWorld(daily || state !== 'title'); state = 'play';
@@ -2008,7 +2008,7 @@ function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k =
 function checkMissions() {
   for (const m of missions) {
     if (m.done || misProgress(m) < m.n) continue;
-    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.15 : 1) * (perk('tray') ? 1.05 : 1)); store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions); // Kurye: +%15
+    m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.15 : 1) * (perk('tray') ? 1.1 : 1)); store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions); // Kurye: +%15
     if (state === 'play') {
       sfx.gold(); vibrate([20, 30, 20]);
     }
@@ -2032,7 +2032,7 @@ function renderMissions(box, fill = false) {
 }
 // görevler paneli: son uçuşun ilerlemesi burada dolar, biten görevin üstü çizilir, ödülü cüzdana tık tık sayılır
 function openMissions() {
-  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + Math.round(m.r * (perk('kurye') ? 1.15 : 1) * (perk('tray') ? 1.05 : 1)), 0) : 0;
+  const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + Math.round(m.r * (perk('kurye') ? 1.15 : 1) * (perk('tray') ? 1.1 : 1)), 0) : 0;
   renderMissions($('titleMis'), fill);
   $('misWallet').textContent = fmt(wallet - gain);
   if (!fill) return;
@@ -2453,18 +2453,31 @@ function revive() {
   sfx.power(); audio.music(true); audio.duck(false);
   state = 'countdown'; countdown = 1.5; cdShown = 0; show('countdown');
 }
-function confetti() {
-  const box = $('confetti'); box.textContent = '';
+function confetti(id = 'confetti', n = 46) {
+  const box = $(id); box.textContent = '';
   const cols = ['#ffc23a', '#e5484d', '#2bb3a3', '#fff4e2', '#3aa7ff', '#f08a3a'];
-  for (let i = 0; i < 46; i++) {
+  for (let i = 0; i < n; i++) {
     const c = document.createElement('i');
     c.style.cssText = `left:${rand(5, 95)}%;background:${pick(cols)};animation-delay:${rand(0, 0.35)}s;animation-duration:${rand(1.4, 2.4)}s;--dx:${rand(-80, 80)}px;--r:${rand(-720, 720)}deg`;
     box.appendChild(c);
   }
   setTimeout(() => (box.textContent = ''), 3000);
 }
+// uçuşta rekor: eski en iyi puan geçildiği an bir kez (günün uçuşunda yok; ilk birkaç uçuşun küçük rekorlarında da yok)
+const REC_LINES = ['Hoop hemşerim!', 'Martı coştu!', 'Boğaz senin!', 'Simitler titriyor!', 'Vapurcular şokta!', 'Kanatlar alev aldı!', 'Ulen martı!', 'Rekor senin, simit benim!', 'Efsane martı!', 'Çaycı bile alkışlıyor!'];
+let recRun = false, recT = 0;
+function recordBurst() {
+  const el = $('recBurst'), L = window.I18N.lang, own = L === 'tr' || L === 'en'; // komik sözler yalnız Türkçe/İngilizce; öbür dillerde "Yeni rekor!" büyük yazılır
+  $('recBig').textContent = own ? tr('REKOR!') : tr('Yeni rekor!').toLocaleUpperCase(window.I18N.locale);
+  $('recSub').textContent = own ? tr(pick(REC_LINES)) : ''; show('recSub', own);
+  show('recBurst', false); void el.offsetWidth; show('recBurst'); // animasyon baştan
+  confetti('recConf', 60); sfx.record(); setTimeout(() => state === 'play' && sfx.record(), 260); vibrate([30, 40, 30, 40, 70]);
+  sparkle(gull.position, 46, 0xffd35a, 8, 1.1, 0.4); flapBurst = 1; trauma = Math.min(1, trauma + 0.25); bump(ui.score, 'dolph');
+  clearTimeout(recT); recT = setTimeout(() => show('recBurst', false), 2700);
+}
 function updateHud() {
   const s = total();
+  if (state === 'play' && !recRun && !daily && best >= 150 && s > best) { recRun = true; recordBurst(); }
   if (s !== shownScore) { ui.score.textContent = fmt(s); shownScore = s; }
   if (Math.floor(simitCount) !== shownSimit) { shownSimit = Math.floor(simitCount); ui.simits.textContent = fmt(shownSimit); }
   if (fish !== shownFish) { if (shownFish >= 0 && fish > shownFish) bump($('hudFish')); shownFish = fish; $('fishN').textContent = fmt(fish); show('hudFish', fish > 0 || fishRun > 0); }
@@ -3093,7 +3106,7 @@ function frame() {
         if (g.y < o.top && !o.ghost && dx < o.hw + obsK && swept(o.z, o.hd + obsK)) { crash(o.kind); if (state === 'dead') { crashObs = o; crashHead = gz0 > o.z + o.hd - 0.3; } } // yalnız önden çarpışta (önceki karede engelin önündeydi) geri seker (salon camına yandan değen geri fırlamaz)
         else if (!o.passed && g.z < o.z - o.hd) {
           o.passed = true;
-          if (dx >= o.hw + obsK && dx < o.hw + HIT.near && state === 'play') nearMiss(o.x); // içinden geçene (kalkan/dokunulmazlık) sıyırma bonusu yok
+          if (dx >= o.hw + obsK && dx < o.hw + HIT.near * nearK && state === 'play') nearMiss(o.x); // içinden geçene (kalkan/dokunulmazlık) sıyırma bonusu yok
         }
       }
       for (const r of rivals) {
@@ -3274,7 +3287,7 @@ function frame() {
     if (u > 1.3) f.mesh.visible = false;
     if (!f.done && state === 'play' && u > 0.2 && u < 0.8 && Math.abs(g.x - x) < 1.7 && Math.abs(g.z - f.z) < 2 && Math.abs(g.y - y) < 1.8) {
       f.done = true;
-      if (!fishRun && dist >= FISH_MIN_M && fishToday() < FISH_DAY && Math.random() < fishCatch + (perk('bigglasses') ? 0.05 : 0) + (perk('fisher') ? 0.1 : 0)) catchFish(f); else slipFish(f); // ikinci kilit: erken ya da kotası dolmuşken asla yakalanmaz
+      if (!fishRun && dist >= FISH_MIN_M && fishToday() < FISH_DAY && Math.random() < fishCatch + (perk('fisher') ? 0.1 : 0)) catchFish(f); else slipFish(f); // ikinci kilit: erken ya da kotası dolmuşken asla yakalanmaz
     }
   }
   if (MOBILE) for (const s of simits) { const far = g.z - s.z > SIMIT_VIEW; if (far && s.mesh.visible) { s.mesh.visible = false; s.culled = true; } else if (!far && s.culled) { s.mesh.visible = true; s.culled = false; } }
@@ -3432,7 +3445,7 @@ function coinFly(gold, sel = '.sub .ico', icon = 'i-simit') {
 }
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = comboT0(); bestCombo = Math.max(bestCombo, combo);
-  const m = mult() * (pw.double > 0 ? 2 : 1) * (perk('fes') ? 1.03 : 1) * (perk('pink') ? 1.05 : 1); // Fes +%3, Pembe tüy +%5 simit puanı (mesafe puanına dokunmaz)
+  const m = mult() * (pw.double > 0 ? 2 : 1) * (perk('fes') ? 1.05 : 1) * (perk('pink') ? 1.05 : 1); // Fes +%5, Pembe tüy +%5 simit puanı (mesafe puanına dokunmaz)
   // simit parçası (atılan, çöpten çıkan) çeyrek simittir: puanın ve cüzdana katkısının dörtte biri
   const q = (s.piece && !s.gold ? 0.25 : 1) * (ruleOn('giant') ? 2 : 1), base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
   points += gain; simitCount += q; countMission('simitTotal', q);
@@ -3477,7 +3490,7 @@ function judgeTurn(u) {
 function hungerTick(dt) {
   if (weather === 'snow' || tutorialPending) { if (shownFull >= 0) { show('hungry', false); shownFull = -1; } return; }
   const was = full;
-  if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 8) * (perk('buoy') ? 0.8 : 1)); // Can simidi: %20 yavaş acıkır
+  if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 8) * (perk('buoy') ? 0.8 : 1) * (perk('durum') ? 0.7 : 1)); // Can simidi %20, Dürüm martı %30 yavaş acıkır
   if (was >= 0.25 && full < 0.25) { sfx.shiver(); vibrate(20); } // titreme başladı: 2 sn sonra düşer
   starve = full < 0.25; // son çeyrek (8 sn'lik barda son 2 sn): martı titrer, başı düşer
   if (full <= 0) { crash('açlıktan'); if (state === 'play') full = 0.35; } // açlıktan düşer (kalkan yutarsa biraz doyar)

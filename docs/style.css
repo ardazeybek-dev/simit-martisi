@@ -1130,3 +1130,28 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #roadPanel .road-row.got .road-ok { width: 26px; height: 26px; margin: 0; font-size: 15px; background: #1f9a62; box-shadow: none; }
 /* dar ekranda rekor ortada sabit durursa uzun simit sayısıyla çakışır: simit kutusunun yanına akar, yer yetmezse yazı kısalır */
 @media (max-width: 560px) { .stat-card.best { position: static; transform: none; flex: 0 1 auto; min-width: 0; } .stat-card.best span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; } }
+
+/* uçuşta rekor kırılınca: abartılı, ışıltılı, komik (uçuş başına bir kez) */
+.rec-burst { position: fixed; inset: 0; z-index: 7; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 17vh; overflow: hidden; }
+.rec-burst.hidden { display: none; }
+.rec-rays { position: absolute; left: 50%; top: calc(17vh + 46px); width: 150vmax; height: 150vmax; margin: -75vmax 0 0 -75vmax; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 214, 90, .38) 0 9deg, rgba(255, 214, 90, 0) 9deg 22deg);
+  -webkit-mask: radial-gradient(circle, #000 0 8%, rgba(0, 0, 0, .55) 22%, transparent 48%); mask: radial-gradient(circle, #000 0 8%, rgba(0, 0, 0, .55) 22%, transparent 48%);
+  animation: recRays 2.6s linear forwards; }
+.rec-burst b { position: relative; font-size: clamp(56px, 17vw, 110px); font-weight: 900; letter-spacing: .04em; line-height: 1;
+  background: linear-gradient(100deg, #ffb21e 0%, #ffe680 38%, #fffbe6 50%, #ffe680 62%, #ff9d1e 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-stroke: 3px #7a3c00; filter: drop-shadow(0 5px 0 #5a2a00) drop-shadow(0 0 22px rgba(255, 196, 60, .9));
+  animation: recPop 2.6s cubic-bezier(.2, 1.6, .4, 1) forwards, recShine 1s linear .35s 2; }
+.rec-burst small { position: relative; margin-top: 10px; padding: 5px 16px 4px; border-radius: 999px; font-size: clamp(16px, 4.6vw, 22px); font-weight: 800; color: #3a2300;
+  background: linear-gradient(90deg, #ffd35a, #ffb02e); box-shadow: 0 4px 0 #8a4a00, 0 0 18px rgba(255, 190, 60, .7); animation: recSub 2.6s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.rec-conf { position: absolute; inset: 0; }
+.rec-conf i { position: absolute; top: -14px; width: 9px; height: 14px; border-radius: 2px; animation: fall linear forwards; }
+@keyframes recPop { 0% { transform: scale(0) rotate(-25deg); opacity: 0; } 14% { transform: scale(1.55) rotate(8deg); opacity: 1; } 22% { transform: scale(.9) rotate(-6deg); } 30% { transform: scale(1.12) rotate(4deg); }
+  38% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.05) rotate(2deg); } 62% { transform: scale(1) rotate(-1deg); } 84% { transform: scale(1) rotate(0); opacity: 1; } 100% { transform: scale(1.25) translateY(-30px); opacity: 0; } }
+@keyframes recShine { 0% { background-position: 100% 0; } 100% { background-position: -150% 0; } }
+@keyframes recSub { 0%, 18% { transform: translateY(30px) scale(0); opacity: 0; } 30% { transform: translateY(0) scale(1.15); opacity: 1; } 38% { transform: scale(1); } 84% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+@keyframes recRays { 0% { transform: scale(.2) rotate(0); opacity: 0; } 15% { opacity: 1; } 80% { opacity: .9; } 100% { transform: scale(1.1) rotate(80deg); opacity: 0; } }
+.record.popin { animation: popin .6s cubic-bezier(.2, 1.8, .4, 1), recGlow 1.2s ease-in-out .6s 3; }
+@keyframes recGlow { 0%, 100% { box-shadow: 0 0 0 4px rgba(255, 194, 58, .25), 0 8px 24px rgba(255, 176, 46, .4); transform: scale(1); } 50% { box-shadow: 0 0 0 8px rgba(255, 214, 90, .45), 0 0 36px rgba(255, 196, 60, .95); transform: scale(1.08) rotate(-2deg); } }
+@media (prefers-reduced-motion: reduce) { .rec-rays { animation-duration: .01s; } .rec-burst b { animation: recFade 2.2s forwards; } .rec-burst small { animation: recFade 2.2s forwards; } }
+@keyframes recFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
