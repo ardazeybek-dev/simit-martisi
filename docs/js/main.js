@@ -60,7 +60,7 @@ const difficulty = () => clamp(-genZ / 650 + HARD() * 0.3 * Math.max(0, -genZ - 
 const endBm = m => { const n = STOPS ? STOPS.length : 0; if (n < 4 || daily) return 0; const a = STOPS[n - 4].m, z = STOPS[n - 1].m;
   return m <= a ? 0 : m <= z ? 1 + 2 * (m - a) / (z - a) : Math.max(0, 3 - (m - z) / 170); };
 const endB = () => endBm(-genZ / 2), END_SPD = 0.02; // hız da kademe başına +%2 (son iskelede +%6): bölge dolu, asıl hissedilen kaldıraç bu
-const heat = () => clamp((-genZ - 1200 + HARD() * 1600) / 4000, 0, 3) * (1 + HARD() * 0.25) + endB() * 0.3;
+const heat = () => clamp((-genZ - 1200 + HARD() * 1600) / 4000, 0, 3) * (1 + HARD() * 0.25) + endB() * 0.3 + tierG() * 0.35;
 const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HARD() * 0.3); // difficulty tavana vurduktan sonra yavaşça 0 → 1 (İzmir 1.3, Antalya 1.6)
 // geç oyun rampası: 6,5 km'den sonra sertleşir (0 → 10 km'de 0,5 → 13,5 km'de 1 → 20,5 km'de 2) ve orada DURUR: 10 km nadir, 20 km çok zor
 // ama hiçbir yer imkânsız değil (tavan hız ~57, iki engel arası medyan ~0,3 sn; 24 km'de 60 hız / 0,26 sn ölçüldü, insan tepkisinin sınırı → kesildi).
@@ -68,6 +68,10 @@ const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HAR
 const overAt = m => clamp((m - 6500) / 7000, 0, 2), overG = () => overAt(-genZ / 2);
 // hız tavanı: ~15,6 km'de ~52'de durur (20,5 km'ye kadar artınca 10 km üstü oynanmaz oluyordu, 13,5 km/50 de biraz kolay kaldı); yoğunluk rampası (overG) sürer
 const spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1.3, overAt(m)));
+// zorluk basamakları: 5, 10, 15 km'de belirgin sıçrama (300 m'de oturur, girerken vites efekti): basamak başına hız +%4,5, sıklık artar.
+// 20 km imkânsızın bir tık altı (Arda). Baca aralığı hızla açılır: geçilebilirlik bozulmaz
+const TIER_M = [5000, 10000, 15000], TIER_SPD = 0.045;
+const tierAt = m => TIER_M.reduce((s, t) => s + clamp((m - t) / 300, 0, 1), 0), tierG = () => tierAt(-genZ / 2);
 // o metrede beklenen uçuş hızı (birim/sn, tempo hariç): hız formülü 100 m'lik tabloya bir kez işlenir. Engel aralığını saniyeyle kurmak için
 const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { const v = Math.min(spdCap(d), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032); if (d >= a.length * 100) a.push(v); d += v / 2 / 30; t += 1 / 30; } return a; })();
 const spdAt = m => SPD_TAB[clamp(Math.round(m / 100), 0, SPD_TAB.length - 1)];
@@ -399,7 +403,7 @@ function spawnGap(first, fixLen, quiet) {
       }
     } else {
       const n = kind === 'flock' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : kind !== 'mix' ? (camp && d >= 0.6 && kind !== 'quiet' && !(tempoAt(z0 - 20)?.kind === 'calm') ? 1 : 0) : camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
-      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) + (Math.random() < endB() * 0.3 ? 1 : 0) : 0) + (kind !== 'quiet' && kind !== 'rain' && kind !== 'pod' ? longX : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) + (Math.random() < endB() * 0.3 ? 1 : 0) + (Math.random() < tierG() * 0.15 ? 1 : 0) : 0) + (kind !== 'quiet' && kind !== 'rain' && kind !== 'pod' ? longX : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
       if (kind === 'kites' || (kind === 'mix' && d > 1.3 && Math.random() < 0.14 + d * 0.04 + heat() * 0.05)) {
         const nk = (kind === 'kites' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : d > 3 && Math.random() < 0.4 ? 2 : 1) + longX + (Math.random() < endB() * 0.15 ? 1 : 0); // son 3 iskelede ara sıra bir uçurtma daha
         for (let i = 0; i < nk; i++) {
@@ -426,9 +430,9 @@ function spawnGap(first, fixLen, quiet) {
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
     }
     seedAt('gf', genN); // balık atılıp atılmamasından bağımsız: günün uçuşunda güç ve şamandıralar herkes için aynı
-    if (segCount > 2 && Math.random() < 0.27) { // güçlendirme açık suların ~%27'sinde (0,33'tü: Arda bir tık azalttı)
+    if (segCount > 4 && Math.random() < 0.2) { // güçlendirme seyrek: açık suların ~%20'sinde, ilk birkaç açık suda yok (0,33 → 0,27 → 0,2: her yerde güçle dolaşılmasın)
       const z = z0 - len * 0.5;
-      const kind = pickPw((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield'] : []).filter(k => pwFree(k, z))); // Nazar: kalkan daha sık
+      const kind = pickPw(['magnet', 'double', 'shield', 'tea'].concat(perk('nazar') ? ['shield'] : []).filter(k => pwFree(k, z) && (k !== 'shield' || -z / 2 > 1500))); // kalkan tek pay ve ilk 1,5 km'de yok (geç oyunda iki paydı) // Nazar: kalkan daha sık
       if (kind) {
       const x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
       const p = makePowerUp(kind); p.position.set(x, FLY_Y, z); scene.add(p);
@@ -765,7 +769,7 @@ function spawnFerry() {
   }
   // bacalar arası en az ~0,3 sn uçuş (hızla büyür): bir yandan öbür yana kıvrılacak zaman kalsın. Sığmayan baca konmaz;
   // rastgele kaydırma bu payı yemez (eskiden ±3 m kayınca bacalar 0,1 sn arayla, hatta üst üste geliyordu)
-  const gapMin = Math.max(8, spdAt(-genZ / 2) * (ruleOn('fast') ? 1.15 : 1) * (1 + END_SPD * endB()) * 0.3), span = L - 15;
+  const gapMin = Math.max(8, spdAt(-genZ / 2) * (ruleOn('fast') ? 1.15 : 1) * (1 + END_SPD * endB()) * (1 + TIER_SPD * tierG()) * 0.3), span = L - 15;
   const nCh = Math.min(1 + Math.floor(span / gapMin), 1 + (d > 1 ? 1 : 0) + (d > 2.5 ? 1 : 0) + (L >= 44 && heat() > 1 && Math.random() < 0.15 + heat() * 0.12 ? 1 : 0)); // uzun vapurda geç oyunda dördüncü baca
   const step = nCh > 1 ? span / (nCh - 1) : 0, jit = nCh > 1 ? clamp((step - gapMin) / 2, 0, 3) : 3;
   const chims = [];
@@ -1531,7 +1535,7 @@ function startGame() {
   audio.unlock();
   sfx.click();
   misPending = false; refillMissions(); startRun(); fishSync(false); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
-  achRun = {}; saidRun.clear(); recRun = false; recPend = 0;
+  achRun = {}; saidRun.clear(); recRun = false; recPend = 0; tierN = Math.floor(tierAt(AT_M) + 1e-6);
   for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; m.v = null; } // görevler panelinde çubuk buradan dolar
   misPending = true;
   resetWorld(daily || state !== 'title'); state = 'play';
@@ -1675,7 +1679,7 @@ function earnFlow(gain) {
 // sayan puan. Dokununca (ya da tuşla) bitiş kartı açılır.
 // Kostüm podyumu gibi: martı her karenin sonunda bu sahneye taşınır, karenin başında dünyadaki yerine döner (oyun mantığı bozulmaz).
 // Sis aynı türde ama çok uzakta: gölgelendiriciler dünyadakiyle aynı kalır, rekor anında yeniden derleme (telefonda takılma) olmaz.
-let recRun = false, recPend = 0; // recPend: bu uçuşun bekleyen rekoru (yeniden doğuşla daha da büyürse son hâli)
+let recRun = false, recPend = 0, tierN = 0; // recPend: bu uçuşun bekleyen rekoru (yeniden doğuşla daha da büyürse son hâli)
 // bitiş kartından çıkış (Tekrar uç / Ana menü / tuş): rekor bekliyorsa önce rekor ekranı, dokununca seçilen yere
 function leaveOver(next) { if (overLock > 0) return; if (!recPend) return next(); const f = recPend; recPend = 0; show('over', false); recShowStart(f, next); }
 const recS = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(40, 1, 0.1, 200), on: false, t: 0, lock: 0, snap: [], parent: null, ring: null, bits: [], done: null, final: 0 };
@@ -3083,7 +3087,8 @@ function frame() {
       if (tz !== tempoIn) { tempoIn = tz; if (tz && tz.kind === 'tail') gearUp(); } // efekt yalnız gerçek hız sıçramasında
       tempoK = damp(tempoK, tz ? (tz.kind === 'tail' ? 1 + (TEMPO_K.tail - 1) * (1 - 0.6 * Math.min(1, overAt(dist))) : TEMPO_K[tz.kind]) : 1, 0.9, dt); // arka rüzgâr geç oyunda yumuşar (×1,14 → ×1,06) // ~2,5 sn'de oturur
       const base = Math.min(spdCap(dist) * (ruleOn('fast') ? 1.1 : 1), (15 + 14 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1));
-      speed = base * tempoK * (1 + END_SPD * endBm(dist)); // virajdan fırlama (slingV) yalnız görüntü: görüş açısı ve hız çizgileri. Gerçek hız eklenince viraj çıkışındaki baca geçilmez oluyordu // Hızlı vapurlar: %15 hızlı
+      speed = base * tempoK * (1 + END_SPD * endBm(dist)) * (1 + TIER_SPD * tierAt(dist));
+      { const tn = Math.floor(tierAt(dist) + 1e-6); if (tn > tierN) { tierN = tn; gearUp(); } } // basamağa girerken vites // virajdan fırlama (slingV) yalnız görüntü: görüş açısı ve hız çizgileri. Gerçek hız eklenince viraj çıkışındaki baca geçilmez oluyordu // Hızlı vapurlar: %15 hızlı
       if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();
     } else { speed = 15; autopilot(); }
     // viraj: içindeyken martı dışa savrulur (push), gövde ve kamera içe yatar (lean)

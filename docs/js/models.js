@@ -1365,7 +1365,7 @@ export function makeChevron(dir) {
 // ---------------- güçlendirmeler ----------------
 export const POWER = {
   magnet: { name: 'Mıknatıs', color: '#e5484d', dur: 7 },
-  shield: { name: 'Kalkan', color: '#3aa7ff', dur: 11 },
+  shield: { name: 'Kalkan', color: '#3aa7ff', dur: 7 }, // 11'di: her yerde kalkanla dolaşılıyordu
   double: { name: '2x Puan', color: '#ffc23a', dur: 8 },
   tea: { name: 'Çay Molası', color: '#d4502c', dur: 5 }, // dünya ağır çekime girer
 };

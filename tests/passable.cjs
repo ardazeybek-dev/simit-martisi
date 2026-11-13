@@ -12,7 +12,8 @@ const VLAT = process.env.VLAT !== undefined ? +process.env.VLAT : 17, EDGE = 3.8
 const SPEED_MAX = 43, clamp = (v, a, b) => Math.max(a, Math.min(b, v)); // hız formülü main.js spdCap ile aynı kalmalı
 const overAt = m => clamp((m - 6500) / 7000, 0, 2), spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1.3, overAt(m)));
 const SPD = (() => { const a = []; let t = 0, d = 0; while (d < 60000) { const v = Math.min(spdCap(d), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032); if (d >= a.length * 100) a.push(v); d += v / 2 / 30; t += 1 / 30; } return a; })();
-const spdAt = m => SPD[clamp(Math.round(m / 100), 0, SPD.length - 1)];
+const tierAt = m => [5000, 10000, 15000].reduce((s, t) => s + clamp((m - t) / 300, 0, 1), 0); // main.js TIER_M / TIER_SPD ile aynı kalmalı
+const spdAt = m => SPD[clamp(Math.round(m / 100), 0, SPD.length - 1)] * (1 + 0.045 * tierAt(m));
 
 function solve(w) {
   const NX = Math.round(2 * EDGE / DX) + 1, X = i => -EDGE + i * DX;
