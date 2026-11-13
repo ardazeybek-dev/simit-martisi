@@ -1148,10 +1148,14 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 /* maç sonu rekor ekranı: arkada 3D sahne (martı bize doğru uçar, gökkuşağı hüzmeler); üstte yazı, dokununca bitiş kartı */
 .rec-show { position: fixed; inset: 0; z-index: 12; display: flex; flex-direction: column; align-items: center; padding: max(9vh, env(safe-area-inset-top)) 16px max(6vh, env(safe-area-inset-bottom)); pointer-events: auto; cursor: pointer; text-align: center; }
 .rec-show.hidden { display: none; }
-.rec-show .rs-t { margin: 0; font-size: clamp(26px, 7.5vw, 44px); font-weight: 900; color: #2b1d6e; letter-spacing: .01em; text-shadow: 0 2px 0 rgba(255, 255, 255, .55); animation: rsDrop .5s cubic-bezier(.2, 1.6, .4, 1) both; }
-.rec-show b { display: block; margin-top: 4px; font-size: clamp(54px, 17vw, 104px); font-weight: 900; line-height: 1; color: #fff; font-variant-numeric: tabular-nums;
-  -webkit-text-stroke: 4px #2b1d6e; paint-order: stroke fill; text-shadow: 0 6px 0 #2b1d6e; animation: rsDrop .6s .1s cubic-bezier(.2, 1.6, .4, 1) both; }
-.rec-show .rs-tap { margin: auto 0 0; font-size: clamp(20px, 5.6vw, 30px); font-weight: 900; color: #fff; -webkit-text-stroke: 2px #2b1d6e; paint-order: stroke fill; text-shadow: 0 3px 0 #2b1d6e; opacity: 0; animation: rsTap 1.4s 1.2s ease-in-out infinite; }
+.rec-show .rs-t { position: relative; margin: 0; padding: 8px 34px 10px; font-size: clamp(22px, 6.4vw, 36px); font-weight: 900; color: #fff7e6; letter-spacing: .02em;
+  background: linear-gradient(#e5484d, #b8282e); border-radius: 6px; box-shadow: 0 5px 0 #7a1418, 0 10px 24px rgba(40, 10, 30, .35); text-shadow: 0 2px 0 #7a1418; animation: rsDrop .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.rec-show .rs-t::before, .rec-show .rs-t::after { content: ''; position: absolute; top: 10px; width: 26px; height: 100%; background: #b8282e; z-index: -1; }
+.rec-show .rs-t::before { left: -18px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 36% 50%); }
+.rec-show .rs-t::after { right: -18px; clip-path: polygon(0 0, 100% 0, 64% 50%, 100% 100%, 0 100%); }
+.rec-show b { display: block; margin-top: 14px; font-size: clamp(54px, 17vw, 104px); font-weight: 900; line-height: 1; color: #ffd36b; font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 4px #6a3510; paint-order: stroke fill; text-shadow: 0 6px 0 #6a3510, 0 0 26px rgba(255, 196, 90, .6); animation: rsDrop .6s .1s cubic-bezier(.2, 1.6, .4, 1) both; }
+.rec-show .rs-tap { margin: auto 0 0; font-size: clamp(18px, 5vw, 26px); font-weight: 800; color: #fff7e6; -webkit-text-stroke: 2px #3a2449; paint-order: stroke fill; text-shadow: 0 3px 0 #3a2449; opacity: 0; animation: rsTap 1.4s 1.2s ease-in-out infinite; }
 @keyframes rsDrop { 0% { transform: scale(.3) translateY(-40px); opacity: 0; } 100% { transform: none; opacity: 1; } }
 @keyframes rsTap { 0%, 100% { opacity: .55; transform: scale(.97); } 50% { opacity: 1; transform: scale(1.03); } }
 /* telefon: rekor ekranın ortasında (solda simit + balık, sağda ayarlar); uzun cüzdan kısa yazılır (main.js walletTxt) */

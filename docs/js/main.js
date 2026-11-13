@@ -1664,37 +1664,30 @@ function earnFlow(gain) {
   if (gain > 0) requestAnimationFrame(step); else n.firstChild.nodeValue = '+0 ';
 }
 // ---------------- maç sonu rekor ekranı ----------------
-// Rekor kırılınca bitiş kartından önce tam ekran: martı (giydiği kostümle) uzaktan bize doğru kanat çırparak gelir, arkasında
-// dönen gökkuşağı hüzmeleri ve hız çizgileri; üstte "Yeni rekor!" ve sayan puan. Dokununca (ya da tuşla) bitiş kartı açılır.
+// Rekor kırılınca bitiş kartından önce tam ekran: gün batımı gökyüzünde arkada yavaşça dönen dev altın simit, havada süzülen
+// simit parçaları; martı (giydiği kostümle) uzaktan süzülüp gelir, takla atar, fıçı gibi döner. Üstte kurdelede "Yeni rekor!" ve
+// sayan puan. Dokununca (ya da tuşla) bitiş kartı açılır.
 // Kostüm podyumu gibi: martı her karenin sonunda bu sahneye taşınır, karenin başında dünyadaki yerine döner (oyun mantığı bozulmaz).
 // Sis aynı türde ama çok uzakta: gölgelendiriciler dünyadakiyle aynı kalır, rekor anında yeniden derleme (telefonda takılma) olmaz.
 let recRun = false; // bu uçuşta rekor ekranı gösterildi mi (yeniden doğuşla ikinci rekorda tekrar çıkmaz)
-const recS = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(40, 1, 0.1, 200), on: false, t: 0, lock: 0, snap: [], parent: null, rays: null, streaks: [], done: null, final: 0 };
+const recS = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(40, 1, 0.1, 200), on: false, t: 0, lock: 0, snap: [], parent: null, ring: null, bits: [], done: null, final: 0 };
 recS.cam.layers.enable(1); // toplu çizime alınmış martı parçaları burada tek tek çizilir
 {
   const s = recS.scene;
   s.fog = new THREE.Fog(0xffffff, 900, 1000);
   s.background = canvasTex(4, 256, (g) => { const r = g.createLinearGradient(0, 0, 0, 256);
-    r.addColorStop(0, '#ffc23a'); r.addColorStop(0.5, '#ffa424'); r.addColorStop(1, '#f2801a'); g.fillStyle = r; g.fillRect(0, 0, 4, 256); });
-  s.add(new THREE.HemisphereLight(0xfff4e0, 0x9a5a22, 1.5));
-  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(2, 4, 6); s.add(key);
-  const rays = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false,
-    map: canvasTex(512, 512, (g, W, H) => {
-      const n = 24, cols = ['#ffe14d', '#ff6a5c', '#ff8fd2', '#5fd0ff', '#7dec7a', '#fff07a'];
-      for (let i = 0; i < n; i++) { const a0 = i / n * Math.PI * 2; g.fillStyle = cols[i % cols.length]; g.globalAlpha = 0.55;
-        g.beginPath(); g.moveTo(W / 2, H / 2); g.arc(W / 2, H / 2, W, a0, a0 + Math.PI / n); g.closePath(); g.fill(); }
-      g.globalAlpha = 1; const r = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W / 2);
-      r.addColorStop(0, 'rgba(255,252,230,1)'); r.addColorStop(0.12, 'rgba(255,240,170,.75)'); r.addColorStop(0.45, 'rgba(255,210,90,0)'); g.fillStyle = r; g.fillRect(0, 0, W, H);
-    }) }));
-  rays.position.set(0, 0.6, -24); s.add(rays); recS.rays = rays;
-  const sm = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false, fog: false });
-  for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), sm); s.add(m); recS.streaks.push({ m, x: 0, y: 0, z: 0, v: 0, l: 0 }); }
+    r.addColorStop(0, '#24306a'); r.addColorStop(0.38, '#7a4f9a'); r.addColorStop(0.66, '#f08a7a'); r.addColorStop(0.86, '#ffc27a'); r.addColorStop(1, '#ffe2a8'); g.fillStyle = r; g.fillRect(0, 0, 4, 256); });
+  s.add(new THREE.HemisphereLight(0xffe8d0, 0x5a3a6a, 1.45));
+  const key = new THREE.DirectionalLight(0xfff2dc, 1.4); key.position.set(2, 4, 6); s.add(key);
+  const rim = new THREE.DirectionalLight(0xffb070, 1.2); rim.position.set(-3, 2, -6); s.add(rim);
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(26, 26), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending,
+    map: canvasTex(128, 128, (g) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,214,140,.75)'); r.addColorStop(0.35, 'rgba(255,170,90,.28)'); r.addColorStop(1, 'rgba(255,150,90,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); }) }));
+  halo.position.set(0, 1.4, -15); s.add(halo);
+  const ring = makeSimit(true); ring.scale.setScalar(7); ring.position.set(0, 1.4, -14); s.add(ring); recS.ring = ring; // arkada dev altın simit
+  for (let i = 0; i < 16; i++) { const m = makeSimitPiece(i % 5 === 0); s.add(m); recS.bits.push({ m, x: 0, y: 0, z: 0, v: 0, w: 0, ph: 0 }); }
 }
-function recStreak(q, first) {
-  q.z = -rand(6, 18); q.y = rand(-4, 5); q.x = first ? rand(-14, 14) : rand(12, 20); q.v = rand(18, 34); q.l = rand(2, 5);
-  q.m.scale.set(q.l, rand(0.05, 0.11), 1);
-}
-for (const q of recS.streaks) recStreak(q, true);
+function recBit(q, first) { q.x = rand(-6, 6); q.y = first ? rand(-5, 6) : rand(6, 8); q.z = rand(-11, -3); q.v = rand(0.9, 2); q.w = rand(-2.5, 2.5); q.ph = Math.random() * 6; q.m.scale.setScalar(rand(1, 1.5)); }
+for (const q of recS.bits) recBit(q, true);
 function recSnap() { // martının (ve kostüm parçalarının) dünyadaki pozu: karenin başında geri yüklenir
   let i = 0;
   gull.traverse(o => { let e = recS.snap[i]; if (!e) e = recS.snap[i] = { o: null, p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), v: true };
@@ -1716,19 +1709,33 @@ function recShowDone() {
   const f = recS.done; recS.done = null; if (f) f();
 }
 $('recShow').addEventListener('pointerdown', e => { e.stopPropagation(); recShowDone(); });
+const easeIO = u => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
 function recDraw(dt) {
   recS.t += dt; recS.lock -= dt; const t2 = recS.t;
   recSnap(); recS.scene.add(gull);
-  const k = Math.min(1, t2 / 1.1), e = 1 - Math.pow(1 - k, 3);
   $('rsScore').textContent = fmt(Math.round(recS.final * Math.min(1, t2 / 1.2)));
-  gull.rotation.set(0.18 - 0.12 * e + Math.sin(t2 * 2.2) * 0.04, Math.PI + Math.sin(t2 * 0.9) * 0.22, Math.sin(t2 * 1.7) * 0.14);
-  gull.position.set(Math.sin(t2 * 1.3) * 0.35 * e, -0.25 + Math.sin(t2 * 2.6) * 0.16, -18 + 18 * e);
-  flapGull(gull, t2 * 10, 1, 0.1);
+  // giriş: aşağı soldan süzülüp gelir; sonra 4 sn'lik döngü: takla (dikey tam tur), fıçı dönüşü (kendi ekseninde), süzülme
+  const k = Math.min(1, t2 / 1.1), e = 1 - Math.pow(1 - k, 3);
+  let x = -3.5 * (1 - e) + Math.sin(t2 * 1.3) * 0.3 * e, y = -2.2 * (1 - e) + Math.sin(t2 * 2.4) * 0.15, z = -16 * (1 - e), pitch = 0.15, roll = 0.5 * (1 - e) + Math.sin(t2 * 1.7) * 0.1, flap = 10;
+  const c = t2 - 1.1;
+  if (c > 0) {
+    const u = c % 4.2;
+    if (u < 1.1) { // takla: dikey düzlemde çember çizer, gövde de tam tur döner
+      const a = easeIO(u / 1.1) * Math.PI * 2, R = 1.25;
+      y += R * (1 - Math.cos(a)); z -= R * Math.sin(a) * 1.4; pitch -= a; flap = 14;
+    } else if (u > 1.9 && u < 2.6) { // fıçı dönüşü: kendi ekseninde bir tur, hafif yana kayar
+      const v = (u - 1.9) / 0.7, a = easeIO(v) * Math.PI * 2;
+      roll += a; x += Math.sin(v * Math.PI) * 0.9; flap = 4;
+    }
+  }
+  gull.rotation.set(pitch, Math.PI + Math.sin(t2 * 0.9) * 0.18, roll);
+  gull.position.set(x, y, z);
+  flapGull(gull, t2 * flap, flap > 6 ? 1 : 0.4, 0.1);
   const w = innerWidth, h = innerHeight, cam = recS.cam; cam.aspect = w / h;
-  const d = Math.max(6.5, 4.2 / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect)); // telefonda kanatlar sığsın
-  cam.position.set(0, 0.5, d); cam.lookAt(0, 0.15, 0); cam.updateProjectionMatrix();
-  recS.rays.rotation.z -= dt * 0.22;
-  for (const q of recS.streaks) { q.x -= q.v * dt; if (q.x < -22) recStreak(q, false); q.m.position.set(q.x, q.y, q.z); }
+  const d = Math.max(7, 5.6 / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect)); // telefonda takla da sığsın
+  cam.position.set(0, 0.9, d); cam.lookAt(0, 0.7, 0); cam.updateProjectionMatrix();
+  recS.ring.rotation.z += dt * 0.35; recS.ring.rotation.x = 0.25 + Math.sin(t2 * 0.6) * 0.08;
+  for (const q of recS.bits) { q.y -= q.v * dt; q.m.rotation.set(t2 * q.w + q.ph, t2 * q.w * 0.7, q.ph); q.m.position.set(q.x + Math.sin(t2 + q.ph) * 0.3, q.y, q.z); if (q.y < -6) recBit(q, false); }
   renderer.render(recS.scene, cam);
 }
 // ---------------- haftalık sıralama (net.js: gerçek oyuncular) ----------------
