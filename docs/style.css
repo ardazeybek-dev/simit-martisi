@@ -497,7 +497,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #reviveBtn { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 8px; }
 #reviveBtn:disabled { opacity: .6; }
 #fishBtn { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(#8fdcff, #3b9fd0); box-shadow: 0 4px 0 #1f6f99; color: #06283a; }
-#fishBtn .ico { width: 26px; height: 26px; }
+#fishBtn .ico { width: 28px; height: 28px; flex: none; filter: drop-shadow(1.4px 0 0 #06283a) drop-shadow(-1.4px 0 0 #06283a) drop-shadow(0 1.4px 0 #06283a) drop-shadow(0 -1.4px 0 #06283a); } /* mavi balık mavi düğmede kayboluyordu: lacivert kontur */
 #fishBtn b { font-size: 1.1em; }
 #fishBtn.poor { filter: saturate(.3); opacity: .7; }
 #fishBtn small { font-size: .72em; font-weight: 600; opacity: .8; margin-left: 4px; }
