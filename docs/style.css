@@ -235,6 +235,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .stat-plus { display: grid; place-items: center; width: 26px; height: 26px; margin: 0 -6px 0 2px; padding: 0; border-radius: 9px; font: 900 20px/1 inherit; color: #2a1503; background: var(--simit); box-shadow: 0 2px 0 var(--simit-d); pointer-events: auto; }
 .stat-card.best { font-size: 15px; color: var(--gold); }
 .stat-card.best span { color: var(--cream); }
+.best-lbl { font-style: normal; }
 .menu-side { position: absolute; left: calc(14px + var(--sal)); top: 46%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; }
 .side-btn { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 78px; font-size: 13px; font-weight: 800;
   text-shadow: 0 2px 6px rgba(0, 0, 0, .55); transition: transform .1s; }
@@ -1155,3 +1156,13 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 @keyframes recGlow { 0%, 100% { box-shadow: 0 0 0 4px rgba(255, 194, 58, .25), 0 8px 24px rgba(255, 176, 46, .4); transform: scale(1); } 50% { box-shadow: 0 0 0 8px rgba(255, 214, 90, .45), 0 0 36px rgba(255, 196, 60, .95); transform: scale(1.08) rotate(-2deg); } }
 @media (prefers-reduced-motion: reduce) { .rec-rays { animation-duration: .01s; } .rec-burst b { animation: recFade 2.2s forwards; } .rec-burst small { animation: recFade 2.2s forwards; } }
 @keyframes recFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+/* dar telefon (320-380px): üst çubuk sıkışır, rekor kesilmesin (320px'te 2.500 bile "2.5…" oluyordu) */
+@media (max-width: 380px) {
+  .menu-top { gap: 6px; }
+  .stat-card { gap: 5px; padding: 0 10px 0 8px; font-size: 16px; }
+  .stat-card .ico { width: 20px; height: 20px; }
+  .stat-card.best { font-size: 14px; flex: none; }
+  .best-lbl { display: none; }
+  .stat-plus { width: 24px; height: 24px; font-size: 18px; margin-left: 0; }
+  .menu-top .icon-btn { width: 42px; height: 42px; }
+}

@@ -1487,7 +1487,7 @@ function showTitle() {
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
   $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
-  const tb = $('titleBest'); tb.textContent = best ? `${tr('Rekor')} ${fmt(best)}` : tr('İlk uçuşun!');
+  const tb = $('titleBest'); if (best) tb.innerHTML = `<i class="best-lbl">${esc(tr('Rekor'))} </i>${fmt(best)}`; else tb.textContent = tr('İlk uçuşun!'); // dar ekranda "Rekor" sözü gizlenir, kupa yeter
   requestAnimationFrame(() => { if (best && tb.scrollWidth > tb.clientWidth + 1) tb.textContent = fmt(best); }); // dar ekranda sığmazsa kelime düşer, sayı tam kalır (kupa ikonu zaten rekor)
   show('vsPill', !!vs && !vs.won);
   if (vs && !vs.won) $('vsPill').textContent = tr('Bir arkadaşın {s} puan yaptı. Geçebilir misin?').replace('{s}', fmt(vs.s));
