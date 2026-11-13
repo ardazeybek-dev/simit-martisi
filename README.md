@@ -126,7 +126,7 @@ A free Supabase project holds the tables `players`, `scores`, `runs` and `transf
 | `claim_gifts(p_id, p_secret)` | once per page load: returns the total of the player's unclaimed gift simits and marks them claimed; the game adds it to the wallet and shows *Hediye geldi* on the title screen |
 | `transfer_make(p_id, p_secret, p_data)` | *Profile → Move your account to another device*: stores a raw copy of the device's `simit-martisi*` keys (not the profile, pending score, unclaimed gifts, settings or reset marks) under an 8-character code, valid 15 minutes, single use |
 | `transfer_claim(p_code, p_old_id, p_old_secret)` | returns `{ id, secret, name, cc, data }` and deletes the code; the new device replaces its progress with `data`, takes over the id and reloads. Rejected ('device has score') if the new device already has a score, so the board never gets a second line; the game only offers code entry on a device with no record, and only the code button on one that has flown |
-| `get_board(p_id)` | `{ total, top[50], me }` ranked by each player's best ever (`week`, `ends`, `prev` stay null for old clients) |
+| `get_board(p_id)` | `{ total, top[500], me }` ranked by each player's best ever (`week`, `ends`, `prev` stay null for old clients) |
 
 On `localhost` the game never talks to the server (no player, scores or board), so local test sessions cannot add fake players; append `?net=1` to the URL to test the online parts locally.
 

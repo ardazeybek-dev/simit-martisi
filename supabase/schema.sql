@@ -194,7 +194,7 @@ end $$;
 revoke all on function set_level(uuid, uuid, int) from public;
 grant execute on function set_level(uuid, uuid, int) to anon, authenticated;
 
--- tablo: herkesin en iyi skoruyla ilk 50 ve oyuncunun sırası (week/ends/prev eski istemciler için null)
+-- tablo: herkesin en iyi skoruyla ilk 500 (sayaç "N oyuncu" herkesi sayar; liste de herkesi göstersin) ve oyuncunun sırası (week/ends/prev eski istemciler için null)
 create or replace function get_board(p_id uuid default null) returns json
 language sql stable security definer set search_path = public as $$
   with b as (
@@ -209,7 +209,7 @@ language sql stable security definer set search_path = public as $$
     'week', null, 'ends', null, 'prev', null,
     'total', (select count(*) from ranked),
     'top', coalesce((select json_agg(json_build_object('rank', rank, 'name', name, 'cc', cc, 'lv', lv, 'score', score, 'me', player_id = p_id) order by rank)
-                     from ranked where rank <= 50), '[]'::json),
+                     from ranked where rank <= 500), '[]'::json),
     'me', (select json_build_object('rank', rank, 'score', score, 'name', name, 'lv', lv) from ranked where player_id = p_id)
   )
 $$;
