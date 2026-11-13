@@ -112,6 +112,11 @@ async function main() {
       await g(() => { window.__smokeCr = setInterval(() => { if (window.__game.state === 'play') window.__game.crash(); }, 300); });
       await page.waitForFunction(() => window.__game.state === 'over', null, { timeout: 15000 }).catch(async () => { const st = await g(() => [window.__game.state, window.__game.dist]).catch(() => '?'); throw new Error(city + ': crash did not end the flight, state ' + JSON.stringify(st)); });
       await g(() => clearInterval(window.__smokeCr));
+      if (await g(() => !document.getElementById('recShow').classList.contains('hidden'))) { // new best: full-screen record scene first, a tap opens the game-over card
+        await page.waitForTimeout(900); await page.click('#recShow');
+        await page.waitForFunction(() => !document.getElementById('over').classList.contains('hidden'), null, { timeout: 5000 }).catch(() => { throw new Error(city + ': tapping the record screen did not open the game-over card'); });
+        step(`${city}: record screen, tap -> game-over card`);
+      }
       await g(() => window.__game.showTitle());
       await page.waitForTimeout(1200); // anything that pops up on the title by itself does so within a second
       const prof = await g(() => !document.getElementById('profilePanel').classList.contains('hidden'));

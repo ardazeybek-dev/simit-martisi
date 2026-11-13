@@ -9,8 +9,8 @@ for (const p of [path.join(NPM, '@playwright/cli/node_modules/playwright'), path
 const { chromium } = playwright;
 const RUNS = +process.argv[2] || 3, KM = +process.argv[3] || 25, CITIES = (process.argv[4] || 'istanbul,izmir,antalya').split(',');
 const VLAT = process.env.VLAT !== undefined ? +process.env.VLAT : 17, EDGE = 3.85, FLY_Y = 5.15, OBSK = 0.08, DX = 0.05, DZ = 0.4;
-const SPEED_MAX = 43, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const overAt = m => clamp((m - 6500) / 7000, 0, 2), spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1, overAt(m)));
+const SPEED_MAX = 43, clamp = (v, a, b) => Math.max(a, Math.min(b, v)); // hız formülü main.js spdCap ile aynı kalmalı
+const overAt = m => clamp((m - 6500) / 7000, 0, 2), spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1.3, overAt(m)));
 const SPD = (() => { const a = []; let t = 0, d = 0; while (d < 60000) { const v = Math.min(spdCap(d), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032); if (d >= a.length * 100) a.push(v); d += v / 2 / 30; t += 1 / 30; } return a; })();
 const spdAt = m => SPD[clamp(Math.round(m / 100), 0, SPD.length - 1)];
 

@@ -40,7 +40,9 @@ blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 // ---------------- dünya ----------------
 // deneme adresleri (?city ?stop ?rule ?turn ...) yalnız bilgisayardaki sunucuda çalışır: canlıda kilitli şehir ya da kısa hat açılmasın
 const QS = new URLSearchParams(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? location.search : '');
-const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → ilk virajdan çıkınca rekor kutlaması, gerçek rekora dokunmaz
+// menüdeki cüzdan: 100 binden sonra kısa yazılır (123,5 B · 1,2 Mn; dilin kendi kısaltması), rekor ortada kalsın. Tam sayı mağazada görünür
+const walletTxt = () => (wallet >= 1e5 ? new Intl.NumberFormat(window.I18N.locale, { notation: 'compact', maximumFractionDigits: 1 }).format(wallet) : fmt(wallet));
+const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → her uçuş sonunda rekor ekranı çıkar, gerçek rekora dokunmaz
 const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
@@ -58,8 +60,8 @@ const late = () => clamp((-genZ - 3250 + HARD() * 1000) / 3000, 0, 1) * (1 + HAR
 // ama hiçbir yer imkânsız değil (tavan hız ~57, iki engel arası medyan ~0,3 sn; 24 km'de 60 hız / 0,26 sn ölçüldü, insan tepkisinin sınırı → kesildi).
 // m: uçulan metre (hız için dist, üretim için -genZ/2)
 const overAt = m => clamp((m - 6500) / 7000, 0, 2), overG = () => overAt(-genZ / 2);
-// hız tavanı: 13,5 km'de ~50'de durur (20,5 km'ye kadar artınca 10 km üstü oynanmaz oluyordu); yoğunluk rampası (overG) sürer
-const spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1, overAt(m)));
+// hız tavanı: ~15,6 km'de ~52'de durur (20,5 km'ye kadar artınca 10 km üstü oynanmaz oluyordu, 13,5 km/50 de biraz kolay kaldı); yoğunluk rampası (overG) sürer
+const spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1.3, overAt(m)));
 // o metrede beklenen uçuş hızı (birim/sn, tempo hariç): hız formülü 100 m'lik tabloya bir kez işlenir. Engel aralığını saniyeyle kurmak için
 const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { const v = Math.min(spdCap(d), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032); if (d >= a.length * 100) a.push(v); d += v / 2 / 30; t += 1 / 30; } return a; })();
 const spdAt = m => SPD_TAB[clamp(Math.round(m / 100), 0, SPD_TAB.length - 1)];
@@ -418,7 +420,7 @@ function spawnGap(first, fixLen, quiet) {
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
     }
     seedAt('gf', genN); // balık atılıp atılmamasından bağımsız: günün uçuşunda güç ve şamandıralar herkes için aynı
-    if (segCount > 2 && Math.random() < 0.33) {
+    if (segCount > 2 && Math.random() < 0.27) { // güçlendirme açık suların ~%27'sinde (0,33'tü: Arda bir tık azalttı)
       const z = z0 - len * 0.5;
       const kind = pickPw((d > 1.5 ? ['shield', 'shield', 'magnet', 'double', 'tea'] : ['magnet', 'double', 'shield', 'tea']).concat(perk('nazar') ? ['shield'] : []).filter(k => pwFree(k, z))); // Nazar: kalkan daha sık
       if (kind) {
@@ -1273,7 +1275,7 @@ function claimRoad(lv) {
   }
   sfx.record(); vibrate([20, 30, 20]); sparkle(gull.position, 30, 0xffd35a, 5, 0.7, 0.3);
   const top = $('roadList').scrollTop; renderRoad(); $('roadList').scrollTop = top;
-  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); renderRank();
+  $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish); renderRank();
 }
 function renderXp(xp, f0, r) {
   const el = $('overXp'), f1 = clamp(rank.xp / xpNeed(rank.lv), 0, 1);
@@ -1287,6 +1289,17 @@ const look = { owned: [], on: [], fresh: [] };
 { const l = store.get(KEY_LOOK, {}), ok = id => COSTUMES.some(c => c.id === id);
   look.owned = (Array.isArray(l.owned) ? l.owned : []).filter(ok); look.on = (Array.isArray(l.on) ? l.on : []).filter(id => look.owned.includes(id));
   look.fresh = (Array.isArray(l.fresh) ? l.fresh : []).filter(id => look.owned.includes(id)); } // fresh: yoldan gelen, henüz bakılmamış kostümler
+// sahibin cihazı: gizli bağlantı (#acik=…) o cihazda bütün şehirleri ve kostümleri açar. Kodda yalnız anahtarın SHA-256 özeti durur
+const UNLOCK_H = 'bd373698a165561743a0b73ca4490d22060581f491e0cf1c0460f3afcaf67f16';
+if (location.hash.startsWith('#acik=') && window.crypto && crypto.subtle) {
+  const tok = decodeURIComponent(location.hash.slice(6)); history.replaceState(null, '', location.pathname + location.search); // anahtar adres çubuğunda kalmasın
+  crypto.subtle.digest('SHA-256', new TextEncoder().encode(tok)).then(b => {
+    if ([...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('') !== UNLOCK_H) return;
+    for (const c of CITIES) if (c.routeKey && !c.soon) store.set(c.routeKey, c.stops.length - 1);
+    for (const c of COSTUMES) if (!look.owned.includes(c.id)) look.owned.push(c.id);
+    store.set(KEY_LOOK, look); location.reload();
+  }).catch(() => {});
+}
 let tutorialPending = !store.get(KEY_TUT, false);
 const keys = {};
 // tempo bölgeleri: hız eğrisi tek düze artmasın. Mesafeye bağlı, önceden planlanır (günün uçuşunda herkes için aynı).
@@ -1469,6 +1482,7 @@ function renderRouteMap() {
 }
 let dailyAuto = false; // kendiliğinden açılan ödül penceresi: sayfa açılışında bir kez
 function showTitle() {
+  recShowClose(); // rekor ekranı açık kaldıysa
   if (window.__reloadOnTitle && !window.__reloadFailed) { // yeni sürüm indi: menüye dönerken tazelen, ama önce gönderilmekte olan skor gitsin (en çok 3 sn)
     if (window.__reloading) return; window.__reloading = true;
     // tazeleme gerçekleşmezse (telefonda olabiliyor) oyuncu oyun sonu ekranında kilitli kalmasın: 2.5 sn sonra menüye normal yoldan dönülür
@@ -1486,7 +1500,7 @@ function showTitle() {
   show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false); show('shopPanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
-  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
+  $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
   const tb = $('titleBest'); if (best) tb.innerHTML = `<i class="best-lbl">${esc(tr('Rekor'))} </i>${fmt(best)}`; else tb.textContent = tr('İlk uçuşun!'); // dar ekranda "Rekor" sözü gizlenir, kupa yeter
   requestAnimationFrame(() => { if (best && tb.scrollWidth > tb.clientWidth + 1) tb.textContent = fmt(best); }); // dar ekranda sığmazsa kelime düşer, sayı tam kalır (kupa ikonu zaten rekor)
@@ -1505,12 +1519,13 @@ function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görü
   applyWeather(weather); resetWorld(false); renderRouteMap();
 }
 function startGame() {
+  recShowClose();
   if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
   show('giftPill', false);
   audio.unlock();
   sfx.click();
   misPending = false; refillMissions(); startRun(); fishSync(false); gullSize(); hicT = 2.5; hicY = 0; // sıralama bileti: skor uçuş süresine göre denetlenir
-  achRun = {}; saidRun.clear(); recRun = false; show('recBurst', false);
+  achRun = {}; saidRun.clear(); recRun = false;
   for (const m of missions) { m.p0 = misDef(m.k).total ? m.p || 0 : 0; m.wasDone = m.done; m.v = null; } // görevler panelinde çubuk buradan dolar
   misPending = true;
   resetWorld(daily || state !== 'title'); state = 'play';
@@ -1558,7 +1573,6 @@ function showOver() {
   $('overTitle').textContent = tr(msg[cause] || 'Pat!');
   $('stSimit').textContent = fmt(Math.floor(simitCount));
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
-  $('stCombo').textContent = `${bestCombo}`;
   ui.powers.textContent = '';
   renderRouteLine();
   $('overBest').textContent = ''; // rekor yazılmaz; yeni rekorda ayrı rozet çıkar
@@ -1609,10 +1623,8 @@ function showOver() {
     const part = (k, s) => (k > 0 ? `${tr(s)}${k > 1 ? ' ×' + k : ''}` : '');
     $('overAch').innerHTML = `<svg><use href="#i-medal"/></svg>${[part(n, 'Yeni başarım!'), part(nb, 'Yeni rozet!')].filter(Boolean).join(' · ')}`; }
   $('overEarn').innerHTML = `<span id="earnN">+0 <svg class="ico"><use href="#i-simit"/></svg></span>`
-    + (recGain ? `<span class="earn-rec">${tr('Rekor bonusu')} +${fmt(recGain)} <svg class="ico"><use href="#i-simit"/></svg></span>` : '')
     + (fishRun ? `<span class="earn-fish">+${fmt(fishRun)} <svg class="ico"><use href="#i-fish"/></svg></span>` : '');
-  setTimeout(() => state === 'over' && earnFlow(banked), 700);
-  show('over'); show('hud', false); hideTutorial();
+  show('hud', false); hideTutorial();
   // yeniden doğuş: balık harcayarak (her seferinde iki katı), portalda ayrıca uçuş başına bir kez ödüllü reklamla (iyi bir uçuşta)
   const canRevive = !!window.PF && !adRevived && final >= 250 && final >= prevBest * 0.4 && rewardReady();
   $('reviveLbl').textContent = tr('Reklam izle, devam et');
@@ -1620,15 +1632,21 @@ function showOver() {
   show('reviveBtn', canRevive); show('reviveNote', false);
   if (canRevive && window.PF.offerReward) window.PF.offerReward();
   renderFishBtn();
-  const el = $('overScore'), t0 = performance.now(), dur = Math.min(1400, 500 + final * 2);
-  const step = (now) => {
-    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-    el.textContent = fmt(Math.round(final * e));
-    if (k < 1) requestAnimationFrame(step);
-    else { bump(el); if (isBest) { bump($('newRecord'), 'popin'); sfx.record(); confetti(); vibrate([30, 40, 30]); } }
+  const el = $('overScore');
+  const reveal = () => { // bitiş kartı: puan sayar, cüzdana gelen (rekor bonusu dahil) tek sayaçta
+    show('over'); setTimeout(() => state === 'over' && earnFlow(banked + recPaid), 700);
+    const t0 = performance.now(), dur = Math.min(1400, 500 + final * 2);
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmt(Math.round(final * e));
+      if (k < 1) requestAnimationFrame(step);
+      else { bump(el); if (isBest) { bump($('newRecord'), 'popin'); sfx.record(); confetti(); vibrate([30, 40, 30]); } }
+    };
+    el.textContent = '0';
+    requestAnimationFrame(step);
   };
-  el.textContent = '0';
-  requestAnimationFrame(step);
+  // rekor ekranı: uçuş başına bir kez, ilk birkaç uçuşun küçük rekorlarında yok (?rekor ile her uçuşta, yalnız yerelde)
+  if ((isBest && prevBest >= 150 && !recRun) || REC_TEST) { recRun = true; recShowStart(final, reveal); } else reveal();
   audio.duck(false);
 }
 // oyun sonu: kazanılan simit sayarak artar, her adımda tıkırdar
@@ -1644,6 +1662,74 @@ function earnFlow(gain) {
     if (k < 1) requestAnimationFrame(step); else bump(n);
   };
   if (gain > 0) requestAnimationFrame(step); else n.firstChild.nodeValue = '+0 ';
+}
+// ---------------- maç sonu rekor ekranı ----------------
+// Rekor kırılınca bitiş kartından önce tam ekran: martı (giydiği kostümle) uzaktan bize doğru kanat çırparak gelir, arkasında
+// dönen gökkuşağı hüzmeleri ve hız çizgileri; üstte "Yeni rekor!" ve sayan puan. Dokununca (ya da tuşla) bitiş kartı açılır.
+// Kostüm podyumu gibi: martı her karenin sonunda bu sahneye taşınır, karenin başında dünyadaki yerine döner (oyun mantığı bozulmaz).
+// Sis aynı türde ama çok uzakta: gölgelendiriciler dünyadakiyle aynı kalır, rekor anında yeniden derleme (telefonda takılma) olmaz.
+let recRun = false; // bu uçuşta rekor ekranı gösterildi mi (yeniden doğuşla ikinci rekorda tekrar çıkmaz)
+const recS = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(40, 1, 0.1, 200), on: false, t: 0, lock: 0, snap: [], parent: null, rays: null, streaks: [], done: null, final: 0 };
+recS.cam.layers.enable(1); // toplu çizime alınmış martı parçaları burada tek tek çizilir
+{
+  const s = recS.scene;
+  s.fog = new THREE.Fog(0xffffff, 900, 1000);
+  s.background = canvasTex(4, 256, (g) => { const r = g.createLinearGradient(0, 0, 0, 256);
+    r.addColorStop(0, '#ffc23a'); r.addColorStop(0.5, '#ffa424'); r.addColorStop(1, '#f2801a'); g.fillStyle = r; g.fillRect(0, 0, 4, 256); });
+  s.add(new THREE.HemisphereLight(0xfff4e0, 0x9a5a22, 1.5));
+  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(2, 4, 6); s.add(key);
+  const rays = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, fog: false,
+    map: canvasTex(512, 512, (g, W, H) => {
+      const n = 24, cols = ['#ffe14d', '#ff6a5c', '#ff8fd2', '#5fd0ff', '#7dec7a', '#fff07a'];
+      for (let i = 0; i < n; i++) { const a0 = i / n * Math.PI * 2; g.fillStyle = cols[i % cols.length]; g.globalAlpha = 0.55;
+        g.beginPath(); g.moveTo(W / 2, H / 2); g.arc(W / 2, H / 2, W, a0, a0 + Math.PI / n); g.closePath(); g.fill(); }
+      g.globalAlpha = 1; const r = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W / 2);
+      r.addColorStop(0, 'rgba(255,252,230,1)'); r.addColorStop(0.12, 'rgba(255,240,170,.75)'); r.addColorStop(0.45, 'rgba(255,210,90,0)'); g.fillStyle = r; g.fillRect(0, 0, W, H);
+    }) }));
+  rays.position.set(0, 0.6, -24); s.add(rays); recS.rays = rays;
+  const sm = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthWrite: false, fog: false });
+  for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), sm); s.add(m); recS.streaks.push({ m, x: 0, y: 0, z: 0, v: 0, l: 0 }); }
+}
+function recStreak(q, first) {
+  q.z = -rand(6, 18); q.y = rand(-4, 5); q.x = first ? rand(-14, 14) : rand(12, 20); q.v = rand(18, 34); q.l = rand(2, 5);
+  q.m.scale.set(q.l, rand(0.05, 0.11), 1);
+}
+for (const q of recS.streaks) recStreak(q, true);
+function recSnap() { // martının (ve kostüm parçalarının) dünyadaki pozu: karenin başında geri yüklenir
+  let i = 0;
+  gull.traverse(o => { let e = recS.snap[i]; if (!e) e = recS.snap[i] = { o: null, p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), v: true };
+    e.o = o; e.p.copy(o.position); e.q.copy(o.quaternion); e.s.copy(o.scale); e.v = o.visible; i++; });
+  recS.snap.length = i;
+}
+function recRestore() {
+  for (const e of recS.snap) { e.o.position.copy(e.p); e.o.quaternion.copy(e.q); e.o.scale.copy(e.s); e.o.visible = e.v; }
+  if (recS.parent && gull.parent !== recS.parent) recS.parent.add(gull);
+}
+function recShowStart(final, done) {
+  recS.on = true; recS.t = 0; recS.lock = 0.7; recS.done = done; recS.final = final; recS.parent = gull.parent; recS.snap.length = 0;
+  $('rsScore').textContent = '0'; show('recShow'); sfx.record(); setTimeout(() => recS.on && sfx.record(), 380); vibrate([30, 40, 30, 40, 70]);
+}
+function recShowClose() { if (!recS.on) return; recRestore(); recS.on = false; recS.done = null; show('recShow', false); }
+function recShowDone() {
+  if (!recS.on || recS.lock > 0) return;
+  recRestore(); recS.on = false; show('recShow', false);
+  const f = recS.done; recS.done = null; if (f) f();
+}
+$('recShow').addEventListener('pointerdown', e => { e.stopPropagation(); recShowDone(); });
+function recDraw(dt) {
+  recS.t += dt; recS.lock -= dt; const t2 = recS.t;
+  recSnap(); recS.scene.add(gull);
+  const k = Math.min(1, t2 / 1.1), e = 1 - Math.pow(1 - k, 3);
+  $('rsScore').textContent = fmt(Math.round(recS.final * Math.min(1, t2 / 1.2)));
+  gull.rotation.set(0.18 - 0.12 * e + Math.sin(t2 * 2.2) * 0.04, Math.PI + Math.sin(t2 * 0.9) * 0.22, Math.sin(t2 * 1.7) * 0.14);
+  gull.position.set(Math.sin(t2 * 1.3) * 0.35 * e, -0.25 + Math.sin(t2 * 2.6) * 0.16, -18 + 18 * e);
+  flapGull(gull, t2 * 10, 1, 0.1);
+  const w = innerWidth, h = innerHeight, cam = recS.cam; cam.aspect = w / h;
+  const d = Math.max(6.5, 4.2 / (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect)); // telefonda kanatlar sığsın
+  cam.position.set(0, 0.5, d); cam.lookAt(0, 0.15, 0); cam.updateProjectionMatrix();
+  recS.rays.rotation.z -= dt * 0.22;
+  for (const q of recS.streaks) { q.x -= q.v * dt; if (q.x < -22) recStreak(q, false); q.m.position.set(q.x, q.y, q.z); }
+  renderer.render(recS.scene, cam);
 }
 // ---------------- haftalık sıralama (net.js: gerçek oyuncular) ----------------
 let boardCache = null, boardSeq = 0, overSeq = 0, myRank = 0, nameAsked = false;
@@ -1758,7 +1844,7 @@ function closeWardrobe() {
   seeTab(wardTab); dressing = false; show('wardrobe', false);
   if (window.__reloadOnTitle && state === 'title') return reloadKeep(); // bekleyen sürüm yenilemesi: menüye dönünce, hava aynı
   if (cosSel) { cosSel = null; applyLook(); } // satın alınmayan önizleme çıkarılır
-  if (state === 'title') { $('titleWallet').textContent = fmt(wallet); renderMenuBadges(); show('title'); }
+  if (state === 'title') { $('titleWallet').textContent = walletTxt(); renderMenuBadges(); show('title'); }
 }
 // sekmeler: Kıyafet (göz, boyun, yüz), Deri (tüy rengi), Şapka (baş)
 const tabOf = c => (c.slot === 'head' ? 'sapka' : c.slot === 'body' ? 'deri' : 'kiyafet');
@@ -1875,7 +1961,7 @@ function buyCostume(c) {
   sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
   $('wardNote').textContent = '';
   store.set(KEY_LOOK, look); applyLook(); flapBurst = 1;
-  renderWardrobe(); $('titleWallet').textContent = fmt(wallet);
+  renderWardrobe(); $('titleWallet').textContent = walletTxt();
 }
 // ---------------- güçlendirme yükseltmeleri ----------------
 function renderUps() {
@@ -1907,7 +1993,7 @@ function upgrade(k, lv) {
   if (ups[k] !== lv || wallet < cost) return;
   wallet -= cost; ups[k]++; store.set(KEY_WALLET, wallet); store.set(KEY_UP, ups);
   sfx.power(); vibrate([20, 30, 20]);
-  renderUps(); $('titleWallet').textContent = fmt(wallet);
+  renderUps(); $('titleWallet').textContent = walletTxt();
   bump($('ups').children[Object.keys(ups).indexOf(k)], 'bump');
 }
 // ---------------- mağaza ----------------
@@ -1952,7 +2038,7 @@ function shopTrade(k) {
   store.set(KEY_WALLET, wallet);
   sfx.power(); vibrate([20, 30, 20]);
   renderShop(); bump($('shopWallet').parentNode, 'bump'); bump($('shopFish').parentNode, 'bump');
-  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
+  $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
 }
 // ---------------- görevler ----------------
 // Aynı anda üç görev; biten görev hemen simit kazandırır, yerine bir sonraki uçuşta yenisi gelir.
@@ -2051,7 +2137,7 @@ function openMissions() {
   if (misAllDone()) setTimeout(() => { // set bitti: biraz bekle, sıradaki set gelsin
     refillMissions();
     if (!$('missionsPanel').classList.contains('hidden')) renderMissions($('titleMis'));
-    renderMenuBadges(); $('titleWallet').textContent = fmt(wallet);
+    renderMenuBadges(); $('titleWallet').textContent = walletTxt();
   }, 4200);
 }
 // menüdeki rozetler: biten görev sayısı, alınmamış günlük ödül
@@ -2101,7 +2187,7 @@ function renderMenuBadges() {
   const fresh = missions.filter(m => !m.done && !m.seen).length; // yeni gelen, henüz bakılmamış görevler
   $('misBadge').textContent = fresh; show('misBadge', fresh > 0);
   show('dailyDot', dailyState().ready || freeSpin());
-  if (state === 'title') $('titleWallet').textContent = fmt(wallet);
+  if (state === 'title') $('titleWallet').textContent = walletTxt();
   { const dot = roadOpen() > 0; show('roadDot', dot); show('setDot', dot); show('profDot', dot); }
   $('wardBadge').textContent = look.fresh.length; show('wardBadge', look.fresh.length > 0); // yeni kostüm
   const ar = achReady() + badgesNew(); $('achBadge').textContent = ar; show('achBadge', ar > 0); // alınmamış başarım + bakılmamış rozet
@@ -2172,7 +2258,7 @@ function claimAch(id) {
   wallet += ACH_R[got]; ach.got[id] = got + 1;
   store.set(KEY_WALLET, wallet); store.set(KEY_ACH, ach);
   sfx.record(); vibrate([20, 30, 20]);
-  renderAch(); renderMenuBadges(); $('titleWallet').textContent = fmt(wallet);
+  renderAch(); renderMenuBadges(); $('titleWallet').textContent = walletTxt();
   const row = $('achList').children[ACH.findIndex(a => a.id === id)]; if (row) bump(row, 'got');
   setTimeout(() => achFocus(true), 380); // topladığın parlasın, sonra sıradakine kay
 }
@@ -2224,7 +2310,7 @@ async function saveStreak() {
   }
   const y = new Date(); y.setDate(y.getDate() - 1);
   wallet -= STREAK_SAVE; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(y), streak: d.lost }); srvDaily = null;
-  sfx.power(); vibrate([20, 30, 20]); $('titleWallet').textContent = fmt(wallet);
+  sfx.power(); vibrate([20, 30, 20]); $('titleWallet').textContent = walletTxt();
   openDaily();
 }
 function openDaily() {
@@ -2261,11 +2347,11 @@ async function claimDaily() {
     const r = DAILY[d.streak - 1];
     wallet += r; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(), streak: d.streak }); srvDaily = null; // sunucuya ulaşılamadıysa eski 'hazır' bilgisi ödülü tekrar verdirmesin
     if (d.streak === DAILY.length) { setFish(fish + 1); $('titleFish').textContent = fmt(fish); } // haftanın son günü bir balık
-    $('titleWallet').textContent = fmt(wallet); bump($('titleWallet').parentNode);
+    $('titleWallet').textContent = walletTxt(); bump($('titleWallet').parentNode);
     sfx.gold(); vibrate([20, 30, 20]);
   }
   show('dailyPanel', false);
-  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); renderMenuBadges(); // çark sekmesinde kazanılan da menüye yansısın
+  $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish); renderMenuBadges(); // çark sekmesinde kazanılan da menüye yansısın
 }
 
 // ---------------- şans çarkı (günlük ödül panelinin ikinci sekmesi) ----------------
@@ -2355,7 +2441,7 @@ function spinWheel(pay) {
     sfx.gold(); vibrate(big ? [40, 40, 40, 40, 80] : [20, 30, 20]);
     const what = k === 'f' ? `<b>+${fmt(v)}</b> ${tr('balık')}` : `<b>+${fmt(v)}</b> ${tr('simit')}`;
     renderWheelUi((v >= 10000 ? `${tr('Büyük ikramiye!')} ` : big ? `${tr('Harika!')} ` : '') + what);
-    $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
+    $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
   };
   requestAnimationFrame(step);
 }
@@ -2464,24 +2550,11 @@ function confetti(id = 'confetti', n = 46) {
   }
   setTimeout(() => (box.textContent = ''), 3000);
 }
-// uçuşta rekor: eski en iyi puan geçildiği an bir kez (günün uçuşunda yok; ilk birkaç uçuşun küçük rekorlarında da yok)
-const REC_LINES = ['Hoop hemşerim!', 'Martı coştu!', 'Boğaz senin!', 'Simitler titriyor!', 'Vapurcular şokta!', 'Kanatlar alev aldı!', 'Ulen martı!', 'Rekor senin, simit benim!', 'Efsane martı!', 'Çaycı bile alkışlıyor!'];
-let recRun = false, recT = 0;
-function recordBurst() {
-  const el = $('recBurst'), L = window.I18N.lang, own = L === 'tr' || L === 'en'; // komik sözler yalnız Türkçe/İngilizce; öbür dillerde "Yeni rekor!" büyük yazılır
-  $('recBig').textContent = own ? tr('REKOR!') : tr('Yeni rekor!').toLocaleUpperCase(window.I18N.locale);
-  $('recSub').textContent = own ? tr(pick(REC_LINES)) : ''; show('recSub', own);
-  show('recBurst', false); void el.offsetWidth; show('recBurst'); // animasyon baştan
-  confetti('recConf', 60); sfx.record(); setTimeout(() => state === 'play' && sfx.record(), 260); vibrate([30, 40, 30, 40, 70]);
-  sparkle(gull.position, 46, 0xffd35a, 8, 1.1, 0.4); flapBurst = 1; trauma = Math.min(1, trauma + 0.25); bump(ui.score, 'dolph');
-  clearTimeout(recT); recT = setTimeout(() => show('recBurst', false), 2700);
-}
 function updateHud() {
   const s = total();
-  if (state === 'play' && !recRun && !daily && best >= 150 && s > best) { recRun = true; recordBurst(); }
   if (s !== shownScore) { ui.score.textContent = fmt(s); shownScore = s; }
   if (Math.floor(simitCount) !== shownSimit) { shownSimit = Math.floor(simitCount); ui.simits.textContent = fmt(shownSimit); }
-  if (fish !== shownFish) { if (shownFish >= 0 && fish > shownFish) bump($('hudFish')); shownFish = fish; $('fishN').textContent = fmt(fish); show('hudFish', fish > 0 || fishRun > 0); }
+  if (fish !== shownFish) { shownFish = fish; $('fishN').textContent = fmt(fish); show('hudFish', false); } // uçuşta balık sayısı yazmaz (telefonda üst köşe kalabalıktı); yakalanınca "Balık!" balonu ve ses yeter
   const dm = Math.floor(dist);
   if (dm !== shownDist) { ui.dist.textContent = fmt(dm); shownDist = dm; }
   // hat çubuğu: sıradaki iskele, kalan metre, aradaki yolun ne kadarı uçuldu
@@ -2597,6 +2670,7 @@ addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); if (e.target.id === 'overNameInput') saveName(e.target, $('overNameErr')); else saveName(); } else if (e.code === 'Escape') show('profilePanel', false); return; }
   keys[e.code] = true;
   if (dressing) { if (e.code === 'Escape') closeWardrobe(); return; }
+  if (recS.on) { if (!e.repeat) recShowDone(); return; } // rekor ekranı: tuş da geçer
   if (e.code === 'KeyM') { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) { if (state === 'play' || state === 'countdown') pause(); else if (state === 'paused') resume(); }
   if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) {
@@ -2630,8 +2704,8 @@ onBtn('shopBtn', () => { closeShopAsk(); renderShop(); show('shopPanel'); });
 onBtn('shopNo', () => closeShopAsk());
 $('shopYes').addEventListener('click', e => { e.stopPropagation(); shopDo(); });
 $('shopAsk').addEventListener('click', e => { e.stopPropagation(); if (e.target === e.currentTarget) closeShopAsk(); });
-onBtn('closeShop', () => { closeShopAsk(); show('shopPanel', false); $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); });
-onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = fmt(wallet); });
+onBtn('closeShop', () => { closeShopAsk(); show('shopPanel', false); $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish); });
+onBtn('closeUps', () => { show('upPanel', false); $('titleWallet').textContent = walletTxt(); });
 onBtn('dailyBtn', () => openDaily());
 onBtn('modeBtn', () => openDayRun());
 onBtn('modeClassic', () => pickMode('classic'));
@@ -2666,7 +2740,7 @@ onBtn('spinFish', () => spinWheel('f'));
 onBtn('spinSimit', () => spinWheel('s'));
 onBtn('spinFree', () => spinWheel('free'));
 onBtn('saveStreak', () => askStreak());
-onBtn('closeWheel', () => { show('dailyPanel', false); $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish); renderMenuBadges(); });
+onBtn('closeWheel', () => { show('dailyPanel', false); $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish); renderMenuBadges(); });
 onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('cosAct', () => costumeAction());
 onBtn('pauseBtn', () => pause());
@@ -2944,6 +3018,7 @@ function frame() {
   requestAnimationFrame(frame);
   const realDt = Math.min(0.05, clock.getDelta());
   if (pod.on) podRestore();
+  if (recS.on) recRestore();
   // FPS ölçümü + otomatik kalite
   fpsSmooth = fpsSmooth * 0.95 + (1 / Math.max(realDt, 1e-3)) * 0.05;
   if (state === 'play' && (qWarm -= realDt) < 0) {
@@ -3130,7 +3205,7 @@ function frame() {
       }
       for (const u of turns) {
         if (!u.entered && g.z < u.z0) { u.entered = true; sfx.whoosh(); trauma = Math.min(1, trauma + 0.12); }
-        if (!u.done && g.z < u.z1) { u.done = true; judgeTurn(u); if (REC_TEST && !recRun && state === 'play') { recRun = true; recordBurst(); } } // ?rekor: ilk viraj çıkışında kutlama (deneme)
+        if (!u.done && g.z < u.z1) { u.done = true; judgeTurn(u); }
       }
       if (comboT > 0) { comboT -= dt * (pw.tea > 0 ? 0.5 : 1); if (comboT <= 0) combo = 0; } // Çay Molası: dünya %60'a iner, kombo halkası ayrıca yarı hızda boşalır (simitlerle aynı oranda yavaşlayınca fark edilmiyordu)
       if ((cryT -= dt) < 0) { cryT = rand(6, 12); sfx.cry(0.08 + Math.random() * 0.05); }
@@ -3385,6 +3460,7 @@ function frame() {
   }
 
   if (dressing) podDraw(realDt); // kostüm podyumu: dünya yerine
+  else if (recS.on) recDraw(realDt); // maç sonu rekor ekranı
   else { tickLamps(realDt, camera, weather, gull.position); parkFar(); syncBatches(scene, camera); renderer.render(scene, camera); } // simitler: tek InstancedMesh (models.js)
   if (firstFrame) { firstFrame = false; const l = $('loader'); l.classList.add('done'); setTimeout(() => l.remove(), 700); warmPeople(); }
 }
@@ -3407,6 +3483,8 @@ const SHOUTS = {
   genel: ["Simidim!", "Hoop!", "Yaa!", "Martıya bak!", "Bırak onu!", "Ah simidim…", "Hah, oh olsun!", "Bizimkini de alma ha!", "Tövbe tövbe…", "Martılar azdı!", "Aman simidini sakla!", "Ay gördün mü?", "Çektin mi onu?", "Hayırdır?", "Kaptan, martı var!", "Herkes simidine sahip çıksın!", "Bu kaçıncı?", "Simit hırsızı!", "Bu martı her gün burada!", "Martıya simit verilmez!", "Kim yaptı bunu?", "Susamlar uçuştu!", "Bir simit de bana!", "Gözümün önünde!", "Ne biçim martı bu?", "Martı da acıkır tabii.", "Simitçi, bir tane daha!", "Tutun şunu!"],
 };
 const saidRun = new Set();
+// İzmir'de simide gevrek denir: Türkçede yolcular "Gevreğim gitti!" der (ekler uyar: simidim → gevreğim, simitçi → gevrekçi). Antalya simit kalır
+const talk = s => (city.id === 'izmir' && window.I18N.lang === 'tr' ? s.replace(/simid/g, 'gevreğ').replace(/Simid/g, 'Gevreğ').replace(/simit/g, 'gevrek').replace(/Simit/g, 'Gevrek') : s);
 function line(list) {
   const fresh = list.filter(s => s.length <= 18 && !saidRun.has(s)); // kısa sözler: uçarken bir bakışta okunsun
   if (!fresh.length) return '';
@@ -3423,7 +3501,7 @@ function shout(p, s, cheer) {
   if (!say) return; // bu uçuşta söylenecek söz kalmadı
   shoutT[side] = shoutAny = now;
   if (shoutEl[side]) shoutEl[side].remove();
-  shoutEl[side] = popText(tr(say), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout', { p: tmp.set(side * (LANE + 0.4), gull.position.y + 1.6, gull.position.z - 3), side }); // şerit sınırının hemen dışı, martının biraz önü ve üstü
+  shoutEl[side] = popText(talk(tr(say)), tmp2.set(s.x, s.y + 1.3, s.z), cheer ? 'shout cheer' : 'shout', { p: tmp.set(side * (LANE + 0.4), gull.position.y + 1.6, gull.position.z - 3), side }); // şerit sınırının hemen dışı, martının biraz önü ve üstü
 }
 // kapılan simit, martının ekrandaki yerinden HUD'daki simit sayacına uçar (seyrekleştirilmiş: telefonda DOM yükü olmasın)
 const coinV = new THREE.Vector3();
@@ -3568,7 +3646,7 @@ function catchFish(f) {
   sfx.gold(); vibrate([20, 30, 20]); hitStop = 0.06; trauma = Math.min(1, trauma + 0.2); flapBurst = 1;
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y, f.z), 30, 0x8fdcff, 5, 0.8, 0.3);
   popText(tr('Balık!'), tmp2.set(f.mesh.position.x, f.mesh.position.y + 1.2, f.z), 'shout cheer');
-  updateHud(); coinFly(false, '#hudFish .ico', 'i-fish'); bump($('hudFish'));
+  updateHud();
 }
 // değdin ama elinden kaydı: balık çırpınarak suya döner
 function slipFish(f) {
@@ -3625,7 +3703,7 @@ onGift(() => {
   if (!n && !f) return;
   store.set('simit-martisi-gift', 0); store.set('simit-martisi-gift-fish', 0); store.set('simit-martisi-gift-week', 0);
   wallet += n; store.set(KEY_WALLET, wallet); if (f) setFish(fish + f);
-  $('titleWallet').textContent = fmt(wallet); $('titleFish').textContent = fmt(fish);
+  $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
   const got = [n ? tr('+{n} simit').replace('{n}', fmt(n)) : '', f ? tr('+{f} balık').replace('{f}', fmt(f)) : ''].filter(Boolean).join(', ');
   $('giftPill').textContent = wk ? `🏆 ${wk <= 10 ? tr('Haftalık ödül: {r}. sıra!').replace('{r}', fmt(wk)) : tr('Haftalık ödül')} ${got}`
     : f ? '🎁 ' + tr('Hediye geldi: {n} simit, {f} balık!').replace('{n}', fmt(n)).replace('{f}', fmt(f)) : '🎁 ' + tr('Hediye geldi: {n} simit!').replace('{n}', fmt(n));
