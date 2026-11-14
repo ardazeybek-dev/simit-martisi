@@ -672,6 +672,81 @@ function buildCanakkale() {
   farShipsBuild(mP);
 }
 
+// ---------------- Trabzon (Doğu Karadeniz): kıyının hemen ardında yükselen dik, gür yeşil dağlar (katman katman sırtlar, doruklarda sis, alçak bulut bantları),
+// yamaçlara basamak basamak dizilmiş evler, kentin üstünde Boztepe, kıyıda küçük kubbeli Ayasofya, vinçli liman, uzak yamaçlarda şerit şerit çay bahçeleri ----------------
+// Karadeniz ışığı: serin, gri-mavi gök ve yumuşak bulutlar, koyu yeşil-mavi deniz; kasvetli değil, gür ve okunur
+const TB_FAC = [0xf4f1e8, 0xf1e6d2, 0xe8d6b8, 0xf6eee0, 0xdfe4e6, 0xe9c9a6, 0xf0d58c], TB_ROOF = [0xa8473f, 0x8a8f93, 0xb5523e, 0x7d8388];
+function mistBand(z, y, h, a = 0.7) { // dağ yamacında yatay sis bandı: ortası yoğun, alt ve üst kenarı saydam
+  const tex = canvasTex(4, 64, (g) => { const r = g.createLinearGradient(0, 0, 0, 64); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(0.5, `rgba(255,255,255,${a})`); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 4, 64); });
+  add(new THREE.PlaneGeometry(1500, h), basic(PAL.cloud2, { map: tex, transparent: true, depthWrite: false, vertexColors: false }), 0, y, z);
+}
+function buildTrabzon() {
+  const mP = paint(), ST = 0xe2d6bc, TILE = 0xb5634a;
+  farClouds();
+  farRidges(mP, mP, mP, [40, 14, 20, 8], { far: 0x5f7f6c, near: 0x3f6f45 }, { facades: TB_FAC, roofs: TB_ROOF, roofP: 0.8 });
+  const row = (fy, z, col) => { // tek parça sırt silüeti
+    const sh = new THREE.Shape(); sh.moveTo(-620, -5);
+    for (let x = -620; x <= 620; x += 6) sh.lineTo(x, fy(x));
+    sh.lineTo(620, -5);
+    add(new THREE.ShapeGeometry(sh), mP, 0, 0, z, far, col);
+  };
+  // en arkada: sise karışan koyu yeşil-mavi dorukler (Kaçkarlara uzanan sıra)
+  const backY = x => 66 + 20 * Math.sin(x * 0.009 + 1.2) + 11 * Math.sin(x * 0.027 + 0.4) + 5 * Math.sin(x * 0.071 + 2);
+  row(backY, -438, (x, y) => (y > 80 ? 0xb6c6c4 : y > 64 ? 0x7f9a90 : 0x5a7d6c));
+  mistBand(-436, 60, 20, 0.8);
+  // orta sıra: çay bahçeli yamaçlar (eşyükselti şeritleri), üstü koyu orman
+  const midY = x => 38 + 16 * Math.sin(x * 0.013 + 0.3) + 8 * Math.sin(x * 0.041 + 1.1) + 3 * Math.sin(x * 0.11);
+  const teaX = x => (x > -380 && x < -90) || (x > 200 && x < 470);
+  row(midY, -422, (x, y) => (teaX(x) && y > 10 && y < midY(x) - 7 ? (Math.floor(y / 2.2) % 2 ? 0x76ad48 : 0x427e36) : y > 34 ? 0x2f5f38 : 0x3a6e3e));
+  mistBand(-419, 42, 12, 0.55);
+  // ön sıra: kıyının hemen ardında dik yeşil yamaç; sağda kentin üstünde yuvarlak Boztepe
+  const hillY = x => 12 + 28 * Math.exp(-(((x - 110) / 70) ** 2)) + 14 * Math.exp(-(((x + 210) / 110) ** 2)) + Math.sin(x * 0.05) * 2 + Math.sin(x * 0.15 + 1) * 0.8;
+  row(hillY, -404, (x, y) => (y < 10 ? 0x4f8a42 : y < 24 ? 0x437d3b : 0x356c35));
+  // yamaca basamak basamak tırmanan evler: alt sıralar önde, yukarı çıktıkça geride ve seyrek; Boztepe'nin sırtına kadar
+  const town = new Kit();
+  for (let r = 0; r < 9; r++) for (let x = -560; x < 560;) {
+    const w = rand(4, 7.5), h = rand(3, 5), y = r * 3, top = hillY(x + w / 2) * 0.9;
+    if (y + h < top && Math.random() < 0.9 - r * 0.07) {
+      const zz = -r * 0.9;
+      town.add(new THREE.BoxGeometry(w, h + 2, 2), pick(TB_FAC), x + w / 2, y + (h - 2) / 2, zz);
+      town.add(new THREE.BoxGeometry(w + 0.6, 0.9, 2.2), pick(TB_ROOF), x + w / 2, y + h + 0.3, zz);
+      if (Math.random() < 0.55) town.add(new THREE.PlaneGeometry(0.9, 1.2), 0x4d6684, x + w * rand(0.25, 0.75), y + h * 0.55, zz + 1.02);
+    }
+    x += w + (Math.random() < 0.25 ? rand(3, 10) : rand(0, 1.5));
+  }
+  add(town.build(), mP, 0, 0, -398);
+  // ormanlık: yamaçlarda koyu yeşil ağaç tepeleri
+  const trees = new Kit();
+  for (let x = -600; x < 600; x += rand(6, 14)) { const y = hillY(x) * rand(0.55, 0.95); trees.add(new THREE.SphereGeometry(rand(2.2, 3.6), 6, 4), pick([0x2f6a30, 0x3a7838, 0x2a5e2e]), x, y, rand(-2, 0), 0, 0, 0, 1, 0.8, 0.6); }
+  add(trees.build(), mP, 0, 0, -401);
+  // alçak bulut bantları: Boztepe'nin ve dağların önünde yassı, yarı saydam bulutlar
+  const lowCloud = basic(PAL.cloud, { transparent: true, opacity: 0.5, depthWrite: false });
+  for (const [x, y] of [[-330, 46], [-60, 52], [150, 40], [380, 48]]) { const c = add(new THREE.CircleGeometry(1, 9), lowCloud, x, y, -410); c.scale.set(rand(60, 110), rand(3, 5), 1); }
+  // kıyı sırası ve liman: alçak evler, sağda vinçler ve konteyner yığınları
+  farTown(mP, -391, 3, 8, 0, -600, 120, far, 0.15, { facades: TB_FAC, roofs: TB_ROOF, roofP: 0.85 });
+  const port = new Kit(), RED = 0xd0312d, WHITE = 0xf2efe9;
+  port.add(new THREE.BoxGeometry(240, 1.6, 6), 0x9a9a92, 270, 0.8, 0);
+  for (let x = 160; x < 380; x += rand(4.5, 6)) for (let i = 0, n = 1 + ((Math.random() * 3) | 0); i < n; i++) port.add(new THREE.BoxGeometry(4.2, 2.4, 3), pick([0xd9573f, 0x3f7fc0, 0xe8a23a, 0x4f9a6a, 0xc94f7c, 0x3fa3a8]), x, 2.8 + i * 2.4, rand(-1, 1));
+  for (const x of [190, 250, 320]) { // gantri vinçler: iki ayak, kiriş, denize uzanan bumba
+    for (const dx of [-3.5, 3.5]) port.add(new THREE.BoxGeometry(1, 24, 1), (f, y) => (Math.floor(y / 4) % 2 ? RED : WHITE), x + dx, 12, 0);
+    port.add(new THREE.BoxGeometry(9, 1.4, 1.4), RED, x, 24, 0).add(new THREE.BoxGeometry(1.2, 1.2, 26), WHITE, x, 26, 6).add(new THREE.BoxGeometry(4, 3, 3), RED, x, 27, -2);
+  }
+  add(port.build(), mP, 0, 0, -388);
+  // Ayasofya: kıyıda alçak sette küçük Bizans kilisesi (haç planlı, ortada kasnaklı kubbe), batısında kare çan kulesi
+  const ax = -130, az = -389;
+  add(new THREE.BoxGeometry(22, 2, 6), mP, ax, 1, az + 1, far, 0xcbbd9f);
+  add(new THREE.BoxGeometry(14, 7, 4), mP, ax, 5.5, az, far, ST);
+  add(new THREE.BoxGeometry(6, 9, 4.5), mP, ax, 6.5, az - 0.5, far, ST);
+  add(new THREE.CylinderGeometry(2.4, 2.4, 3, 12), mP, ax, 12, az, far, ST);
+  add(new THREE.SphereGeometry(2.45, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), mP, ax, 13.5, az, far, TILE);
+  add(new THREE.ConeGeometry(8.5, 2.6, 4), mP, ax, 10.3, az, far, TILE).rotation.y = Math.PI / 4;
+  add(new THREE.BoxGeometry(3.2, 15, 3.2), mP, ax - 15, 7.5, az, far, ST);
+  add(new THREE.ConeGeometry(2.6, 3, 4), mP, ax - 15, 16.5, az, far, TILE).rotation.y = Math.PI / 4;
+  const glowTex = glow();
+  farLights(160, -560, 560, 1, 26, -392, glowTex);
+  farShipsBuild(mP);
+}
+
 // Uzak dekor yüzlerce küçük parçadan kurulur (her biri ayrı çizim çağrısı: telefonu en çok yoran şey).
 // Kurulduktan sonra aynı malzemeyi paylaşan opak, sabit parçalar tek gövdede birleşir; kayan gemiler (farShips) ayrı kalır.
 function mergeFar() {
@@ -736,8 +811,14 @@ const CITY_PAL = {
     hillFar: 0x9aa88a, hillNear: 0x6f8158, city: 0xa69c90, cityFar: 0xc0bab2, bridge: 0xc8202a, tower: 0xc8202a,
     cloud: 0xffffff, cloud2: 0xe4edf4, hemiSky: 0xeef6ff, hemiGround: 0x3f7c8a, sunLight: 0xfff4e0,
   },
+  trabzon: { // Doğu Karadeniz: serin gri-mavi gök, yumuşak bulutlar, koyu yeşil-mavi deniz, gür yeşil dağlar; kasvetli değil, berrak
+    skyTop: 0x5a82ad, skyMid: 0x9db8d0, skyLow: 0xd5e0e6, horizon: 0xe2e8e4, fog: 0xcbd8dc, sun: 0xfff6e8,
+    seaDeep: 0x0c3e4e, seaShallow: 0x1f7a74, seaSky: 0xc2d4da, seaFar: 0x84a4aa,
+    hillFar: 0x6f8f78, hillNear: 0x4a7a4f, city: 0x9a9a92, cityFar: 0xb6b8b2, bridge: 0x9aa8b2, tower: 0x8a8f8a,
+    cloud: 0xf6f8f9, cloud2: 0xe2e8ec, hemiSky: 0xe8eff4, hemiGround: 0x3b6f6c, sunLight: 0xfff0dc,
+  },
 };
-const FAR = { istanbul: buildIstanbul, izmir: buildIzmir, antalya: buildAntalya, mugla: buildMugla, canakkale: buildCanakkale };
+const FAR = { istanbul: buildIstanbul, izmir: buildIzmir, antalya: buildAntalya, mugla: buildMugla, canakkale: buildCanakkale, trabzon: buildTrabzon };
 let farCity = null;
 export function setCityLook(id) {
   if (id === farCity) return;

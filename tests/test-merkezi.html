@@ -53,6 +53,26 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Trabzon · 14 Kasım', id: 'trabzon-manzara', t: '⛰️ Trabzon: Karadeniz ufku ve menü sahnesi', look: [
+      'Menüde: önde balıkçı limanı, rıhtıma bağlı rengârenk gırgırlar ve kayıklar, mavi-kırmızı balık kasası yığınları, solda taş mendirek ve kırmızı-beyaz fener; ortada kıyıda kubbeli küçük Ayasofya ve çan kulesi, yeşil yamaca tırmanan evler (gri ve kiremit damlar); arkada sise karışan dik yeşil dağlar, sağ üstte uçurumda Sümela’yı andıran krem bina.',
+      'Uçuşta ufuk: serin gri-mavi gök, koyu yeşil-mavi deniz, katman katman yeşil sırtlar ve aralarında sis bantları, orta sırtta şerit şerit çay bahçeleri, Boztepe yamacında evler, kıyıda Ayasofya, sağda vinçli liman. Kasvetli mi, yoksa gür ve okunur mu?'],
+    links: [['Trabzon menüsü', '/?city=trabzon&hepsi&weather=clear']] },
+  { g: 'Trabzon · 14 Kasım', id: 'trabzon-hamsi', t: '🐟 Hamsi sürüsü', look: [
+      'Şeridin yanında gırgır teknesi (bumba, ağ makarası, güvertede ağ yığını) ağını uzun bir mantar halkasına çevirmiş; halkanın içinde su kaynıyor. Martı yaklaşınca hamsiler kümeler hâlinde ağdan kaçıp şeridin üstünden karşıya kavis çiziyor.',
+      'Değdiğin her hamsi: parıltı, yükselen “tın”, biraz puan ve biraz tokluk (yazı yok). Sürünün %60’ını kapana bir kez balık şansı (zıplayan balığın kilitleriyle: uçuşta bir, günde iki; ilk 700 m’de yok). Düz uçunca yarısı, kümeden kümeye dümen kırınca çoğu yakalanmalı. Kümeler yeterince okunuyor mu?'],
+    links: [['Hemen gelsin', '/?city=trabzon&hepsi&weather=clear&hamsi']] },
+  { g: 'Trabzon · 14 Kasım', id: 'trabzon-dalga', t: '🌊 Karadeniz dalgası', look: [
+      'Korsan teknesinin Trabzon hâli: kırılan büyük bir dalga şeridi yandan keser. İki yanda köpüklü tepe martının çok üstünde (engel), ortada kırılmamış alçak sırt kapı. Simit çizgisi kapının geleceği yere iner, ortada altın; tepeden düzensiz serpinti savrulur, kapıdan geçince su sıçrar.',
+      'Köpüklü tepeye değince “Dalgaya kapıldın!” yazmalı. Kapı yeterince seçiliyor mu, dalga buz duvarı gibi mi duruyor?'],
+    links: [['Hemen gelsin', '/?city=trabzon&hepsi&weather=clear&dalga']] },
+  { g: 'Trabzon · 14 Kasım', id: 'trabzon-teleferik', t: '🚡 Boztepe teleferiği', look: [
+      'Paraşüt teknesinin Trabzon hâli: iki kıyıdaki kayalıkta A ayaklı direkler, şeridin üstünden halat geçer. Kırmızı kabin halatta kayar; içindeki yolcu sepet sarkıtmış, sepet ipi martının boyunu keser (engel, turuncu flamalı). Yolcu ipin boş yanına simit atar.',
+      'İpe değince “Teleferik halatına takıldın!” yazmalı. İp yeterince görünüyor mu, kabin direğin bacaklarının arasından geçiyor mu?'],
+    links: [['Hemen gelsin', '/?city=trabzon&hepsi&weather=clear&teleferik']] },
+  { g: 'Trabzon · 14 Kasım', id: 'trabzon-horon', t: '💃 Horon teknesi', look: [
+      'Plaj şemsiyelerinin Trabzon hâli: şeridin yanında uzun, boyalı şenlik teknesi (flamalı ip), güvertede kol kola horon halayı; ucunda kemençeci. Atıcının başörtüsü ve yeleği izlenecek renktir, iki yanındaki oyuncu da aynı renkte (kırmızı, mavi, yeşil bloklar).',
+      'Halay aksak tartımla tepinmeli (düzgün sinüs değil: kısa sert diz kırma, uzun vuruşta omuz titremesi, dört ölçüde bir hep birlikte çökme). Aynı rengi art arda iki çift izleyene bonus ve o renkte parıltı (Antalya’daki gibi).'],
+    links: [['Hemen gelsin', '/?city=trabzon&hepsi&weather=clear&horon']] },
   { g: 'Çanakkale · 14 Kasım', id: 'mugla-degirmen-gorunur', t: '🌬️ Muğla değirmenleri artık sahnede', look: [
       'Önceki sürümde değirmen rüzgârı esiyordu ama yel değirmenleri hiç çizilmiyordu (kod bir yorum satırının içinde kalmıştı). Şimdi şeridin bir yanında kayalık adacıklarda 2-3 değirmen var, kanatlar nefesle hızlanıyor.',
       'Değirmenler şeride çok mu yakın, kıyı teknelerinin içine giriyor mu?'],

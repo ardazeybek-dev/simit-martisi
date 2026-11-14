@@ -19,7 +19,7 @@ const spdAt = m => SPD[clamp(Math.round(m / 100), 0, SPD.length - 1)] * cityK(m)
 
 function solve(w) {
   const NX = Math.round(2 * EDGE / DX) + 1, X = i => -EDGE + i * DX;
-  const stat = w.obs.filter(o => o.top > FLY_Y && (o.kind !== 'yelkene' || o.fix) && o.kind !== 'korsana' && o.kind !== 'gulete' && o.kind !== 'feribota' && o.kind !== 'paraşüt ipine'); // gulet ve feribot korsan gibi kayar (movAll); yarış yelkenlisi (fix) yerinde durur; paraşüt ipi kayar ve incedir, kapatamaz
+  const stat = w.obs.filter(o => o.top > FLY_Y && (o.kind !== 'yelkene' || o.fix) && o.kind !== 'korsana' && o.kind !== 'gulete' && o.kind !== 'feribota' && o.kind !== 'dalgaya' && o.kind !== 'paraşüt ipine' && o.kind !== 'teleferiğe'); // gulet, feribot ve dalga korsan gibi kayar (movAll); yarış yelkenlisi (fix) yerinde durur; paraşüt ipi ve teleferik sepet ipi kayar ve incedir, kapatamaz
   // z'ye göre sıralı statik engeller: tarama penceresi
   stat.sort((a, b) => b.z - a.z);
   const tail = w.tempo.filter(t => t.kind === 'tail'), calm = w.tempo.filter(t => t.kind === 'calm');

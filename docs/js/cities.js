@@ -6,6 +6,7 @@
 // bait: toplanan yem (simit/gevrek), bridges/maiden: İstanbul'a özgü köprü ve Kız Kulesi, imbat/balloons/regatta/flamingo: İzmir'in rüzgâr şeritleri, Kordon balonları, yelken yarışı ve Kuş Cenneti flamingoları, pirate/falls/beach/parasail: Antalya'nın korsan teknesi, Düden şelalesi, plaj şemsiyeleri ve paraşüt teknesi,
 // mill/gulet/diver/cup: Muğla'nın yel değirmeni rüzgârı (imbat kalıbı), Mavi Yolculuk guleti (korsan kalıbı), sünger dalgıcı kabarcıkları (şelale kalıbı) ve Bodrum Cup (yelken yarışı kalıbı)
 // kopru/truva/akinti/feribot: Çanakkale'nin 1915 Köprüsü (Galata kalıbı), Truva Atı (sabit kapı), Boğaz akıntısı (imbat kalıbı, ortada yön değiştirir) ve Kilitbahir feribotu (korsan kalıbı)
+// hamsi/dalga/teleferik/horon: Trabzon'un hamsi sürüsü (zıplayan balık kalıbı), Karadeniz dalgası (korsan kalıbı), Boztepe teleferiği (paraşüt kalıbı) ve horon teknesi (plaj kalıbı)
 // rivK: özel parçalar açık suyun yerini aldığı için kalan açık suya eklenen rakip olasılığı (yoksa 0)
 // mult: puan çarpanı (zor şehir biraz daha çok puan; sunucu submit_score aynı çarpanla denetler)
 // hard: zorluk basamağı (engeller daha erken sıklaşır, geç oyun tavanı yükselir), hunger: simit yemeden kaç saniyede acıkırsın (simit %25, altın %60 doldurur)
@@ -45,7 +46,7 @@ export const CITIES = [
       ['Dardanos', 8500, "Dardanos'a", 295], ['Kumkale', 10200, "Kumkale'ye", 360], ['Seddülbahir', 12600, "Seddülbahir'e", 460], ['Truva', 16000, "Truva'ya", 1700]],
   },
   {
-    id: 'trabzon', name: 'Trabzon', mult: 1.5, hard: 3.2, hunger: 5.1, rivK: 0.4, opened: 'Tebrikler! Trabzon açıldı!', routeKey: 'simit-martisi-route-trabzon', bait: 'simit', end: 'Trabzon kıyısını baştan sona uçtun!', after: "Çanakkale'yi bitirince açılır",
+    id: 'trabzon', name: 'Trabzon', mult: 1.5, hard: 3.2, hunger: 5.1, rivK: 0.4, opened: 'Tebrikler! Trabzon açıldı!', routeKey: 'simit-martisi-route-trabzon', bait: 'simit', hamsi: true, dalga: true, teleferik: true, horon: true, end: 'Trabzon kıyısını baştan sona uçtun!', after: "Çanakkale'yi bitirince açılır",
     stops: [['Akçaabat', 0, "Akçaabat'a", 0], ['Söğütlü', 700, "Söğütlü'ye", 60], ['Kaşüstü', 1500, "Kaşüstü'ne", 80], ['Ganita', 2400, "Ganita'ya", 105],
       ['Meydan', 3400, "Meydan'a", 135], ['Boztepe', 4600, "Boztepe'ye", 170], ['Değirmendere', 5800, "Değirmendere'ye", 210], ['Moloz', 7100, "Moloz'a", 255],
       ['Yomra', 8600, "Yomra'ya", 310], ['Arsin', 10300, "Arsin'e", 380], ['Araklı', 12800, "Araklı'ya", 480], ['Sürmene', 16500, "Sürmene'ye", 1800]],
