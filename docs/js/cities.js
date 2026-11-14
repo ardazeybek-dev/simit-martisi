@@ -8,6 +8,7 @@
 // kopru/truva/akinti/feribot: Çanakkale'nin 1915 Köprüsü (Galata kalıbı), Truva Atı (sabit kapı), Boğaz akıntısı (imbat kalıbı, ortada yön değiştirir) ve Kilitbahir feribotu (korsan kalıbı)
 // hamsi/dalga/teleferik/horon: Trabzon'un hamsi sürüsü (zıplayan balık kalıbı), Karadeniz dalgası (korsan kalıbı), Boztepe teleferiği (paraşüt kalıbı) ve horon teknesi (plaj kalıbı)
 // rivK: özel parçalar açık suyun yerini aldığı için kalan açık suya eklenen rakip olasılığı (yoksa 0)
+// wx: hava çarpanları [açık, yağmur, sis, kar] (yoksa mevsim olasılığı aynen; 0 = o hava bu şehirde hiç çıkmaz)
 // mult: puan çarpanı (zor şehir biraz daha çok puan; sunucu submit_score aynı çarpanla denetler)
 // hard: zorluk basamağı (engeller daha erken sıklaşır, geç oyun tavanı yükselir), hunger: simit yemeden kaç saniyede acıkırsın (simit %25, altın %60 doldurur)
 // opened: bu şehir açılınca çıkan tebrik, end: son iskeleye varınca yazan cümle, after: kilitliyken menüde yazan cümle, soon: henüz hazır değil (seçicide görünür, açılmaz)
@@ -20,7 +21,7 @@ export const CITIES = [
     was: [['Kadıköy', 0], ['Karaköy', 400], ['Beşiktaş', 1000], ['Ortaköy', 1700], ['Bebek', 2500], ['Rumeli Hisarı', 3400], ['Emirgan', 4400], ['Sarıyer', 5500], ['Karadeniz', 6800]],
   },
   {
-    id: 'izmir', name: 'İzmir', mult: 1.1, hard: 1, hunger: 6.5, opened: 'Tebrikler! İzmir açıldı!', routeKey: 'simit-martisi-route-izmir', bait: 'gevrek', rivK: 0.55, imbat: true, balloons: true, regatta: true, flamingo: true, end: 'Körfezi baştan sona uçtun!', after: "İstanbul'u bitirince açılır",
+    id: 'izmir', name: 'İzmir', mult: 1.1, hard: 1, hunger: 6.5, opened: 'Tebrikler! İzmir açıldı!', routeKey: 'simit-martisi-route-izmir', bait: 'gevrek', wx: [1, 1, 1, 0], rivK: 0.55, imbat: true, balloons: true, regatta: true, flamingo: true, end: 'Körfezi baştan sona uçtun!', after: "İstanbul'u bitirince açılır",
     stops: [['Üçkuyular', 0, "Üçkuyular'a", 0], ['Güzelyalı', 600, "Güzelyalı'ya", 40], ['Göztepe', 1300, "Göztepe'ye", 60], ['Konak', 2100, "Konak'a", 80],
       ['Pasaport', 3000, "Pasaport'a", 100], ['Kordon', 3900, "Kordon'a", 130], ['Alsancak', 4900, "Alsancak'a", 160], ['Bayraklı', 6100, "Bayraklı'ya", 200],
       ['Turan', 7300, "Turan'a", 240], ['Alaybey', 8600, "Alaybey'e", 280], ['Karşıyaka', 10000, "Karşıyaka'ya", 340], ['Bostanlı', 12000, "Bostanlı'ya", 1000]],
@@ -46,7 +47,7 @@ export const CITIES = [
       ['Dardanos', 8500, "Dardanos'a", 295], ['Kumkale', 10200, "Kumkale'ye", 360], ['Seddülbahir', 12600, "Seddülbahir'e", 460], ['Truva', 16000, "Truva'ya", 1700]],
   },
   {
-    id: 'trabzon', name: 'Trabzon', mult: 1.5, hard: 3.2, hunger: 5.1, rivK: 0.4, opened: 'Tebrikler! Trabzon açıldı!', routeKey: 'simit-martisi-route-trabzon', bait: 'simit', hamsi: true, dalga: true, teleferik: true, horon: true, end: 'Trabzon kıyısını baştan sona uçtun!', after: "Çanakkale'yi bitirince açılır",
+    id: 'trabzon', name: 'Trabzon', mult: 1.5, hard: 3.2, hunger: 5.1, rivK: 0.4, wx: [0.7, 2.6, 1, 0], opened: 'Tebrikler! Trabzon açıldı!', routeKey: 'simit-martisi-route-trabzon', bait: 'simit', hamsi: true, dalga: true, teleferik: true, horon: true, end: 'Trabzon kıyısını baştan sona uçtun!', after: "Çanakkale'yi bitirince açılır",
     stops: [['Akçaabat', 0, "Akçaabat'a", 0], ['Söğütlü', 700, "Söğütlü'ye", 60], ['Kaşüstü', 1500, "Kaşüstü'ne", 80], ['Ganita', 2400, "Ganita'ya", 105],
       ['Meydan', 3400, "Meydan'a", 135], ['Boztepe', 4600, "Boztepe'ye", 170], ['Değirmendere', 5800, "Değirmendere'ye", 210], ['Moloz', 7100, "Moloz'a", 255],
       ['Yomra', 8600, "Yomra'ya", 310], ['Arsin', 10300, "Arsin'e", 380], ['Araklı', 12800, "Araklı'ya", 480], ['Sürmene', 16500, "Sürmene'ye", 1800]],

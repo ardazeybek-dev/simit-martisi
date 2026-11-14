@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex, seeded, hash } from './util.js';
 import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
-import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
+import { pickWeather, weatherOk, setWeatherFx, updateWeatherFx } from './weather.js';
 import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
 import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
@@ -96,7 +96,7 @@ const CITY_SPD = 0.08;
 // hız basamağı Çanakkale'ye kadar tam (+%32), sonra yarım: Trabzon +%36, Samsun +%40; kalabalık (cityG) sırayla tam büyümeye devam eder
 const cityRank = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityIdx = () => Math.min(4, cityRank()) + 0.5 * Math.max(0, cityRank() - 4),
   cityBand = m => clamp((m - 500) / 1000, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
-const cityKAt = m => 1 + CITY_SPD * cityIdx() * cityBand(m);
+const cityKAt = m => 1 + CITY_SPD * cityIdx() * clamp((m - 500) / 3500, 0, 1) * clamp((14000 - m) / 6000, 0, 1); // şehir hızı 4 km'ye yayılır (2. km'de Samsun İstanbul'un 8. km'si gibiydi); kalabalık (cityBand) 1,5 km'de tam
 // şehir baskısı: aynı bantta heat'e sıra başına ek (özel bölgeler seyrek kaldığı için İzmir zamanla bakınca İstanbul'dan kolaydı: daha çok rakip, kısa açık su, sık yelkenli)
 const CITY_HEAT = 0.8, cityG = () => CITY_HEAT * cityRank() * cityBand(-genZ / 2);
 const spdAt = m => SPD_TAB[clamp(Math.round(m / 100), 0, SPD_TAB.length - 1)];
@@ -1998,7 +1998,7 @@ function resetWorld(newWeather = true) {
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; tempos = []; tempoZ = 0; tempoN = 0; tempoK = 1; tempoIn = null; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   Math.random = R0;
-  if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
+  if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(city.wx); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
   boltFx = 0; renderer.toneMappingExposure = 1;
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
@@ -2177,7 +2177,10 @@ function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görü
   if (state !== 'title') return;
   useCity(CITIES[(CITIES.indexOf(city) + d + CITIES.length) % CITIES.length]);
   store.set(KEY_CITY, city.id);
-  applyWeather(weather); resetWorld(false); renderRouteMap();
+  cityWeather(); applyWeather(weather); resetWorld(false); renderRouteMap();
+}
+function cityWeather() { // menüde şehir değişince o şehirde olmayan hava (İzmir'de kar) yeniden çekilir
+  if (!daily && !weatherOk(weather, city.wx)) { weather = pickWeather(city.wx); setWeatherFx(weather); }
 }
 function startGame() {
   recShowClose();
@@ -4382,7 +4385,7 @@ function catchFish(f, quiet = false) { // quiet: hamsi sürüsünden gelen balı
   points += 25 * mult(); if (combo > 0) comboT = comboT0();
   sfx.gold(); vibrate([20, 30, 20]); hitStop = 0.06; trauma = Math.min(1, trauma + 0.2); flapBurst = 1;
   sparkle(tmp2.set(f.mesh.position.x, f.mesh.position.y, f.z), 30, 0x8fdcff, 5, 0.8, 0.3);
-  if (!quiet) popText(tr('Balık!'), tmp2.set(f.mesh.position.x, f.mesh.position.y + 1.2, f.z), 'shout cheer');
+  if (!quiet) popText(tr(city.hamsi && !daily ? 'Hamsi!' : 'Balık!'), tmp2.set(f.mesh.position.x, f.mesh.position.y + 1.2, f.z), 'shout cheer');
   updateHud();
 }
 // değdin ama elinden kaydı: balık çırpınarak suya döner
@@ -4513,7 +4516,7 @@ window.__game = {
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
   get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, irmak: !!b.bank, ahead: +(gull.position.z - b.z0).toFixed(1), mills: b.mills.length, gust: b.gust ? +b.gust.k.toFixed(2) : null, zm: b.zm, flipped: b.flipped, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
   bolt() { boltFx = 1; },
-  setCity(id) { useCity(cityOf(id)); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },
+  setCity(id) { useCity(cityOf(id)); cityWeather(); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },
   get marks() { return marks.map(k => ({ kind: k.kind, m: -k.z / 2, passed: k.passed })); }, get vs() { return vs && { ...vs }; },
   get route() { return { next: STOPS[stopI] ? STOPS[stopI].name : null, at: stopM[stopI] ?? null, dist, z: gull.position.z, piers: piers.map(p => ({ i: p.i, ahead: +(gull.position.z - p.z).toFixed(1) })) }; },
   warp: m => { dist = m; gull.position.z = -2 * m; }, // deneme: uçuşu ileri sar

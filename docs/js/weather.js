@@ -11,11 +11,13 @@ const SEASON_W = { // [açık, yağmur, sis, kar]
 };
 const KINDS = ['clear', 'rain', 'fog', 'snow'];
 let last = null;
-export function pickWeather() {
-  try { const k = sessionStorage.getItem('simit-martisi-keepw'); sessionStorage.removeItem('simit-martisi-keepw'); if (KINDS.includes(k)) return (last = k); } catch (e) {} // sürüm yenilemesinde hava aynı kalır
+// mul: şehrin hava çarpanları (cities.js wx, [açık, yağmur, sis, kar]); 0 olan hava o şehirde hiç çıkmaz
+export const weatherOk = (k, mul) => !mul || mul[KINDS.indexOf(k)] !== 0;
+export function pickWeather(mul) {
+  try { const k = sessionStorage.getItem('simit-martisi-keepw'); sessionStorage.removeItem('simit-martisi-keepw'); if (KINDS.includes(k) && weatherOk(k, mul)) return (last = k); } catch (e) {} // sürüm yenilemesinde hava aynı kalır
   if (KINDS.includes(FORCE)) return FORCE;
-  const m = new Date().getMonth(), w = SEASON_W[m === 11 || m <= 1 ? 'winter' : m <= 4 ? 'spring' : m <= 7 ? 'summer' : 'autumn'];
-  const roll = () => { let r = Math.random(); for (let i = 0; i < 4; i++) { if ((r -= w[i]) < 0) return KINDS[i]; } return 'clear'; };
+  const m = new Date().getMonth(), w = SEASON_W[m === 11 || m <= 1 ? 'winter' : m <= 4 ? 'spring' : m <= 7 ? 'summer' : 'autumn'].map((v, i) => v * (mul ? mul[i] : 1));
+  const roll = () => { let r = Math.random() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < 4; i++) { if ((r -= w[i]) < 0) return KINDS[i]; } return 'clear'; };
   let k = roll(); if (k === last) k = roll();
   return (last = k);
 }

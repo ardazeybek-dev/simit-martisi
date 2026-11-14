@@ -14,7 +14,7 @@ const overAt = m => clamp((m - 6500) / 7000, 0, 2), spdCap = m => SPEED_MAX * (1
 const SPD = (() => { const a = []; let t = 0, d = 0; while (d < 60000) { const v = Math.min(spdCap(d), 15 + 14 * (1 - Math.exp(-t / 75)) + t * 0.032); if (d >= a.length * 100) a.push(v); d += v / 2 / 30; t += 1 / 30; } return a; })();
 const tierAt = m => [5000, 10000, 15000].reduce((s, t) => s + clamp((m - t) / 300, 0, 1), 0); // main.js TIER_M / TIER_SPD ile aynı kalmalı
 const CITY_SPD = 0.08; // main.js cityKAt ile aynı kalmalı (şehir sırası oyundan okunur: __game.cityIdx)
-let cityI = 0; const cityK = m => 1 + CITY_SPD * cityI * clamp((m - 500) / 1000, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
+let cityI = 0; const cityK = m => 1 + CITY_SPD * cityI * clamp((m - 500) / 3500, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
 const spdAt = m => SPD[clamp(Math.round(m / 100), 0, SPD.length - 1)] * cityK(m) * (1 + 0.045 * tierAt(m));
 
 function solve(w) {

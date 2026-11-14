@@ -1013,6 +1013,9 @@
   Object.assign(EN, {"Bandırma Vapuruna çarptın!": "You hit the Bandırma steamer!", "Vinç halatına takıldın!": "Caught on the crane cable!"});
   Object.assign(DE, {"Bandırma Vapuruna çarptın!": "Gegen den Dampfer Bandırma geprallt!", "Vinç halatına takıldın!": "Im Kranseil hängen geblieben!"});
   Object.assign(ES, {"Bandırma Vapuruna çarptın!": "¡Chocaste con el vapor Bandırma!", "Vinç halatına takıldın!": "¡Te enredaste en el cable de la grúa!"});
+  Object.assign(EN, {"Hamsi!": "Anchovy!"});
+  Object.assign(DE, {"Hamsi!": "Sardelle!"});
+  Object.assign(ES, {"Hamsi!": "¡Anchoa!"});
   var TABLES = { en: EN, de: DE, es: ES };
   // dil menüsünde kendi adıyla görünür; sırası menünün sırası
   var NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', ro: 'Română',
