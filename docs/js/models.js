@@ -944,20 +944,20 @@ export function telLineGeo() { return telLineG ||= pureCall(telLineGeo_, []); }
 function telLineGeo_() {
   const k = new Kit(), STEEL = 0x8a949e, RED = 0xc8302c, cy = x => TEL_Y + TEL_SLOPE * x, V = (x, y, z) => new THREE.Vector3(x, y, z);
   const rocks = (x0, r) => { // yeşil tepeli kayalık ada
-    for (let i = 0; i < 7; i++) k.add(new THREE.IcosahedronGeometry(rand(1.2, 2.2) * r, 0), vert((f, y) => mixHex(0x5c6066, 0x7d8a5a, ramp(0.4, 1.6, y))), x0 + rand(-2.2, 2.2) * r, rand(-0.6, 0.2), rand(-2.6, 2.6) * r, rand(0, 3), rand(0, 3), 0, 1, rand(0.6, 0.9), 1);
-    k.add(new THREE.CylinderGeometry(2.2 * r, 2.8 * r, 1.2, 8), 0x9a9a92, x0, 0.4, 0); // beton kaide
+    for (let i = 0; i < 7; i++) k.add(new THREE.IcosahedronGeometry(rand(1.2, 2.2) * r, 0), vert((f, y) => mixHex(0x5c6066, 0x7d8a5a, ramp(0.4, 1.6, y))), x0 + rand(-2.2, 2.2) * r, rand(-0.6, 0.2), -3.3 + rand(-2.4, 1) * r, rand(0, 3), rand(0, 3), 0, 1, rand(0.6, 0.9), 1);
+    k.add(new THREE.CylinderGeometry(2.2 * r, 2.8 * r, 1.2, 8), 0x9a9a92, x0, 0.4, -3.3); // beton kaide (direkle birlikte halatın arkasında)
   };
-  const pylon = (x0, h) => { // A ayaklı direk: iki bacak z'de açılır (kabin aralarından geçer), çapraz kirişler, tepede makaralı kol, kırmızı uç
-    for (const s of [-1, 1]) {
-      k.add(stick(V(x0, 0.8, s * 2.6), V(x0, h - 0.4, s * 0.55), 0.26, 6), (f, y) => (y > h - 2.6 ? RED : STEEL));
-      k.add(stick(V(x0 - 0.9, 0.8, s * 2.4), V(x0, h - 0.6, s * 0.6), 0.14, 5), STEEL);
-    }
-    for (const y of [h * 0.3, h * 0.55, h * 0.78]) { const w = 2.6 - (2.05 * (y - 0.8)) / (h - 1.2); k.add(new THREE.BoxGeometry(0.2, 0.2, 2 * w), STEEL, x0, y, 0); k.add(stick(V(x0, y, -w), V(x0, y + h * 0.22, w * 0.6), 0.07, 4), STEEL); }
-    k.add(new THREE.BoxGeometry(1.2, 0.5, 1.6), RED, x0, h, 0);
-    for (const dx of [-0.45, 0.45]) k.add(new THREE.CylinderGeometry(0.32, 0.32, 0.16, 10), 0x2b2f36, x0 + dx, h + 0.42, 0, Math.PI / 2);
+  // kafes direk halatın arkasında (-z) durur, tepedeki kol halatın üstüne uzanır: kabin ve sepet ipi direğin önünden geçer, hiçbir parçanın içinden geçmez
+  const pylon = (x0, h) => {
+    const zc = -3.3;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.add(stick(V(x0 + sx * 1.5, 0.8, zc + sz * 1.4), V(x0 + sx * 0.5, h, zc + sz * 0.5), 0.2, 5), (f, y) => (y > h - 2.4 ? RED : STEEL));
+    for (const y of [h * 0.25, h * 0.5, h * 0.75]) { const w = 1.5 - (y - 0.8) / (h - 0.8), d = 1.4 - 0.9 * (y - 0.8) / (h - 0.8); k.add(new THREE.BoxGeometry(2 * w, 0.18, 0.18), STEEL, x0, y, zc - d).add(new THREE.BoxGeometry(2 * w, 0.18, 0.18), STEEL, x0, y, zc + d).add(new THREE.BoxGeometry(0.18, 0.18, 2 * d), STEEL, x0 - w, y, zc).add(new THREE.BoxGeometry(0.18, 0.18, 2 * d), STEEL, x0 + w, y, zc); }
+    k.add(new THREE.BoxGeometry(1.4, 0.5, 1.4), RED, x0, h + 0.2, zc);
+    k.add(new THREE.BoxGeometry(0.6, 0.45, 4.2), RED, x0, h + 0.75, zc + 2.0);                         // halatın üstüne uzanan kol
+    for (const dx of [-0.45, 0.45]) k.add(new THREE.CylinderGeometry(0.3, 0.3, 0.14, 10), 0x2b2f36, x0 + dx, h + 0.42, 0, Math.PI / 2, Math.PI / 2, 0); // makaralar halatın üstünde
   };
-  rocks(0, 1); pylon(0, cy(0) - 0.3);
-  rocks(-2 * TEL_PX, 0.8); pylon(-2 * TEL_PX, cy(-2 * TEL_PX) - 0.3);
+  rocks(0, 1); pylon(0, cy(0) - 0.15);
+  rocks(-2 * TEL_PX, 0.8); pylon(-2 * TEL_PX, cy(-2 * TEL_PX) - 0.15);
   k.add(stick(V(-48, cy(-48), 0), V(55, cy(55), 0), 0.075, 5), 0x2a2f3a); // çelik taşıyıcı halat
   k.add(stick(V(-48, cy(-48) - 0.35, 0.3), V(55, cy(55) - 0.35, 0.3), 0.04, 4), 0x3a3f48); // çekme halatı
   return k.build();
@@ -2850,7 +2850,9 @@ export const TITLE_SETS = {
     terrain(mid, -340, 340, -2, 150, 136, 76, hM, (x, y, z) => {
       if (y < 0.7) return 0x6d6a5e; // ıslak taş
       if (slope(x, z) > 1.2) return mixHex(0x5f6a52, 0x4c5a40, fbm(x * 0.2, y * 0.2)); // dik yamaçta kaya ve çalı
-      return mixHex(mixHex(0x5c9a42, 0x3f7a35, ramp(6, 34, y)), 0x2f6a30, ramp(0.5, 0.68, fbm(x * 0.05 + 2, z * 0.05)) * 0.8); // gür yeşil yamaç, fındıklık lekeleri
+      const g = mixHex(mixHex(0x5c9a42, 0x3f7a35, ramp(6, 34, y)), 0x2f6a30, ramp(0.5, 0.68, fbm(x * 0.05 + 2, z * 0.05)) * 0.8); // gür yeşil yamaç, fındıklık lekeleri
+      const tea = ramp(0.44, 0.5, fbm(x * 0.025 + 7, z * 0.04)) * ramp(66, 86, z); // evlerin üstündeki yamaçta çay bahçeleri: eşyükselti şeritleri
+      return mixHex(g, Math.floor(y / 1.7) % 2 ? 0x8cc455 : 0x356e2c, tea);
     });
     // liman: taş rıhtım, önünde rengârenk kayıklar ve rıhtıma bağlı gırgırlar; solda kayalardan mendirek ve kırmızı fener
     quay(near, -330, 330, 0xcfc9bb, 0x55524a, 0xb9b2a2);
