@@ -3,7 +3,8 @@
 // stops: [ad, metre, yönelme hâli ("Konak'a 120 m kaldı"), ilk varışta hediye simit]
 // routeKey: varılan en uzak iskele (İstanbul eski anahtarı korur, kayıtlar bozulmasın). was: v3.3 öncesi iskeleler [ad, metre]; kayıtlı sıra numarası bir kez ada göre yeni hatta taşınır.
 // Son iskele adı aynı kalmalı: eskiden bitiren yine bitirmiş sayılır, sonraki şehir kilitlenmez
-// bait: toplanan yem (simit/gevrek), bridges/maiden: İstanbul'a özgü köprü ve Kız Kulesi, imbat/balloons/regatta/flamingo: İzmir'in rüzgâr şeritleri, Kordon balonları, yelken yarışı ve Kuş Cenneti flamingoları, pirate/falls/beach/parasail: Antalya'nın korsan teknesi, Düden şelalesi, plaj şemsiyeleri ve paraşüt teknesi
+// bait: toplanan yem (simit/gevrek), bridges/maiden: İstanbul'a özgü köprü ve Kız Kulesi, imbat/balloons/regatta/flamingo: İzmir'in rüzgâr şeritleri, Kordon balonları, yelken yarışı ve Kuş Cenneti flamingoları, pirate/falls/beach/parasail: Antalya'nın korsan teknesi, Düden şelalesi, plaj şemsiyeleri ve paraşüt teknesi,
+// mill/gulet/diver/cup: Muğla'nın yel değirmeni rüzgârı (imbat kalıbı), Mavi Yolculuk guleti (korsan kalıbı), sünger dalgıcı kabarcıkları (şelale kalıbı) ve Bodrum Cup (yelken yarışı kalıbı)
 // rivK: özel parçalar açık suyun yerini aldığı için kalan açık suya eklenen rakip olasılığı (yoksa 0)
 // mult: puan çarpanı (zor şehir biraz daha çok puan; sunucu submit_score aynı çarpanla denetler)
 // hard: zorluk basamağı (engeller daha erken sıklaşır, geç oyun tavanı yükselir), hunger: simit yemeden kaç saniyede acıkırsın (simit %25, altın %60 doldurur)
@@ -31,7 +32,7 @@ export const CITIES = [
     was: [['Konyaaltı', 0], ['Kaleiçi', 800], ['Mermerli', 1900], ['Karaalioğlu', 3300], ['Falez', 4900], ['Lara', 6700], ['Düden', 8900], ['Kundu', 12500]],
   },
   {
-    id: 'mugla', name: 'Muğla', mult: 1.3, hard: 2.4, hunger: 5.7, rivK: 0.4, opened: 'Tebrikler! Muğla açıldı!', routeKey: 'simit-martisi-route-mugla', bait: 'simit', end: 'Bodrum yarımadasını baştan sona uçtun!', after: "Antalya'yı bitirince açılır",
+    id: 'mugla', name: 'Muğla', mult: 1.3, hard: 2.4, hunger: 5.7, rivK: 0.4, opened: 'Tebrikler! Muğla açıldı!', routeKey: 'simit-martisi-route-mugla', bait: 'simit', mill: true, gulet: true, diver: true, cup: true, end: 'Bodrum yarımadasını baştan sona uçtun!', after: "Antalya'yı bitirince açılır",
     stops: [['Bodrum', 0, "Bodrum'a", 0], ['Kumbahçe', 700, "Kumbahçe'ye", 50], ['Torba', 1500, "Torba'ya", 70], ['Gündoğan', 2400, "Gündoğan'a", 95],
       ['Türkbükü', 3400, "Türkbükü'ne", 120], ['Gölköy', 4500, "Gölköy'e", 150], ['Yalıkavak', 5700, "Yalıkavak'a", 190], ['Gümüşlük', 7000, "Gümüşlük'e", 230],
       ['Turgutreis', 8400, "Turgutreis'e", 280], ['Akyarlar', 10000, "Akyarlar'a", 340], ['Bitez', 12300, "Bitez'e", 440], ['Gümbet', 15500, "Gümbet'e", 1600]],

@@ -53,6 +53,26 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Muğla · 14 Kasım', id: 'mugla-manzara', t: '🏰 Muğla: Bodrum ufku ve menü sahnesi', look: [
+      'Menüde: önde rıhtıma kıçtan bağlı guletler (mavi tenteler) ve kayıklar, burunda bal rengi Bodrum Kalesi (en yüksek kulede Türk bayrağı), yamaca tırmanan düz damlı beyaz evler ve pembe begonviller, yamaçta antik tiyatro, arkadaki sırtta yel değirmenleri.',
+      'Uçuşta ufuk: berrak koyu mavi gök, turkuaz deniz, kuru okra-zeytin tepeler, solda kale, sağdaki sırtta değirmen dizisi, marinada gulet direkleri. Göz yoruyor mu, İstanbul gibi mi duruyor?'],
+    links: [['Muğla menüsü', '/?city=mugla&hepsi&weather=clear']] },
+  { g: 'Muğla · 14 Kasım', id: 'mugla-degirmen', t: '🌬️ Yel değirmeni rüzgârı', look: [
+      'Şeridin bir yanında kayalık burunlarda 2-3 beyaz değirmen; içinden geçerken rüzgâr martıyı öbür yana iter. İtiş düzensiz nefeslerle gelir: kanatlar hızlanınca güçlü nefes geliyor, her güçlü nefeste uğultu ve titreşim.',
+      'Simitler de nefesle savrulur. Nefesler fazla sert mi, yoksa fark edilmiyor mu?'],
+    links: [['Hemen gelsin', '/?city=mugla&hepsi&weather=clear&degirmen']] },
+  { g: 'Muğla · 14 Kasım', id: 'mugla-gulet', t: '⛵ Mavi Yolculuk guleti', look: [
+      'Korsan teknesinin Muğla hâli: cilalı ahşap gulet, beyaz yelkenler, kıçta mavi tente, Türk bayrağı. Şeridi yandan keser; iki yelkenin arasındaki boşluk kapı, turistler oraya altın simit atar.',
+      'Çarpınca “Gulete çarptın!” yazmalı.'],
+    links: [['Hemen gelsin', '/?city=mugla&hepsi&weather=clear&gulet']] },
+  { g: 'Muğla · 14 Kasım', id: 'mugla-dalgic', t: '🤿 Sünger dalgıcı kabarcıkları', look: [
+      'Şeridin yanında demirli küçük dalış teknesi (kırmızı-beyaz dalgıç bayrağı, sarı tüpler, sünger yığını), suda bir dalgıç başı. Şeridin o yarısında köpük ve dipten yükselen kabarcıklar var.',
+      'Kabarcıklara giren martı yükselir ve hafifçe öbür yana itilir; yükselen simit kavsinin tepesinde altın var. Kabarcıklar yeterince seçiliyor mu?'],
+    links: [['Hemen gelsin', '/?city=mugla&hepsi&weather=clear&dalgic']] },
+  { g: 'Muğla · 14 Kasım', id: 'mugla-bodrumcup', t: '🏁 Bodrum Cup', look: [
+      'İzmir yelken yarışının Muğla hâli: Optimist yerine büyük ahşap gulet yatları (uzun direk, ana yelken ve flok). Simit çizgisi yelkenlerin boş yanından kıvrılarak geçer; çoğunu toplayana bitişte bonus.',
+      'Yelkene ya da floka değince “Yelkene takıldın!”. Görünmeyen bir yere çarpma olmamalı: yelkenin boş yanından rahat geçiliyor mu?'],
+    links: [['Hemen gelsin', '/?city=mugla&hepsi&weather=clear&bodrumcup']] },
   { g: 'v3.4.3 · 14 Kasım', id: 'odul-tikir', t: '🪙 Topla → sol üst tıkır tıkır doluyor', look: [
       '“Topla”ya basınca ekran hemen kapanıyor, menünün sol üstündeki simit ve balık sayacı tık sesiyle doluyor (büyük ödülde ~2,8 sn, küçükte ~1,2 sn), sonunda parlıyor. Hız iyi mi?'],
     links: [['Ödül ekranı örneği', '/?hediye=1']] },

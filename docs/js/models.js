@@ -670,10 +670,42 @@ function pirateShipGeo() {
   }
   return (pirateGeo = k.build());
 }
-// tayfa: turistler küpeştede el sallar; throwers: güvertede simit tutan iki turist (main.js atış kalıbıyla simit fırlatır)
-export function makePirateShip() {
+// ---------------- Mavi Yolculuk guleti (Muğla) ----------------
+// Korsan teknesiyle aynı kalıp (PIRATE_GATE ve PIRATE_GAP aynen geçerli): cilalı ahşap gövde, beyaz yelkenler, kıçta beyaz köşk üstünde mavi tente.
+// Martı boyunda dolu kalan yerler korsanınkiyle aynı: ön yelken (-4.64..-2.56), arka yelken (1.08..2.82), köşk + tente (3.9..6.7, tepe 6.1)
+let guletGeo = null;
+function guletShipGeo() {
+  if (guletGeo) return guletGeo;
+  const WOOD = 0x9a6236, TEAK = 0xc49a6c, SAIL = 0xfbf8f0, BLUE = 0x2f6fb4, WHITE = 0xf6f3ea, MASTC = 0x8a5a34;
+  const k = hullBands(new Kit(), [[0.5, 0x1f3550], [0.75, WOOD], [0.2, WHITE], [0.3, 0xb07a45]], -0.4, 1.75, 3)
+    .add(new THREE.BoxGeometry(3.2, 0.08, 12), TEAK, 0, 1.3, 0)
+    .add(new THREE.BoxGeometry(3.1, 2.9, 2.6), (f, y) => (y > 3.9 ? WOOD : WHITE), 0, 2.75, 5.3)                 // kıç köşkü: beyaz, ahşap saçak
+    .add(new THREE.BoxGeometry(3.3, 1.75, 2.8), (f, y) => (y < 4.5 ? 0x24598f : BLUE), 0, 5.1, 5.3)             // mavi tente: yanları sarkık perde (martı boyunda dolu)
+    .add(new THREE.BoxGeometry(3.5, 0.16, 3.0), 0xf4f1e8, 0, 6.05, 5.3)                                         // tentenin beyaz kenarı
+    .add(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 4), MASTC, 0, 1.6, -8, -(Math.PI / 2 - 0.35))               // cıvadra
+    .add(new THREE.CylinderGeometry(0.12, 0.16, 10, 6), MASTC, 0, 6.2, -4.5)
+    .add(new THREE.CylinderGeometry(0.1, 0.14, 8.6, 6), MASTC, 0, 5.6, 1.2)
+    .add(sailTri(2.9, 7.6), SAIL, 0, 2.5, -4.45, 0, Math.PI, 0)                                                 // beyaz yelkenler (direkten kıça uzanır)
+    .add(sailTri(2.85, 6.2), SAIL, 0, 2.4, 1.25, 0, Math.PI, 0)
+    .add(new THREE.BoxGeometry(0.1, 0.12, 2.9), 0x2f6fb4, 0, 2.5, -3.0)                                          // yelken altında mavi şerit (bumba)
+    .add(new THREE.BoxGeometry(0.1, 0.12, 2.85), 0x2f6fb4, 0, 2.4, 2.67)
+    .add(new THREE.BoxGeometry(0.04, 0.3, 1.1), 0xe2463b, 0, 11.1, -4.0)                                        // direk flaması
+    .add(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 4), MASTC, 0, 7.2, 6.55)                                    // kıçta bayrak direği
+    .add(new THREE.BoxGeometry(0.04, 0.85, 1.3), 0xe30a17, 0, 7.9, 7.2)                                          // Türk bayrağı
+    ;
+  for (const s of [-1, 1]) {
+    k.add(new THREE.CircleGeometry(0.22, 10), 0xffffff, s * 0.03, 7.9, 7.0, 0, s * Math.PI / 2)                  // ay yıldız (uzaktan beyaz benek)
+      .add(new THREE.CircleGeometry(0.1, 6), 0xffffff, s * 0.03, 7.9, 7.35, 0, s * Math.PI / 2);
+    for (const z of [-3, -0.5, 2]) k.add(new THREE.CylinderGeometry(0.16, 0.16, 0.1, 8), 0x2b2d33, s * 1.72, 0.6, z, 0, 0, Math.PI / 2); // lombozlar
+    for (const z of [4.6, 5.9]) k.add(new THREE.BoxGeometry(0.06, 0.7, 0.5), 0x4d6684, s * 1.56, 3.2, z);       // köşk pencereleri
+    lifeRing(k, 0.32, s * 1.62, 1.75, -1.7, 0);
+  }
+  return (guletGeo = k.build());
+}
+// tayfa: turistler küpeştede el sallar; throwers: güvertede simit tutan iki turist (main.js atış kalıbıyla simit fırlatır). gulet: Muğla'nın Mavi Yolculuk teknesi
+export function makePirateShip(gulet = false) {
   const g = new THREE.Group();
-  const h = new THREE.Mesh(pirateShipGeo(), vcMat); h.castShadow = true; g.add(h);
+  const h = new THREE.Mesh(gulet ? guletShipGeo() : pirateShipGeo(), vcMat); h.castShadow = true; g.add(h);
   addCrew(g, [[1.1, 1.34, -5.6, 0], [-1.1, 1.34, -2.3, 0.4], [1.0, 1.34, 3.6, -0.3], [-0.9, 1.34, 3.4, 0.2]]);
   const throwers = [[-1.0, -1.2], [1.0, 0.7]].map(([x, z]) => {
     const p = makePerson(true); p.mesh.position.set(x, 1.34, z); p.mesh.scale.setScalar(0.85); g.add(p.mesh);
@@ -722,6 +754,45 @@ export function makeFalls() {
   return g;
 }
 
+// ---------------- sünger dalgıcı teknesi (Muğla) ----------------
+// Düden şelalesinin yerini alır (aynı kaldırma kalıbı): şeridin yanında demirli küçük dalış teknesi, kıçta merdiven, güvertede tüpler ve sünger yığını,
+// direkte kırmızı-beyaz dalgıç bayrağı. Suda bir dalgıç başı, şeridin o yarısında köpük lekeleri (kabarcıkları main.js puff ile çıkarır).
+// Yerel: grubun x=0'ı şeridin dışında, şerit -x yönünde (reach: şerit ortasına uzaklık). userData.foam: nabız atan köpük, userData.boat: dalgada sallanan gövde
+let diveGeo = null;
+function diveBoatGeo() {
+  if (diveGeo) return diveGeo;
+  const k = hullBands(new Kit(), [[0.35, 0x1f3550], [0.5, 0xf4f1e8], [0.14, 0x2f7fd6]], -0.3, 1.35, 1.55)
+    .add(new THREE.BoxGeometry(2.3, 0.08, 6), 0xc49a6c, 0, 0.7, 0)
+    .add(new THREE.BoxGeometry(1.7, 1.3, 2), 0xf6f3ea, 0, 1.35, -0.9)                    // kamara
+    .add(new THREE.BoxGeometry(1.95, 0.14, 2.3), 0x2f7fd6, 0, 2.06, -0.9)
+    .add(new THREE.PlaneGeometry(1.3, 0.5), 0x4d6684, 0, 1.6, -1.91, 0, Math.PI)
+    .add(new THREE.CylinderGeometry(0.06, 0.07, 3.6, 5), 0xe8e4da, 0, 3.9, -0.9)          // bayrak direği
+    .add(new THREE.BoxGeometry(0.05, 1.0, 1.4), 0xd8262b, 0, 5.05, -0.15)                 // dalgıç bayrağı: kırmızı, çapraz beyaz şerit
+    .add(new THREE.BoxGeometry(0.07, 0.2, 1.7), 0xffffff, 0, 5.05, -0.15, 0.62, 0, 0);
+  for (const [x, z] of [[-0.55, 1.1], [-0.55, 1.55], [0.55, 1.2]]) k.add(new THREE.CylinderGeometry(0.17, 0.17, 0.95, 8), 0xffc23a, x, 1.2, z).add(new THREE.SphereGeometry(0.08, 6, 4), 0x2b2d33, x, 1.72, z); // tüpler
+  for (const [x, y, z, r] of [[0.35, 0.95, 2.0, 0.26], [0.65, 0.95, 2.25, 0.22], [0.48, 1.25, 2.12, 0.2], [0.1, 0.93, 2.35, 0.2]]) k.add(new THREE.IcosahedronGeometry(r, 1), 0xc99a4a, x, y, z, 0, 0, 0, 1, 0.75, 1); // sünger yığını
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.04, 0.04, 1.9, 4), 0xc9ccd2, s * 0.3, 0.2, 2.75);  // kıç merdiveni
+  for (let y = -0.5; y < 1; y += 0.45) k.add(new THREE.BoxGeometry(0.62, 0.05, 0.05), 0xc9ccd2, 0, y, 2.75);
+  return (diveGeo = k.build());
+}
+let diverGeo = null;
+const diverHeadGeo = () => diverGeo ||= new Kit().add(new THREE.SphereGeometry(0.3, 10, 8), 0x1d1f24, 0, 0.1, 0)
+  .add(new THREE.BoxGeometry(0.42, 0.2, 0.08), 0x7fd0f0, 0, 0.16, -0.27).add(new THREE.CylinderGeometry(0.035, 0.035, 0.6, 4), 0xffc23a, 0.2, 0.4, 0)
+  .add(new THREE.CylinderGeometry(0.2, 0.2, 0.7, 8), 0xffc23a, 0, 0.05, 0.32, Math.PI / 2 - 0.3, 0, 0).build(); // maske, şnorkel, sırtta tüp
+export function makeDiveSite(reach) {
+  const g = new THREE.Group(), boat = new THREE.Group();
+  const h = new THREE.Mesh(diveBoatGeo(), vcMat); h.castShadow = true; boat.add(h); boat.position.x = -2.2; boat.scale.setScalar(1.3); g.add(boat);
+  addCrew(boat, [[0.45, 0.74, 0.3, -Math.PI / 2, true]]); // kaptan güvertede oturup şeride bakar
+  const d = new THREE.Mesh(diverHeadGeo(), vcMat); d.position.set(-reach + rand(2.6, 3.6), 0, rand(-6, 6)); d.rotation.y = rand(-1, 1); g.add(d);
+  const foam = [];
+  for (let i = 0; i < 11; i++) {
+    const f = new THREE.Mesh(FOAM, foamMat), sc = rand(0.55, 1.15); f.position.set(-reach + rand(0.6, 4.6), 0.1, rand(-12, 12)); f.scale.set(sc, 0.4, sc); g.add(f);
+    foam.push({ m: f, ph: Math.random() * 6, s: sc });
+  }
+  g.userData.foam = foam; g.userData.boat = boat;
+  return g;
+}
+
 // ---------------- plaj (Antalya) ----------------
 // Şeride paralel uzanan kum dili; ön sırada renkli çizgili şemsiyeler (altındaki turist simit atar), arkada hasır şemsiyeler ve şezlonglar.
 // Kum dili yassı elipsoit: uçları kendiliğinden incelir. Yerel: kıyı çizgisi x=0'a yakın, kum +x'e uzanır; boy z ekseninde.
@@ -763,9 +834,13 @@ export const REGATTA_COLS = [[0xfdf7ec, 0xe5484d], [0xffd23f, 0x2b3a4c], [0xe548
 export const REGATTA_BOX = [0.94, 1.06, 0.4, 0.75]; // martı boyunda yelken: direk -0.12..+1.72 yana (yatma payıyla 2.0), kıça 1.37
 const regCache = {};
 export function regattaGeo(...a) { return pureCall(regattaGeo_, a); }
-function regattaGeo_(ci, s) {
-  const key = ci * 2 + (s > 0 ? 1 : 0);
+// Bodrum Cup (cup): ahşap gulet yatı, uzun direk, büyük ana yelken ve flok. Ana yelken Optimist'inkiyle aynı açıyla açılır ve martı boyunda
+// daha dardır (1.66 < 2.2): REGATTA_BOX aynen geçerli. Flok direğin önünde kendi kutusunu ister: CUP_JIB [x kayması, yarı en, z kayması, yarı boy]
+export const CUP_JIB = [0.3, 0.42, -1.25, 0.88];
+function regattaGeo_(ci, s, cup = false) {
+  const key = ci * 2 + (s > 0 ? 1 : 0) + (cup ? 8 : 0);
   if (regCache[key]) return regCache[key];
+  if (cup) return (regCache[key] = cupGeo(ci, s));
   const [sail, band] = REGATTA_COLS[ci], ry = s * 0.9; // yelken iyice açık: arkadan gelen martı yelkeni yüzünden görsün
   const q = new THREE.Shape(); q.moveTo(0, 0); q.lineTo(2.4, 0); q.lineTo(2.15, 5.3); q.lineTo(0, 5.0); q.closePath();
   const sq = new THREE.ExtrudeGeometry(q, { depth: 0.05, bevelEnabled: false }); sq.rotateY(Math.PI / 2); // y-z düzleminde, +z'ye uzanır
@@ -779,9 +854,58 @@ function regattaGeo_(ci, s) {
   for (const sd of [1, -1]) k.add(new THREE.CircleGeometry(0.42, 12), band, Math.sin(ry) * 1.05 + sd * Math.cos(ry) * 0.05, 2.5, -0.3 + Math.cos(ry) * 1.05 - sd * Math.sin(ry) * 0.05, 0, ry + sd * Math.PI / 2, 0);
   return (regCache[key] = k.build());
 }
-export function makeRegattaBoat(ci, s) {
-  const g = new THREE.Group(), h = new THREE.Mesh(regattaGeo(ci, s), vcMat); h.castShadow = true; g.add(h);
-  addCrew(g, [[-s * 0.45, 0.45, 0.9, 0, true]]); // denizci yelkenin karşı yanında oturur (tekneyi dengeler)
+function cupGeo(ci, s) {
+  const [, band] = REGATTA_COLS[ci], ry = s * 0.9, SAIL = 0xfbf8f0, WOOD = 0x9a6236;
+  const q = new THREE.Shape(); q.moveTo(0, 0); q.lineTo(2.6, 0); q.lineTo(0.35, 10.2); q.lineTo(0, 10.4); q.closePath();
+  const sq = new THREE.ExtrudeGeometry(q, { depth: 0.05, bevelEnabled: false }); sq.rotateY(-Math.PI / 2); // +z'ye (kıça) uzanır: ry ile s yanına ve kıça açılır, REGATTA_BOX'un olduğu yere
+  const k = hullBands(new Kit(), [[0.3, 0x1f3550], [0.45, WOOD], [0.1, 0xf4efe2]], -0.25, 1.05, 1.5)
+    .add(new THREE.BoxGeometry(1.8, 0.06, 6.4), 0xc49a6c, 0, 0.62, 0)
+    .add(new THREE.BoxGeometry(1.1, 0.5, 1.6), WOOD, 0, 0.85, 1.7)                                    // kamara kapağı
+    .add(new THREE.CylinderGeometry(0.07, 0.09, 11.4, 6), 0x8a5a34, 0, 6.2, -0.3)
+    .add(new THREE.CylinderGeometry(0.05, 0.05, 2.7, 4), 0x8a5a34, Math.sin(ry) * 1.3, 1.05, -0.3 + Math.cos(ry) * 1.3, Math.PI / 2, 0, 0, 1, 1, 1) // bumba
+    .add(sq, (f, y) => (y > 6.4 && y < 6.9 ? band : SAIL), 0, 0.95, -0.3, 0, ry, 0)
+    .add(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 4), 0x8a5a34, 0, 0.75, -4.2, Math.PI / 2 - 0.2, 0, 0) // cıvadra
+    .add(new THREE.BoxGeometry(0.04, 0.32, 0.7), band, 0, 12.1, -0.05);
+  // flok: baştan direk tepesine, yelken açıldığı yana hafif çekili
+  const jib = new THREE.BufferGeometry(); jib.setAttribute('position', new THREE.Float32BufferAttribute([0, 1.0, -3.4, s * 0.9, 1.3, -0.55, 0, 10.6, -0.4, 0, 1.0, -3.4, 0, 10.6, -0.4, s * 0.9, 1.3, -0.55], 3)); jib.computeVertexNormals();
+  k.add(jib, SAIL);
+  for (const sd of [1, -1]) k.add(new THREE.CircleGeometry(0.5, 12), band, Math.sin(ry) * 0.85 + sd * Math.cos(ry) * 0.05, 3.6, -0.3 + Math.cos(ry) * 0.85 - sd * Math.sin(ry) * 0.05, 0, ry + sd * Math.PI / 2, 0);
+  return k.build();
+}
+export function makeRegattaBoat(ci, s, cup = false) {
+  const g = new THREE.Group(), h = new THREE.Mesh(regattaGeo(ci, s, cup), vcMat); h.castShadow = true; g.add(h);
+  addCrew(g, cup ? [[-s * 0.7, 0.66, 0.6, 0, true], [-s * 0.7, 0.66, -1.0, 0, true], [s * 0.2, 0.66, 2.4, Math.PI, true]] : [[-s * 0.45, 0.45, 0.9, 0, true]]); // denizci yelkenin karşı yanında oturur (tekneyi dengeler)
+  return g;
+}
+
+// ---------------- yel değirmeni (Muğla, Bodrum sırtı) ----------------
+// Kayalık burunda beyaz taş gövde, ahşap külah, mavi kapı; kanatlar ayrı parça (main.js rüzgârın gücüyle döndürür). Yerel: kanat göbeği -x'e (şeride) bakar.
+let millG = null;
+function millGeos() {
+  if (millG) return millG;
+  const rock = vert((f, y, x, z) => mixHex(mixHex(0x8f7a55, 0xc9b086, ramp(-0.5, 1.6, y)), 0x8c8a55, ramp(0.5, 0.7, fbm(x * 0.4 + 3, z * 0.4))));
+  const tower = new Kit()
+    .add(new THREE.SphereGeometry(1, 16, 8), rock, 0.4, -0.4, 0, 0, 0, 0, 4.4, 2.0, 4.8)               // kayalık burun
+    .add(new THREE.CylinderGeometry(1.45, 1.75, 6.4, 16), 0xf6f3ec, 0, 4.4, 0)
+    .add(new THREE.CylinderGeometry(1.85, 1.85, 0.3, 16), 0xd9d2c4, 0, 1.35, 0)
+    .add(new THREE.CylinderGeometry(1.55, 1.5, 0.3, 16), 0xd9d2c4, 0, 7.55, 0)
+    .add(new THREE.ConeGeometry(1.75, 2.3, 16), 0x6e4b30, 0, 8.8, 0)                                    // ahşap külah
+    .add(new THREE.PlaneGeometry(0.8, 1.5), 0x2f6fb4, -1.72, 2.3, 0, 0, -Math.PI / 2)                   // mavi kapı, şeride bakar
+    .add(new THREE.PlaneGeometry(0.5, 0.6), 0x2f6fb4, -1.57, 5.4, 0.4, 0, -Math.PI / 2)
+    .add(new THREE.CylinderGeometry(0.13, 0.13, 1.2, 6), 0x5a4030, -1.6, 7.2, 0, 0, 0, Math.PI / 2);   // mil
+  const sails = new Kit().add(new THREE.CylinderGeometry(0.3, 0.3, 0.45, 10), 0x5a4030, 0, 0, 0, 0, 0, Math.PI / 2);
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2, c = Math.cos(a), sn = Math.sin(a);
+    sails.add(new THREE.BoxGeometry(0.12, 4.4, 0.14), 0x6b4a32, 0, c * 2.2, sn * 2.2, a, 0, 0);         // kol
+    sails.add(new THREE.BoxGeometry(0.04, 3.2, 1.35), 0xfbf8f0, -0.04, c * 2.65 - sn * 0.72, sn * 2.65 + c * 0.72, a, 0, 0); // yelken bezi kolun bir yanında
+  }
+  return (millG = { tower: tower.build(SOFT), sails: sails.build() });
+}
+export function makeWindmill() {
+  const { tower, sails } = millGeos(), g = new THREE.Group();
+  const tm = new THREE.Mesh(tower, vcMat); tm.castShadow = true; g.add(tm);
+  const sm = new THREE.Mesh(sails, vcMat); sm.position.set(-2.25, 7.2, 0); sm.rotation.x = Math.random() * 3; sm.castShadow = true; g.add(sm);
+  g.userData.sails = sm;
   return g;
 }
 // yarış şamandırası: turuncu, bayraklı (start ve bitiş)
@@ -1882,7 +2006,7 @@ function houses(k, pts, hAt, o = {}) {
     const y = hAt(x, z), w = rand(2.8, 5.2) * (o.s || 1), d = rand(2.8, 4.6) * (o.s || 1), h = rand(h0, h1), ry = rand(-0.2, 0.2);
     k.add(new THREE.BoxGeometry(w, h + 2.5, d), hz(pick(o.cols || HOUSE_COLS)), x, y + h / 2 - 1.25, z, 0, ry);
     if (Math.random() > flat) k.add(ROOF, hz(pick(ROOF_COLS)), x, y + h + 0.75, z, 0, ry, 0, w + 0.5, rand(1.2, 2), d + 0.5);
-    else k.add(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3), hz(0xd9c7a5), x, y + h - 0.05, z, 0, ry);
+    else k.add(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3), hz(o.slab ?? 0xd9c7a5), x, y + h - 0.05, z, 0, ry);
     if (o.win === false) continue;
     const c = Math.cos(ry), s = Math.sin(ry), nw = Math.max(1, Math.floor(w / 1.7)), nf = Math.max(1, Math.floor(h / 2.3));
     for (let f = 0; f < nf; f++) for (let i = 0; i < nw; i++) {
@@ -1924,6 +2048,25 @@ function boat(k, x, z, ry) { // rıhtıma bağlı kayık: renkli gövde, beyaz k
   k.add(new THREE.BoxGeometry(2.1, 1.1, L, 1, 2, 1), (f, y) => (y < 0.15 ? 0x2a2e36 : c), x, 0.15, z, 0, ry);
   k.add(new THREE.BoxGeometry(1.6, 1, L * 0.35), 0xf4f1e8, x - Math.sin(ry) * L * 0.12, 1.2, z - Math.cos(ry) * L * 0.12, 0, ry);
   if (Math.random() < 0.6) k.add(new THREE.CylinderGeometry(0.06, 0.08, 4, 4), 0xe8e2d2, x + Math.sin(ry) * L * 0.2, 2.6, z + Math.cos(ry) * L * 0.2);
+}
+function gulet(k, x, z, ry, s = 1, sail = 0xf2ead8, hull = 0x8a5a34, tente = 0) { // ahşap gövde, beyaz bant, iki direk, toplu yelken; tente: kıçta renkli gölgelik
+  k.add(new THREE.BoxGeometry(3.2 * s, 1.6 * s, 13 * s, 1, 2, 1), (f, y) => (y < 0.3 ? 0x5c3a22 : hull), x, 0.3, z, 0, ry);
+  k.add(new THREE.ConeGeometry(1.6 * s, 4 * s, 4).rotateX(-Math.PI / 2).rotateY(Math.PI / 4), hull, x - Math.sin(ry) * 8.4 * s, 0.6, z - Math.cos(ry) * 8.4 * s, 0, ry, 0, 1, 0.5, 1);
+  k.add(new THREE.BoxGeometry(2.4 * s, 1.2 * s, 5 * s), 0xf4efe2, x + Math.sin(ry) * 2.5 * s, 1.6, z + Math.cos(ry) * 2.5 * s, 0, ry);
+  if (tente) {
+    k.add(new THREE.BoxGeometry(3 * s, 0.25 * s, 4.6 * s), tente, x + Math.sin(ry) * 3.6 * s, 3.9 * s, z + Math.cos(ry) * 3.6 * s, 0, ry);
+    for (const [a, b] of [[-1.3, 1.6], [1.3, 1.6], [-1.3, 5.6], [1.3, 5.6]]) k.add(new THREE.CylinderGeometry(0.06 * s, 0.06 * s, 2.2 * s, 4), 0xe8e4da, x + (Math.cos(ry) * a + Math.sin(ry) * b) * s, 2.8 * s, z + (-Math.sin(ry) * a + Math.cos(ry) * b) * s);
+  }
+  for (const [o, h] of [[-2.8, 11], [2, 8]]) {
+    k.add(new THREE.CylinderGeometry(0.1 * s, 0.14 * s, h * s, 6), 0x5a4030, x + Math.sin(ry) * o * s, 1 + h * s / 2, z + Math.cos(ry) * o * s);
+    k.add(new THREE.CylinderGeometry(0.4 * s, 0.4 * s, h * 0.55 * s, 8), sail, x + Math.sin(ry) * (o + 0.3) * s, 2.6 + h * s * 0.3, z + Math.cos(ry) * (o + 0.3) * s, 0, 0, 0);
+  }
+}
+function millK(k, x, y, z, s, a) { // uzak sırtta yel değirmeni: beyaz gövde, ahşap külah, kanatlar kameraya (-z) bakar
+  k.add(new THREE.CylinderGeometry(1.45 * s, 1.75 * s, 6.4 * s, 12), 0xf6f3ec, x, y + 3.2 * s, z);
+  k.add(new THREE.ConeGeometry(1.75 * s, 2.3 * s, 12), 0x6e4b30, x, y + 7.55 * s, z);
+  k.add(new THREE.SphereGeometry(0.35 * s, 8, 6), 0x5a4030, x, y + 6.2 * s, z - 1.9 * s);
+  for (let i = 0; i < 4; i++) { const b = a + i * Math.PI / 2; k.add(new THREE.BoxGeometry(0.9 * s, 4.4 * s, 0.1 * s), 0xfbf8f0, x + Math.sin(b) * 2.3 * s, y + 6.2 * s + Math.cos(b) * 2.3 * s, z - 2 * s, 0, 0, -b); }
 }
 function quay(k, x0, x1, top, wet, stone) { // taş rıhtım: suya inen ıslak bant, kenar taşı, babalar, fenerler
   const w = x1 - x0, cx = (x0 + x1) / 2;
@@ -2119,17 +2262,8 @@ export const TITLE_SETS = {
     near.add(new THREE.BoxGeometry(4, 2.4, 22), 0xb9ad98, 58, 0, 14);
     near.add(new THREE.CylinderGeometry(1.2, 1.4, 7, 14), (f, y) => (y > 5 ? 0xd23a33 : 0xf6f3ea), 24, 4.6, 3, 0, 0, 0);
     near.add(new THREE.SphereGeometry(0.7, 10, 8), 0xfff1c8, 24, 8.4, 3);
-    const gulet = (x, z, ry, s = 1, sail = 0xf2ead8, hull = 0x8a5a34) => { // ahşap gövde, beyaz bant, iki direk, toplu yelken
-      near.add(new THREE.BoxGeometry(3.2 * s, 1.6 * s, 13 * s, 1, 2, 1), (f, y) => (y < 0.3 ? 0x5c3a22 : hull), x, 0.3, z, 0, ry);
-      near.add(new THREE.ConeGeometry(1.6 * s, 4 * s, 4).rotateX(-Math.PI / 2).rotateY(Math.PI / 4), hull, x - Math.sin(ry) * 8.4 * s, 0.6, z - Math.cos(ry) * 8.4 * s, 0, ry, 0, 1, 0.5, 1);
-      near.add(new THREE.BoxGeometry(2.4 * s, 1.2 * s, 5 * s), 0xf4efe2, x + Math.sin(ry) * 2.5 * s, 1.6, z + Math.cos(ry) * 2.5 * s, 0, ry);
-      for (const [o, h] of [[-2.8, 11], [2, 8]]) {
-        near.add(new THREE.CylinderGeometry(0.1 * s, 0.14 * s, h * s, 6), 0x5a4030, x + Math.sin(ry) * o * s, 1 + h * s / 2, z + Math.cos(ry) * o * s);
-        near.add(new THREE.CylinderGeometry(0.4 * s, 0.4 * s, h * 0.55 * s, 8), sail, x + Math.sin(ry) * (o + 0.3) * s, 2.6 + h * s * 0.3, z + Math.cos(ry) * (o + 0.3) * s, 0, 0, 0);
-      }
-    };
-    for (const [x, z, ry] of [[-30, 14, 1.5], [-14, 22, 1.6], [6, 30, 1.45], [30, 20, 1.65], [44, 11, 1.5]]) gulet(x, z, ry, rand(0.9, 1.1));
-    gulet(-8, 9, Math.PI / 2 + 0.1, 1.25, 0x1c1c1c, 0x2a1d16); // korsan teknesi: kara gövde, kara yelken
+    for (const [x, z, ry] of [[-30, 14, 1.5], [-14, 22, 1.6], [6, 30, 1.45], [30, 20, 1.65], [44, 11, 1.5]]) gulet(near, x, z, ry, rand(0.9, 1.1));
+    gulet(near, -8, 9, Math.PI / 2 + 0.1, 1.25, 0x1c1c1c, 0x2a1d16); // korsan teknesi: kara gövde, kara yelken
     const px = -8 + Math.sin(Math.PI / 2 + 0.1) * -3.5, pz = 9 + Math.cos(Math.PI / 2 + 0.1) * -3.5 - 0.3; // ana direğin tepesinde korsan bayrağı
     near.add(new THREE.PlaneGeometry(1.8, 1.2), 0x111111, px - 1, 14.2, pz, 0, Math.PI); near.add(new THREE.CircleGeometry(0.32, 10), 0xf6f3ea, px - 1, 14.3, pz - 0.02, 0, Math.PI);
     // Konyaaltı: renkli çizgili şemsiyeler, şezlonglar
@@ -2178,6 +2312,70 @@ export const TITLE_SETS = {
     });
     const hB = (x, z) => -1 + ramp(-170, -250, x) * ramp(60, 110, z) * (50 + 40 * ridged(x * 0.01 + 3, z * 0.012));
     terrain(far, -520, -150, 50, 200, 50, 24, hB, (x, y, z) => mixHex(mixHex(0x5f7a55, 0x8b9483, ramp(30, 80, y)), HZ, 0.22));
+    return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
+  },
+  mugla() { // ön: Bodrum limanı, kıçtan rıhtıma bağlı guletler, balıkçı kayıkları · orta: burunda Bodrum Kalesi, yamaca tırmanan beyaz kübik evler, begonviller, antik tiyatro · arka: yel değirmenli sırt
+    const near = new Kit(), mid = new Kit(), far = new Kit();
+    const pen = x => Math.exp(-(((x + 30) / 24) ** 2)); // kale burnu
+    const shore = x => 15 - 12 * pen(x) + 5 * ramp(60, 180, x);
+    const hM = (x, z) => {
+      const d = z - shore(x), p = pen(x);
+      return -1 + (3.2 + 4.5 * p) * ramp(-0.5, 3, d) + (34 + 14 * fbm(x * 0.02, z * 0.03)) * ramp(14 + 22 * p, 125, d) + 2 * fbm(x * 0.06, z * 0.06) * ramp(2, 20, d);
+    };
+    const slope = (x, z) => Math.abs(hM(x, z + 1) - hM(x, z - 1)) / 2;
+    terrain(mid, -340, 340, -2, 150, 136, 76, hM, (x, y, z) => {
+      if (y < 0.7) return 0xa9926a; // ıslak kaya
+      if (slope(x, z) > 1.1) return mixHex(0xb0925f, 0x8f7550, fbm(x * 0.2, y * 0.2)); // kayalık
+      return mixHex(mixHex(0xc9ad78, 0xd8c08c, ramp(10, 40, y)), 0x7f8a4c, ramp(0.5, 0.68, fbm(x * 0.05 + 2, z * 0.05)) * 0.85); // kuru yamaç, zeytinlik lekeleri
+    });
+    // liman: iki yanda taş rıhtım (burunda kale), rıhtıma kıçtan bağlı guletler (mavi-beyaz tenteler), aralarda balıkçı kayıkları
+    quay(near, -330, -62, 0xd8cfbf, 0x6a6458, 0xcbbd9f);
+    quay(near, 4, 330, 0xd8cfbf, 0x6a6458, 0xcbbd9f);
+    for (let x = 14; x < 190; x += rand(7.5, 9.5)) gulet(near, x, -10, rand(-0.05, 0.05), rand(1.3, 1.5), 0xf2ead8, pick([0x8a5a34, 0x9a6236, 0xf4f1e8]), pick([0x2f6fb4, 0x2f6fb4, 0xf4f1e8, 0x3a8ee6]));
+    for (const [x, z, ry] of [[-120, -16, 1.5], [-88, -24, 1.62], [-150, -26, 1.45]]) gulet(near, x, z, ry, rand(1.3, 1.5), 0xf2ead8, 0x9a6236, 0x2f6fb4);
+    for (const [x0, n] of [[-320, 5], [-240, 6], [190, 5], [260, 4]]) for (let i = 0; i < n; i++) boat(near, x0 + i * rand(3.2, 4.4), -3.4, rand(-0.12, 0.12));
+    // kale burnunun dibinde kayalar
+    for (let x = -58; x < -2; x += rand(2.5, 5)) near.add(new THREE.IcosahedronGeometry(rand(1.2, 2.4), 1), vert((f, y) => mixHex(0x7d6a55, 0xb39573, (y + 1) / 3)), x, -0.4, shore(x) - rand(0.3, 1.8), 0, rand(0, 3), 0, 1, rand(0.5, 0.9), 1);
+    // Bodrum Kalesi (St. Peter): bal rengi taş surlar, mazgallı kare kuleler; en yüksek kulede Türk bayrağı
+    const STONE = 0xd2b98a, STONE2 = 0xc2a674;
+    const crenel = (x, y, z, w, d, c) => {
+      for (let t = -w / 2 + 0.45; t < w / 2; t += 1.5) for (const sd of [-1, 1]) mid.add(new THREE.BoxGeometry(0.8, 0.9, 0.55), c, x + t, y + 0.45, z + sd * (d / 2 - 0.27));
+      for (let t = -d / 2 + 1.2; t < d / 2 - 0.8; t += 1.5) for (const sd of [-1, 1]) mid.add(new THREE.BoxGeometry(0.55, 0.9, 0.8), c, x + sd * (w / 2 - 0.27), y + 0.45, z + t);
+    };
+    const tower = (x, z, w, h, c = STONE) => { const y = hM(x, z) - 1.5; mid.add(new THREE.BoxGeometry(w, h + 1.5, w), c, x, y + (h + 1.5) / 2, z); mid.add(new THREE.BoxGeometry(w + 0.4, 0.35, w + 0.4), mixHex(c, 0xffffff, 0.15), x, y + h + 1.3, z); crenel(x, y + h + 1.5, z, w, w, c); return y + h + 1.5; };
+    const ring = [[-50, 9], [-12, 6], [-7, 16], [-19, 25], [-47, 23], [-50, 9]];
+    for (let i = 0; i < ring.length - 1; i++) {
+      const [ax, az] = ring[i], [bx, bz] = ring[i + 1], L = Math.hypot(bx - ax, bz - az), ry = -Math.atan2(bz - az, bx - ax), y = Math.min(hM(ax, az), hM(bx, bz)) - 1.5;
+      mid.add(new THREE.BoxGeometry(L, 8, 1.4), STONE2, (ax + bx) / 2, y + 4, (az + bz) / 2, 0, ry);
+      for (let t = 0.6; t < L - 0.4; t += 1.5) mid.add(new THREE.BoxGeometry(0.8, 0.9, 1.4), STONE2, ax + (bx - ax) * t / L, y + 8.45, az + (bz - az) * t / L, 0, ry);
+    }
+    const top = tower(-30, 15, 7.5, 21);
+    tower(-14, 9, 6.5, 15); tower(-44, 12, 6, 14, STONE2); tower(-23, 22, 6, 12); tower(-47, 21, 5.5, 11, STONE2);
+    mid.add(new THREE.CylinderGeometry(0.1, 0.1, 5, 4), 0xe8e4da, -30, top + 2.5, 15);
+    mid.add(new THREE.PlaneGeometry(3, 2), 0xe30a17, -28.5, top + 4, 14.9, 0, Math.PI);
+    mid.add(new THREE.CircleGeometry(0.55, 12), 0xffffff, -28.7, top + 4, 14.85, 0, Math.PI);
+    // kıyı palmiyeleri (kalenin dışında, seyrek)
+    for (let x = -330; x < 330; x += rand(12, 24)) if (pen(x) < 0.2) { const z = shore(x) + rand(4, 6.5); palm(mid, x, hM(x, z), z, rand(6, 9)); }
+    // beyaz kübik evler: düz damlı, yamaca tırmanır (aşağıda sık, yukarıda seyrek); kapı önlerinde begonviller
+    const castle = (x, z) => pen(x) > 0.2 && z < 34, theater = (x, z) => Math.hypot(x - 90, z - 78) < 17;
+    const WHITE_H = [0xfbfaf6, 0xf7f5ef, 0xf3f1ea, 0xfdfcf8, 0xeef0f2, 0xf9f3e6];
+    const pts = scatter(-330, 330, 20, 140, 6.2, (x, z) => hM(x, z) > 3.5 && slope(x, z) < 1 && !castle(x, z) && !theater(x, z) && Math.random() < 1 - 0.85 * ramp(45, 115, z));
+    houses(mid, pts, hM, { flat: 1, h: [2.4, 4.6], s: 0.85, cols: WHITE_H, slab: 0xf1efe8, lit: 0.04 });
+    for (const [x, z] of pts) if (Math.random() < 0.3) mid.add(new THREE.IcosahedronGeometry(rand(0.9, 1.4), 0), pick([0xd6337f, 0xe0559a, 0xc72a6e, 0xb5287a]), x + rand(-1.8, 1.8), hM(x, z) + rand(0.6, 2.2), z - rand(1.8, 2.6), 0, rand(0, 3), 0, 1.2, 0.8, 0.6);
+    for (const [x, z] of scatter(-330, 330, 24, 150, 13, (x, z) => hM(x, z) > 4 && slope(x, z) < 1 && !castle(x, z) && !theater(x, z) && fbm(x * 0.05 + 2, z * 0.05) > 0.52)) {
+      if (Math.random() < 0.25) cypress(mid, x, hM(x, z), z, rand(6, 9)); else tree(mid, x, hM(x, z), z, rand(0.7, 0.95));
+    }
+    // antik tiyatro: yamaca oyulmuş, yukarı doğru genişleyen taş basamaklar, önünde sahne binası
+    const tx = 90, ty = hM(tx, 68);
+    for (let i = 0; i < 8; i++) { const h = i * 1.1 + 3.1; mid.add(new THREE.BoxGeometry(16 + i * 3.2, h, 2.4), i % 2 ? 0xcfc09d : 0xe2d6b8, tx, ty - 2 + h / 2, 70 + i * 2.2); }
+    mid.add(new THREE.BoxGeometry(15, 3.2, 2.2), 0xd9caa6, tx, ty + 0.6, 66.5);
+    for (let i = -3; i <= 3; i++) mid.add(new THREE.PlaneGeometry(1, 1.8), 0x6a5a48, tx + i * 2, ty + 0.9, 65.38, 0, Math.PI);
+    // arka: yel değirmenli sırt (beyaz gövdeler, ahşap külahlar, kanatlar bize bakar), eteklerinde beyaz köyler
+    const HZ = 0xd6e6ee;
+    const hR = (x, z) => -1 + (42 + 12 * fbm(x * 0.01, 3)) * ramp(150, 215, z) * (1 - 0.3 * ramp(235, 300, z));
+    terrain(far, -520, 520, 150, 330, 140, 30, hR, (x, y, z) => mixHex(mixHex(mixHex(0x8a8a55, 0xc4a877, ramp(8, 36, y)), 0xb59c6c, ramp(0.55, 0.7, fbm(x * 0.04, z * 0.04))), HZ, 0.22));
+    for (let x = -70; x < 230; x += rand(20, 34)) { const z = 214 + rand(-3, 3); millK(far, x, hR(x, z) - 0.6, z, 2.6, rand(0, 1.5)); }
+    houses(far, scatter(-500, 500, 158, 196, 9, (x, z) => hR(x, z) > 3 && Math.random() < 0.55), hR, { flat: 1, h: [2.4, 4], s: 1.1, cols: WHITE_H, slab: 0xf1efe8, win: false, haze: 0.22, hazeCol: HZ });
     return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
   },
 };

@@ -4,7 +4,7 @@ import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, update
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
-import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT } from './models.js';
+import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
@@ -540,7 +540,9 @@ function spawnTurn(tn) {
 // Körfezin ikindi rüzgârı: suda yana kayan rüzgâr çizgileri uzaktan görünür. Şeridin içinde martı rüzgârın estiği yana itilir,
 // gevrekler de rüzgârla savrulur: rüzgârla birlikte yatan yakalar, karşı koyan kaçırır. Köprünün İstanbul'daki yerini alır.
 // Ayar: IMBAT_PUSH (şeritte itiş), IMBAT_LEN (şerit boyu), imbatZ aralığı. ?imbat → ilk şerit hemen gelir (deneme için)
-const IMBAT_SOON = QS.has('imbat');
+// Muğla (city.mill): aynı şerit, rüzgârüstü kıyıda 2-3 yel değirmeni. Rüzgâr düzensiz nefeslerle gelir (b.gust): güçlü nefes ve durgunluk, süreleri rastgele.
+// Kanatlar, rüzgâr çizgileri, savrulan simitler ve martıya itiş aynı nefesle hızlanır: kanat hızlanınca itiş geliyor demektir. ?degirmen → hemen gelir
+const IMBAT_SOON = QS.has('imbat'), MILL_SOON = QS.has('degirmen');
 const IMBAT_PUSH = 2.4, IMBAT_LEN = 70;
 const STREAK = new THREE.PlaneGeometry(5, 0.42).rotateX(-Math.PI / 2);
 const streakMat = new THREE.MeshBasicMaterial({ map: canvasTex(64, 4, g => { const r = g.createLinearGradient(0, 0, 64, 0); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(0.65, 'rgba(255,255,255,1)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 4); }), transparent: true, opacity: 0.8, depthWrite: false });
@@ -548,6 +550,14 @@ let imbats = [], imbatZ = 0, imbatW = 0;
 function spawnImbat() {
   const z0 = genZ, z1 = z0 - IMBAT_LEN, dir = pick([-1, 1]);
   const g = new THREE.Group(); scene.add(g);
+  const mills = [];
+  if (city.mill) { // rüzgârüstü kıyıda değirmenler (kanat göbeği şeride bakar), aralıkları düzensiz
+    const sd = -dir;
+    decor = decor.filter(d => (d.z < z0 + 12 && d.z > z1 - 12 && d.mesh.position.x * sd > 5.5 ? (scene.remove(d.mesh), false) : true)); // değirmen kayalığının içine düşen kıyı dekoru
+    for (let z = z0 - rand(6, 14), n = 0; z > z1 + 4 && n < 3; z -= rand(20, 30), n++) {
+      const m = makeWindmill(); m.position.set(sd * (LANE + rand(5.8, 7.2)), 0, z); m.rotation.y = (sd < 0 ? Math.PI : 0) + sd * rand(0.55, 0.85); // kanatlar şeride ve gelen martıya dönük (yandan bıçak gibi görünmesin) g.add(m); mills.push(m.userData.sails);
+    }
+  }
   const streaks = [];
   for (let i = 0; i < 70; i++) {
     const m = new THREE.Mesh(STREAK, streakMat); m.position.set(rand(-16, 16), 0.5, rand(z1 - 4, z0 + 4)); m.scale.set(rand(0.6, 1.6), 1, rand(0.7, 1.3));
@@ -562,37 +572,46 @@ function spawnImbat() {
     s.vx = dir * rand(2.6, 4); s.spin = dir * rand(3, 6); sims.push(s);
   }
   if (difficulty() > 0.8) addRival(z0 - rand(26, IMBAT_LEN - 18), dir * rand(2.2, 3.2), rand(0.4, 0.9), undefined, z0 - 4); // rüzgâraltında bekleyen martı
-  imbats.push({ g, z0, z1, dir, streaks, sims, felt: false });
+  imbats.push({ g, z0, z1, dir, streaks, sims, felt: false, mills, gust: city.mill ? { k: 0.4, to: 0.4, hold: 0, hit: false } : null });
   imbatZ = z1 - rand(700, 1100);
   genZ = z1;
 }
 function updateImbat(dt, gz) {
-  let on = 0;
+  let on = 0, gk = 1;
   for (const b of imbats) {
     if (b.z1 > gz + 30 || b.z0 < gz - 260) continue; // geride kaldı ya da henüz uzakta
-    for (const s of b.streaks) { const p = s.m.position; p.x += b.dir * s.v * dt; if (p.x * b.dir > 17) p.x -= b.dir * 34; p.y = waveAt(p.x, p.z, t) + 0.18; } // dalgaya oturur
-    for (const s of b.sims) if (!s.taken && !s.pulled && gz - s.z < 30) { s.x = clamp(s.x + s.vx * dt, -EDGE + 0.4, EDGE - 0.4); s.mesh.position.x = s.x; // rüzgâraltı kenarda durur: şeridin dışına savrulup yakalanamaz olmasın
+    let k = 1;
+    const u = b.gust;
+    if (u) { // değirmen rüzgârı: nefes bitince yenisi (durgunluktan sonra çoğunlukla güçlü nefes), gücü ve süresi rastgele: düz sinüs değil
+      if ((u.hold -= dt) <= 0) { const strong = Math.random() < (u.to < 0.9 ? 0.8 : 0.3); u.to = strong ? rand(1.15, 1.55) : rand(0.2, 0.6); u.hold = strong ? rand(0.5, 1.3) : rand(0.3, 0.9); u.hit = strong; }
+      u.k = damp(u.k, u.to, u.to > u.k ? 5 : 2.5, dt); k = u.k;
+      for (const sl of b.mills) sl.rotation.x -= b.dir * dt * (0.5 + 2.8 * k);
+    }
+    for (const s of b.streaks) { const p = s.m.position; p.x += b.dir * s.v * k * dt; if (p.x * b.dir > 17) p.x -= b.dir * 34; p.y = waveAt(p.x, p.z, t) + 0.18; } // dalgaya oturur
+    for (const s of b.sims) if (!s.taken && !s.pulled && gz - s.z < 30) { s.x = clamp(s.x + s.vx * k * dt, -EDGE + 0.4, EDGE - 0.4); s.mesh.position.x = s.x; // rüzgâraltı kenarda durur: şeridin dışına savrulup yakalanamaz olmasın
       s.mesh.rotation.z += s.spin * dt; }
     if (gz <= b.z0 && gz >= b.z1) {
-      on = b.dir;
-      if (!b.felt && state === 'play') { b.felt = true; sfx.gust(); vibrate(25); }
-    }
+      on = b.dir; gk = k;
+      if (!b.felt && state === 'play') { b.felt = true; sfx.gust(); vibrate(25); if (u) u.hit = false; }
+      else if (u && u.hit && state === 'play') { u.hit = false; sfx.gust(); vibrate(15); } // her güçlü nefeste uğultu ve titreşim
+    } else if (u) u.hit = false;
   }
-  imbatW = damp(imbatW, on * IMBAT_PUSH, on ? 3 : 2, dt);
+  imbatW = damp(imbatW, on * IMBAT_PUSH * gk, on ? (gk === 1 ? 3 : 4) : 2, dt);
 }
 // ---------------- korsan teknesi (Antalya) ----------------
 // Turist korsan guleti şeridi yandan yavaşça keser; martı vardığında tekne hep aynı yerdedir (xa). Yelkenler ve kıç köşkü engel,
 // iki yelken arasındaki boşluk kapı: güvertedeki turistler simit parçalarını tam o boşluğa fırlatır. Ayar: k (kayma hızı), pirateZ aralığı.
 // ?pirate → ilk tekne hemen gelir (deneme için)
-const PIRATE_SOON = QS.has('pirate');
+// Muğla (city.gulet): aynı kalıp, Mavi Yolculuk guleti (cilalı ahşap, beyaz yelken, mavi tente); turistler simiti aynı boşluğa atar. ?gulet → hemen gelir
+const PIRATE_SOON = QS.has('pirate'), GULET_SOON = QS.has('gulet');
 let pirates = [], pirateZ = 0;
 function spawnPirate() {
   const z0 = genZ, pz = z0 - 40, side = pick([-1, 1]), gapX = rand(-1.8, 1.8), xa = gapX - side * PIRATE_GAP;
   if (THROW_ON) throwVolleys(z0, 24, false);
   decor = decor.filter(d => (Math.abs(d.z - pz) < 22 && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // kayarken yan teknelerin içinden geçmesin
-  const { g, throwers } = makePirateShip(); g.rotation.y = side * Math.PI / 2; scene.add(g); addShipLights(g, 'pirate'); // pruva gidiş yönüne (-side) bakar
+  const gu = !!city.gulet, { g, throwers } = makePirateShip(gu); g.rotation.y = side * Math.PI / 2; scene.add(g); addShipLights(g, 'pirate'); // pruva gidiş yönüne (-side) bakar
   const os = PIRATE_GATE.map(([lz, hl, hb, top]) => {
-    const o = { x: xa + side * lz, z: pz, hw: hl, hd: hb, top, kind: 'korsana', passed: false };
+    const o = { x: xa + side * lz, z: pz, hw: hl, hd: hb, top, kind: gu ? 'gulete' : 'korsana', passed: false };
     obstacles.push(o); return { o, off: side * lz };
   });
   for (const [i, p] of throwers.entries()) {
@@ -600,7 +619,7 @@ function spawnPirate() {
     boats.push(bt);
     addThrown(bt, gapX + rand(-0.3, 0.3), pz + (i ? -1.6 : 2.2), true); // korsan zengin: yalnız altın atar (atıcı başına bir tane, ekonomi şişmesin)
   }
-  pirates.push({ g, xa, side, k: rand(0.08, 0.12), z: pz, os, gapX, ph: Math.random() * 6 });
+  pirates.push({ g, xa, side, k: rand(0.08, 0.12), z: pz, os, gapX, ph: Math.random() * 6, gulet: gu });
   pirateZ = pz - rand(700, 1000);
   genZ = z0 - 58;
 }
@@ -616,14 +635,16 @@ function updatePirates(gz) {
 // Şeridin bir yanında falezden denize dökülen şelale; serpintisi şeridin o yarısına taşar. Serpintiye giren martı yukarı kalkar
 // ve şelaleden öte yana itilir. Yükseğe dizilmiş simit kavsine (tepede altın) yalnız serpintiye başından giren yetişir.
 // Ayar: FALLS_LIFT (en çok yükselme), FALLS_PUSH (yana itiş), FALLS_LEN (serpinti boyu), fallsZ aralığı. ?duden → ilk şelale hemen gelir
-const FALLS_SOON = QS.has('duden');
+// Muğla (city.diver): aynı kaldırma kalıbı, şelale yerine şeridin yanında demirli sünger dalgıcı teknesi; şeridin o yarısında yükselen kabarcıklar
+// martıyı kaldırır (falez yok, yana itiş aynı). ?dalgic → hemen gelir
+const FALLS_SOON = QS.has('duden'), DIVER_SOON = QS.has('dalgic');
 const FALLS_LIFT = 3, FALLS_PUSH = 1.3, FALLS_LEN = 26;
 let falls = [], fallsZ = 0, fallsLift = 0, fallsW = 0;
 function spawnFalls() {
   const z0 = genZ, fz = z0 - 34, zA = fz + FALLS_LEN / 2, zB = fz - FALLS_LEN / 2, dir = pick([-1, 1]);
   if (THROW_ON) throwVolleys(z0, 16, false);
   decor = decor.filter(d => (Math.abs(d.z - fz) < 18 && Math.sign(d.mesh.position.x) === dir && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // falezin içinde tekne kalmasın
-  const g = makeFalls(); g.position.set(dir * (LANE + 5.4), 0, fz); if (dir < 0) g.rotation.y = Math.PI; scene.add(g);
+  const dv = !!city.diver, g = dv ? makeDiveSite(LANE + 5.4) : makeFalls(); g.position.set(dir * (LANE + 5.4), 0, fz); if (dir < 0) g.rotation.y = Math.PI; scene.add(g);
   for (const dz of [6, 3]) addSimit(dir * 2.2, FLY_Y, zA + dz, false);
   // serpintide martının izleyeceği yol: hızla kalkar, tepede süzülür, çıkışta alçalır; aralıklar düzensiz, tepedeki altın
   const arc = [];
@@ -632,7 +653,7 @@ function spawnFalls() {
     arc.push(addSimit(dir * clamp(2.2 - s * 0.05 + rand(-0.35, 0.35), 0.6, 3), FLY_Y + FALLS_LIFT * up * rand(0.82, 0.95), z, false));
   }
   const top = arc.reduce((a, b) => (b.y > a.y ? b : a)); scene.remove(top.mesh); simits.splice(simits.indexOf(top), 1); addSimit(top.x, top.y, top.z, true);
-  falls.push({ g, z: fz, zA, zB, dir, acc: 0, felt: false });
+  falls.push({ g, z: fz, zA, zB, dir, acc: 0, felt: false, diver: dv, ph: Math.random() * 6 });
   fallsZ = zB - rand(800, 1100);
   genZ = zB - 4;
   spawnGap(false, Math.max(36, Math.round(speed * 1.3 + 8))); // şelaleden çıkan martı hâlâ havada: hemen ardından vapur gelirse bacanın/camın içinden geçerdi → önce vapursuz açık su (rakip, uçurtma, yelkenli olabilir)
@@ -643,7 +664,10 @@ function updateFalls(dt, gz) {
   for (const f of falls) {
     if (Math.abs(f.z - gz) > 110) continue;
     for (const q of f.g.userData.foam) q.m.scale.x = q.m.scale.z = q.s * (1 + Math.sin(t * 3 + q.ph) * 0.12);
-    for (f.acc += dt * 70; f.acc > 1; f.acc--) { const u = Math.random(); puff(f.dir * (0.3 + 7.5 * u * u), rand(0.3, 2) + (1 - u) * rand(0, 4), rand(f.zB, f.zA), false, rand(-0.5, 0.5), rand(1.4, 2.6), rand(3, 5), rand(1.3, 1.9)); } // serpinti şelaleye yakın yoğun, şeride doğru incelir
+    if (f.diver) { // tekne dalgada sallanır; kabarcıklar şeridin o yarısında dipten yükselir (martının boyunu aşar)
+      const bt = f.g.userData.boat; bt.position.y = waveAt(f.dir * (LANE + 3.2), f.z, t) - 0.1; bt.rotation.z = Math.sin(t * 1.3 + f.ph) * 0.05; bt.rotation.x = Math.sin(t * 0.9 + f.ph) * 0.03;
+      for (f.acc += dt * 80; f.acc > 1; f.acc--) { const u = Math.random(); puff(f.dir * (0.3 + 4.3 * u), rand(0.1, 0.6), rand(f.zB, f.zA), false, rand(-0.3, 0.3), rand(3.5, 6), rand(0.9, 1.8) * (1 - u * 0.3), rand(1.2, 1.8)); }
+    } else for (f.acc += dt * 70; f.acc > 1; f.acc--) { const u = Math.random(); puff(f.dir * (0.3 + 7.5 * u * u), rand(0.3, 2) + (1 - u) * rand(0, 4), rand(f.zB, f.zA), false, rand(-0.5, 0.5), rand(1.4, 2.6), rand(3, 5), rand(1.3, 1.9)); } // serpinti şelaleye yakın yoğun, şeride doğru incelir
     if (gz <= f.zA && gz >= f.zB && gull.position.x * f.dir > 0.2) {
       on = f.dir;
       if (!f.felt && state === 'play') { f.felt = true; sfx.splash(); vibrate(20); }
@@ -713,18 +737,20 @@ function beachCatch(b, m) {
 // Gevrek çizgisi yelkenlerin boş yanından kıvrılarak geçer (slalom); tekneler arası hızla açılır, dönüşe hep yetişilir.
 // Çizginin çoğunu toplayan bitişte bonus alır. Tekne yerinde durur (geçilebilirlik denetimi onu sabit engel sayar: fix).
 // Ayar: tekne sayısı, aralık (hızın 0,7 sn'si), regattaZ aralığı. ?regatta → hemen gelir
-const REGATTA_SOON = QS.has('regatta');
+// Muğla (city.cup): Bodrum Cup, aynı slalom; Optimist yerine ahşap gulet yatları (uzun direk, büyük ana yelken, flok: flokun kendi kutusu var). ?bodrumcup → hemen gelir
+const REGATTA_SOON = QS.has('regatta'), CUP_SOON = QS.has('bodrumcup');
 let regattas = [], regattaZ = 0;
 function spawnRegatta() {
   const z0 = genZ, d = difficulty(), n = 4 + (d > 2 && Math.random() < 0.6 ? 1 : 0), dz = Math.max(16, spdAt(-z0 / 2) * 0.7);
   const g = new THREE.Group(); scene.add(g);
-  const r = { g, z0, z1: 0, total: 0, got: 0, done: false, boats: [] }, gates = [];
+  const r = { g, z0, z1: 0, total: 0, got: 0, done: false, boats: [] }, gates = [], cup = !!city.cup;
   const cols = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
   let sd = pick([-1, 1]);
   for (let i = 0; i < n; i++) {
     const z = z0 - 22 - i * dz, bx = sd * rand(0.3, 1.5), [ox, hw, oz, hd] = REGATTA_BOX;
-    const b = makeRegattaBoat(cols[i % 4], sd); b.position.set(bx, 0, z); g.add(b);
-    obstacles.push({ x: bx + sd * ox, z: z + oz, hw, hd, top: FLY_Y + 2, kind: 'yelkene', fix: true, passed: false });
+    const b = makeRegattaBoat(cols[i % 4], sd, cup); b.position.set(bx, 0, z); g.add(b);
+    obstacles.push({ x: bx + sd * ox, z: z + oz, hw, hd, top: FLY_Y + (cup ? 6 : 2), kind: 'yelkene', fix: true, passed: false });
+    if (cup) { const [jx, jw, jz, jd] = CUP_JIB; obstacles.push({ x: bx + sd * jx, z: z + jz, hw: jw, hd: jd, top: FLY_Y + 6, kind: 'yelkene', fix: true, passed: false }); } // flok
     r.boats.push({ g: b, s: sd, ph: Math.random() * 6 });
     gates.push({ z: z + oz, x: clamp(bx - sd * rand(1.9, 2.4), -THROW_X, THROW_X) });
     if (Math.random() < 0.8 || i === 0) sd = -sd; // çoğunlukla sırayla iki yana, arada aynı yana iki tekne
@@ -1236,6 +1262,7 @@ function updateShed(dt, gz) {
 function pieceAt(z, side) {
   return bridges.some(b => Math.abs(b.z - z) < 16) || pirates.some(p => Math.abs(p.z - z) < 22)
     || beaches.some(b => b.side === side && Math.abs(b.z - z) < BEACH_LEN / 2 + 8) || falls.some(f => f.dir === side && Math.abs(f.z - z) < 18)
+    || imbats.some(b => b.mills.length && -b.dir === side && z < b.z0 + 12 && z > b.z1 - 12)
     || chutes.some(c => Math.abs(c.z - z) < 24) || flamFlocks.some(f => z < f.z0 + 6 && z > f.z1 - 6) || balloonSets.some(b => b.side === side && Math.abs(b.z - z) < 14);
 }
 function spawnScenery(limit) {
@@ -1632,12 +1659,12 @@ function resetWorld(newWeather = true) {
   seedAt('w'); genN = 0; turnN = 0;
   clearWorld(); genZ = -8; segCount = 0; convoy = longSea = false; lastGap = ''; lastPw = ''; sceneryZ = 10; maidenZ = city.maiden ? rand(-500, -300) : -Infinity; cruiseZ = rand(-120, -40); anchorZ = rand(-60, -10);
   bridgeZ = !city.bridges ? -Infinity : BRIDGE_SOON ? -90 : -rand(1150, 1450); // ilk köprü Karaköy'den sonra
-  imbatZ = !city.imbat ? -Infinity : IMBAT_SOON ? -90 : -rand(800, 1000); // ilk imbat Göztepe'den sonra
-  pirateZ = !city.pirate ? -Infinity : PIRATE_SOON ? -90 : -rand(1050, 1300); // ilk korsan teknesi Kaleiçi'nden sonra
-  fallsZ = !city.falls ? -Infinity : FALLS_SOON ? -90 : -rand(1600, 1900); // ilk şelale Mermerli'den önce
+  imbatZ = !(city.imbat || city.mill) ? -Infinity : IMBAT_SOON || MILL_SOON ? -90 : city.mill ? -rand(1300, 1500) : -rand(800, 1000); // ilk imbat Göztepe'den sonra, ilk değirmenler ~0,65-0,75 km
+  pirateZ = !(city.pirate || city.gulet) ? -Infinity : PIRATE_SOON || GULET_SOON ? -90 : city.gulet ? -rand(950, 1150) : -rand(1050, 1300); // ilk korsan teknesi Kaleiçi'nden sonra, ilk gulet ~0,5 km (Muğla'nın ilk özelliği)
+  fallsZ = !(city.falls || city.diver) ? -Infinity : FALLS_SOON || DIVER_SOON ? -90 : city.diver ? -rand(1750, 2000) : -rand(1600, 1900); // ilk şelale Mermerli'den önce, ilk dalgıç ~0,9-1 km
   beachZ = !city.beach ? -Infinity : BEACH_SOON ? -90 : -rand(550, 750); // ilk plaj Konyaaltı açıklarında
   balloonZ = !city.balloons ? -Infinity : BALLOON_SOON ? -90 : -rand(1000, 1300); // ilk balonlar ~0,5-0,65 km (Kordon)
-  regattaZ = !city.regatta ? -Infinity : REGATTA_SOON ? -90 : -rand(2500, 2800); // ilk yarış ~1,25-1,4 km
+  regattaZ = !(city.regatta || city.cup) ? -Infinity : REGATTA_SOON || CUP_SOON ? -90 : city.cup ? -rand(2300, 2600) : -rand(2500, 2800); // ilk yarış ~1,25-1,4 km (Bodrum Cup ~1,15-1,3 km)
   flamingoZ = !city.flamingo ? -Infinity : FLAMINGO_SOON ? -90 : -rand(1700, 2000); // ilk flamingolar ~0,85-1 km: İzmir'in dört özelliği de ilk 1,4 km'de görünsün
   chuteZ = !city.parasail ? -Infinity : PARA_SOON ? -90 : -rand(1800, 2200); // ilk paraşüt ~0,9-1,1 km
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
@@ -1879,7 +1906,7 @@ function showOver() {
   $('overMult').textContent = cm > 1 ? ` ×${cm}` : '';
   const isBest = !daily && final > best, prevBest = best, askName = isBest && final > 0 && netOn() && !myName();
   if (isBest) { best = final; store.set(KEY_BEST, best); }
-  const msg = { quit: 'Uçuş bitti', 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!', 'paraşüt ipine': 'Paraşüt ipine takıldın!', 'açlıktan': 'Açlıktan düştün!', 'soğuktan': 'Donup düştün!' };
+  const msg = { quit: 'Uçuş bitti', 'rakip martıya': 'Martı kavgası!', 'uçurtmaya': 'Uçurtmaya dolandın!', 'bacaya': 'Bacaya çarptın!', 'direğe': 'Direğe çarptın!', 'yelkene': 'Yelkene takıldın!', 'oltaya': 'Oltaya takıldın!', 'cama': 'Cama çarptın!', 'korsana': 'Korsan teknesine çarptın!', 'gulete': 'Gulete çarptın!', 'paraşüt ipine': 'Paraşüt ipine takıldın!', 'açlıktan': 'Açlıktan düştün!', 'soğuktan': 'Donup düştün!' };
   $('overTitle').textContent = tr(msg[cause] || 'Pat!');
   $('stSimit').textContent = fmt(Math.floor(simitCount));
   $('stDist').textContent = `${fmt(Math.round(dist))} m`;
@@ -4117,7 +4144,7 @@ setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gö
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
 {
   const warm = new THREE.Group();
-  warm.add(makeKite(), makeSimit(true), makeSimit(), makeSimitPiece(), makeSimitPiece(true), ...['magnet', 'shield', 'double', 'tea'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), makePirateShip().g, makeFalls(), makeRegattaBoat(0, 1), new THREE.Mesh(MARK, vcMat), ...BALLOONS.map(b => new THREE.Mesh(b, vcMat)), new THREE.Mesh(KORDON, vcMat), new THREE.Mesh(FLAMINGO, vcMat), new THREE.Mesh(FLAMINGO_FLY, vcMat), new THREE.Mesh(flamingoWing(0), vcMat), new THREE.Mesh(flamingoWing(1), vcMat), new THREE.Mesh(shoalGeo(), vcMat), new THREE.Mesh(SPEEDBOAT, vcMat), new THREE.Mesh(chuteGeo(), vcMat), new THREE.Mesh(ROPE_UNIT, ropeMat), new THREE.Mesh(PENNANT, vcMat), makeBeach(BEACH_LEN), ...BEACH_COLS.map(c => new THREE.Mesh(umbrellaGeo(c), vcMat)), new THREE.Mesh(umbrellaGeo('straw'), vcMat), new THREE.Mesh(SUNBED, vcMat), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
+  warm.add(makeKite(), makeSimit(true), makeSimit(), makeSimitPiece(), makeSimitPiece(true), ...['magnet', 'shield', 'double', 'tea'].map(makePowerUp), makeGull(true), makeGull('red'), makeGull('blue'), new THREE.Mesh(salonGeo(0).glass, glassMat), new THREE.Mesh(BRIDGE, bridgeMat), new THREE.Mesh(FLINE, flineMat), new THREE.Mesh(DOLPHIN, vcMat), new THREE.Mesh(FISH, vcMat), makeSimitCart(), makeSimitStand(), makeMaiden(), makePirateShip().g, makePirateShip(true).g, makeFalls(), makeDiveSite(10), makeWindmill(), makeRegattaBoat(0, 1), makeRegattaBoat(0, 1, true), new THREE.Mesh(MARK, vcMat), ...BALLOONS.map(b => new THREE.Mesh(b, vcMat)), new THREE.Mesh(KORDON, vcMat), new THREE.Mesh(FLAMINGO, vcMat), new THREE.Mesh(FLAMINGO_FLY, vcMat), new THREE.Mesh(flamingoWing(0), vcMat), new THREE.Mesh(flamingoWing(1), vcMat), new THREE.Mesh(shoalGeo(), vcMat), new THREE.Mesh(SPEEDBOAT, vcMat), new THREE.Mesh(chuteGeo(), vcMat), new THREE.Mesh(ROPE_UNIT, ropeMat), new THREE.Mesh(PENNANT, vcMat), makeBeach(BEACH_LEN), ...BEACH_COLS.map(c => new THREE.Mesh(umbrellaGeo(c), vcMat)), new THREE.Mesh(umbrellaGeo('straw'), vcMat), new THREE.Mesh(SUNBED, vcMat), ...[0, 1, 2].flatMap(i => [new THREE.Mesh(tankerGeo(i), vcMat), new THREE.Mesh(cargoGeo(i), vcMat)]), ...FERRY_TYPES.flatMap(t => [new THREE.Mesh(t.chim, vcMat), ...t.lengths.map(L => new THREE.Mesh(ferryGeo(L, t.id), vcMat))]));
   warm.position.set(0, FLY_Y, -20); scene.add(warm);
   puff(0, FLY_Y, -20, true); sparkle(warm.position, 1);
   chunks.emit(warm.position, 1, { speed: 1, life: 0.1, size: 0.01, color: 0xffffff });
@@ -4147,7 +4174,7 @@ window.__game = {
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
   get city() { return city.id; }, get full() { return +full.toFixed(3); }, get starve() { return starve; }, get warmth() { return +warmth.toFixed(3); }, setFull: v => (full = v), get arriveText() { return $('arriveSub').textContent; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
-  get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
+  get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, mills: b.mills.length, gust: b.gust ? +b.gust.k.toFixed(2) : null, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
   bolt() { boltFx = 1; },
   setCity(id) { useCity(cityOf(id)); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },
   get marks() { return marks.map(k => ({ kind: k.kind, m: -k.z / 2, passed: k.passed })); }, get vs() { return vs && { ...vs }; },
