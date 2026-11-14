@@ -149,7 +149,7 @@ drop function if exists submit_score(uuid, uuid, int, int, text);
 create or replace function submit_score(p_id uuid, p_secret uuid, p_run uuid, p_score int, p_dist int default 0, p_city text default null) returns int
 language plpgsql security definer set search_path = public as $$
 declare w date := sm_week(); best int; t float8; r runs; d int := greatest(0, coalesce(p_dist, 0));
-  cm float8 := case p_city when 'izmir' then 1.1 when 'antalya' then 1.2 else 1 end; pts float8; bad text;
+  cm float8 := case p_city when 'izmir' then 1.1 when 'antalya' then 1.2 when 'mugla' then 1.3 when 'canakkale' then 1.4 when 'trabzon' then 1.5 when 'samsun' then 1.6 else 1 end; pts float8; bad text;
 begin
   if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
   select * into r from runs where id = p_run and player_id = p_id and started_at > now() - interval '1 day';
