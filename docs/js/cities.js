@@ -5,6 +5,7 @@
 // Son iskele adı aynı kalmalı: eskiden bitiren yine bitirmiş sayılır, sonraki şehir kilitlenmez
 // bait: toplanan yem (simit/gevrek), bridges/maiden: İstanbul'a özgü köprü ve Kız Kulesi, imbat/balloons/regatta/flamingo: İzmir'in rüzgâr şeritleri, Kordon balonları, yelken yarışı ve Kuş Cenneti flamingoları, pirate/falls/beach/parasail: Antalya'nın korsan teknesi, Düden şelalesi, plaj şemsiyeleri ve paraşüt teknesi,
 // mill/gulet/diver/cup: Muğla'nın yel değirmeni rüzgârı (imbat kalıbı), Mavi Yolculuk guleti (korsan kalıbı), sünger dalgıcı kabarcıkları (şelale kalıbı) ve Bodrum Cup (yelken yarışı kalıbı)
+// kopru/truva/akinti/feribot: Çanakkale'nin 1915 Köprüsü (Galata kalıbı), Truva Atı (sabit kapı), Boğaz akıntısı (imbat kalıbı, ortada yön değiştirir) ve Kilitbahir feribotu (korsan kalıbı)
 // rivK: özel parçalar açık suyun yerini aldığı için kalan açık suya eklenen rakip olasılığı (yoksa 0)
 // mult: puan çarpanı (zor şehir biraz daha çok puan; sunucu submit_score aynı çarpanla denetler)
 // hard: zorluk basamağı (engeller daha erken sıklaşır, geç oyun tavanı yükselir), hunger: simit yemeden kaç saniyede acıkırsın (simit %25, altın %60 doldurur)
@@ -38,7 +39,7 @@ export const CITIES = [
       ['Turgutreis', 8400, "Turgutreis'e", 280], ['Akyarlar', 10000, "Akyarlar'a", 340], ['Bitez', 12300, "Bitez'e", 440], ['Gümbet', 15500, "Gümbet'e", 1600]],
   },
   {
-    id: 'canakkale', name: 'Çanakkale', mult: 1.4, hard: 2.8, hunger: 5.4, rivK: 0.4, opened: 'Tebrikler! Çanakkale açıldı!', routeKey: 'simit-martisi-route-canakkale', bait: 'simit', end: 'Çanakkale Boğazını baştan sona uçtun!', after: "Muğla'yı bitirince açılır",
+    id: 'canakkale', name: 'Çanakkale', mult: 1.4, hard: 2.8, hunger: 5.4, rivK: 0.4, opened: 'Tebrikler! Çanakkale açıldı!', routeKey: 'simit-martisi-route-canakkale', bait: 'simit', kopru: true, truva: true, akinti: true, feribot: true, end: 'Çanakkale Boğazını baştan sona uçtun!', after: "Muğla'yı bitirince açılır",
     stops: [['Lapseki', 0, "Lapseki'ye", 0], ['Umurbey', 700, "Umurbey'e", 55], ['Köprübaşı', 1500, "Köprübaşı'na", 75], ['Kordon', 2400, "Kordon'a", 100],
       ['Saat Kulesi', 3400, "Saat Kulesi'ne", 130], ['Kilitbahir', 4500, "Kilitbahir'e", 160], ['Kepez', 5700, "Kepez'e", 200], ['İntepe', 7100, "İntepe'ye", 245],
       ['Dardanos', 8500, "Dardanos'a", 295], ['Kumkale', 10200, "Kumkale'ye", 360], ['Seddülbahir', 12600, "Seddülbahir'e", 460], ['Truva', 16000, "Truva'ya", 1700]],

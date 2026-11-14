@@ -52,7 +52,8 @@ const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Eule
 const _c = new THREE.Color();
 export class Kit {
   constructor() { this.parts = []; }
-  // color: sayı ya da (yüzİndeksi, yüzMerkeziY) => sayı; fonksiyonda .vert varsa köşe başına çağrılır: (yüz, y, x, z) => sayı
+  // color: sayı ya da (yüzİndeksi, yüzMerkeziY) => sayı; fonksiyonda .vert varsa köşe başına çağrılır: (yüz, y, x, z) => sayı;
+  // null: geometrinin kendi köşe renkleri (hazır bir Kit gövdesi başka bir Kit'e eklenir, ör. oyundaki feribot menü sahnesinde)
   add(geo, color, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) {
     const g = geo.index ? geo.toNonIndexed() : geo.clone();
     _m.compose(_p.set(x, y, z), _q.setFromEuler(_e.set(rx, ry, rz)), _s.set(sx, sy, sz));
@@ -70,6 +71,7 @@ export class Kit {
       const a = g.attributes.position.array, cnt = g.attributes.position.count;
       pos.set(a, o * 3);
       if (nor) nor.set(g.attributes.normal.array, o * 3);
+      if (color === null) { col.set(g.attributes.color.array, o * 3); o += cnt; g.dispose(); continue; }
       for (let v = 0; v < cnt; v += 3) {
         const face = v / 3, cy = (a[v * 3 + 1] + a[v * 3 + 4] + a[v * 3 + 7]) / 3;
         if (color.vert) {

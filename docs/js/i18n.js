@@ -1004,6 +1004,9 @@
   Object.assign(EN, {"Gulete çarptın!": "You hit the gulet!"});
   Object.assign(DE, {"Gulete çarptın!": "Gegen die Gulet geprallt!"});
   Object.assign(ES, {"Gulete çarptın!": "¡Chocaste con la goleta!"});
+  Object.assign(EN, {"Feribota çarptın!": "You hit the car ferry!", "Truva Atına çarptın!": "You hit the Trojan Horse!", "Halata takıldın!": "Caught on a rope!", "Boyacı iskelesine çarptın!": "You hit the painters' cradle!"});
+  Object.assign(DE, {"Feribota çarptın!": "Gegen die Autofähre geprallt!", "Truva Atına çarptın!": "Gegen das Trojanische Pferd geprallt!", "Halata takıldın!": "Im Seil verfangen!", "Boyacı iskelesine çarptın!": "Gegen die Malergondel geprallt!"});
+  Object.assign(ES, {"Feribota çarptın!": "¡Chocaste con el ferry!", "Truva Atına çarptın!": "¡Chocaste con el caballo de Troya!", "Halata takıldın!": "¡Te enredaste en una cuerda!", "Boyacı iskelesine çarptın!": "¡Chocaste con el andamio de los pintores!"});
   var TABLES = { en: EN, de: DE, es: ES };
   // dil menüsünde kendi adıyla görünür; sırası menünün sırası
   var NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', ro: 'Română',

@@ -53,6 +53,26 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Çanakkale · 14 Kasım', id: 'canakkale-manzara', t: '🌉 Çanakkale: Boğaz ufku ve menü sahnesi', look: [
+      'Menüde: önde Kordon rıhtımı, taş kaidesinde dev tahta Truva Atı, iskelede rampası açık beyaz-mavi arabalı feribot, kayıklar; ortada Saat Kulesi ve kiremit damlı alçak evler; karşı yakada Kilitbahir Kalesi, tepede Şehitler Abidesi silüeti, sağda uzakta kırmızı kuleli 1915 Köprüsü.',
+      'Uçuşta ufuk: serin mavi gök ve ince bulutlar, koyu mavi-yeşil su, solda Gelibolu sırtında Abide, kıyıda Kilitbahir, sağda Çanakkale ve Saat Kulesi, uzakta 1915 Köprüsü (iki dev kırmızı kule), Boğaz’da şilepler. Muğla’dan ve İstanbul’dan ayrı duruyor mu?'],
+    links: [['Çanakkale menüsü', '/?city=canakkale&hepsi&weather=clear']] },
+  { g: 'Çanakkale · 14 Kasım', id: 'canakkale-feribot', t: '⛴️ Kilitbahir arabalı feribotu', look: [
+      'Korsan teknesinin Çanakkale hâli: beyaz, mavi bantlı feribot şeridi yandan keser; pruva rampası açık, güvertede arabalar. Kapı rampa portalıyla yolcu salonu arasındaki araba güvertesi; arabaların arasındaki yolcular oraya simit atar (arada altın).',
+      'Portala ya da salona değince “Feribota çarptın!” yazmalı. Boşluk yeterince seçiliyor mu?'],
+    links: [['Hemen gelsin', '/?city=canakkale&hepsi&weather=clear&feribot']] },
+  { g: 'Çanakkale · 14 Kasım', id: 'canakkale-akinti', t: '🌀 Boğaz akıntısı', look: [
+      'Suda yana akan köpük çizgileri; şeridin ortasında dönen bir girdap. Girdaba kadar akıntı martıyı bir yana iter, girdaptan sonra öbür yana: iki kez karşı dümen. Yön değişince su sesi ve titreşim.',
+      'Simitler de akıntıyla savrulur (girdabın iki yanında ters yöne). Girdap yeterince görünüyor mu, dönüş fark ediliyor mu?'],
+    links: [['Hemen gelsin', '/?city=canakkale&hepsi&weather=clear&akinti']] },
+  { g: 'Çanakkale · 14 Kasım', id: 'canakkale-truva', t: '🐴 Truva Atı', look: [
+      'Salın üstünde dev tahta at şeritte durur (tekerlekli sal, hafif çapraz). Dört bacağı engel; martı bacakların arasından karnın altından geçer, kamera da altından geçer. Simit çizgisi bacakların arasından süzülür, tam karnın altında altın simit; bacakların arasından geçene bonus.',
+      'Bacağa değince “Truva Atına çarptın!”. Kamera atın gövdesinin içinden geçmemeli.'],
+    links: [['Hemen gelsin', '/?city=canakkale&hepsi&weather=clear&truva']] },
+  { g: 'Çanakkale · 14 Kasım', id: 'canakkale-kopru', t: '🌉 1915 Çanakkale Köprüsü', look: [
+      'Galata köprüsünün Çanakkale hâli: iki dev kırmızı kule şeridin iki yanında, asma kablolar, tabliye martının üstünden geçer. Balıkçı yerine tabliyeden bakım halatları (ucunda boya kovası) ve turuncu tulumlu boyacıların iskeleleri sarkar; simit yolu aralarından kıvrılır, geçene köprü bonusu.',
+      'Halata değince “Halata takıldın!”, iskeleye değince “Boyacı iskelesine çarptın!”. Rotada yalnızca bir iki kez gelir (Köprübaşı’nda ve ~9 km sonra).'],
+    links: [['Hemen gelsin', '/?city=canakkale&hepsi&weather=clear&kopru1915']] },
   { g: 'Muğla · 14 Kasım', id: 'mugla-manzara', t: '🏰 Muğla: Bodrum ufku ve menü sahnesi', look: [
       'Menüde: önde rıhtıma kıçtan bağlı guletler (mavi tenteler) ve kayıklar, burunda bal rengi Bodrum Kalesi (en yüksek kulede Türk bayrağı), yamaca tırmanan düz damlı beyaz evler ve pembe begonviller, yamaçta antik tiyatro, arkadaki sırtta yel değirmenleri.',
       'Uçuşta ufuk: berrak koyu mavi gök, turkuaz deniz, kuru okra-zeytin tepeler, solda kale, sağdaki sırtta değirmen dizisi, marinada gulet direkleri. Göz yoruyor mu, İstanbul gibi mi duruyor?'],

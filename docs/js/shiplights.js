@@ -102,6 +102,15 @@ function lampsOf(kind, o = {}) {
       for (const sx of [-1, 1]) for (let x = 10.6; x < 47.5; x += 2.3) if (Math.random() < 0.75) a.push(L(sx * x, 10.7, s * 2.38, 0, 1.2));
       for (let x = -7.5; x <= 7.6; x += 3) a.push(L(x, 11.75, s * 2.1, 6, 0.8));
     }
+  } else if (kind === 'bridge15') { // 1915 Köprüsü: tabliye fenerleri, kule tepelerinde yanıp sönen kırmızı uçak ikazı, tabliye altında koridoru aydınlatan lambalar
+    for (const s of [-1, 1]) {
+      for (let x = -72; x <= 72; x += 12) a.push(L(x, 16.4, s * 3.9, 1, 1.25));
+      for (let x = -7.5; x <= 7.6; x += 3) a.push(L(x, 11.75, s * 2.6, 6, 0.8));
+      for (const tx of [-34, 34]) a.push(L(tx, 81.6, s * 4.6, 4, 3), L(tx, 47.6, s * 5.7, 4, 2.4));
+    }
+  } else if (kind === 'carferry') { // arabalı feribot (pruva -z): rampa portalında fener, direkte beyaz, köprüüstü ve salon pencereleri, seyir fenerleri
+    a.push(L(0, 7.95, -5.6, 6, 1.4), L(0, 11.1, 1.6, 1, 1.2)); nav(a, 2.5, 7.2, 1.0, -1);
+    for (const s of [-1, 1]) { for (const z of [0.9, 1.6, 2.3]) a.push(L(s * 1.84, 7.65, z, 0, 1.1)); row(a, s * 2.44, 5.25, -1, 5.6, 1.1, 0.65); }
   } else if (kind === 'pier') { // iskele binası (koridora bakan yüz -x): pencereler, saçakta fenerler, iskele ucunda beyaz, saat kadranı
     for (let z = -6; z <= 6; z += 2) { if (Math.random() < 0.7) a.push(L(-3.62, 5, z, 0, 1.3)); if (Math.abs(z) > 1 && Math.random() < 0.6) a.push(L(-3.62, 2.3, z, 0, 1.3)); }
     for (const z of [-5, 0, 5]) a.push(L(-8.4, 3.95, z, 6));
@@ -124,7 +133,7 @@ function lampsOf(kind, o = {}) {
 const DECK_Y = 2.6; // models.js DECK
 function litOf(kind, o = {}) {
   if (kind === 'simitboat') return [new THREE.Vector3(0, 1.6, -1.4)]; // simitçi ve tablası
-  if (kind === 'bridge') return [-5, 0, 5].map(x => new THREE.Vector3(x, 10.6, 0)); // köprü altı: martı ışığın altından geçer
+  if (kind === 'bridge' || kind === 'bridge15') return [-5, 0, 5].map(x => new THREE.Vector3(x, 10.6, 0)); // köprü altı: martı ışığın altından geçer
   if (kind !== 'ferry') return null;
   const len = o.L || 50, a = []; for (let z = -len / 2 + 7; z <= len / 2 - 6; z += 10) a.push(new THREE.Vector3(0, DECK_Y + 2, z)); return a;
 }
