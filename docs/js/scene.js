@@ -688,25 +688,25 @@ function buildSamsun() {
     sh.lineTo(620, -5);
     add(new THREE.ShapeGeometry(sh), mP, 0, 0, z, far, col);
   };
-  const delta = x => smStep(-330, -230, -x); // solda delta: tepeler ovaya iner
+  const delta = x => smStep(170, 230, -x); // solda delta: tepeler ovaya iner
   // arkada: alçak, yumuşak yeşil tepeler (Trabzon'un dağlarının yarısından da alçak)
   const backY = x => 4 + (20 + 7 * Math.sin(x * 0.008 + 0.7) + 3 * Math.sin(x * 0.023 + 2.1)) * (1 - 0.9 * delta(x));
   row(backY, -430, (x, y) => (y > 22 ? 0x7f9f76 : 0x6c9461));
   // ön sıra: kentin arkasında yeşil sırt; batıda yuvarlak Amisos tepesi
-  const amX = -175, hillY = x => 3 + (10 + 2.5 * Math.sin(x * 0.03 + 1) + Math.sin(x * 0.11) * 0.8) * (1 - delta(x)) + 22 * Math.exp(-(((x - amX) / 55) ** 2));
+  const amX = -120, hillY = x => 3 + (10 + 2.5 * Math.sin(x * 0.03 + 1) + Math.sin(x * 0.11) * 0.8) * (1 - delta(x)) + 22 * Math.exp(-(((x - amX) / 55) ** 2));
   row(hillY, -410, (x, y) => (y < 8 ? GREEN : y < 20 ? GREEN2 : 0x5a9046));
   // Kızılırmak deltası: düz sazlık ova, bataklık gölleri, saz öbekleri
-  add(new THREE.BoxGeometry(330, 3, 8), mP, -455, 0.6, -404, far, (x, y) => (y > 1.6 ? DELTA : 0x7a8a46));
+  add(new THREE.BoxGeometry(260, 3, 8), mP, -300, 0.6, -404, far, (x, y) => (y > 1.6 ? DELTA : 0x7a8a46));
   const lake = basic(PAL.seaFar, { transparent: true, opacity: 0.85, depthWrite: false, vertexColors: false });
-  for (const [x, w] of [[-560, 40], [-470, 26], [-380, 34], [-300, 18]]) { const m = add(new THREE.CircleGeometry(1, 14), lake, x, 2.15, -399.8); m.scale.set(w, 1.1, 1); m.renderOrder = 1; }
+  for (const [x, w] of [[-380, 30], [-300, 22], [-232, 26]]) { const m = add(new THREE.CircleGeometry(1, 14), lake, x, 2.15, -399.8); m.scale.set(w, 1.1, 1); m.renderOrder = 1; }
   const reeds = new Kit();
-  for (let x = -610; x < -270; x += rand(3, 7)) reeds.add(new THREE.ConeGeometry(rand(1, 1.8), rand(2.5, 4.5), 4), pick([0x8a9a46, 0xb8ac5a, 0x6f8a3a]), x, 3.2, rand(-1, 1));
+  for (let x = -430; x < -175; x += rand(3, 7)) reeds.add(new THREE.ConeGeometry(rand(1, 1.8), rand(2.5, 4.5), 4), pick([0x8a9a46, 0xb8ac5a, 0x6f8a3a]), x, 3.2, rand(-1, 1));
   add(reeds.build(), mP, 0, 0, -398);
   // Amisos tepesi: tepede iki üç tümülüs (çimenli yuvarlak höyük), kıyıdan tepeye teleferik hattı, direkler, kırmızı kabinler
   const tum = new Kit();
   for (const [dx, r] of [[-12, 6], [2, 8], [15, 5]]) tum.add(new THREE.SphereGeometry(r, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0x86a45a, amX + dx, hillY(amX + dx) - 1.2, 0, 0, 0, 0, 1, 0.45, 1);
   add(tum.build(), mP, 0, 0, -409);
-  const tel = new Kit(), a = new THREE.Vector3(amX - 70, 4, 0), b = new THREE.Vector3(amX + 4, hillY(amX + 4) + 6, 0);
+  const tel = new Kit(), a = new THREE.Vector3(amX - 55, 4, 0), b = new THREE.Vector3(amX + 4, hillY(amX + 4) + 6, 0);
   { const d = new THREE.Vector3().subVectors(b, a), g = new THREE.CylinderGeometry(0.25, 0.25, d.length(), 4); g.translate(0, d.length() / 2, 0); g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize())); g.translate(a.x, a.y, a.z); tel.add(g, 0x3a3f48); }
   for (const u of [0.18, 0.5, 0.8]) { const x = a.x + (b.x - a.x) * u, y = a.y + (b.y - a.y) * u; tel.add(new THREE.BoxGeometry(0.9, y - hillY(x) * 0.6, 0.9), 0x9aa0a6, x, (y + hillY(x) * 0.6) / 2, 0); }
   for (const u of [0.32, 0.66]) tel.add(new THREE.BoxGeometry(2.6, 2.2, 2), 0xd0312d, a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u - 2, 0);
@@ -714,7 +714,7 @@ function buildSamsun() {
   add(tel.build(), mP, 0, 0, -403);
   // geniş modern kent: Amisos'tan limana kadar üç dört sıra orta katlı apartman bloğu (düz damlı, beyaz-krem-pastel), pencere bantları
   const city = new Kit();
-  for (let r = 0; r < 4; r++) for (let x = -235 + rand(0, 8); x < 330;) {
+  for (let r = 0; r < 4; r++) for (let x = -160 + rand(0, 8); x < 330;) {
     const w = rand(5, 10), h = rand(10, 22) * (1 - r * 0.12) + (Math.random() < 0.06 ? rand(8, 14) : 0), zz = -r * 3.2, c = pick(SM_FAC);
     if (Math.random() < 0.9) {
       city.add(new THREE.BoxGeometry(w, h + 2, 2.4), c, x + w / 2, (h - 2) / 2, zz);
@@ -724,16 +724,16 @@ function buildSamsun() {
     x += w + rand(0.8, 2.6);
   }
   add(city.build(), mP, 0, 0, -398);
-  farTown(mP, -391, 2.5, 6, 0, -270, 330, far, 0.1, { facades: SM_FAC, roofs: SM_ROOF, roofP: 0.35 });
+  farTown(mP, -391, 2.5, 6, 0, -165, 330, far, 0.1, { facades: SM_FAC, roofs: SM_ROOF, roofP: 0.35 });
   // Onur Anıtı: kıyıdaki meydanda yüksek kaide üstünde şaha kalkmış at ve süvari (küçük, sade silüet)
-  const ox = -40, oz = -388, BR = 0x4a4038, PED = 0xd8d2c4;
-  add(new THREE.BoxGeometry(5, 7, 3), mP, ox, 3.5, oz, far, PED);
-  const horse = add(new THREE.BoxGeometry(5.2, 2.2, 1.4), mP, ox, 9.6, oz, far, BR); horse.rotation.z = 0.35;
-  add(new THREE.BoxGeometry(1.2, 3.2, 1.2), mP, ox + 2.6, 11.4, oz, far, BR).rotation.z = -0.4;                // boyun ve baş
-  for (const dx of [-1.8, -1.0]) add(new THREE.BoxGeometry(0.6, 2.6, 0.6), mP, ox + dx, 8, oz, far, BR);      // arka bacaklar yerde
-  for (const dx of [1.6, 2.3]) add(new THREE.BoxGeometry(0.6, 2.2, 0.6), mP, ox + dx, 10.4, oz, far, BR).rotation.z = 1.0; // ön bacaklar havada
-  add(new THREE.BoxGeometry(1.2, 2.6, 1), mP, ox + 0.1, 12, oz, far, BR);                                      // süvari
-  add(new THREE.BoxGeometry(0.9, 0.9, 0.9), mP, ox + 0.1, 13.8, oz, far, BR);
+  const mon = new THREE.Group(), BR = 0x4a4038, PED = 0xd8d2c4; mon.position.set(-22, 0, -388); mon.scale.setScalar(1.6); far.add(mon); // uzaktan seçilsin diye biraz büyük
+  add(new THREE.BoxGeometry(5, 7, 3), mP, 0, 3.5, 0, mon, PED);
+  add(new THREE.BoxGeometry(5.2, 2.2, 1.4), mP, 0, 9.6, 0, mon, BR).rotation.z = 0.35;
+  add(new THREE.BoxGeometry(1.2, 3.2, 1.2), mP, 2.6, 11.4, 0, mon, BR).rotation.z = -0.4;                  // boyun ve baş
+  for (const dx of [-1.8, -1.0]) add(new THREE.BoxGeometry(0.6, 2.6, 0.6), mP, dx, 8, 0, mon, BR);          // arka bacaklar yerde
+  for (const dx of [1.6, 2.3]) add(new THREE.BoxGeometry(0.6, 2.2, 0.6), mP, dx, 10.4, 0, mon, BR).rotation.z = 1.0; // ön bacaklar havada
+  add(new THREE.BoxGeometry(1.2, 2.6, 1), mP, 0.1, 12, 0, mon, BR);                                          // süvari
+  add(new THREE.BoxGeometry(0.9, 0.9, 0.9), mP, 0.1, 13.8, 0, mon, BR);
   // büyük liman: dalgakıran, konteyner yığınları, gantri vinçler, yanaşık şilepler
   const port = new Kit(), RED = 0xd0312d, WHITE = 0xf2efe9;
   port.add(new THREE.BoxGeometry(300, 1.6, 6), 0x9a9a92, 450, 0.8, 0).add(new THREE.BoxGeometry(220, 2.2, 3), 0xb0aca2, 430, 1.1, 8);
@@ -745,7 +745,7 @@ function buildSamsun() {
   for (const [x, c] of [[380, 0x2f4f7a], [490, 0xb8434a]]) port.add(new THREE.BoxGeometry(60, 4.5, 8), c, x, 2.2, 7).add(new THREE.BoxGeometry(7, 9, 7), WHITE, x + 24, 9, 7).add(new THREE.BoxGeometry(1.6, 4, 1.6), 0x2b2d33, x + 25, 15, 7);
   add(port.build(), mP, 0, 0, -386);
   const glowTex = glow();
-  farLights(170, -240, 590, 1, 18, -392, glowTex);
+  farLights(170, -160, 590, 1, 18, -392, glowTex);
   farShipsBuild(mP);
 }
 
