@@ -56,7 +56,7 @@ if (!store.get('simit-martisi-route-v2', false)) {
 if (QS.has('hepsi')) for (const c of CITIES) store.set(c.routeKey, c.stops.length - 1); // deneme (yalnız yerelde, test merkezi): ?hepsi → bütün şehirler açık (cüzdana dokunmaz)
 if (QS.has('hediye')) { store.set('simit-martisi-gift', 3000); store.set('simit-martisi-gift-fish', 3); store.set('simit-martisi-gift-week', 1); } // deneme (yalnız yerelde): ?hediye → ödül toplama ekranı (1. sıra örneği)
 const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → her uçuş sonunda rekor ekranı çıkar, gerçek rekora dokunmaz
-const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo)
+const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo; tekrar uçunca yine oradan)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
 let bridgeZ = 0;
@@ -93,8 +93,8 @@ const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { con
 // Engel aralıkları (spdAt) TABAN hızla kurulur: martı daha hızlı geldiği için tepki süresi gerçekten kısalır (aralık da büyüseydi fark sıfırlanıyordu).
 // Geçilebilirlik tests/passable.cjs ile ölçülür (orada martı şehir hızında). Günlük yarışta yok (herkese aynı). passable.cjs CITY_SPD ile aynı kalmalı
 const CITY_SPD = 0.08;
-// hız basamağı 5. şehirde (Çanakkale, +%32) durur; Trabzon ve Samsun'un ek zorluğu kalabalıktan (cityG sırayla büyümeye devam eder), hard'dan ve kendi özelliklerinden gelir
-const cityRank = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityIdx = () => Math.min(4, cityRank()),
+// hız basamağı Çanakkale'ye kadar tam (+%32), sonra yarım: Trabzon +%36, Samsun +%40; kalabalık (cityG) sırayla tam büyümeye devam eder
+const cityRank = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityIdx = () => Math.min(4, cityRank()) + 0.5 * Math.max(0, cityRank() - 4),
   cityBand = m => clamp((m - 500) / 1000, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
 const cityKAt = m => 1 + CITY_SPD * cityIdx() * cityBand(m);
 // şehir baskısı: aynı bantta heat'e sıra başına ek (özel bölgeler seyrek kaldığı için İzmir zamanla bakınca İstanbul'dan kolaydı: daha çok rakip, kısa açık su, sık yelkenli)
@@ -3213,6 +3213,13 @@ function askRevive() {
 function revive() {
   revives++; crashObs = null; full = 1; warmth = 1; starve = false;
   gull.position.y = FLY_Y; gull.rotation.set(0, 0, 0); gull.visible = true;
+  { // çarptığı bacanın/direğin dibinde kalkmasın (kamera engelin içine girip baca bozuk görünüyordu): aynı hizada en boş şeride geçer
+    const gz = gull.position.z, near = obstacles.filter(o => o.top > FLY_Y - 1 && Math.abs(o.z - gz) < o.hd + 8);
+    const room = x => near.reduce((m, o) => Math.min(m, Math.abs(x - o.x) - o.hw), 99);
+    let bx = gull.position.x, br = room(bx);
+    for (let x = -EDGE; x <= EDGE + 1e-6; x += 0.25) { const r = room(x) - Math.abs(x - gull.position.x) * 0.02; if (r > br + 0.3) { br = r; bx = x; } }
+    gull.position.x = bx;
+  }
   tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
   combo = 0; comboT = 0;
   pw.shield = dur('shield') * (perk('pacifier') ? 1.25 : 1); invuln = 0.35; // kalkan bir sonraki gerçek çarpmada kırılır
@@ -4425,6 +4432,7 @@ renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault
 renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
 
 showTitle();
+if (QS.has('go')) setTimeout(() => { if (state === 'title') startGame(); }, 400); // deneme (yalnız yerelde): ?go → menüyü atla, uçuş hemen başlar (?at=20000 ile 20 km'den)
 // sunucu: profil, bekleyen skor ve (bir kez) cihaz rekoru gönderilir
 if (netOn()) refreshBoard();
 // hediye / haftalık ödül: sunucudan gelince cüzdana kendiliğinden eklenmez, bekler (simit-martisi-gift*). Menüde başka pencere yokken
