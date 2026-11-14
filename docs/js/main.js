@@ -912,7 +912,8 @@ function updateRegattas(gz) {
 // karnı kameranın da üstünde: martı bacakların arasından karnın altından geçer. Simit çizgisi atın boyuna ekseninde bacak çiftlerinin tam ortasından süzülür,
 // karnın altında altın simit; bacakların arasından geçene bonus. At yerinde durur (fix: geçilebilirlik denetimi sabit engel sayar). Ayar: horseZ aralığı. ?truva → hemen gelir
 const TRUVA_SOON = QS.has('truva');
-let horses = [], horseZ = -Infinity;
+// truvaCam: 0 → 1 Truva Atının altından geçerken kamera alçalır ve yataylaşır (karın 12,6 m'de; eskiden bacak kutularının üstüne çıkıp gövdenin içine giriyordu)
+let horses = [], horseZ = -Infinity, truvaCam = 0;
 // Samsun (city.bandirma): aynı kalıp, demirdeki Bandırma Vapuru. Boyu şeridi enine keser (±90°, hafif çapraz); pruva ve kıç istralyası, iki direk ve baca martı
 // boyunda engel (BANDIRMA_GATE kutuları, fix), aralarındaki dört boşluk kapı. Ön direkle baca arasındaki güvertede iki tayfa simidi o boşluğa atar, simit çizgisi
 // oradan geçer (ortada altın); o boşluktan geçene Truva'daki bonus. Kıçta bayrak dalgalanır, tayfa el sallar. ?bandirma → hemen gelir
@@ -4130,7 +4131,11 @@ function frame() {
   // kamera direğin/yelkenin içinden geçmesin: martının önündeki ve kamerayla martı arasındaki yüksek engellerin üstüne çıkar
   // dikey ekranda kamera 1,2 m daha yüksekte durur: aynı payı ekle ki direkte telefonda da masaüstündeki kadar yükselip insin (eskiden 0,25 m kalıyordu)
   const clr = 1.3 + (up - 4.2);
-  for (const o of obstacles) if (o.top < 30 && o.top + clr > cy && o.z > followZ - 14 && o.z < camera.position.z + 2.5 && Math.abs(o.x - camera.position.x) < o.hw + 2.6) cy = o.top + clr;
+  for (const o of obstacles) if (o.top < 30 && o.kind !== 'truvaya' && o.top + clr > cy && o.z > followZ - 14 && o.z < camera.position.z + 2.5 && Math.abs(o.x - camera.position.x) < o.hw + 2.6) cy = o.top + clr;
+  // Truva Atı: bacak kutularının üstüne çıkmak kamerayı atın gövdesine sokar; at yaklaşınca kamera karnın epey altına iner, bakış yataylaşır
+  let hT = 0; for (const h of horses) if (!h.vapur && h.z - camera.position.z > -42 && h.z - camera.position.z < 6) hT = 1;
+  truvaCam = damp(truvaCam, hT, 4, realDt);
+  cy += (Math.min(cy, FLY_Y + 3) - cy) * truvaCam;
   showcase = damp(showcase, state === 'title' && !dressing ? 1 : 0, state === 'title' ? 4 : 1.6, realDt);
   if (dressing) { cx = g.x + (land ? 1.6 : 1.6); cy = FLY_Y + (land ? 1.9 : 1.5); cz = g.z - (land ? 6.8 : 5.2); } // kostüm paneli: önden yakın çekim
   else if (showcase > 0.001) {
@@ -4148,7 +4153,7 @@ function frame() {
     const k = showcase * showcase * (3 - 2 * showcase);
     camera.lookAt(g.x * 0.92 + lean * 2.6 + (g.x - g.x * 0.92 - lean * 2.6) * k, FLY_Y - (land ? 0.2 : 0.6) + (g.y + (land ? 0.05 : 0.6) - FLY_Y + (land ? 0.2 : 0.6)) * k, followZ - 12 + (g.z + 12 - followZ) * k);
   }
-  else camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - (land ? 0.2 : 0.6), followZ - 12); // virajın içine bak
+  else camera.lookAt(g.x * 0.92 + lean * 2.6, FLY_Y - (land ? 0.2 : 0.6) + truvaCam * 1.4, followZ - 12); // virajın içine bak
   if (state !== 'dead' && state !== 'over') camera.rotation.z += gull.rotation.z * 0.06 - lean * 0.13; // ölünce kamera takla atan martıyla yalpalamaz
   trauma = Math.max(0, trauma - realDt * 1.6);
   if (trauma > 0) {
@@ -4504,7 +4509,7 @@ window.__game = {
   get fishes() { return fishes.filter(f => !f.hamsi).map(f => ({ u: +f.u.toFixed(2), done: f.done, ahead: +(gull.position.z - f.z).toFixed(1), ax: +f.ax.toFixed(2) })); },
   addFish: (ahead = 40, x = 0) => { const dir = 1, mm = new THREE.Mesh(FISH, vcMat); mm.visible = false; scene.add(mm); fishes.push({ mesh: mm, dir, ax: x, z: gull.position.z - ahead, w: 3.2, T: 0.85, lag: 0, u: -1, done: false, spin: 0, splT: 0 }); },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
-  get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
+  get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), addKite: (ahead = 30, x = 0, sw = 1.5) => addKite(x, gull.position.z - ahead, sw), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
   get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top, fix: !!o.fix })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },

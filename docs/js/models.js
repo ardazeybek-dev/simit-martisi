@@ -1883,21 +1883,24 @@ let riverBankG = null;
 export function riverBankGeo() { return riverBankG ||= pureCall(riverBankGeo_, []); }
 function riverBankGeo_() {
   const k = new Kit(), L = IRMAK_LEN + 24;
+  // zemin dalga tepesinin (waveAt en çok 0,53, kızıl su +0,12) üstünde durur: eskiden tümsek tepeleri 0,22-0,25 m'deydi, dalga ve kızıl su sazlığın
+  // içinden yanıp sönüyordu; üst üste binen tümseklerin tepeleri de aynı yükseklikteydi (iki renk titreşiyordu) → her tümsek kendi basamağında
+  let mi = 0; const step = () => (mi++ % 4) * 0.045 + rand(0, 0.02);
   for (const s of [-1, 1]) { // ağzın iki yanında kum dili (uçları ağza doğru alçalır), üstünde sazlık
     const z0 = s * IRMAK_MOUTH, z1 = s * L / 2, zc = (z0 + z1) / 2, len = Math.abs(z1 - z0);
     for (let z = z0 + s * 1.5; Math.abs(z) < L / 2; z += s * rand(2.2, 3.4)) { // kıyı çizgisi düzensiz: üst üste binen alçak kum ve çamur tümsekleri, dışta yeşil bataklık
-      const r = rand(2.2, 3.8);
-      k.add(new THREE.CylinderGeometry(r, r + 0.5, 0.7, 9), vert((f, y, x) => (y > 0.1 ? mixHex(0xcdb98e, 0xa89a62, hash(x * 2, z)) : 0x7a6448)), rand(1.4, 3.6), -0.1, z, 0, rand(0, 3), 0, 1, 1, 1.35);
-      k.add(new THREE.CylinderGeometry(r + 1, r + 1.5, 0.6, 9), vert((f, y, x) => (y > 0.1 ? mixHex(0x7f8f4a, 0x9a9a58, hash(x, z * 2)) : 0x6a5a40)), rand(6.5, 9), -0.08, z + rand(-1, 1), 0, rand(0, 3), 0, 1, 1, 1.3);
+      const r = rand(2.2, 3.8), ts = 0.8 + step(), tm = 0.97 + step();
+      k.add(new THREE.CylinderGeometry(r, r + 0.5, 1.3, 9), vert((f, y, x) => (y > ts - 0.15 ? mixHex(0xcdb98e, 0xa89a62, hash(x * 2, z)) : 0x7a6448)), rand(1.4, 3.6), ts - 0.65, z, 0, rand(0, 3), 0, 1, 1, 1.35);
+      k.add(new THREE.CylinderGeometry(r + 1, r + 1.5, 1.3, 9), vert((f, y, x) => (y > tm - 0.15 ? mixHex(0x7f8f4a, 0x9a9a58, hash(x, z * 2)) : 0x6a5a40)), rand(6.5, 9), tm - 0.65, z + rand(-1, 1), 0, rand(0, 3), 0, 1, 1, 1.3);
     }
-    k.add(new THREE.CylinderGeometry(2.2, 2.7, 0.7, 10), 0xc9b48a, 1.4, -0.1, z0 + s * 0.4, 0, 0, 0, 1, 1, 1.3); // ağız ucu: yuvarlak kum burnu
+    k.add(new THREE.CylinderGeometry(2.2, 2.7, 1.3, 10), 0xc9b48a, 1.4, 0.75 - 0.65 + 0.01, z0 + s * 0.4, 0, 0, 0, 1, 1, 1.3); // ağız ucu: yuvarlak kum burnu
     for (let z = z0 + s * 3; Math.abs(z) < L / 2 - 2; z += s * rand(1.4, 2.6)) for (let j = 0, m = 2 + ((Math.random() * 4) | 0); j < m; j++) {
       const h = rand(1.2, 2.6), x = rand(2, 8.5);
-      k.add(new THREE.ConeGeometry(0.07, h, 3), vert((f, y) => mixHex(0x5c7a2c, 0xcbb965, (y - 0.25) / h)), x + 1.5, 0.2 + h / 2, z + rand(-0.6, 0.6), rand(-0.2, 0.2), rand(0, 6), rand(-0.25, 0.25));
+      k.add(new THREE.ConeGeometry(0.07, h, 3), vert((f, y) => mixHex(0x5c7a2c, 0xcbb965, (y - 0.8) / h)), x + 1.5, 0.75 + h / 2, z + rand(-0.6, 0.6), rand(-0.2, 0.2), rand(0, 6), rand(-0.25, 0.25));
     }
-    for (let n = 0; n < 3; n++) k.add(new THREE.CylinderGeometry(0.16, 0.12, rand(2, 3.4), 5), 0x6e5a42, rand(1.5, 3), 0.3, z0 + s * rand(4, 20), Math.PI / 2, rand(0, 3), 0); // karaya vurmuş kütükler
+    for (let n = 0; n < 3; n++) k.add(new THREE.CylinderGeometry(0.16, 0.12, rand(2, 3.4), 5), 0x6e5a42, rand(1.5, 3), 0.92, z0 + s * rand(4, 20), Math.PI / 2, rand(0, 3), 0); // karaya vurmuş kütükler
   }
-  k.add(new THREE.BoxGeometry(12, 0.3, IRMAK_MOUTH * 2, 4, 1, 4), 0x8a5a36, 8, -0.02, 0); // ağızda ırmak yatağı: kızıl kahve su
+  k.add(new THREE.BoxGeometry(12, 0.9, IRMAK_MOUTH * 2, 4, 1, 4), 0x8a5a36, 8, 0.17, 0); // ağızda ırmak yatağı: kızıl kahve su (tepesi 0,62: dalga içinden geçmez)
   return k.build();
 }
 // sürüklenen saz demeti: kırık kamışlar ve yapraklar (ırmağın denize taşıdığı)
@@ -2166,7 +2169,8 @@ export const flagMat = new THREE.MeshBasicMaterial({ map: flagTex, side: THREE.D
 export const FLAG = new THREE.PlaneGeometry(1.5, 1, 6, 1);
 
 // ---------------- uçurtma ----------------
-const KITE_COLS = [[0xe5484d, 0xffd166], [0x2bb3a3, 0xfff4e2], [0x7d5ba6, 0xffb057], [0x3a6ea5, 0xff7b6b]];
+// renkler turkuaz denize karışmasın: doygun kırmızı/sarı, pembe/beyaz, turuncu/lacivert, mor/sarı (eski turkuaz-krem uçurtma suda kayboluyordu)
+const KITE_COLS = [[0xf0222e, 0xffd21a], [0xff3d8b, 0xffffff], [0xff7a00, 0x1d2b6b], [0x7b2cbf, 0xffe14d]];
 const kiteCache = [];
 const KITE_BOW = new THREE.PlaneGeometry(0.34, 0.16);
 const KITE_LINE = new THREE.CylinderGeometry(0.03, 0.03, 7, 4);
@@ -2176,21 +2180,22 @@ function kiteAssets_(ci) {
   if (kiteCache[ci]) return kiteCache[ci];
   const [a, b] = KITE_COLS[ci];
   const k = new Kit();
-  const half = (sign, col) => {
-    const s = new THREE.Shape(); s.moveTo(0, 1.05); s.lineTo(sign * 0.75, 0.2); s.lineTo(0, -1.2); s.closePath();
-    k.add(new THREE.ShapeGeometry(s), col);
+  const half = (sign, col, o = 0, z = 0) => { // o: dışa taşma payı (koyu kenar çizgisi için büyütülmüş arka yarım)
+    const s = new THREE.Shape(); s.moveTo(0, 1.05 + o); s.lineTo(sign * (0.75 + o), 0.2); s.lineTo(0, -1.2 - o * 1.3); s.closePath();
+    k.add(new THREE.ShapeGeometry(s), col, 0, 0, z);
   };
+  half(1, 0x16141c, 0.11, -0.03); half(-1, 0x16141c, 0.11, -0.03); // koyu kontur: uçurtma parlak suyun üstünde de kenarıyla seçilir
   half(1, a); half(-1, b);
   k.add(new THREE.BoxGeometry(0.05, 2.25, 0.05), 0x5a3b26, 0, -0.07, 0.02);
   k.add(new THREE.BoxGeometry(1.5, 0.05, 0.05), 0x5a3b26, 0, 0.2, 0.02);
   return (kiteCache[ci] = {
     geo: k.build(),
-    mat: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, roughness: 0.7, emissive: new THREE.Color(a).lerp(new THREE.Color(b), 0.5), emissiveIntensity: 0 }),
+    mat: new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }), // ışıksız: güneş karşıdayken de yüz kararıp denize karışmaz, renk hep tam doygun
     bows: [a, b].map(c => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide })),
   });
 }
 // kötü havada uçurtmanın kendisi de parlar (yalnız kenar LED'i yetmiyordu): main.js her kare 0 → 1 verir
-export function setKiteGlow(v) { for (const c of kiteCache) if (c) c.mat.emissiveIntensity = v * 0.55; }
+export function setKiteGlow(v) { for (const c of kiteCache) if (c) c.mat.color.setScalar(1 + v * 0.3); }
 export function makeKite() {
   const A = kiteAssets((Math.random() * KITE_COLS.length) | 0);
   const g = new THREE.Group();
