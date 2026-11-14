@@ -14,3 +14,4 @@ window.I18N_ADD('ko', {"Tebrikler! Muğla açıldı!": "축하해요! Muğla가 
 window.I18N_ADD('ko', {"Gulete çarptın!": "굴렛에 부딪혔어!"});
 window.I18N_ADD('ko', {"Feribota çarptın!": "카페리에 부딪혔어!", "Truva Atına çarptın!": "트로이 목마에 부딪혔어!", "Halata takıldın!": "밧줄에 걸렸어!", "Boyacı iskelesine çarptın!": "도장공 작업대에 부딪혔어!"});
 window.I18N_ADD('ko', {"Dalgaya kapıldın!": "파도에 휩쓸렸어!", "Teleferik halatına takıldın!": "케이블카 밧줄에 걸렸어!"});
+window.I18N_ADD('ko', {"Bandırma Vapuruna çarptın!": "반드르마 증기선에 부딪혔어!", "Vinç halatına takıldın!": "크레인 케이블에 걸렸어!"});

@@ -52,7 +52,7 @@ export const CITIES = [
       ['Yomra', 8600, "Yomra'ya", 310], ['Arsin', 10300, "Arsin'e", 380], ['Araklı', 12800, "Araklı'ya", 480], ['Sürmene', 16500, "Sürmene'ye", 1800]],
   },
   {
-    id: 'samsun', name: 'Samsun', mult: 1.6, hard: 3.6, hunger: 4.8, rivK: 0.4, opened: 'Tebrikler! Samsun açıldı!', routeKey: 'simit-martisi-route-samsun', bait: 'simit', end: 'Samsun kıyısını baştan sona uçtun!', after: "Trabzon'u bitirince açılır",
+    id: 'samsun', name: 'Samsun', mult: 1.6, hard: 3.6, hunger: 4.8, rivK: 0.4, opened: 'Tebrikler! Samsun açıldı!', routeKey: 'simit-martisi-route-samsun', bait: 'simit', bandirma: true, delta: true, irmak: true, vinc: true, end: 'Samsun kıyısını baştan sona uçtun!', after: "Trabzon'u bitirince açılır",
     stops: [['Bafra', 0, "Bafra'ya", 0], ['Kızılırmak', 700, "Kızılırmak'a", 65], ['Engiz', 1500, "Engiz'e", 85], ['Kurupelit', 2400, "Kurupelit'e", 110],
       ['Atakum', 3400, "Atakum'a", 140], ['Amisos', 4600, "Amisos'a", 175], ['Saathane', 5800, "Saathane'ye", 220], ['Batıpark', 7200, "Batıpark'a", 265],
       ['Doğupark', 8700, "Doğupark'a", 320], ['Tekkeköy', 10500, "Tekkeköy'e", 395], ['Çarşamba', 13000, "Çarşamba'ya", 500], ['Terme', 17000, "Terme'ye", 1900]],

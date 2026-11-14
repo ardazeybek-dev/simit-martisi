@@ -14,3 +14,4 @@ window.I18N_ADD('zh', {"Tebrikler! Muğla açıldı!": "恭喜！Muğla 已解�
 window.I18N_ADD('zh', {"Gulete çarptın!": "你撞上了古帆船！"});
 window.I18N_ADD('zh', {"Feribota çarptın!": "你撞上了渡轮！", "Truva Atına çarptın!": "你撞上了特洛伊木马！", "Halata takıldın!": "你被绳子缠住了！", "Boyacı iskelesine çarptın!": "你撞上了油漆工的吊篮！"});
 window.I18N_ADD('zh', {"Dalgaya kapıldın!": "被浪卷走了！", "Teleferik halatına takıldın!": "被缆车的绳子缠住了！"});
+window.I18N_ADD('zh', {"Bandırma Vapuruna çarptın!": "你撞上了班德尔马号蒸汽船！", "Vinç halatına takıldın!": "你被起重机钢缆缠住了！"});

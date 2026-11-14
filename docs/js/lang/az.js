@@ -14,3 +14,4 @@ window.I18N_ADD('az', {"Tebrikler! Muğla açıldı!": "Təbriklər! Muğla aç�
 window.I18N_ADD('az', {"Gulete çarptın!": "Guletə çırpıldın!"});
 window.I18N_ADD('az', {"Feribota çarptın!": "Bərəyə çırpıldın!", "Truva Atına çarptın!": "Troya atına çırpıldın!", "Halata takıldın!": "Kəndirə ilişdin!", "Boyacı iskelesine çarptın!": "Boyaqçı iskələsinə çırpıldın!"});
 window.I18N_ADD('az', {"Dalgaya kapıldın!": "Dalğaya qapıldın!", "Teleferik halatına takıldın!": "Kanat yolunun ipinə ilişdin!"});
+window.I18N_ADD('az', {"Bandırma Vapuruna çarptın!": "Bandırma gəmisinə çırpıldın!", "Vinç halatına takıldın!": "Kran trosuna ilişdin!"});

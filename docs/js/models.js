@@ -1744,6 +1744,239 @@ export function rope15Geo() { // bakım halatı: tabliyeden suya yakın sarkar, 
     .add(new THREE.TorusGeometry(0.2, 0.025, 4, 10, Math.PI), 0x6a6a6a, 0, -len, 0).build());
 }
 
+// ---------------- Bandırma Vapuru (Samsun) ----------------
+// Truva kalıbı (main.js spawnHorse → spawnBandirma, city.bandirma): Mustafa Kemal'i 1919'da Samsun'a getiren vapurun eşi demirde durur, boyu şeridi enine keser.
+// Gövde yerel z boyunca (pruva -z); main.js ±90° çevirir. Kara gövde, kırmızı su altı, beyaz üst yapı, tek uzun kırmızı-kara baca, iki direk, kıçta Türk bayrağı.
+// Gövde ve üst yapı martı boyunun altında kalır (tepe ~4,1). Martı boyunda dolu yerler: pruva istralyası, ön direk ve çarmıkları, baca, ana direk ve çarmıkları,
+// kıç istralyası. BANDIRMA_GATE [yerel z merkez, yarı boy (z), yarı en (x), tepe]; aralarındaki dört boşluk kapı. Tayfa ön direkle baca arasındaki
+// güvertede durur (BANDIRMA_GAP: o boşluğun ortası), simidi oraya atar.
+export const BANDIRMA_GATE = [[-8.9, 0.75, 0.5, 7], [-4.4, 0.35, 1.3, 13.4], [0.6, 0.95, 0.95, 9.4], [4.2, 0.35, 1.3, 12.4], [7.15, 0.55, 0.5, 7]], BANDIRMA_GAP = -2.2, BANDIRMA_DECK = 1.8;
+let bandirmaG = null;
+export function bandirmaGeo() { return bandirmaG ||= bandirmaGeo_(); }
+function bandirmaGeo_() {
+  const BLACK = 0x17181c, RED = 0xb32a24, WHITE = 0xf4f1e8, WOOD = 0xa07c52, MASTC = 0x6b4a2c, STEEL = 0x2a2d33, GL = 0x2c4660, D = BANDIRMA_DECK, V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const k = hullBands(new Kit(), [[0.5, 0x8a2622], [1.35, BLACK], [0.12, 0xe8dcb8], [0.2, BLACK]], -0.4, 1.7, 3.5)
+    .add(boatHull(0.05), WOOD, 0, D - 0.04, 0, 0, 0, 0, 1.55, 1, 3.3)                                          // tahta güverte
+    .add(new THREE.BoxGeometry(2.3, 1.25, 5.0), WHITE, 0, D + 0.62, 1.0)                                       // güverte köşkü
+    .add(new THREE.BoxGeometry(2.0, 0.95, 1.5), WHITE, 0, D + 1.72, -0.9)                                      // kaptan köşkü
+    .add(new THREE.BoxGeometry(2.02, 0.36, 1.52), GL, 0, D + 1.86, -0.9)
+    .add(new THREE.BoxGeometry(2.7, 0.1, 1.7), WHITE, 0, D + 2.24, -0.9)                                       // köşk tavanı ve kanatları
+    .add(new THREE.CylinderGeometry(0.62, 0.68, 6.2, 14), (f, y) => (y > 7.7 ? BLACK : RED), 0, D + 1.25 + 3.1, 0.6, 0.07) // baca: altı kırmızı, üstü kara
+    .add(new THREE.CylinderGeometry(0.7, 0.7, 0.22, 14), BLACK, 0, D + 1.4, 0.6)
+    .add(new THREE.CylinderGeometry(0.07, 0.07, 6.6, 5), 0xc9c3b4, 0, D + 4.5, 1.32, 0.07)                       // düdük borusu
+    .add(new THREE.CylinderGeometry(0.11, 0.16, 11.6, 6), MASTC, 0, D + 5.8, -4.4)                               // ön direk
+    .add(new THREE.BoxGeometry(2.8, 0.1, 0.1), MASTC, 0, D + 7.8, -4.4)                                          // seren
+    .add(new THREE.CylinderGeometry(0.28, 0.24, 0.4, 8), MASTC, 0, D + 8.6, -4.4)                                // gözcü yeri
+    .add(new THREE.CylinderGeometry(0.09, 0.14, 10.5, 6), MASTC, 0, D + 5.25, 4.2)                               // ana direk
+    .add(stick(V(0, D + 6.4, 4.25), V(0, D + 7.3, 6.0), 0.06, 4), MASTC)                                          // gafta (yukarıda, martının üstünde)
+    .add(stick(V(0, D + 0.2, -8.0), V(0, 3.0, -10.1), 0.1, 5), MASTC)                                            // cıvadra
+    .add(stick(V(0, D + 11.4, -4.4), V(0, 3.0, -10.0), 0.03, 4), STEEL)                                          // pruva istralyası
+    .add(stick(V(0, D + 10.3, 4.2), V(0, 2.6, 8.0), 0.03, 4), STEEL)                                             // kıç istralyası
+    .add(stick(V(0, D + 11.2, -4.4), V(0, D + 10.2, 4.2), 0.02, 4), STEEL)                                       // direkler arası anten teli (bacanın çok üstünde)
+    .add(new THREE.CylinderGeometry(0.04, 0.05, 2.6, 4), 0xe8e2d2, 0, D + 1.3, 8.0)                               // kıçta bayrak direği
+    .add(new THREE.BoxGeometry(0.04, 0.42, 0.62), 0xe30a17, 0, D + 11.3, -4.08)                                  // direk başı flaması
+    .add(stick(V(0.75, 1.3, -7.3), V(0.95, -0.3, -9.6), 0.05, 4), STEEL)                                         // demir zinciri
+    .add(new THREE.BoxGeometry(0.12, 0.5, 0.42), STEEL, 0.86, 1.2, -7.0);
+  for (const s of [-1, 1]) {
+    for (const [mz, top] of [[-4.4, D + 10.4], [4.2, D + 9.4]]) for (const dz of [-0.35, 0.35]) k.add(stick(V(0, top, mz), V(s * 1.55, D + 0.1, mz + dz), 0.025, 3), STEEL); // çarmıklar
+    for (let z = -0.8; z <= 3.2; z += 0.8) k.add(new THREE.CircleGeometry(0.13, 8), 0x2b3440, s * 1.16, D + 0.75, z, 0, s * Math.PI / 2); // köşk lombozları
+    for (let z = -5; z <= 5; z += 1.25) k.add(new THREE.CircleGeometry(0.12, 8), 0xe8dcb8, s * 1.72, 1.05, z, 0, s * Math.PI / 2); // gövde lombozları
+    k.add(new THREE.BoxGeometry(0.55, 0.42, 1.9), WHITE, s * 0.82, D + 1.48, 2.5)                                // filikalar
+      .add(new THREE.BoxGeometry(0.06, 0.7, 0.06), STEEL, s * 1.1, D + 1.6, 1.7).add(new THREE.BoxGeometry(0.06, 0.7, 0.06), STEEL, s * 1.1, D + 1.6, 3.3)
+      .add(new THREE.CylinderGeometry(0.12, 0.12, 1.1, 6), WHITE, s * 0.6, D + 0.55, -2.0)                       // vantilatörler
+      .add(new THREE.SphereGeometry(0.22, 8, 5), (f, y) => (y > D + 1.2 ? WHITE : RED), s * 0.6, D + 1.15, -2.1, -0.6, 0, 0, 1, 1, 1.3);
+    lifeRing(k, 0.26, s * 1.18, D + 0.95, 3.7, s * Math.PI / 2);
+  }
+  return k.build();
+}
+// kıçtaki dalgalanan Türk bayrağı ayrı (flagMat, main.js sallar); tayfa güvertede; throwers: ön direkle baca arasında simit tutan iki tayfa.
+// fx: kameraya bakan yan (yerel x işareti; main.js dönüşe göre verir): atıcılar o küpeştede durur
+const SAILOR = { id: 'tayfa', kind: 'genc', shirt: 0xf4f1e8, pants: 0x1f2a44, skin: 0xd49b74, hair: 2, hat: 'kep', hatCol: 0x1f2a44, scarf: true, scarfCol: 0x1f2a44, pose: 'down' };
+export function makeBandirma(fx = 1) {
+  const g = new THREE.Group(), h = new THREE.Mesh(bandirmaGeo(), vcMat); h.castShadow = true; g.add(h);
+  const f = new THREE.Mesh(FLAG, flagMat); f.position.set(0, BANDIRMA_DECK + 2.05, 8.8); f.rotation.y = Math.PI / 2; f.scale.setScalar(1.15); g.add(f);
+  addCrew(g, [[fx * 0.7, BANDIRMA_DECK, 5.6, fx * 0.3], [-fx * 0.6, BANDIRMA_DECK, -6.4, 0.2], [fx * 0.75, BANDIRMA_DECK, -6.0, -fx * 0.4]]);
+  const throwers = [[fx * 0.85, -3.0], [fx * 0.4, -1.75]].map(([x, z]) => {
+    const p = makePerson(true, SAILOR); p.mesh.position.set(x, BANDIRMA_DECK, z); p.mesh.scale.setScalar(0.85); g.add(p.mesh);
+    return p;
+  });
+  return { g, flag: f, throwers };
+}
+
+// ---------------- Kızılırmak deltası kuşları (Samsun) ----------------
+// Flamingo kalıbı (main.js spawnFlamingos, city.delta): sazlıkta leylekler ve gri balıkçıllar durur, martı yaklaşınca havalanır. Çerçeve FLAMINGO ile aynı
+// (ayakta gövde ~1,6 m'de, uçarken orijinde). Leylek: beyaz gövde, kara uçuş tüyleri, uzun kırmızı gaga ve bacak; boynunu uzatır, süzülür, arada birkaç kez çırpar.
+// Gri balıkçıl: gri gövde, kara tepe tüyü, sarı gaga; boynunu S gibi büker, ağır ve derin çırpar. DELTA_BIRDS[tür] = { stand, fly, wing(i) }
+const ST_W = 0xf6f4ee, ST_K = 0x1c1c20, ST_R = 0xd8352a, HR_G = 0x8f969e, HR_D = 0x40464e, HR_Y = 0xe0b030, HR_N = 0xe6e9eb;
+const birdHead = (k, x, y, z, down, R, col, bill, bl) => {
+  const dy = -Math.sin(down), dz = -Math.cos(down), rx = -Math.PI / 2 - down;
+  k.add(new THREE.SphereGeometry(R, 10, 8), col, x, y, z)
+    .add(new THREE.ConeGeometry(0.065, bl, 6), bill, x, y + dy * (R + bl / 2 - 0.04), z + dz * (R + bl / 2 - 0.04), rx, 0, 0);
+  for (const s of [-1, 1]) k.add(new THREE.SphereGeometry(0.075, 7, 5), 0xffffff, x + s * R * 0.72, y + 0.05, z - R * 0.4)
+    .add(new THREE.SphereGeometry(0.05, 6, 4), 0x1d1d1d, x + s * R * 0.86, y + 0.05, z - R * 0.6)
+    .add(new THREE.SphereGeometry(0.016, 4, 3), 0xffffff, x + s * R * 0.92, y + 0.08, z - R * 0.72);
+  return k;
+};
+const birdLegs = (k, col, y0, h) => { for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.05, 0.045, h, 6), col, s * 0.13, y0 + h / 2, 0.08).add(new THREE.SphereGeometry(0.13, 6, 4), col, s * 0.13, y0 + 0.02, -0.04, 0, 0, 0, 1, 0.3, 1.5); return k; };
+function storkStand() {
+  const k = birdLegs(new Kit(), ST_R, 0, 1.25);
+  k.add(new THREE.SphereGeometry(0.55, 12, 9), vert((f, y, x, z) => (z > 0.12 && y > 1.45 ? ST_K : ST_W)), 0, 1.62, 0.05, 0, 0, 0, 0.72, 0.62, 1.0) // sırtta katlı kara kanat
+    .add(new THREE.ConeGeometry(0.18, 0.38, 6), ST_W, 0, 1.6, 0.62, Math.PI / 2 + 0.3, 0, 0)
+    .add(tube([[0, 1.85, -0.32], [0, 2.2, -0.48], [0, 2.5, -0.46]], 0.1), ST_W);
+  return birdHead(k, 0, 2.6, -0.5, 0.65, 0.2, ST_W, ST_R, 0.78).build({ smooth: true });
+}
+function storkFly() {
+  const k = new Kit();
+  k.add(new THREE.SphereGeometry(0.55, 12, 9), ST_W, 0, 0, 0, 0, 0, 0, 0.7, 0.6, 1.0)
+    .add(tube([[0, 0.06, -0.48], [0, 0.07, -0.95], [0, 0.04, -1.32]], 0.09), ST_W)                               // boyun öne uzanır
+    .add(new THREE.ConeGeometry(0.16, 0.36, 6), ST_W, 0, 0.02, 0.62, Math.PI / 2, 0, 0);
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.045, 0.04, 1.1, 6), ST_R, s * 0.1, -0.08, 1.05, Math.PI / 2 + 0.05, 0, 0); // bacaklar geride
+  return birdHead(k, 0, 0.04, -1.45, 0.18, 0.19, ST_W, ST_R, 0.8).build({ smooth: true });
+}
+function heronStand() {
+  const k = birdLegs(new Kit(), 0xb59a5a, 0, 1.1);
+  k.add(new THREE.SphereGeometry(0.55, 12, 9), vert((f, y, x, z) => (y > 1.62 && z < 0 ? mixHex(HR_G, 0xb8bec4, 0.4) : HR_G)), 0, 1.5, 0.05, 0.25, 0, 0, 0.68, 0.6, 1.05) // kambur gri gövde
+    .add(new THREE.ConeGeometry(0.17, 0.42, 6), HR_D, 0, 1.36, 0.66, Math.PI / 2 + 0.55, 0, 0)
+    .add(tube([[0, 1.72, -0.34], [0, 1.95, -0.62], [0, 2.22, -0.44], [0, 2.45, -0.6]], 0.085), HR_N)          // S boyun
+    .add(stick(new THREE.Vector3(0, 2.62, -0.58), new THREE.Vector3(0, 2.5, -0.08), 0.03, 4), ST_K);            // kara tepe tüyü
+  return birdHead(k, 0, 2.55, -0.66, 0.25, 0.17, HR_N, HR_Y, 0.62).build({ smooth: true });
+}
+function heronFly() {
+  const k = new Kit();
+  k.add(new THREE.SphereGeometry(0.55, 12, 9), HR_G, 0, 0, 0, 0, 0, 0, 0.66, 0.58, 1.0)
+    .add(tube([[0, 0.1, -0.42], [0, 0.34, -0.55], [0, 0.2, -0.75]], 0.09), HR_N)                                 // boyun içe çekik
+    .add(new THREE.ConeGeometry(0.15, 0.34, 6), HR_D, 0, 0.02, 0.6, Math.PI / 2, 0, 0);
+  for (const s of [-1, 1]) k.add(new THREE.CylinderGeometry(0.045, 0.04, 1.05, 6), 0xb59a5a, s * 0.1, -0.08, 1.02, Math.PI / 2 + 0.05, 0, 0);
+  return birdHead(k, 0, 0.22, -0.86, 0.12, 0.16, HR_N, HR_Y, 0.6).build({ smooth: true });
+}
+// kanat: kökü x=0'da. Leylek: geniş, kara arka kenar ve parmaklı uç; balıkçıl: gri, koyu uç
+const deltaWing = (sp, s) => {
+  const q = new THREE.Shape(), L = sp ? 1.7 : 2.0;
+  q.moveTo(0, -0.36); q.lineTo(s * L * 0.72, -0.3); q.lineTo(s * L, -0.08); q.lineTo(s * L * 0.96, 0.3); q.lineTo(s * L * 0.6, 0.44); q.lineTo(0, 0.46); q.closePath();
+  const g = new THREE.ExtrudeGeometry(q, { depth: 0.04, bevelEnabled: false }); g.rotateX(Math.PI / 2);
+  return new Kit().add(g, vert((f, y, x, z) => (sp ? (Math.abs(x) > L * 0.68 ? HR_D : HR_G) : (z > 0.06 || Math.abs(x) > L * 0.7 ? ST_K : ST_W)))).build();
+};
+let deltaB = null;
+export const deltaBird = sp => (deltaB ||= [0, 1].map(i => ({ stand: i ? heronStand() : storkStand(), fly: i ? heronFly() : storkFly(), wing: [deltaWing(i, -1), deltaWing(i, 1)] })))[sp];
+// sazlık: suyun hemen üstünde çamurlu yeşil leke, üstünde saz öbekleri ve kamışlar (kara kahve püsküllü). i=0 geniş, i=1 küçük (şerit içi)
+const reedC = [];
+export function reedbedGeo(i) { return reedC[i] ||= pureCall(reedbedGeo_, [i]); }
+function reedbedGeo_(i) {
+  const k = new Kit(), w = i ? 3.2 : 7, l = i ? 5.5 : 10;
+  k.add(new THREE.CircleGeometry(1, 18), vert((f, y, x, z) => mixHex(0x6f7a3e, 0x8a7a4a, hash(x * 0.7, z * 0.7))), 0, 0.06, 0, -Math.PI / 2, 0, 0, w, l, 1);
+  for (let n = 0, N = i ? 16 : 46; n < N; n++) {
+    const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * 0.9, x = Math.cos(a) * r * w, z = Math.sin(a) * r * l;
+    for (let j = 0, m = 3 + ((Math.random() * 4) | 0); j < m; j++) {
+      const h = rand(1, 2.1), lean = rand(-0.25, 0.25), ry = rand(0, 6);
+      k.add(new THREE.ConeGeometry(0.06, h, 3), vert((f, y) => mixHex(0x5f7a2e, 0xc9b860, (y - 0.06) / h)), x + rand(-0.3, 0.3), 0.06 + h / 2, z + rand(-0.3, 0.3), lean, ry, rand(-0.25, 0.25));
+    }
+    if (Math.random() < 0.35) k.add(new THREE.CylinderGeometry(0.06, 0.06, 0.32, 5), 0x4a2e1a, x, rand(1.5, 1.9), z);  // kamış püskülü
+  }
+  return k.build();
+}
+
+// ---------------- Kızılırmak ağzı (Samsun) ----------------
+// İmbat kalıbı (main.js spawnImbat, city.irmak): rüzgârüstü kıyıda delta kıyısı; ortasından ırmak denize açılır. Ağızdaki çamurlu kumsal, iki yanında sazlık.
+// Yerel x: 0 iç kenar (şeride bakan), +x dışa. Ağız z=0'da (IRMAK_MOUTH yarı genişlik). Sürüklenen saz demeti ayrı (driftGeo)
+export const IRMAK_LEN = 84, IRMAK_MOUTH = 7;
+let riverBankG = null;
+export function riverBankGeo() { return riverBankG ||= pureCall(riverBankGeo_, []); }
+function riverBankGeo_() {
+  const k = new Kit(), L = IRMAK_LEN + 24;
+  for (const s of [-1, 1]) { // ağzın iki yanında kum dili (uçları ağza doğru alçalır), üstünde sazlık
+    const z0 = s * IRMAK_MOUTH, z1 = s * L / 2, zc = (z0 + z1) / 2, len = Math.abs(z1 - z0);
+    for (let z = z0 + s * 1.5; Math.abs(z) < L / 2; z += s * rand(2.2, 3.4)) { // kıyı çizgisi düzensiz: üst üste binen alçak kum ve çamur tümsekleri, dışta yeşil bataklık
+      const r = rand(2.2, 3.8);
+      k.add(new THREE.CylinderGeometry(r, r + 0.5, 0.7, 9), vert((f, y, x) => (y > 0.1 ? mixHex(0xcdb98e, 0xa89a62, hash(x * 2, z)) : 0x7a6448)), rand(1.4, 3.6), -0.1, z, 0, rand(0, 3), 0, 1, 1, 1.35);
+      k.add(new THREE.CylinderGeometry(r + 1, r + 1.5, 0.6, 9), vert((f, y, x) => (y > 0.1 ? mixHex(0x7f8f4a, 0x9a9a58, hash(x, z * 2)) : 0x6a5a40)), rand(6.5, 9), -0.08, z + rand(-1, 1), 0, rand(0, 3), 0, 1, 1, 1.3);
+    }
+    k.add(new THREE.CylinderGeometry(2.2, 2.7, 0.7, 10), 0xc9b48a, 1.4, -0.1, z0 + s * 0.4, 0, 0, 0, 1, 1, 1.3); // ağız ucu: yuvarlak kum burnu
+    for (let z = z0 + s * 3; Math.abs(z) < L / 2 - 2; z += s * rand(1.4, 2.6)) for (let j = 0, m = 2 + ((Math.random() * 4) | 0); j < m; j++) {
+      const h = rand(1.2, 2.6), x = rand(2, 8.5);
+      k.add(new THREE.ConeGeometry(0.07, h, 3), vert((f, y) => mixHex(0x5c7a2c, 0xcbb965, (y - 0.25) / h)), x + 1.5, 0.2 + h / 2, z + rand(-0.6, 0.6), rand(-0.2, 0.2), rand(0, 6), rand(-0.25, 0.25));
+    }
+    for (let n = 0; n < 3; n++) k.add(new THREE.CylinderGeometry(0.16, 0.12, rand(2, 3.4), 5), 0x6e5a42, rand(1.5, 3), 0.3, z0 + s * rand(4, 20), Math.PI / 2, rand(0, 3), 0); // karaya vurmuş kütükler
+  }
+  k.add(new THREE.BoxGeometry(12, 0.3, IRMAK_MOUTH * 2, 4, 1, 4), 0x8a5a36, 8, -0.02, 0); // ağızda ırmak yatağı: kızıl kahve su
+  return k.build();
+}
+// sürüklenen saz demeti: kırık kamışlar ve yapraklar (ırmağın denize taşıdığı)
+let driftG = null;
+export function driftGeo() { return driftG ||= pureCall(driftGeo_, []); }
+function driftGeo_() {
+  const k = new Kit();
+  for (let i = 0; i < 6; i++) k.add(new THREE.CylinderGeometry(0.05, 0.04, rand(1.2, 2), 4), pick([0xc9b860, 0xa89a4a, 0x8a7a3a]), rand(-0.3, 0.3), 0.04, rand(-0.3, 0.3), Math.PI / 2, rand(0, 3.1), 0);
+  for (let i = 0; i < 3; i++) k.add(new THREE.ConeGeometry(0.12, 0.9, 3), 0x6a8a34, rand(-0.4, 0.4), 0.08, rand(-0.4, 0.4), Math.PI / 2, rand(0, 6), 0, 1, 1, 0.3);
+  return k.build();
+}
+
+// ---------------- liman vinci (Samsun) ----------------
+// Paraşüt kalıbı (main.js spawnParasail → spawnVinc, city.vinc): şeridin yanında duba üstünde kafes kuleli liman vinci; yatay bumu şeridin üstünden
+// karşıya uzanır. Araba (trolley) bumun altında kayar, halatın ucunda konteyner sallanır. Konteyner martının altında (üstü CONT_Y): martı boyunu yalnız
+// halat keser (engel, ince). Konteynerin üstünde oturan liman işçisi halatın boş yanına simit atar.
+// Yerel x: 0 kule, +x dışa (karşı ağırlık), -x şeride doğru (bum ucu -VINC_JIB). Araba yüksekliği VINC_Y, kanca CONT_Y + CONT_HOOK
+export const VINC_PX = 12, VINC_Y = 15.05, VINC_JIB = 21, CONT_Y = 3.0, CONT_HOOK = 1.2;
+let vincG = null;
+export function vincGeo() { return vincG ||= pureCall(vincGeo_, []); }
+function vincGeo_() {
+  const k = new Kit(), Y = VINC_Y + 0.35, YEL = 0xf2b21c, YEL2 = 0xd8941a, WHITE = 0xf4f1e8, GREY = 0x9a9a92, V = (x, y, z) => new THREE.Vector3(x, y, z);
+  // duba: koyu mavi gövde, kırmızı su altı, beyaz bant; iç yanda lastik usturmaçalar; güvertede konteyner yığını
+  k.add(new THREE.BoxGeometry(9, 1.7, 11, 1, 2, 1), (f, y) => (y < -0.1 ? 0x9a2a26 : 0x2a4a6a), 1.5, 0.2, 0)
+    .add(new THREE.BoxGeometry(9.06, 0.18, 11.06), WHITE, 1.5, 0.9, 0)
+    .add(new THREE.BoxGeometry(8.8, 0.1, 10.8), 0x6e7378, 1.5, 1.1, 0);
+  for (let z = -4.2; z <= 4.2; z += 2.1) k.add(new THREE.TorusGeometry(0.42, 0.16, 5, 10), 0x1d1f24, -3.08, 0.5, z, 0, Math.PI / 2, 0);
+  [[3.4, -3.2, 0x2f6fb4], [3.4, -3.2 + 3.5, 0xc8352e], [3.4, -3.2, 0xe08a1a, 1]].forEach(([x, z, c, up]) => k.add(new THREE.BoxGeometry(1.4, 1.3, 3.4, 1, 1, 12), f => (f % 4 < 2 ? c : mixHex(c, 0x000000, 0.18)), x, 1.8 + (up ? 1.3 : 0), z));
+  // kafes kule: dört ayak, her yüzde çapraz kirişler
+  const legs = [[-0.9, -0.9], [0.9, -0.9], [0.9, 0.9], [-0.9, 0.9]];
+  for (const [x, z] of legs) k.add(new THREE.BoxGeometry(0.22, Y - 1.2, 0.22), YEL, x, 1.2 + (Y - 1.2) / 2, z);
+  for (let y = 1.4; y < Y - 1.5; y += 2.3) for (let i = 0; i < 4; i++) {
+    const [ax, az] = legs[i], [bx, bz] = legs[(i + 1) % 4];
+    k.add(stick(V(ax, y, az), V(bx, y + 2.3, bz), 0.07, 4), YEL2).add(stick(V(bx, y, bz), V(ax, y + 2.3, az), 0.07, 4), YEL2);
+  }
+  k.add(new THREE.CylinderGeometry(1.5, 1.5, 0.5, 12), 0x3a3f48, 0, Y - 0.9, 0);                                  // döner tabla
+  k.add(new THREE.BoxGeometry(2.0, 1.7, 2.0), WHITE, -1.7, Y - 1.3, 0).add(new THREE.BoxGeometry(0.06, 0.9, 1.7), 0x2c4660, -2.72, Y - 1.1, 0); // operatör kabini, camı şeride bakar
+  // bum: üçgen kesitli kafes (iki alt kiriş, bir üst kiriş, zikzak çaprazlar); karşı bum ve beton ağırlık
+  const x0 = -VINC_JIB, x1 = 6.2, H = 1.3;
+  for (const z of [-0.55, 0.55]) k.add(new THREE.BoxGeometry(x1 - x0, 0.2, 0.2), YEL, (x0 + x1) / 2, Y, z);
+  k.add(new THREE.BoxGeometry(x1 - x0, 0.2, 0.2), YEL, (x0 + x1) / 2, Y + H, 0);
+  for (let x = x0; x < x1 - 0.5; x += 1.5) {
+    for (const z of [-0.55, 0.55]) k.add(stick(V(x, Y, z), V(x + 0.75, Y + H, 0), 0.06, 4), YEL2).add(stick(V(x + 0.75, Y + H, 0), V(x + 1.5, Y, z), 0.06, 4), YEL2);
+    k.add(new THREE.BoxGeometry(0.08, 0.08, 1.1), YEL2, x, Y, 0);
+  }
+  k.add(new THREE.BoxGeometry(2.2, 2.0, 2.2), GREY, 5.2, Y - 0.6, 0)                                              // karşı ağırlık
+    .add(new THREE.BoxGeometry(1.0, 0.5, 1.4), 0xc8302c, x0 + 0.4, Y + H + 0.1, 0);                                // bum ucunda kırmızı uyarı
+  // tepe direği ve askı halatları: bumu ortasından ve ucundan, karşı bumu ucundan taşır
+  k.add(new THREE.BoxGeometry(0.5, 4.2, 0.5), YEL, 0, Y + H + 2.1, 0).add(new THREE.SphereGeometry(0.28, 8, 6), 0xff3a2a, 0, Y + H + 4.4, 0);
+  for (const x of [x0 + 0.6, -10.5, 5.8]) k.add(stick(V(0, Y + H + 4.1, 0), V(x, Y + H, 0), 0.04, 4), 0x2a2f3a);
+  return k.build();
+}
+// araba: bumun alt kirişlerinde tekerlekli kutu, altında makara (orijin halatın çıktığı yer)
+let trolleyG = null;
+export function trolleyGeo() {
+  if (trolleyG) return trolleyG;
+  const k = new Kit().add(new THREE.BoxGeometry(1.3, 0.45, 1.3), 0x3a3f48, 0, 0.3, 0).add(new THREE.BoxGeometry(1.34, 0.12, 1.34), 0xf2b21c, 0, 0.55, 0)
+    .add(new THREE.CylinderGeometry(0.22, 0.22, 0.3, 10), 0x22262e, 0, 0.0, 0, Math.PI / 2);
+  for (const x of [-0.5, 0.5]) for (const z of [-0.55, 0.55]) k.add(new THREE.CylinderGeometry(0.14, 0.14, 0.1, 8), 0x1d1f24, x, 0.62, z, Math.PI / 2);
+  return (trolleyG = k.build());
+}
+// konteyner: oluklu yan duvarlar (yüz sırası açık-koyu), köşe dökümleri, kapı ucunda kilit çubukları; dört sapan halatı kancaya. Orijin kancada, konteyner altta
+export const CONT_COLS = [0xc8352e, 0x2f6fb4, 0x2e8b57, 0xe08a1a];
+const contC = [];
+export function containerGeo(ci) {
+  if (contC[ci]) return contC[ci];
+  const c = CONT_COLS[ci], dk = mixHex(c, 0x000000, 0.2), top = -CONT_HOOK, V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const k = new Kit().add(new THREE.BoxGeometry(1.4, 1.3, 3.4, 1, 1, 14), f => (f % 4 < 2 ? c : dk), 0, top - 0.65, 0)
+    .add(new THREE.BoxGeometry(0.5, 0.42, 0.34), 0xf2b21c, 0, 0.18, 0);                                              // kanca bloğu
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    k.add(new THREE.BoxGeometry(0.2, 0.2, 0.2), 0x2a2d33, sx * 0.62, top - 0.08, sz * 1.62).add(new THREE.BoxGeometry(0.2, 0.2, 0.2), 0x2a2d33, sx * 0.62, top - 1.22, sz * 1.62);
+    k.add(stick(V(0, -0.05, 0), V(sx * 0.6, top, sz * 1.55), 0.03, 3), 0x2a2f3a);
+  }
+  for (const x of [-0.35, 0.35]) k.add(new THREE.BoxGeometry(0.05, 1.2, 0.05), 0xd8d8d0, x, top - 0.65, 1.72);
+  return (contC[ci] = k.build());
+}
+const DOCKER = { id: 'liman', kind: 'amca', shirt: 0xff7a1a, pants: 0x2f3b4c, skin: 0xd49b74, hair: 0, hat: 'kep', hatCol: 0xffc21a, must: 0x2e211a, pose: 'down' };
+export const makeDocker = () => makePerson(true, DOCKER);
+
 // ---------------- Truva Atı (Çanakkale) ----------------
 // "Truva" filminin dev tahta atı: salın üstünde, yandan görünür (gövde yerel x boyunca, baş +x). Dört bacak şeritte engel (TRUVA_LEGS, yarıçap kutusu TRUVA_LEG_R,
 // tepesi TRUVA_TOP), karın BRIDGE_Y'nin üstünde: martı bacakların arasından karnın altından geçer, kamera da altından geçer. raft=false: menüdeki taş kaide
@@ -2901,6 +3134,57 @@ export const TITLE_SETS = {
       for (let i = 0; i < Math.floor(w / 2.2); i++) far.add(new THREE.PlaneGeometry(0.8, 1.2), 0x4a4038, sx + dx - w / 2 + 1.4 + i * 2.2, sy - 22 + dy + 0.6, sz - 9.05, 0, Math.PI);
       far.add(new THREE.BoxGeometry(w + 0.6, 0.6, 3.6), 0x9a6a4a, sx + dx, sy - 22 + dy + h / 2 + 0.3, sz - 7.5);
     }
+    return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
+  },
+  samsun() { // ön: rıhtıma yanaşık Bandırma Vapuru (kara gövde, beyaz üst yapı, kırmızı-kara baca, iki direk, kıçta Türk bayrağı), balıkçı kayıkları · orta: düz ve geniş kentte orta katlı apartman blokları, meydanda taş Saathane saat kulesi · arka: alçak yeşil tepeler, Amisos tepesine çıkan teleferik hattı ve tepede tümülüsler
+    const near = new Kit(), mid = new Kit(), far = new Kit();
+    const shore = x => 15 + 1.5 * Math.sin(x * 0.011);
+    const hM = (x, z) => { const d = z - shore(x); return -1 + 3.0 * ramp(-0.5, 3, d) + (1.5 + 2.5 * fbm(x * 0.02, z * 0.03)) * ramp(40, 140, d) + 0.6 * fbm(x * 0.06, z * 0.06) * ramp(2, 20, d); }; // geniş düz kent
+    const park = (x, z) => fbm(x * 0.04 + 2, z * 0.05);
+    terrain(mid, -340, 340, -2, 150, 136, 60, hM, (x, y, z) => (y < 0.7 ? 0x8f8a78 : mixHex(0xc4bcaa, 0x6f9a4e, ramp(0.55, 0.66, park(x, z))))); // kent zemini, arada park yeşili
+    // rıhtım: taş kordon, kayıklar; Bandırma Vapuru boyu rıhtım boyunca yanaşık (pruva batıya), kıçta bayrak
+    quay(near, -330, 330, 0xd6cdbd, 0x5f5a50, 0xc2b69c);
+    const vx = 50, vz = -5.4, vs = 2.3;
+    near.add(bandirmaGeo(), null, vx, 0, vz, 0, Math.PI / 2, 0, vs);
+    const fx = vx + 8.8 * vs, fy = (BANDIRMA_DECK + 2.05) * vs;
+    near.add(new THREE.BoxGeometry(1.75, 1.15, 0.04), 0xe30a17, fx + 0.1, fy, vz).add(new THREE.CircleGeometry(0.3, 12), 0xffffff, fx - 0.22, fy, vz - 0.03, 0, Math.PI)
+      .add(new THREE.CircleGeometry(0.24, 12), 0xe30a17, fx - 0.12, fy, vz - 0.04, 0, Math.PI).add(new THREE.CircleGeometry(0.11, 5), 0xffffff, fx + 0.18, fy, vz - 0.04, 0, Math.PI);
+    for (const x of [vx - 12, vx + 10]) near.add(stick(new THREE.Vector3(x, 1.3, 0.6), new THREE.Vector3(x + (x < vx ? -2 : 2), 3.6, vz + 3.75), 0.05, 4), 0xd9c8a0); // halatlar babalara
+    for (const [x0, n] of [[-300, 5], [-210, 4], [-120, 6], [-60, 4], [80, 5], [190, 6], [262, 4]]) for (let i = 0; i < n; i++) boat(near, x0 + i * rand(3.2, 4.4), -3.4, rand(-0.12, 0.12));
+    for (let x = -320; x < 320; x += rand(10, 15)) if (Math.abs(x - vx) > 16) tree(near, x, 1.05, rand(14.5, 16.5), rand(0.7, 0.9));
+    // Saathane: meydanda taş saat kulesi (kare gövde, kat silmeleri, dört kadran, kurşun külah); çevresi açık meydan
+    const cx = -34, cz = 30, cy = hM(cx, cz) - 0.4, ST = 0xe6dcc4, BAND = 0xb4a688;
+    mid.add(new THREE.BoxGeometry(22, 0.5, 18), 0xd2c8b2, cx, cy + 0.2, cz);
+    mid.add(new THREE.BoxGeometry(4.6, 1.6, 4.6), BAND, cx, cy + 0.8, cz);
+    let yy = cy + 1.6;
+    for (const [w, h] of [[3.6, 6], [3.3, 5], [3.1, 4.4]]) {
+      mid.add(new THREE.BoxGeometry(w, h, w), ST, cx, yy + h / 2, cz).add(new THREE.BoxGeometry(w + 0.5, 0.35, w + 0.5), BAND, cx, yy + h, cz);
+      for (let a = 0; a < 4; a++) { const g = a * Math.PI / 2; mid.add(archShape(0.8, 1.8), 0x5a4a3a, cx + Math.sin(g) * (w / 2 + 0.03), yy + h * 0.3, cz + Math.cos(g) * (w / 2 + 0.03), 0, g); }
+      yy += h;
+    }
+    mid.add(new THREE.BoxGeometry(3.4, 3.2, 3.4), ST, cx, yy + 1.6, cz);
+    for (let a = 0; a < 4; a++) {
+      const g = a * Math.PI / 2, d = 1.74, px = Math.sin(g), pz = Math.cos(g);
+      mid.add(new THREE.CircleGeometry(1.2, 20), 0x2e2926, cx + px * d, yy + 1.6, cz + pz * d, 0, g).add(new THREE.CircleGeometry(1.0, 20), 0xfffdf6, cx + px * (d + 0.04), yy + 1.6, cz + pz * (d + 0.04), 0, g);
+    }
+    mid.add(new THREE.BoxGeometry(3.9, 0.4, 3.9), BAND, cx, yy + 3.4, cz).add(new THREE.ConeGeometry(2.6, 4.2, 4), 0x7f8c99, cx, yy + 5.7, cz, 0, Math.PI / 4)
+      .add(new THREE.CylinderGeometry(0.07, 0.09, 1.6, 5), 0xd9b24a, cx, yy + 8.5, cz);
+    // apartman blokları: geniş düz kentte orta katlı, düz damlı, beyaz-krem-pastel; arada park ağaçları
+    const plaza = (x, z) => Math.hypot(x - cx, z - cz) < 13 || Math.abs(x - vx) < 14 && z < 26;
+    const SM_H = [0xf6f2ea, 0xefe6d6, 0xe8dcc6, 0xdfe6ea, 0xf2e2c6, 0xe6d2c0, 0xd8e2d6, 0xf0d8b8, 0xcfdde6];
+    const pts = scatter(-330, 330, 22, 140, 7.6, (x, z) => hM(x, z) > 1.5 && !plaza(x, z) && park(x, z) < 0.56 && Math.random() < 0.9 - 0.4 * ramp(80, 140, z));
+    houses(mid, pts, hM, { flat: 0.9, h: [7, 15], s: 1.35, cols: SM_H, roofs: [0xa8473f, 0x8a8f93], slab: 0xcfc8b8, lit: 0.07 });
+    for (const [x, z] of scatter(-330, 330, 22, 150, 8, (x, z) => hM(x, z) > 1.5 && !plaza(x, z) && park(x, z) > 0.58)) tree(mid, x, hM(x, z), z, rand(0.8, 1.05));
+    // arka: alçak, yumuşak yeşil tepeler; solda yuvarlak Amisos tepesi, tepede tümülüsler, kentten tepeye teleferik hattı (direkler, kırmızı kabinler)
+    const HZ = 0xd2e2ea, amx = -110, amz = 186;
+    const hR = (x, z) => -1 + (26 + 10 * fbm(x * 0.012, 3) + 26 * bump(x, z, amx, amz, 70, 40)) * ramp(140, 215, z) * (1 - 0.25 * ramp(260, 320, z));
+    terrain(far, -520, 520, 145, 330, 140, 30, hR, (x, y, z) => mixHex(mixHex(mixHex(0x6fa34e, 0x4f8a3e, ramp(10, 40, y)), 0x3f7a36, ramp(0.55, 0.7, fbm(x * 0.04, z * 0.04)) * 0.7), HZ, 0.1));
+    for (const [dx, dz, r] of [[-16, 4, 7], [4, -2, 9], [20, 6, 6]]) far.add(new THREE.SphereGeometry(r, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), mixHex(0x8fae5c, HZ, 0.1), amx + dx, hR(amx + dx, amz + dz) - 1, amz + dz, 0, 0, 0, 1, 0.42, 1);
+    const ta = new THREE.Vector3(amx - 80, hM(amx - 80, 120) + 9, 120), tb = new THREE.Vector3(amx + 2, hR(amx + 2, amz - 14) + 7, amz - 14);
+    far.add(stick(ta, tb, 0.22, 4), 0x3a3f48);
+    for (const u of [0.25, 0.55, 0.82]) { const p = ta.clone().lerp(tb, u), gy = u < 0.3 ? hM(p.x, p.z) : hR(p.x, p.z); far.add(new THREE.BoxGeometry(0.8, p.y - gy + 1, 0.8), 0x9aa0a6, p.x, (p.y + gy) / 2, p.z); }
+    for (const u of [0.38, 0.7]) { const p = ta.clone().lerp(tb, u); far.add(new THREE.BoxGeometry(2.6, 2.2, 2), 0xd0312d, p.x, p.y - 2.2, p.z).add(new THREE.BoxGeometry(0.15, 1.1, 0.15), 0x3a3f48, p.x, p.y - 0.6, p.z); }
+    far.add(new THREE.BoxGeometry(7, 4, 5), 0xe8e4da, tb.x, tb.y - 5, tb.z);
     return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
   },
 };

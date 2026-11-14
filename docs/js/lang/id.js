@@ -14,3 +14,4 @@ window.I18N_ADD('id', {"Tebrikler! Muğla açıldı!": "Selamat! Muğla terbuka!
 window.I18N_ADD('id', {"Gulete çarptın!": "Kamu menabrak gulet!"});
 window.I18N_ADD('id', {"Feribota çarptın!": "Kamu menabrak kapal feri!", "Truva Atına çarptın!": "Kamu menabrak Kuda Troya!", "Halata takıldın!": "Kamu tersangkut tali!", "Boyacı iskelesine çarptın!": "Kamu menabrak gondola tukang cat!"});
 window.I18N_ADD('id', {"Dalgaya kapıldın!": "Tersapu ombak!", "Teleferik halatına takıldın!": "Tersangkut tali kereta gantung!"});
+window.I18N_ADD('id', {"Bandırma Vapuruna çarptın!": "Kamu menabrak kapal uap Bandırma!", "Vinç halatına takıldın!": "Tersangkut tali derek!"});

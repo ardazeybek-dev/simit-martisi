@@ -14,3 +14,4 @@ window.I18N_ADD('nl', {"Tebrikler! Muğla açıldı!": "Goed zo! Muğla is open!
 window.I18N_ADD('nl', {"Gulete çarptın!": "Je botste tegen de gulet!"});
 window.I18N_ADD('nl', {"Feribota çarptın!": "Je botste tegen de veerboot!", "Truva Atına çarptın!": "Je botste tegen het Paard van Troje!", "Halata takıldın!": "Verstrikt in een touw!", "Boyacı iskelesine çarptın!": "Je botste tegen de schildersgondel!"});
 window.I18N_ADD('nl', {"Dalgaya kapıldın!": "Meegesleurd door de golf!", "Teleferik halatına takıldın!": "Vast in het touw van de kabelbaan!"});
+window.I18N_ADD('nl', {"Bandırma Vapuruna çarptın!": "Je botste tegen de stoomboot Bandırma!", "Vinç halatına takıldın!": "Vast in de kraankabel!"});

@@ -14,3 +14,4 @@ window.I18N_ADD('uk', {"Tebrikler! Muğla açıldı!": "Вітаємо! Muğla �
 window.I18N_ADD('uk', {"Gulete çarptın!": "Врізався в гулет!"});
 window.I18N_ADD('uk', {"Feribota çarptın!": "Врізався в пором!", "Truva Atına çarptın!": "Врізався в Троянського коня!", "Halata takıldın!": "Заплутався в канаті!", "Boyacı iskelesine çarptın!": "Врізався в люльку малярів!"});
 window.I18N_ADD('uk', {"Dalgaya kapıldın!": "Тебе накрило хвилею!", "Teleferik halatına takıldın!": "Зачепився за трос канатної дороги!"});
+window.I18N_ADD('uk', {"Bandırma Vapuruna çarptın!": "Ти врізався в пароплав «Бандирма»!", "Vinç halatına takıldın!": "Заплутався в тросі крана!"});

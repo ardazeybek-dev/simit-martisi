@@ -14,3 +14,4 @@ window.I18N_ADD('el', {"Tebrikler! Muğla açıldı!": "Συγχαρητήρια
 window.I18N_ADD('el', {"Gulete çarptın!": "Χτύπησες στο γκιουλέτ!"});
 window.I18N_ADD('el', {"Feribota çarptın!": "Χτύπησες στο φέριμποτ!", "Truva Atına çarptın!": "Χτύπησες στον Δούρειο Ίππο!", "Halata takıldın!": "Μπλέχτηκες σε σκοινί!", "Boyacı iskelesine çarptın!": "Χτύπησες στη σκαλωσιά των μπογιατζήδων!"});
 window.I18N_ADD('el', {"Dalgaya kapıldın!": "Σε παρέσυρε το κύμα!", "Teleferik halatına takıldın!": "Μπλέχτηκες στο σχοινί του τελεφερίκ!"});
+window.I18N_ADD('el', {"Bandırma Vapuruna çarptın!": "Χτύπησες το ατμόπλοιο Bandırma!", "Vinç halatına takıldın!": "Μπλέχτηκες στο συρματόσχοινο του γερανού!"});

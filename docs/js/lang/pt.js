@@ -14,3 +14,4 @@ window.I18N_ADD('pt', {"Tebrikler! Muğla açıldı!": "Parabéns! Muğla está 
 window.I18N_ADD('pt', {"Gulete çarptın!": "Bateste no gulet!"});
 window.I18N_ADD('pt', {"Feribota çarptın!": "Bateste no ferry!", "Truva Atına çarptın!": "Bateste no Cavalo de Troia!", "Halata takıldın!": "Ficaste preso numa corda!", "Boyacı iskelesine çarptın!": "Bateste no andaime dos pintores!"});
 window.I18N_ADD('pt', {"Dalgaya kapıldın!": "Arrastado pela onda!", "Teleferik halatına takıldın!": "Preso na corda do teleférico!"});
+window.I18N_ADD('pt', {"Bandırma Vapuruna çarptın!": "Bateste no vapor Bandırma!", "Vinç halatına takıldın!": "Ficaste preso no cabo da grua!"});

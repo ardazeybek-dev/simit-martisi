@@ -14,3 +14,4 @@ window.I18N_ADD('ro', {"Tebrikler! Muğla açıldı!": "Bravo! Muğla s-a deschi
 window.I18N_ADD('ro', {"Gulete çarptın!": "Te-ai lovit de gulet!"});
 window.I18N_ADD('ro', {"Feribota çarptın!": "Te-ai lovit de feribot!", "Truva Atına çarptın!": "Te-ai lovit de Calul Troian!", "Halata takıldın!": "Te-ai prins într-o frânghie!", "Boyacı iskelesine çarptın!": "Te-ai lovit de schela zugravilor!"});
 window.I18N_ADD('ro', {"Dalgaya kapıldın!": "Te-a luat valul!", "Teleferik halatına takıldın!": "Te-ai prins în frânghia telecabinei!"});
+window.I18N_ADD('ro', {"Bandırma Vapuruna çarptın!": "Te-ai izbit de vaporul Bandırma!", "Vinç halatına takıldın!": "Te-ai prins în cablul macaralei!"});

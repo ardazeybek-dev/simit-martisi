@@ -14,3 +14,4 @@ window.I18N_ADD('fr', {"Tebrikler! Muğla açıldı!": "Bravo ! Muğla est débl
 window.I18N_ADD('fr', {"Gulete çarptın!": "Tu as percuté la goélette !"});
 window.I18N_ADD('fr', {"Feribota çarptın!": "Tu as percuté le ferry !", "Truva Atına çarptın!": "Tu as percuté le cheval de Troie !", "Halata takıldın!": "Pris dans une corde !", "Boyacı iskelesine çarptın!": "Tu as percuté la nacelle des peintres !"});
 window.I18N_ADD('fr', {"Dalgaya kapıldın!": "Emporté par la vague !", "Teleferik halatına takıldın!": "Pris dans la corde du téléphérique !"});
+window.I18N_ADD('fr', {"Bandırma Vapuruna çarptın!": "Tu as percuté le vapeur Bandırma !", "Vinç halatına takıldın!": "Pris dans le câble de la grue !"});

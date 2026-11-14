@@ -14,3 +14,4 @@ window.I18N_ADD('vi', {"Tebrikler! Muğla açıldı!": "Chúc mừng! Muğla đ�
 window.I18N_ADD('vi', {"Gulete çarptın!": "Bạn đâm vào thuyền gulet!"});
 window.I18N_ADD('vi', {"Feribota çarptın!": "Bạn đâm vào phà!", "Truva Atına çarptın!": "Bạn đâm vào con ngựa thành Troy!", "Halata takıldın!": "Bạn vướng vào dây thừng!", "Boyacı iskelesine çarptın!": "Bạn đâm vào giàn treo của thợ sơn!"});
 window.I18N_ADD('vi', {"Dalgaya kapıldın!": "Bị sóng cuốn đi!", "Teleferik halatına takıldın!": "Vướng vào dây cáp treo!"});
+window.I18N_ADD('vi', {"Bandırma Vapuruna çarptın!": "Bạn đâm vào tàu hơi nước Bandırma!", "Vinç halatına takıldın!": "Bạn mắc vào dây cáp cần cẩu!"});

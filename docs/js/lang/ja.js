@@ -14,3 +14,4 @@ window.I18N_ADD('ja', {"Tebrikler! Muğla açıldı!": "おめでとう！Muğla
 window.I18N_ADD('ja', {"Gulete çarptın!": "ギュレットにぶつかった！"});
 window.I18N_ADD('ja', {"Feribota çarptın!": "フェリーにぶつかった！", "Truva Atına çarptın!": "トロイの木馬にぶつかった！", "Halata takıldın!": "ロープに引っかかった！", "Boyacı iskelesine çarptın!": "塗装工のゴンドラにぶつかった！"});
 window.I18N_ADD('ja', {"Dalgaya kapıldın!": "波にさらわれた！", "Teleferik halatına takıldın!": "ロープウェイのロープに引っかかった！"});
+window.I18N_ADD('ja', {"Bandırma Vapuruna çarptın!": "バンドゥルマ号にぶつかった!", "Vinç halatına takıldın!": "クレーンのワイヤーに引っかかった!"});

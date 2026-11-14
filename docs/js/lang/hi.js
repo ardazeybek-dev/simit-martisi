@@ -14,3 +14,4 @@ window.I18N_ADD('hi', {"Tebrikler! Muğla açıldı!": "बधाई हो! Mu�
 window.I18N_ADD('hi', {"Gulete çarptın!": "तुम गुलेट से टकरा गए!"});
 window.I18N_ADD('hi', {"Feribota çarptın!": "तुम फ़ेरी से टकरा गए!", "Truva Atına çarptın!": "तुम ट्रॉय के घोड़े से टकरा गए!", "Halata takıldın!": "तुम रस्सी में फँस गए!", "Boyacı iskelesine çarptın!": "तुम पेंटरों के झूले से टकरा गए!"});
 window.I18N_ADD('hi', {"Dalgaya kapıldın!": "लहर में बह गए!", "Teleferik halatına takıldın!": "केबल कार की रस्सी में फँस गए!"});
+window.I18N_ADD('hi', {"Bandırma Vapuruna çarptın!": "तुम बंदिरमा स्टीमर से टकरा गए!", "Vinç halatına takıldın!": "तुम क्रेन की रस्सी में फँस गए!"});
