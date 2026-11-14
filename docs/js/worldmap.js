@@ -46,7 +46,10 @@ function placeCam(w, h) {
 }
 const worldPerPx = h => (2 * map.d * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2))) / h; // ekranın ortasında bir pikselin dünyadaki boyu
 
-export function mapHome() { map.tx = 0; map.tz = 2.2; map.d = D_HOME; map.vx = map.vz = 0; }
+export function mapHome() { // yatay kısa ekranda kart sol altta: ada sağdaki boş alanın ortasına gelsin (kartın yarı genişliği kadar sola bakılır)
+  const land = innerWidth > innerHeight && innerHeight <= 560;
+  map.d = D_HOME; placeCam(innerWidth, innerHeight); map.tx = land ? -(290 + 14) / 2 * worldPerPx(innerHeight) : 0; map.tz = land ? 0.4 : 2.2; map.vx = map.vz = 0;
+}
 export function mapFocus(x, z, d) { map.tx = x; map.tz = z; if (d) map.d = d; map.vx = map.vz = 0; clampView(); }
 
 // ---- dokunma ----

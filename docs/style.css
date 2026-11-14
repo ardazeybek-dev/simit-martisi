@@ -1220,3 +1220,11 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #worldMap .map-card .play-btn.locked { filter: grayscale(1); opacity: .55; }
 #worldMap .map-card.pop { animation: mapPop .28s cubic-bezier(.2, 1.4, .4, 1); }
 @keyframes mapPop { from { transform: translateX(-50%) scale(.94); } to { transform: translateX(-50%) scale(1); } }
+/* yatay telefon: kart ortadaki adayı örtmesin, sol alta küçük panel olur (kamera adayı sağa kaydırır: worldmap.js mapHome) */
+@media (orientation: landscape) and (max-height: 560px) {
+  #worldMap .map-card { left: calc(14px + var(--sal)); transform: none; width: 290px; padding: 10px 12px 12px; border-radius: 20px; gap: 4px; }
+  #worldMap .map-city { font-size: 20px; }
+  #worldMap .map-card .play-btn { height: 50px; margin-top: 2px; }
+  #worldMap .map-card.pop { animation-name: mapPopL; }
+}
+@keyframes mapPopL { from { transform: scale(.94); } to { transform: scale(1); } }
