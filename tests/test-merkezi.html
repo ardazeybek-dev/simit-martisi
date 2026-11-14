@@ -53,6 +53,16 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'v3.4.0 · 14 Kasım · sıralama sekmeleri', id: 'haftalik-sekme', t: '🏆 Sıralamada Genel | Haftalık', look: [
+      'Sıralamayı aç: solda Genel (herkesin en iyi skoru), sağda Haftalık. Şu an Haftalık’ta “Pazar 00:00 UTC itibarıyla başlıyor” yazmalı; Pazar’dan sonra o hafta uçanlar görünür. Son seçtiğin sekme hatırlanıyor.',
+      'Haftalık ödül artık biten haftanın Haftalık listesine göre (ilki 22 Kasım’da). 15 Kasım’daki ödül son kez Genel listeye göre gidiyor.'],
+    links: [['Canlı oyun', 'https://ardazeybek-dev.github.io/simit-martisi/']] },
+  { id: 'duman-esinti', t: '💨 Duman ve esinti bir tık sık', look: [
+      'Geç oyunda dumanlı baca daha sık (tavan %55 → %65), yağmurda esinti 7–12 yerine 6–10,5 sn’de bir. Öldürmüyorlar: rahatsız ediyor mu, fazla mı?'],
+    links: [['Yağmur 8 km', '/?weather=rain&at=8000']] },
+  { id: 'kombo-az', t: '✖️ Kombo bir tık zor', look: [
+      'x2/x3/x4/x5 için art arda 15/36/65/100 simit lazım (eskiden 12/30/55/85). Normal bir uçuşta x2–x3 hâlâ geliyor mu?'],
+    links: [['İstanbul', '/?city=istanbul&weather=clear']] },
   { g: 'v3.3.0 · 14 Kasım · şehirler zorlaştı', id: 'sehir-zor', t: '🔥 Her yeni şehir öncekinden zor', look: [
       'İlk 500 m her şehirde aynı. Sonra İzmir’de martı %8, Antalya’da %16 daha hızlı uçuyor (14 km’de söner, geç oyun aynı); aralar taban hızla kurulduğu için tepki süresi gerçekten kısalıyor.',
       'Saniyede gelen tehlike (2–8 km ort., İstanbul köprü oltaları hariç): İstanbul 1,86 · İzmir 1,99 · Antalya 2,14. Üçünü 3 km’den açıp sırayla dene: fark hissediliyor mu, Antalya imkânsız değil ama zor mu?'],

@@ -412,6 +412,10 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .board li.top b { color: var(--gold); opacity: 1; }
 .board li.me { background: var(--teal); color: #fff; }
 .board li.me em { color: #fff; }
+.board-tabs { display: flex; gap: 6px; margin: 6px auto 2px; max-width: 280px; padding: 4px; border-radius: 12px; background: rgba(0, 0, 0, .18); }
+.board-tabs button { flex: 1; padding: 8px 6px; border-radius: 9px; font: 800 14px/1 inherit; color: inherit; opacity: .7; background: none; }
+.board-tabs button.on { opacity: 1; background: var(--teal); color: #fff; }
+.board-tabs.hidden { display: none; }
 .board-help { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 50%; font: 900 19px/1 inherit; color: #2a1503; background: var(--gold); box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
 .board-help.on { background: var(--teal); color: #fff; }
 .board-prize { margin: 10px 0 6px; text-align: left; }

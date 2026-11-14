@@ -1055,7 +1055,7 @@ function spawnFerry() {
     const bIn = Math.abs(cx) - ft.hw, bOut = EDGE + 0.6, sx = Math.sign(cx) || 1;
     if (stuck) obstacle(sx * (bIn + bOut) / 2, cz, (bOut - bIn) / 2, ft.hd, DECK + ft.top, 'bacaya');
     else obstacle(cx, cz, ft.hw, ft.hd, DECK + ft.top, 'bacaya');
-    const dark = d > 1.2 && Math.random() < clamp((d - 1) * 0.22, 0, 0.55);
+    const dark = d > 1.2 && Math.random() < clamp((d - 1) * 0.22 + late() * 0.1, 0, 0.65); // dumanlı baca (öldürmez): geç oyunda bir tık sık (Arda, v3.4: tavan %55 → %65)
     chims.push({ x: x0 + cx, z: zc + cz, dark, t: Math.random() });
     if (dark) smokes.push({ x: x0 + cx, z0: zc + cz + 1.3, z1: zc + cz + 7.5, hw: 1.6, hit: false });
   }
@@ -2054,6 +2054,8 @@ function recDraw(dt) {
 }
 // ---------------- haftalık sıralama (net.js: gerçek oyuncular) ----------------
 let boardCache = null, boardSeq = 0, overSeq = 0, myRank = 0, nameAsked = false;
+// sekme: solda genel (herkesin en iyi skoru), sağda haftalık (pazar 00:00 UTC'de sıfırlanır, haftalık ödül buna göre). Seçim cihazda kalır
+let boardTab = store.get('simit-martisi-board-tab', 'all') === 'wk' ? 'wk' : 'all';
 const esc = v => String(v).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const refreshBoard = () => fetchBoard().then(b => { if (b) { boardCache = b; if (b.me) myRank = b.me.rank; } return b; });
 function boardMsg(info, line, tier = '') {
@@ -2083,9 +2085,16 @@ async function renderBoard() {
   const b = netOn() ? await refreshBoard() : null;
   if (seq !== boardSeq) return;
   if (!b) return boardMsg(tr('Bağlantı yok'), tr('Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.'), bestLine);
-  $('boardInfo').textContent = tr('{n} oyuncu').replace('{n}', fmt(b.total)); // kalıcı sıralama: herkesin en iyi skoru, hafta sıfırlanmaz
+  const hasWk = !!b.wk, tab = hasWk ? boardTab : 'all', src = tab === 'wk' ? b.wk : b; // eski sunucu wk göndermezse yalnız genel
+  show('boardTabs', hasWk);
+  for (const el of $('boardTabs').children) { el.classList.toggle('on', el.dataset.t === tab); el.setAttribute('aria-selected', el.dataset.t === tab); }
+  if (tab === 'wk' && !b.wk.on) { // ilk hafta henüz başlamadı
+    const when = nextPrizeAt().toLocaleString(window.I18N.locale, { weekday: 'long', timeZone: 'UTC' }) + ' 00:00 UTC';
+    return boardMsg('', esc(tr('Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.').replace('{t}', when)));
+  }
+  $('boardInfo').textContent = tr('{n} oyuncu').replace('{n}', fmt(src.total));
   const li = (r, cc, name, score, cls = '', lv = 0) => `<li class="${cls}${r >= 1 && r <= 3 ? ' rk' + r : ''}"><b>${r ? '#' + fmt(r) : '—'}</b><i class="blv">${lv > 0 ? fmt(lv) : ''}</i><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`; // seviye bayrağın solunda
-  const top = b.top || [], me = b.me;
+  const top = src.top || [], me = src.me;
   let html = top.map(t => li(t.rank, t.me ? ccOf() : t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '', t.me ? rank.lv : t.lv)).join('');
   if (!top.length) html = `<li class="gap msg">${tr('Henüz kimse uçmadı. İlk sen ol!')}</li>`;
   if (me && !top.some(t => t.me)) html += `<li class="gap">⋮</li>` + li(me.rank, ccOf(), shownName(), fmt(me.score), 'me', rank.lv);
@@ -2891,7 +2900,7 @@ function updateHud() {
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
 // simit kaçırınca seri biter: kombo yalnızca art arda toplanan simitle büyür
 function missSimit() { if (combo > 0) { combo = 0; comboT = 0; } }
-const COMBO_STEPS = [12, 30, 55, 85]; // x2, x3, x4, x5 için art arda simit: 28k dönemindeki 10/25/45/70 dan bir tık zor
+const COMBO_STEPS = [15, 36, 65, 100]; // x2, x3, x4, x5 için art arda simit. v3.4: 12/30/55/85 ten bir tık daha zor (kombo + 2x ustaları metre başına ~2,5 kat puan alıyordu)
 const mult = () => 1 + COMBO_STEPS.filter(n => combo >= n).length;
 function renderPowers() {
   ui.powers.textContent = '';
@@ -3034,6 +3043,7 @@ onBtn('modeClassic', () => pickMode('classic'));
 onBtn('modeDaily', () => pickMode('daily'));
 onBtn('closeDayRun', () => show('dayRunPanel', false));
 onBtn('boardBtn', () => { renderBoard(); show('boardPanel'); });
+for (const el of $('boardTabs').children) el.addEventListener('click', () => { if (boardTab === el.dataset.t) return; boardTab = el.dataset.t; store.set('simit-martisi-board-tab', boardTab); sfx.tick && sfx.tick(); renderBoard(); });
 onBtn('closeBoard', () => show('boardPanel', false));
 // geri zinciri: alt panelin Tamam/Kapat'ı bir adım geri götürür (Martı Yolu → Profil → Ayarlar); karartılmış boşluğa dokunmak hepsini kapatır
 const backTo = {};
@@ -3946,7 +3956,7 @@ function weatherTick(dt) {
     const pz = ruleOn('wind');
     gustNext -= dt;
     if (gustNext <= 0) {
-      gustT = rand(1.4, 2.2) * (pz ? 1.2 : 1); gustDir = pick([-1, 1]); gustNext = pz ? rand(4.5, 7.5) : rand(7, 12); sfx.gust();
+      gustT = rand(1.4, 2.2) * (pz ? 1.2 : 1); gustDir = pick([-1, 1]); gustNext = pz ? rand(4.5, 7.5) : rand(6, 10.5); /* yağmurda esinti bir tık sık (v3.4: 7–12 → 6–10,5 sn) */ sfx.gust();
     }
     gustT -= dt;
     wind = damp(wind, gustDir * (gustT > 0 ? GUST * (pz ? 1.2 : 1) : 1), gustT > 0 ? 2.5 : 1.2, dt);

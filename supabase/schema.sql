@@ -43,6 +43,24 @@ revoke all on players, scores, runs from anon, authenticated;
 create or replace function sm_week(t timestamptz default now()) returns date
 language sql stable as $$ select date_trunc('week', t at time zone 'Europe/Istanbul')::date $$;
 
+-- haftalık sıralama (v3.4): hafta pazar 00:00 UTC'de başlar (haftalık ödülle aynı an). Anahtar o pazarın tarihi.
+-- İlk hafta 2026-11-15; ondan önce satır yazılmaz (sekme "başlıyor" der). Genel sıralama scores'tan sürer.
+create table if not exists wscores (
+  player_id uuid not null references players on delete cascade,
+  wk date not null,
+  score int not null check (score between 0 and 2000000),
+  dist int not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (player_id, wk)
+);
+create index if not exists wscores_wk_score on wscores (wk, score desc);
+alter table wscores enable row level security;
+revoke all on wscores from anon, authenticated;
+create or replace function sm_wk(t timestamptz default now()) returns date
+language sql stable as $$ select (t at time zone 'UTC')::date - extract(dow from t at time zone 'UTC')::int $$;
+create or replace function sm_wk0() returns date language sql immutable as $$ select date '2026-11-15' $$;
+revoke all on function sm_wk(timestamptz), sm_wk0() from public, anon, authenticated;
+
 -- ad: kırp, boşlukları teke indir, kontrol karakterlerini at
 create or replace function sm_name(p text) returns text
 language sql immutable as $$ select left(regexp_replace(regexp_replace(coalesce(p, ''), '[[:cntrl:]]', '', 'g'), '\s+', ' ', 'g'), 16) $$;
@@ -148,6 +166,10 @@ begin
     insert into scores(player_id, week, city, score, dist) values (p_id, w, left(p_city, 16), p_score, d)
     on conflict (player_id, week) do update set score = excluded.score, dist = excluded.dist, city = excluded.city, updated_at = now()
       where scores.score < excluded.score;
+    if sm_wk() >= sm_wk0() then -- haftalık en iyi
+      insert into wscores(player_id, wk, score, dist) values (p_id, sm_wk(), p_score, d)
+      on conflict (player_id, wk) do update set score = excluded.score, dist = excluded.dist, updated_at = now() where wscores.score < excluded.score;
+    end if;
   end if;
   select coalesce(max(score), 0) into best from scores where player_id = p_id;
   return (select count(*) + 1 from (select max(s.score) m from scores s join players p on p.id = s.player_id where not p.hidden group by s.player_id) x where x.m > best);
@@ -210,7 +232,14 @@ language sql stable security definer set search_path = public as $$
     'total', (select count(*) from ranked),
     'top', coalesce((select json_agg(json_build_object('rank', rank, 'name', name, 'cc', cc, 'lv', lv, 'score', score, 'me', player_id = p_id) order by rank)
                      from ranked where rank <= 500), '[]'::json),
-    'me', (select json_build_object('rank', rank, 'score', score, 'name', name, 'lv', lv) from ranked where player_id = p_id)
+    'me', (select json_build_object('rank', rank, 'score', score, 'name', name, 'lv', lv) from ranked where player_id = p_id),
+    -- haftalık: bu haftanın (pazar 00:00 UTC) en iyileri; on=false iken ilk hafta henüz başlamadı
+    'wk', (with wr as (
+        select w.player_id, w.score, p.name, p.cc, p.lv, row_number() over (order by w.score desc, w.updated_at) as rank
+        from wscores w join players p on p.id = w.player_id where w.wk = sm_wk() and not p.hidden
+      ) select json_build_object('on', sm_wk() >= sm_wk0(), 'start', sm_wk0(), 'total', (select count(*) from wr),
+        'top', coalesce((select json_agg(json_build_object('rank', rank, 'name', name, 'cc', cc, 'lv', lv, 'score', score, 'me', player_id = p_id) order by rank) from wr where rank <= 500), '[]'::json),
+        'me', (select json_build_object('rank', rank, 'score', score, 'name', name, 'lv', lv) from wr where player_id = p_id)))
   )
 $$;
 
@@ -394,7 +423,8 @@ end $$;
 revoke all on function claim_gifts2(uuid, uuid) from public;
 grant execute on function claim_gifts2(uuid, uuid) to anon, authenticated;
 
--- haftalık ödül: her pazar 00:00 UTC (TR 03:00) kalıcı sıralamaya göre; yalnız son 7 günde uçmuş oyuncular alır
+-- haftalık ödül: her pazar 00:00 UTC (TR 03:00) biten haftanın HAFTALIK sıralamasına göre (wscores, o hafta uçan herkes).
+-- Haftalık sıralama başlamadan önceki hafta (2026-11-15'te verilen) son kez kalıcı sıralamaya göre, son 7 günde uçmuşlara
 -- 1.: 3000 simit + 3 balık, 2.: 2000 + 2, 3.: 1500 + 1, 4-10.: 750, diğerleri: 100
 create table if not exists weekly_prizes (day date primary key, n int, given_at timestamptz not null default now());
 alter table weekly_prizes enable row level security;
@@ -404,6 +434,21 @@ language plpgsql security definer set search_path = public as $$
 declare d date := (now() at time zone 'UTC')::date; n int;
 begin
   if exists (select 1 from weekly_prizes where day = d) then return 0; end if; -- aynı gün iki kez verilmez
+  if d - 7 >= sm_wk0() then
+    with ranked as (
+      select w.player_id, row_number() over (order by w.score desc, w.updated_at) as rank
+      from wscores w join players p on p.id = w.player_id where w.wk = d - 7 and not p.hidden
+    ), ins as (
+      insert into gifts(player_id, amount, fish, note)
+      select r.player_id,
+             case when r.rank = 1 then 3000 when r.rank = 2 then 2000 when r.rank = 3 then 1500 when r.rank <= 10 then 750 else 100 end,
+             case when r.rank = 1 then 3 when r.rank = 2 then 2 when r.rank = 3 then 1 else 0 end,
+             'week:' || r.rank
+      from ranked r returning 1
+    ) select count(*) into n from ins;
+    insert into weekly_prizes(day, n) values (d, n);
+    return n;
+  end if;
   with b as (
     select distinct on (s.player_id) s.player_id, s.score, s.updated_at from scores s order by s.player_id, s.score desc, s.updated_at
   ), ranked as (
