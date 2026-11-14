@@ -93,11 +93,12 @@ const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { con
 // Engel aralıkları (spdAt) TABAN hızla kurulur: martı daha hızlı geldiği için tepki süresi gerçekten kısalır (aralık da büyüseydi fark sıfırlanıyordu).
 // Geçilebilirlik tests/passable.cjs ile ölçülür (orada martı şehir hızında). Günlük yarışta yok (herkese aynı). passable.cjs CITY_SPD ile aynı kalmalı
 const CITY_SPD = 0.08;
-const cityIdx = () => (daily ? 0 : Math.min(4, Math.max(0, CITIES.indexOf(city)))), // 5. şehirden sonra basamak durur (+%32 hız): yeni şehir zorluğu kendi özelliklerinden gelir
+// hız basamağı 5. şehirde (Çanakkale, +%32) durur; Trabzon ve Samsun'un ek zorluğu kalabalıktan (cityG sırayla büyümeye devam eder), hard'dan ve kendi özelliklerinden gelir
+const cityRank = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityIdx = () => Math.min(4, cityRank()),
   cityBand = m => clamp((m - 500) / 1000, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
 const cityKAt = m => 1 + CITY_SPD * cityIdx() * cityBand(m);
 // şehir baskısı: aynı bantta heat'e sıra başına ek (özel bölgeler seyrek kaldığı için İzmir zamanla bakınca İstanbul'dan kolaydı: daha çok rakip, kısa açık su, sık yelkenli)
-const CITY_HEAT = 0.8, cityG = () => CITY_HEAT * cityIdx() * cityBand(-genZ / 2);
+const CITY_HEAT = 0.8, cityG = () => CITY_HEAT * cityRank() * cityBand(-genZ / 2);
 const spdAt = m => SPD_TAB[clamp(Math.round(m / 100), 0, SPD_TAB.length - 1)];
 // ---------------- hat: şehrin iskeleleri (m = uçuşun başından metre). Varmak uçuşu bitirmez, sıradaki durağa devam edilir ----------------
 // Şehirler cities.js'te; sıradaki şehir öncekinin son iskelesine varınca açılır
@@ -399,9 +400,8 @@ let lastPw = '';
 const pickPw = arr => { const a = arr.filter(x => x !== lastPw), k = pick(a.length ? a : [null]); if (k) lastPw = k; return k; }; // aynı güç art arda çıkmaz
 // güç bitmeden yenisi gelmesin: martı oraya vardığında hâlâ sürecek güç ya da önde zaten bekleyen aynı güç üretilmez (uzun kalkan + nazar = sınırsız kalkan olmasın)
 const pwFree = (k, z) => !(pw[k] > (gull.position.z - z) / Math.max(speed, 15)) && !powerups.some(p => !p.taken && p.kind === k);
-// İzmir/Antalya'da özel parçalar sık (açık suyun yerini alır): kalan açık suda ara sıra bir rakip daha, 10 km'deki rakip sayısı eskisiyle aynı kalsın
-const SPECIAL_RIV = () => (difficulty() < 0.6 ? 0 : city.regatta || city.balloons ? RIV_K.izmir : city.parasail ? RIV_K.antalya : 0);
-const RIV_K = { izmir: 0.55, antalya: 0.4 };
+// İzmir'den sonraki şehirlerde özel parçalar sık (açık suyun yerini alır): kalan açık suda ara sıra bir rakip daha, 10 km'deki rakip sayısı eskisiyle aynı kalsın
+const SPECIAL_RIV = () => (difficulty() < 0.6 ? 0 : city.rivK || 0); // oran cities.js rivK
 function spawnGap(first, fixLen, quiet) {
   const d = difficulty();
   let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, Math.max(36, 56 - late() * 10 - heat() * 3 - overG() * 4 - cityG() * 8)));

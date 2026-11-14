@@ -19,7 +19,7 @@ const URL = `http://localhost:${PORT}/?q=0&net=1`; // net=1: online parts on (re
 const ROOT = path.join(__dirname, '..');
 const MENU = ['settingsBtn', 'shopBtn', 'wardrobeBtn', 'missionsBtn', 'dailyBtn', 'achBtn', 'boardBtn', 'upsBtn', 'modeBtn'];
 const CLOSE = { shopPanel: 'closeShop', roadPanel: 'closeRoad', missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' };
-const CITIES = ['istanbul', 'izmir', 'antalya'];
+const CITIES = ['istanbul', 'izmir', 'antalya', 'mugla', 'canakkale', 'trabzon', 'samsun'];
 const FLY_MS = 20000;
 
 // a returning player: tutorial done, every city unlocked, no name yet
@@ -29,6 +29,10 @@ const SEED = {
   'simit-martisi-tut': 'true',
   'simit-martisi-route': '99',
   'simit-martisi-route-izmir': '99',
+  'simit-martisi-route-antalya': '99',
+  'simit-martisi-route-mugla': '99',
+  'simit-martisi-route-canakkale': '99',
+  'simit-martisi-route-trabzon': '99',
 };
 
 const up = () => new Promise(res => {

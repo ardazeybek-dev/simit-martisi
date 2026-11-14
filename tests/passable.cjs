@@ -7,7 +7,7 @@ const NPM = path.join(process.env.APPDATA || '', 'npm/node_modules');
 let playwright;
 for (const p of [path.join(NPM, '@playwright/cli/node_modules/playwright'), path.join(NPM, 'playwright'), 'playwright']) { try { playwright = require(p); break; } catch (e) {} }
 const { chromium } = playwright;
-const RUNS = +process.argv[2] || 3, KM = +process.argv[3] || 25, CITIES = (process.argv[4] || 'istanbul,izmir,antalya').split(',');
+const RUNS = +process.argv[2] || 3, KM = +process.argv[3] || 25, CITIES = (process.argv[4] || 'istanbul,izmir,antalya,mugla,canakkale,trabzon,samsun').split(',');
 const VLAT = process.env.VLAT !== undefined ? +process.env.VLAT : 17, EDGE = 3.85, FLY_Y = 5.15, OBSK = 0.08, DX = 0.05, DZ = 0.4;
 const SPEED_MAX = 43, clamp = (v, a, b) => Math.max(a, Math.min(b, v)); // hız formülü main.js spdCap ile aynı kalmalı
 const overAt = m => clamp((m - 6500) / 7000, 0, 2), spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1.3, overAt(m)));
