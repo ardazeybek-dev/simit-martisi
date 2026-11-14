@@ -53,6 +53,14 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Trabzon · 14 Kasım', id: 'dalga-yumusak', t: '🌊 Dalga yumuşadı (köşeli blok değil)', look: [
+      'Dalga kapısına yaklaş: tepe ve dudak yuvarlak kıvrılmalı, yüzeyde köşe/basamak görünmemeli; köpük tepede yumuşak geçişli, dibinde parlak beyaz bant yok.',
+      'Uçlar suya yavaşça inmeli (iki dik kutu gibi değil). Ortadaki alçak sırttan geçince çarpmamalı, yüksek köpüğe girince çarpmalı (kutu çizilenle aynı).'],
+    links: [['Dalga', '/?city=trabzon&hepsi&weather=clear&dalga'], ['Dalga · hemen uç', '/?city=trabzon&hepsi&weather=clear&dalga&go']] },
+  { g: 'Trabzon · 14 Kasım', id: 'horon-mendil', t: '💃 Horon: daha iri, daha yüksek seken oyuncular, halay başında mendil', look: [
+      'Horon teknesindeki oyuncular biraz daha iri; her vuruşta ayak ucunda gözle görülür sekiyorlar (dört ölçüde bir hep birlikte çöküş sürüyor).',
+      'Sıranın martıya en yakın ucundaki halay başı dış kolunu kaldırmış, elinde beyaz oyalı kırmızı üçgen mendil sallıyor; mendil kenardan ince çizgi gibi kaybolmamalı.'],
+    links: [['Horon', '/?city=trabzon&hepsi&weather=clear&horon'], ['Horon · hemen uç', '/?city=trabzon&hepsi&weather=clear&horon&go']] },
   { g: 'Düzeltme · 14 Kasım', id: 'truva-kamera', t: '🐴 Truva Atının altında kamera atın içine girmiyor', look: [
       'Atın karnının altından geç: kamera artık bacakların üstüne çıkıp gövdenin içine girmiyor; at yaklaşınca kamera alçalıp yataylaşıyor, ekran hiç kapanmamalı.',
       'Karnın altındaki altın simit yine alınabiliyor olmalı; at geçince kamera eski yüksekliğine yumuşakça döner. Telefon ve yatay ekranda dene.'],
