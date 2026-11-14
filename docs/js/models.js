@@ -1219,6 +1219,19 @@ export const KORDON = (() => {
   return k.build();
 })();
 
+// Bodrum marinası (Muğla balonları): KORDON'la aynı çerçeve. Beyaz badanalı taş rıhtım, mavi kenar bandı ve korkuluk, mor-pembe begonvil, beyaz duvar, mavi kapı
+export const MARINA = (() => {
+  const k = new Kit().add(new THREE.BoxGeometry(5, 1.4, 14), 0xf4f1ea, 2.5, 0.2, 0).add(new THREE.BoxGeometry(5, 0.08, 14), 0xe2dccf, 2.5, 0.94, 0)
+    .add(new THREE.BoxGeometry(0.1, 0.22, 14), 0x2f6fb4, 0.05, 0.75, 0)
+    .add(new THREE.BoxGeometry(0.06, 0.06, 14), 0x2f6fb4, 0.25, 1.9, 0);
+  for (let z = -6.5; z <= 6.5; z += 1.3) k.add(new THREE.BoxGeometry(0.07, 1, 0.07), 0x2f6fb4, 0.25, 1.45, z);
+  k.add(new THREE.BoxGeometry(0.5, 2.6, 14), 0xfbf9f4, 4.7, 2.2, 0).add(new THREE.BoxGeometry(0.06, 1.6, 0.9), 0x2f6fb4, 4.43, 1.75, -3);
+  for (const [z, r] of [[-5.6, 1.1], [-4.6, 0.8], [3.4, 1.2], [4.6, 0.9], [5.8, 0.7]]) k.add(new THREE.IcosahedronGeometry(r, 1), (f, y) => (y > 0.3 ? 0xd9418f : 0xb8357a), 4.3, 3.3, z, 0, 0, 0, 1, 0.8, 1.1)
+    .add(new THREE.IcosahedronGeometry(r * 0.5, 0), 0x3f7a3a, 4.1, 2.8, z + 0.3);
+  k.add(new THREE.CylinderGeometry(0.06, 0.09, 3.2, 6), 0xfbf9f4, 1.2, 2.5, 0).add(new THREE.BoxGeometry(0.42, 0.5, 0.42), 0xfff1c4, 1.2, 4.3, 0).add(new THREE.ConeGeometry(0.36, 0.3, 4), 0x2f6fb4, 1.2, 4.7, 0, 0, Math.PI / 4, 0);
+  return k.build();
+})();
+
 // ---------------- flamingo (İzmir Kuş Cenneti) ----------------
 // Ayakta: ayaklar y=0'da, gövde göğüste, S boyun. Uçarken: boyun ileri, bacaklar geride uzanır; kanatlar ayrı parça (çırpar). Pruva -z.
 const FL_P = 0xf7a1b5, FL_D = 0xec7c9b, FL_LEG = 0xe0688a;
@@ -3213,3 +3226,68 @@ export const TITLE_SETS = {
     return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
   },
 };
+
+// ---------------- Muğla: Caretta caretta, çam balı kovanları, Ölüdeniz yamaç paraşütü ----------------
+// Caretta (Dalyan/İztuzu): turuncu kahve plakalı kabuk, sarımsı kafa ve yüzgeçler, iri göz. Pruva -z, su çizgisi y=0. Ön yüzgeçler ayrı parça (main.js kürek çektirir).
+// TURTLE_FLIP: sağ ön yüzgeç, kökü (0,0,0); sol için scale.x = -1
+let turtleG = null;
+export function turtleGeo() {
+  if (turtleG) return turtleG;
+  const SH = 0x8a5226, SH2 = 0xb06a30, SKIN = 0xd9b26a;
+  const k = new Kit()
+    .add(new THREE.SphereGeometry(0.75, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2), vert((f, y, x, z) => ((Math.floor((x + 2) * 2.2) + Math.floor((z + 2) * 2.2)) % 2 ? SH : SH2)), 0, 0.02, 0, 0, 0, 0, 1, 0.42, 1.25)
+    .add(new THREE.CylinderGeometry(0.78, 0.74, 0.08, 14), 0xe2c47e, 0, 0.0, 0, 0, 0, 0, 1, 1, 1.25)
+    .add(new THREE.SphereGeometry(0.3, 10, 7), SKIN, 0, 0.12, -1.05, 0, 0, 0, 1, 0.85, 1.15)
+    .add(new THREE.SphereGeometry(0.2, 8, 5), 0xa87a3e, 0, 0.27, -1.08, 0, 0, 0, 1, 0.5, 1.1);
+  for (const s of [-1, 1]) {
+    k.add(new THREE.SphereGeometry(0.075, 7, 5), 0xffffff, s * 0.2, 0.2, -1.22).add(new THREE.SphereGeometry(0.045, 6, 4), 0x111111, s * 0.23, 0.21, -1.26)
+      .add(new THREE.SphereGeometry(0.15, 6, 4), SKIN, s * 0.48, -0.02, 0.85, 0, 0, 0, 1, 0.35, 1.5); // arka yüzgeç
+  }
+  k.add(new THREE.ConeGeometry(0.1, 0.35, 5), SKIN, 0, -0.02, 1.0, Math.PI / 2, 0, 0);
+  return (turtleG = k.build());
+}
+export const TURTLE_FLIP = new Kit().add(new THREE.SphereGeometry(0.2, 7, 5), 0xd9b26a, 0.5, -0.03, 0.12, 0, -0.5, 0, 2.4, 0.3, 0.9).build();
+
+// Çam balı kovanları: kayalık burunda iki çam, renk renk boyalı kutu kovanlar. Yerel: kıyı kenarı x=0, kara +x'e
+let hiveG = null;
+export function hivesGeo() {
+  if (hiveG) return hiveG;
+  const rock = vert((f, y, x, z) => mixHex(0x8f7a55, 0xc9b086, ramp(-0.4, 1.4, y)));
+  const k = new Kit().add(new THREE.SphereGeometry(1, 14, 7), rock, 3.2, -0.5, 0, 0, 0, 0, 4, 1.9, 7.5);
+  const COLS = [0x2f7fd6, 0xfbf8f0, 0xffc23a, 0x3fa36a, 0xe5484d, 0x7fc8e8];
+  let i = 0;
+  for (const z of [-4.5, -2.5, -0.5, 1.5, 3.5]) for (const x of [1.6, 3.1]) {
+    const c = COLS[i++ % COLS.length], y = 1.15 + (x > 2 ? 0.25 : 0);
+    k.add(new THREE.BoxGeometry(0.9, 0.85, 0.9), c, x, y, z).add(new THREE.BoxGeometry(1.05, 0.12, 1.05), 0xd7d2c6, x, y + 0.48, z)
+      .add(new THREE.BoxGeometry(0.05, 0.08, 0.35), 0x3a2a14, x - 0.46, y - 0.3, z);
+  }
+  for (const [x, z, h] of [[4.4, -3.2, 5.2], [4.6, 2.6, 6.2]]) k.add(new THREE.CylinderGeometry(0.16, 0.22, h, 6), 0x6b4a32, x, 1 + h / 2, z)
+    .add(new THREE.SphereGeometry(1.6, 9, 6), 0x3f6e34, x, 1 + h + 0.3, z, 0, 0, 0, 1.4, 0.55, 1.4).add(new THREE.SphereGeometry(1.1, 8, 5), 0x4f8a42, x - 0.3, 1 + h + 0.9, z + 0.2, 0, 0, 0, 1.3, 0.5, 1.3);
+  return (hiveG = k.build());
+}
+// bal kavanozu: amber bal, kareli bez kapak, etiket. Yerel merkez gövdenin ortası
+export const HONEY = new Kit().add(new THREE.CylinderGeometry(0.34, 0.36, 0.62, 12), 0xf0a21a, 0, 0, 0).add(new THREE.CylinderGeometry(0.3, 0.3, 0.06, 12), 0xffd56a, 0, 0.33, 0)
+  .add(new THREE.CylinderGeometry(0.4, 0.42, 0.14, 12), (f, y) => (f % 4 < 2 ? 0xe5484d : 0xfbf8f0), 0, 0.4, 0).add(new THREE.BoxGeometry(0.5, 0.26, 0.04), 0xfbf3dc, 0, -0.02, -0.34)
+  .add(new THREE.BoxGeometry(0.5, 0.26, 0.04), 0xfbf3dc, 0, -0.02, 0.34).build({ smooth: true });
+// arı: sarı-siyah bantlı tombul gövde, iki beyaz kanat (sürü main.js'te titrer)
+export const BEE = new Kit().add(new THREE.SphereGeometry(0.11, 7, 5), vert((f, y, x, z) => (Math.abs(z) < 0.03 || Math.abs(z) > 0.1 ? 0x1d1a14 : 0xffc21a)), 0, 0, 0, Math.PI / 2, 0, 0, 1, 1.45, 1)
+  .add(new THREE.SphereGeometry(0.06, 5, 3), 0xffffff, 0.07, 0.09, 0, 0, 0, 0.5, 1.4, 0.3, 1).add(new THREE.SphereGeometry(0.06, 5, 3), 0xffffff, -0.07, 0.09, 0, 0, 0, -0.5, 1.4, 0.3, 1).build();
+
+// Ölüdeniz yamaç paraşütü (tandem): kavisli kanat (hücre hücre renkli), askı ipleri, kanat altta ortada (0,0,0) olan koşum çubuğu. Kanat açıklığı x, uçuş -z.
+// Pilot arkada, yolcu önde oturur (main.js makePerson ekler). GLIDER_UP: koşumdan kanada yükseklik
+export const GLIDER_UP = 4.4;
+let gliderG = {};
+export function gliderGeo(ci) {
+  if (gliderG[ci]) return gliderG[ci];
+  const SETS = [[0xe5484d, 0xffd23f, 0xfbf8f0], [0x2f7fd6, 0xfbf8f0, 0xff7eb6], [0x3fa36a, 0xffd23f, 0x2b3a4c], [0x9b5de5, 0xff8a3d, 0xfbf8f0]], C = SETS[ci % SETS.length];
+  const k = new Kit(), R = 4.2, N = 11;
+  for (let i = 0; i < N; i++) {
+    const a = (i - (N - 1) / 2) * 0.12, x = Math.sin(a) * R, y = GLIDER_UP + Math.cos(a) * R - R;
+    k.add(new THREE.BoxGeometry(0.78, 0.3, 1.7), C[i % 3], x, y, 0, 0, 0, -a, 1, 1, 1)
+      .add(new THREE.BoxGeometry(0.78, 0.12, 0.4), C[(i + 1) % 3], x, y + 0.05, -0.95, 0.3, 0, -a);
+  }
+  const o = new THREE.Vector3(0, 0.1, 0);
+  for (const i of [0, 2, 4, 6, 8, 10]) { const a = (i - (N - 1) / 2) * 0.12; k.add(stick(new THREE.Vector3(Math.sin(a) * R, GLIDER_UP + Math.cos(a) * R - R - 0.15, 0), o, 0.012, 3), 0xf4f1e8); }
+  k.add(new THREE.BoxGeometry(0.9, 0.06, 0.06), 0x2b3a4c, 0, 0.1, 0);
+  return (gliderG[ci] = k.build());
+}

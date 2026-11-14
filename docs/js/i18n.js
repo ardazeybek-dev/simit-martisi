@@ -1010,6 +1010,9 @@
   Object.assign(EN, {"Dalgaya kapıldın!": "Swept away by the wave!", "Teleferik halatına takıldın!": "Caught on the cable car rope!"});
   Object.assign(DE, {"Dalgaya kapıldın!": "Von der Welle erfasst!", "Teleferik halatına takıldın!": "Im Seil der Seilbahn verfangen!"});
   Object.assign(ES, {"Dalgaya kapıldın!": "¡Te arrastró la ola!", "Teleferik halatına takıldın!": "¡Te enredaste en la cuerda del teleférico!"});
+  Object.assign(EN, {"Paraşütçüye çarptın!": "You hit a paraglider!"});
+  Object.assign(DE, {"Paraşütçüye çarptın!": "Gegen einen Gleitschirmflieger geprallt!"});
+  Object.assign(ES, {"Paraşütçüye çarptın!": "¡Chocaste con un parapentista!"});
   Object.assign(EN, {"Bandırma Vapuruna çarptın!": "You hit the Bandırma steamer!", "Vinç halatına takıldın!": "Caught on the crane cable!"});
   Object.assign(DE, {"Bandırma Vapuruna çarptın!": "Gegen den Dampfer Bandırma geprallt!", "Vinç halatına takıldın!": "Im Kranseil hängen geblieben!"});
   Object.assign(ES, {"Bandırma Vapuruna çarptın!": "¡Chocaste con el vapor Bandırma!", "Vinç halatına takıldın!": "¡Te enredaste en el cable de la grúa!"});
