@@ -48,14 +48,14 @@ export const DIORAMA = {
     k.add(cyl(0.12, 0.12, 2, 6), 0xd8b24a, 0, 39.5, 0);
     houseRing(k, 9, 8, 11.5, [0xf1d9b5, 0xe8a87c, 0xf3e6c4, 0xd98c6a, 0xfff2d8]);
     cypress(k, -6, -6, 9); cypress(k, 6.5, -5, 8);
-    const g = plain([mesh(k.build())]); return { g, h: 2.6 };
+    const g = plain([mesh(k.build())]); return { g, h: 2.2 };
   },
   izmir() { // Konak Saat Kulesi, iki palmiye
     const k = new Kit();
     k.add(cyl(12, 13, 1.2, 28), 0xe8dcc0, 0, 0.6, 0);
     konakTower(k, 0, 1.2, 0);
     palm(k, -8, 4, 11); palm(k, 8.5, 3, 10);
-    return { g: plain([mesh(k.build())]), h: 2.4 };
+    return { g: plain([mesh(k.build())]), h: 2.1 };
   },
   antalya() { // Düden: falezden dökülen şelale, dibinde gölcük
     const f = makeFalls(); f.rotation.y = Math.PI / 2; // su perdesi kameraya (+z) baksın

@@ -9,7 +9,7 @@ import { Kit, vcMat } from './util.js';
 import { makeGull, flapGull } from './models.js';
 import { DIORAMA, fit, islandDecor } from './mapsets.js';
 
-const D_MIN = 11, D_MAX = 95, D_HOME = 25, PITCH = 0.98; // ~56° yukarıdan
+const D_MIN = 11, D_MAX = 95, D_HOME = 25, PITCH = 1.1; // ~63° yukarıdan: uzun maketler üstteki şehrin etiketine binmesin
 const BOUNDS = { x0: -16, x1: 16, z0: -24, z1: 20 };
 const SEA = 0x3aa7d6, SKY = 0x7fd0ee;
 
@@ -46,7 +46,7 @@ function placeCam(w, h) {
 }
 const worldPerPx = h => (2 * map.d * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2))) / h; // ekranın ortasında bir pikselin dünyadaki boyu
 
-export function mapHome() { map.tx = 0; map.tz = 0.4; map.d = D_HOME; map.vx = map.vz = 0; }
+export function mapHome() { map.tx = 0; map.tz = 2.2; map.d = D_HOME; map.vx = map.vz = 0; }
 export function mapFocus(x, z, d) { map.tx = x; map.tz = z; if (d) map.d = d; map.vx = map.vz = 0; clampView(); }
 
 // ---- dokunma ----
@@ -76,7 +76,7 @@ export function bindMapInput(el, isUi) {
     if (!map.on || isUi(e)) return;
     ptrs.set(e.pointerId, pt(e)); try { el.setPointerCapture(e.pointerId); } catch (_) {}
     map.vx = map.vz = 0;
-    if (ptrs.size === 1) tap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
+    if (ptrs.size === 1) tap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), lbl: e.target.dataset && e.target.dataset.pick };
     else { tap = null; const m = midOf(); pinch0 = m.dist; d0 = map.d; mid0 = m; }
   });
   el.addEventListener('pointermove', e => {
@@ -98,7 +98,7 @@ export function bindMapInput(el, isUi) {
     if (!ptrs.has(e.pointerId)) return;
     ptrs.delete(e.pointerId);
     if (tap && tap.id === e.pointerId && e.type === 'pointerup' && performance.now() - tap.t < 450) {
-      const id = pickAt(e.clientX, e.clientY); map.vx = map.vz = 0;
+      const id = tap.lbl || pickAt(e.clientX, e.clientY); map.vx = map.vz = 0; // isim etiketine dokunmak da seçer
       if (map.onTap) map.onTap(id);
     }
     tap = null;
@@ -170,10 +170,19 @@ export function buildCities(list, el) {
     d.position.y = 0.14; root.add(d);
     const hit = new THREE.Mesh(new THREE.CylinderGeometry(PAD_R * 1.15, PAD_R * 1.15, h + 0.4, 10), hitMat); hit.position.y = (h + 0.4) / 2; root.add(hit);
     root.userData.pick = c.id; scene.add(root); map.pickables.push(root);
-    const label = document.createElement('div'); label.className = 'map-lbl'; label.textContent = c.name; el.appendChild(label);
+    const label = document.createElement('div'); label.className = 'map-lbl'; label.textContent = c.name; label.dataset.pick = c.id; el.appendChild(label);
     cities.push({ id: c.id, g: root, pos: new THREE.Vector3(p[0], GROUND_Y + 0.1, p[1] + PAD_R * 0.95), label, tick: model.userData.tick || null });
   }
   scene.add(islandDecor(3.4, 5.4, Object.values(CITY_POS).map(([x, z]) => [x, z, PAD_R + 0.15])));
+}
+// seçili şehrin kaidesinde nabız gibi atan altın halka (uzun maketler ekranda komşusunun üstüne biner: işaret kaidede durur, karışmaz)
+const ring = new THREE.Mesh(new THREE.TorusGeometry(PAD_R * 1.12, 0.07, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffc93a }));
+ring.rotation.x = -Math.PI / 2; ring.visible = false; scene.add(ring);
+let selC = null;
+export function mapSelect(id) {
+  selC = cities.find(c => c.id === id) || null; ring.visible = !!selC;
+  for (const c of cities) c.label.classList.toggle('sel', c === selC);
+  if (selC) selC.pop = 1;
 }
 // martı adanın üstünde tur atar
 const gull = makeGull(); { const b = new THREE.Box3().setFromObject(gull), s = new THREE.Vector3(); b.getSize(s); gull.scale.multiplyScalar(0.7 / Math.max(s.x, s.z)); } scene.add(gull);
@@ -181,6 +190,8 @@ gull.traverse(o => { if (o.isMesh) o.castShadow = true; });
 function tickCities(dt, t) {
   for (const c of cities) if (c.tick) c.tick(dt, t);
   const a = t * 0.32; gull.position.set(Math.sin(a) * 3.1, 3.2 + Math.sin(t * 0.9) * 0.25, Math.cos(a) * 4.6); gull.rotation.set(0, a + Math.PI, -0.35); flapGull(gull, t * 1.4, 0.6, 0.4);
+  if (selC) { ring.position.set(selC.g.position.x, GROUND_Y + 0.1, selC.g.position.z); ring.scale.setScalar(1 + Math.abs(Math.sin(t * 3)) * 0.08); }
+  for (const c of cities) if (c.pop) { c.pop = Math.max(0, c.pop - dt * 3); const k = 1 + Math.sin(c.pop * Math.PI) * 0.12; c.g.scale.set(k, 1 / k, k); }
   const far = map.d > 42;
   for (const c of cities) {
     const s = mapToScreen(c.pos), off = far || s.back || s.x < -60 || s.x > innerWidth + 60 || s.y < -30 || s.y > innerHeight + 30;

@@ -7,7 +7,7 @@ import { initShipLights, addShipLights, tickShipLights, tickLamps } from './ship
 import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, MARINA, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, MENDIL_ARM, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker, turtleGeo, TURTLE_FLIP, hivesGeo, HONEY, BEE, gliderGeo } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
-import { map, bindMapInput, mapDraw, mapHome, mapZoom, buildCities } from './worldmap.js';
+import { map, bindMapInput, mapDraw, mapHome, mapZoom, buildCities, mapSelect } from './worldmap.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
 import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc, makeMoveCode, claimMoveCode, fmtCode } from './net.js';
 
@@ -2719,9 +2719,33 @@ let mapping = false;
 function openMap() {
   if (state !== 'title' || mapping) return;
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel']) show(id, false);
-  mapping = true; map.on = true; mapHome();
+  mapping = true; map.on = true; mapHome(); mapPick(city.id, true);
   show('title', false); show('worldMap');
   if (renderer.getPixelRatio() !== POD_PR) renderer.setPixelRatio(POD_PR); // haritada uçuş yok: ekranın tam çözünürlüğü
+}
+// haritada seçilen şehrin kartı: ad, çarpan, iskele noktaları, hedef; kilitliyse açılma şartı
+let mapSel = null;
+function mapPick(id, quiet) {
+  const c = id && CITIES.find(q => q.id === id); if (!c) return;
+  mapSel = c; mapSelect(id);
+  if (c !== city && cityOpen(c)) { useCity(c); store.set(KEY_CITY, c.id); cityWeather(); applyWeather(weather); resetWorld(false); } // açık şehre dokunmak onu seçer (haritayı kapatınca da seçili kalır)
+  renderMapCard();
+  if (!quiet) { sfx.click(); const el = $('mapCard'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+}
+function renderMapCard() {
+  const c = mapSel, open = cityOpen(c), far = routeOf(c), n = c.stops.length, done = far === n - 1, goal = Math.min(far + 1, n - 1);
+  $('mapCity').innerHTML = c.name + (c.mult > 1 ? ` <em class="mult-tag">×${c.mult}</em>` : '');
+  $('mapDots').innerHTML = c.stops.map((s, i) => `<i class="${open && i <= far ? 'got' : open && i === goal && !done ? 'goal' : ''}"></i>`).join('');
+  $('mapDots').classList.toggle('locked', !open);
+  if (!open) $('mapGoal').textContent = '🔒 ' + tr(c.after);
+  else if (done) $('mapGoal').textContent = tr(c.end);
+  else $('mapGoal').innerHTML = `${tr('Hedef')}: <b>${c.stops[goal][0]}</b> · ${fmt(Math.round(c.stops[goal][1] * STOP_K))} m`;
+  $('mapGo').classList.toggle('locked', !open);
+}
+function mapGo() {
+  const c = mapSel;
+  if (!c || !cityOpen(c)) { bump($('mapGo'), 'shake'); vibrate(30); return; }
+  closeMap(); if (state === 'title') startGame();
 }
 function closeMap() {
   if (!mapping) return;
@@ -3592,7 +3616,7 @@ onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') playSel(); });
 onBtn('cityPrev', () => stepCity(-1));
 $('cityName').addEventListener('click', e => { e.stopPropagation(); sfx.click(); openMap(); });
-onBtn('mapClose', closeMap); onBtn('mapIn', () => mapZoom(0.75)); onBtn('mapOut', () => mapZoom(1.33));
+onBtn('mapClose', closeMap); onBtn('mapGo', mapGo); map.onTap = id => mapPick(id); onBtn('mapIn', () => mapZoom(0.75)); onBtn('mapOut', () => mapZoom(1.33));
 bindMapInput($('worldMap'), isUi);
 buildCities(CITIES.map(c => ({ id: c.id, name: c.name })), $('mapLabels'));
 onBtn('cityNext', () => stepCity(1));
