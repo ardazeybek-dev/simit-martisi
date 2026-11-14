@@ -7,6 +7,7 @@ import { initShipLights, addShipLights, tickShipLights, tickLamps } from './ship
 import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, MARINA, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, MENDIL_ARM, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker, turtleGeo, TURTLE_FLIP, hivesGeo, HONEY, BEE, gliderGeo } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
+import { map, bindMapInput, mapDraw, mapHome, mapZoom } from './worldmap.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
 import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc, makeMoveCode, claimMoveCode, fmtCode } from './net.js';
 
@@ -2348,6 +2349,7 @@ function showTitle() {
   show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false); show('shopPanel', false);
   ui.powers.textContent = '';
   dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
+  if (mapping) { mapping = false; map.on = false; show('worldMap', false); }
   $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
   const tb = $('titleBest'); if (best) tb.innerHTML = `<i class="best-lbl">${esc(tr('Rekor'))} </i>${fmt(best)}`; else tb.textContent = tr('İlk uçuşun!'); // dar ekranda "Rekor" sözü gizlenir, kupa yeter
@@ -2712,6 +2714,22 @@ function openWardrobe() {
   renderWardrobe(); show('title', false); show('wardrobe'); podEnter();
 }
 function reloadKeep() { try { sessionStorage.setItem('simit-martisi-keepw', weather); } catch (e) {} location.reload(); }
+// dünya haritası (worldmap.js): başlıkta şehir adına dokununca açılır; şehir seçimi buradan
+let mapping = false;
+function openMap() {
+  if (state !== 'title' || mapping) return;
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel']) show(id, false);
+  mapping = true; map.on = true; mapHome();
+  show('title', false); show('worldMap');
+  if (renderer.getPixelRatio() !== POD_PR) renderer.setPixelRatio(POD_PR); // haritada uçuş yok: ekranın tam çözünürlüğü
+}
+function closeMap() {
+  if (!mapping) return;
+  mapping = false; map.on = false; show('worldMap', false);
+  renderer.setPixelRatio(Math.min(DPR, PR[quality])); // uçuşun çözünürlüğüne dön
+  if (window.__reloadOnTitle && state === 'title') return reloadKeep(); // bekleyen sürüm yenilemesi
+  if (state === 'title') { renderRouteMap(); renderMenuBadges(); show('title'); }
+}
 function closeWardrobe() {
   seeTab(wardTab); dressing = false; show('wardrobe', false);
   if (window.__reloadOnTitle && state === 'title') return reloadKeep(); // bekleyen sürüm yenilemesi: menüye dönünce, hava aynı
@@ -3553,6 +3571,7 @@ addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); if (e.target.id === 'overNameInput') saveName(e.target, $('overNameErr')); else if (e.target.id === 'moveInput') moveGo(); else saveName(); } else if (e.code === 'Escape') show('profilePanel', false); return; }
   keys[e.code] = true;
   if (dressing) { if (e.code === 'Escape') closeWardrobe(); return; }
+  if (mapping) { if (e.code === 'Escape') closeMap(); else if (e.code === 'Equal' || e.code === 'NumpadAdd') mapZoom(0.8); else if (e.code === 'Minus' || e.code === 'NumpadSubtract') mapZoom(1.25); return; }
   if (recS.on) { if (!e.repeat) recShowDone(); return; } // rekor ekranı: tuş da geçer
   if (e.code === 'KeyM') { settings.sfx = settings.music = !(settings.sfx || settings.music); saveSettings(); }
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) { if (state === 'play' || state === 'countdown') pause(); else if (state === 'paused') resume(); }
@@ -3572,6 +3591,9 @@ onBtn('fishBtn', () => fishRevive());
 onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') playSel(); });
 onBtn('cityPrev', () => stepCity(-1));
+$('cityName').addEventListener('click', e => { e.stopPropagation(); sfx.click(); openMap(); });
+onBtn('mapClose', closeMap); onBtn('mapIn', () => mapZoom(0.75)); onBtn('mapOut', () => mapZoom(1.33));
+bindMapInput($('worldMap'), isUi);
 onBtn('cityNext', () => stepCity(1));
 onBtn('missionsBtn', () => { openMissions(); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
@@ -4390,6 +4412,7 @@ function frame() {
   }
 
   if (dressing) podDraw(realDt); // kostüm podyumu: dünya yerine
+  else if (mapping) mapDraw(renderer, realDt, t); // dünya haritası
   else if (recS.on) recDraw(realDt); // maç sonu rekor ekranı
   else { tickLamps(realDt, camera, weather, gull.position); parkFar(); syncBatches(scene, camera); renderer.render(scene, camera); } // simitler: tek InstancedMesh (models.js)
   if (firstFrame) { firstFrame = false; const l = $('loader'); l.classList.add('done'); setTimeout(() => l.remove(), 700); warmPeople(); }
@@ -4699,7 +4722,7 @@ window.__game = {
   addFish: (ahead = 40, x = 0) => { const dir = 1, mm = new THREE.Mesh(FISH, vcMat); mm.visible = false; scene.add(mm); fishes.push({ mesh: mm, dir, ax: x, z: gull.position.z - ahead, w: 3.2, T: 0.85, lag: 0, u: -1, done: false, spin: 0, splT: 0 }); },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), addKite: (ahead = 30, x = 0, sw = 1.5) => addKite(x, gull.position.z - ahead, sw), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
-  get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
+  get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || mapping || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top, fix: !!o.fix })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
@@ -4707,6 +4730,7 @@ window.__game = {
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
   get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, irmak: !!b.bank, ahead: +(gull.position.z - b.z0).toFixed(1), mills: b.mills.length, gust: b.gust ? +b.gust.k.toFixed(2) : null, zm: b.zm, flipped: b.flipped, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
   bolt() { boltFx = 1; },
+  openMap, closeMap, get calls() { return renderer.info.render.calls; }, get mapView() { return { on: map.on, tx: +map.tx.toFixed(2), tz: +map.tz.toFixed(2), d: +map.d.toFixed(2) }; },
   setCity(id) { useCity(cityOf(id)); cityWeather(); applyWeather(weather); resetWorld(false); if (state === 'title') renderRouteMap(); },
   get marks() { return marks.map(k => ({ kind: k.kind, m: -k.z / 2, passed: k.passed })); }, get vs() { return vs && { ...vs }; },
   get route() { return { next: STOPS[stopI] ? STOPS[stopI].name : null, at: stopM[stopI] ?? null, dist, z: gull.position.z, piers: piers.map(p => ({ i: p.i, ahead: +(gull.position.z - p.z).toFixed(1) })) }; },
