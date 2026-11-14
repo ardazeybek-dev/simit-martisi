@@ -895,41 +895,53 @@ function stick(a, b, r = 0.03, seg = 4) {
 export const WAVE_GATE = [[-6.2, 4.75, 1.35, 8.6], [6.2, 4.75, 1.35, 8.6]], WAVE_GAP = 0;
 const WAVE_LO = 2.4, WAVE_HI = 8.1;
 // dalganın x'teki tepe yüksekliği: ortada alçak sırt, iki yanda kırılan yüksek köpük; uçlar suya iner (yüksek kısımda düzensiz pürüz)
-const waveH = x => { const d = Math.abs(x); return (WAVE_LO + (WAVE_HI - WAVE_LO) * ramp(0.9, 2.8, d) + 0.7 * ramp(3, 4, d) * (fbm(x * 0.55, 1.7) - 0.5)) * (1 - 0.95 * ramp(11, 16, d)); };
+const waveH = x => { const d = Math.abs(x); return (WAVE_LO + (WAVE_HI - WAVE_LO) * ramp(0.9, 2.8, d) + 0.7 * ramp(3, 4, d) * (fbm(x * 0.55, 1.7) - 0.5)) * (1 - 0.96 * ramp(8.5, 17, d)); }; // uçlar yavaşça suya iner (kutu gibi dik kesilmez)
 // kesit: arkadan yukarı, tepeden öne uzanan dudak, dudağın ucu aşağı kıvrılır ve altına (tüpe) döner, yüzden aşağı öndeki köpüğe. [z, y/H]
 const WAVE_PROF = [[-4.6, 0], [-3.0, 0.3], [-1.7, 0.66], [-0.6, 0.92], [0.2, 1.0], [1.3, 0.9], [1.7, 0.66], [1.3, 0.62], [0.9, 0.55], [1.1, 0.3], [1.7, 0.08], [2.4, -0.08]];
 let waveG = null;
 export function waveGeo() { return waveG ||= waveGeo_(); }
+// yumuşak dalga: kesit Catmull-Rom ile inceltilir (her aralık WAVE_SUB parça), ızgara indeksli, normaller köşelerde ortalanır (softMat): dudak ve tüp köşesiz kıvrılır.
+// Dudağın öne uzanışı x boyunca hafifçe değişir (düz çekilmiş profil gibi durmaz). Renk kesit boyunca kontrol noktaları arasında kayarak geçer (bant bant değil). Biçim (waveH, WAVE_PROF) aynı: WAVE_GATE kutuları çizilenle örtüşür
+const WAVE_SUB = 5;
 function waveGeo_() {
-  const NX = 80, NP = WAVE_PROF.length, pos = [], col = [], c = new THREE.Color();
-  const shade = (j, H, x) => { // köşe rengi: arka denizle aynı koyu yeşil-mavi, tepede ve dudakta köpük (yalnız kırılan yüksek kısımda), tüpün içi ışık alan açık yeşil, yüz saydam yeşil
-    const br = ramp(3.6, 6.0, H), n = fbm(x * 0.9, j * 1.3), foam = mixHex(0xf4fbfc, 0xd2ebef, n);
+  const NX = 128, NP = WAVE_PROF.length;
+  const shade = (j, H, x) => { // kontrol noktası rengi: arka denizle aynı koyu yeşil-mavi, tepede ve dudakta köpük (yalnız kırılan yüksek kısımda), tüpün içi ışık alan açık yeşil, yüz saydam yeşil
+    const br = ramp(3.6, 6.0, H), n = fbm(x * 0.45, j * 1.3), foam = mixHex(0xf2fafb, 0xdaeef1, n);
     const v = j <= 2 ? mixHex(0x0e4a5a, 0x1d6a72, WAVE_PROF[j][1])
-      : j === 3 ? mixHex(0x2a8a86, mixHex(0x5fb4ae, foam, 0.5), br)
-      : j <= 6 ? mixHex(mixHex(0x2a8a86, 0x6fc2bc, n), foam, br)
+      : j === 3 ? mixHex(0x2a8a86, mixHex(0x5fb4ae, foam, 0.4), br)
+      : j <= 6 ? mixHex(mixHex(0x2f8f8a, 0x6fc2bc, n), foam, br * 0.9)
       : j === 7 ? mixHex(0x3f9e98, 0x9fdcd6, br)
       : j <= 9 ? mixHex(0x1d6f78, j === 8 ? 0x3aa39a : 0x2a8580, br)
-      : mixHex(0x1d6f78, foam, br * 0.85);
-    // güneş önde (-z): kameraya bakan köpük gölgede kalıp griye kayıyordu; köpük köşeleri doğrusal renkte parlatılır (yolcu tenindeki gibi)
-    return c.setHex(v).multiplyScalar((j >= 4 && j <= 6) || j >= 10 ? 1 + 0.45 * br : 1);
+      : mixHex(0x1d6f78, foam, br * (j === 10 ? 0.45 : 0.3));
+    // güneş önde (-z): kameraya bakan köpük gölgede kalıp griye kayıyordu; köpük köşeleri doğrusal renkte biraz parlatılır (eskisinden yumuşak)
+    return new THREE.Color().setHex(v).multiplyScalar((j >= 4 && j <= 6) || j >= 10 ? 1 + 0.3 * br : 1);
   };
-  const P = [];
-  for (let i = 0; i <= NX; i++) {
-    const x = -16 + (32 * i) / NX, H = waveH(x), zs = 0.55 + 0.45 * (H / WAVE_HI);
-    P.push(WAVE_PROF.map(([z, y], j) => [x, y * H, z * zs - 0.25, shade(j, H, x).clone()]));
+  const S = []; // inceltilmiş kesit: [z, y/H, kesirli kontrol noktası]
+  for (let j = 0; j < NP - 1; j++) for (let k = 0, n = j === NP - 2 ? WAVE_SUB + 1 : WAVE_SUB; k < n; k++) {
+    const u = k / WAVE_SUB, p0 = WAVE_PROF[Math.max(0, j - 1)], p1 = WAVE_PROF[j], p2 = WAVE_PROF[j + 1], p3 = WAVE_PROF[Math.min(NP - 1, j + 2)];
+    const cr = i => 0.5 * (2 * p1[i] + (p2[i] - p0[i]) * u + (2 * p0[i] - 5 * p1[i] + 4 * p2[i] - p3[i]) * u * u + (3 * p1[i] - p0[i] - 3 * p2[i] + p3[i]) * u * u * u);
+    S.push([cr(0), cr(1), j + u]);
   }
-  const put = p => { pos.push(p[0], p[1], p[2]); col.push(p[3].r, p[3].g, p[3].b); };
-  for (let i = 0; i < NX; i++) for (let j = 0; j < NP - 1; j++) {
-    const a = P[i][j], b = P[i + 1][j], cc = P[i][j + 1], d = P[i + 1][j + 1];
-    put(a); put(cc); put(b); put(b); put(cc); put(d); // dış yüz kameraya dönük (sarım: kesit boyunca solda dış)
+  const NS = S.length, pos = new Float32Array((NX + 1) * NS * 3), col = new Float32Array((NX + 1) * NS * 3), idx = [], c = new THREE.Color();
+  for (let i = 0, o = 0; i <= NX; i++) {
+    const x = -17 + (34 * i) / NX, H = waveH(x), zs = 0.55 + 0.45 * (H / WAVE_HI), lip = 1 + 0.3 * (fbm(x * 0.3, 4.2) - 0.5), cs = WAVE_PROF.map((_, j) => shade(j, H, x));
+    for (const [z, y, f] of S) {
+      const j = Math.min(NP - 2, Math.floor(f)); c.copy(cs[j]).lerp(cs[j + 1], f - j);
+      pos[o] = x; pos[o + 1] = y * H; pos[o + 2] = (z > 0 && f > 3 ? z * lip : z) * zs - 0.25; col[o] = c.r; col[o + 1] = c.g; col[o + 2] = c.b; o += 3;
+    }
+  }
+  for (let i = 0; i < NX; i++) for (let j = 0; j < NS - 1; j++) {
+    const a = i * NS + j, b = a + NS;
+    idx.push(a, a + 1, b, b, a + 1, b + 1); // dış yüz kameraya dönük (sarım: kesit boyunca solda dış)
   }
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  return new Kit().add(g, null).build();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.setIndex(idx); g.computeVertexNormals(); g.computeBoundingSphere();
+  return g;
 }
 export function makeWave() {
-  const g = new THREE.Group(), m = new THREE.Mesh(waveGeo(), vcMat); m.castShadow = true; g.add(m);
+  const g = new THREE.Group(), m = new THREE.Mesh(waveGeo(), softMat); m.castShadow = true; g.add(m);
   g.userData.crew = [];
   return { g, throwers: [] };
 }
@@ -1018,9 +1030,11 @@ function horonBoatGeo_() {
   return k.build();
 }
 // halay oyuncusu: kollar iki yana açık, eller yandakinin eline değer (aralık ~0,95); yelek ve başörtüsü renkte, şalvar koyu, kuşak altın. +z'ye bakar
+// free: halay başı (sıranın ucundaki oyuncu); o yandaki (yerel x işareti) kol çizilmez, yerine mendilli kol (MENDIL_ARM) ayrı sallanır
 const horonCache = new Map();
-export function horonDancerGeo(ci) {
-  if (horonCache.has(ci)) return horonCache.get(ci);
+export function horonDancerGeo(ci, free = 0) {
+  const key = ci + ':' + free;
+  if (horonCache.has(key)) return horonCache.get(key);
   const c = BEACH_COLS[ci], SKIN = 0xe8b896, k = new Kit(), HS = 1.25, HY = 1.95;
   const hd = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) => k.add(geo, col, x * HS, HY + (y - HY) * HS, z * HS, rx, ry, rz, sx * HS, sy * HS, sz * HS);
   for (const x of [-0.12, 0.12]) { k.add(new THREE.CylinderGeometry(0.15, 0.1, 0.8, 6), 0x1d1f26, x, 0.4, 0); k.add(new THREE.BoxGeometry(0.2, 0.12, 0.3), 0x111214, x, 0.06, 0.04); }
@@ -1028,6 +1042,7 @@ export function horonDancerGeo(ci) {
     .add(new THREE.BoxGeometry(0.16, 0.7, 0.05), 0xf2efe6, 0, 1.32, 0.27)                        // yeleğin altında beyaz gömlek
     .add(new THREE.CylinderGeometry(0.33, 0.33, 0.14, 8), 0xe3b23c, 0, 0.86, 0);                  // kuşak
   for (const s of [-1, 1]) {
+    if (s === free) continue;
     k.add(new THREE.CylinderGeometry(0.065, 0.065, 0.3, 6), 0xf2efe6, s * 0.36, 1.58, 0.02, 0, 0, Math.PI / 2 - s * 0.12);
     k.add(new THREE.SphereGeometry(0.075, 6, 4), SKIN, s * 0.52, 1.54, 0.03);
   }
@@ -1038,8 +1053,13 @@ export function horonDancerGeo(ci) {
   hd(new THREE.TorusGeometry(0.235, 0.035, 4, 12, Math.PI * 1.1), c, 0, 1.95, 0.12, 0, 0, -0.05 * Math.PI);
   hd(new THREE.ConeGeometry(0.2, 0.32, 8), c, 0, 1.62, -0.12);
   hd(new THREE.BoxGeometry(0.5, 0.05, 0.05), 0xf2efe6, 0, 2.12, 0.16);                          // başörtüsünün beyaz saçağı
-  const g = k.build(); horonCache.set(ci, g); return g;
+  const g = k.build(); horonCache.set(key, g); return g;
 }
+// halay başının mendilli kolu: orijin omuzda, kol yukarı (+y), elde kırmızı mendil (köşesinden tutulmuş, beyaz oyalı kenar). main.js döndürüp sallar
+const mendilTri = new THREE.Shape(); mendilTri.moveTo(0, 0); mendilTri.lineTo(0.72, 0.16); mendilTri.lineTo(0.16, 0.72); mendilTri.closePath(); // üçgen katlanmış mendil, sivri ucu elde
+export const MENDIL_ARM = new Kit().add(new THREE.CylinderGeometry(0.07, 0.065, 0.72, 6), 0xf2efe6, 0, 0.36, 0).add(new THREE.SphereGeometry(0.085, 6, 4), 0xe8b896, 0, 0.76, 0)
+  .add(new THREE.ExtrudeGeometry(mendilTri, { depth: 0.03, bevelEnabled: false }), 0xff2f3f, -0.02, 0.74, -0.015)
+  .add(new THREE.BoxGeometry(0.8, 0.07, 0.05), 0xfff6e0, 0.44, 1.18, 0, 0, 0, -Math.PI / 4).build(); // uzun kenarda beyaz oya
 // atıcı: simit tutan yolcu kalıbı, başörtüsü ve gömlek renkte (görünüm sabit: geometri önbellekte kalır)
 const HORON_LOOKS = BEACH_COLS.map((c, i) => ({ id: 'horon' + i, kind: 'teyze', shirt: c, pants: 0x1d1f26, skin: 0xe8b896, skirt: false, hair: 0, hat: 'esarp', hatCol: c, scarf: true, scarfCol: 0xe3b23c, pose: 'down' }));
 const KEMENCE_LOOK = { id: 'kemence', kind: 'amca', shirt: 0x1d1f26, pants: 0x1d1f26, skin: 0xd49b74, hair: 2, hat: 'kasket', hatCol: 0x1d1f26, scarf: true, scarfCol: 0xc8352e, must: 0x1a1a1a, pose: 'down' };

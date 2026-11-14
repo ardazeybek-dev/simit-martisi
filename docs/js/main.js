@@ -4,7 +4,7 @@ import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, update
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, setWeatherFx, updateWeatherFx } from './weather.js';
 import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
-import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker } from './models.js';
+import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, MENDIL_ARM, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
@@ -801,13 +801,13 @@ function spawnBeach() {
     const a = (Math.random() * 3) | 0, b = (a + 1 + ((Math.random() * 2) | 0)) % 3, xs = Math.random() < 0.5 ? [rand(-2.8, -0.6), rand(0.6, 2.8)] : [rand(0.6, 2.8), rand(-2.8, -0.6)];
     const opts = [];
     for (const [j, c] of [a, b].entries()) {
-      const uz = tz + 3 + j * 2.6;
+      const uz = tz + 3 + j * (hr ? 2.9 : 2.6); // horonda oyuncular iri: iki renk bloğu birbirine girmesin
       if (!hr) put(new THREE.Mesh(umbrellaGeo(BEACH_COLS[c]), vcMat), 9.8, 0.3, uz - 0.4);
       // şeride ve gelen martıya döner; horonda tam şeride bakar, iki yanında aynı renkte kol kola iki oyuncu
       const p = hr ? makeHoronThrower(c) : makePerson(true); put(p.mesh, hr ? 8.7 : 8.9, hr ? HORON_DECK : 0.3, uz, -side * (hr ? Math.PI / 2 : Math.PI / 2 - 0.4)); p.mesh.scale.setScalar(0.9);
       if (hr) {
-        dancers.push({ m: p.mesh, lag: dancers.length * 0.012 });
-        for (const dz of [-0.95, 0.95]) { const d = put(new THREE.Mesh(horonDancerGeo(c), vcMat), 8.7, HORON_DECK, uz + dz, -side * Math.PI / 2); d.scale.setScalar(0.9); dancers.push({ m: d, lag: dancers.length * 0.012 }); }
+        p.mesh.scale.setScalar(1.05); dancers.push({ m: p.mesh, lag: dancers.length * 0.012 });
+        for (const dz of [-0.95, 0.95]) { const d = put(new THREE.Mesh(horonDancerGeo(c), vcMat), 8.7, HORON_DECK, uz + dz, -side * Math.PI / 2); d.scale.setScalar(1.08); dancers.push({ m: d, lag: dancers.length * 0.012, c }); }
       }
       const bt = { g: p.mesh, side, person: p, tray: [{ visible: true }, { visible: true }], z: uz, hand: 0, thrown: 0 };
       boats.push(bt);
@@ -819,22 +819,31 @@ function spawnBeach() {
     }
     pairs.push({ z: tz, opts });
   }
-  beaches.push({ g, z: bz, side, id, pairs, dancers: hr ? dancers : null });
+  let mendil = null;
+  if (hr) { // halay başı: martının ilk vardığı uçtaki oyuncu (en büyük z); dıştaki eli kolundan ayrı, mendil sallar (yerel +x dünyada side·z yönüne bakar)
+    const ld = dancers.filter(d => d.c !== undefined).reduce((a, d) => (d.m.position.z > a.m.position.z ? d : a));
+    ld.m.geometry = horonDancerGeo(ld.c, side);
+    mendil = new THREE.Mesh(MENDIL_ARM, vcMat); mendil.position.set(side * 0.24, 1.6, 0.02); mendil.rotation.order = 'ZYX'; mendil.name = 'mendil'; mendil.castShadow = true; ld.m.add(mendil);
+  }
+  beaches.push({ g, z: bz, side, id, pairs, dancers: hr ? dancers : null, mendil });
   beachZ = bz - BEACH_LEN / 2 - (hr ? rand(1000, 1400) : rand(800, 1200));
   genZ = z0 - BEACH_LEN;
 }
 // horon: 7/8'lik aksak tartım (2+2+3 birim): her vuruşta dizler kısa ve sert kırılır, uzun vuruşta omuzlar titrer (titreme),
-// dört ölçüde bir halay hep birlikte çöküp kalkar. Oyuncular sırayla çok az gecikir: dalga gibi değil, kol kola tek gövde
-const HORON_U = 0.105, HORON_BAR = 7;
+// dört ölçüde bir halay hep birlikte çöküp kalkar. Oyuncular sırayla çok az gecikir: dalga gibi değil, kol kola tek gövde.
+// Her vuruşta diz kırılınca ayak ucunda sekerler (HORON_HOP, uzun vuruşta biraz daha yüksek); halay başı mendili başının üstünde sallar
+const HORON_U = 0.105, HORON_BAR = 7, HORON_HOP = 0.2;
 function updateHoron(gz) {
   for (const b of beaches) {
     if (!b.dancers || b.z - HORON_LEN / 2 > gz + 40 || b.z + HORON_LEN / 2 < gz - 260) continue;
     for (const d of b.dancers) {
       const tt = t - d.lag, u = tt / HORON_U, bar = Math.floor(u / HORON_BAR), s = u - bar * HORON_BAR, k = s < 2 ? s : s < 4 ? s - 2 : s - 4;
       const dip = Math.exp(-k * 2.6) * (s >= 4 ? 0.2 : 0.12), squat = bar % 4 === 3 ? Math.min(1, s * 0.9, (HORON_BAR - s) * 0.6) * 0.3 : 0;
-      d.m.position.y = HORON_DECK - dip - squat;
+      const len = s < 4 ? 2 : 3, hop = HORON_HOP * (s >= 4 ? 1.35 : 1) * Math.sin(Math.PI * clamp((k - 0.3) / (len - 0.45), 0, 1)) * (squat ? 0.3 : 1);
+      d.m.position.y = HORON_DECK - dip - squat + hop;
       d.m.rotation.x = s >= 4 ? Math.sin(tt * 44) * 0.05 : 0;
     }
+    if (b.mendil) b.mendil.rotation.set(0, Math.sin(t * 7.5) * 0.7, -b.side * (0.4 + Math.sin(t * 4.2) * 0.25)); // kol dışa yatık; mendil başın üstünde bir yana bir yana çalkalanır (yüzü hep şeride dönük kalır)
   }
 }
 // plaj serisi: çiftin ilk yakalanan parçası rengi belirler; bir önceki çiftle aynı renkse seri büyür
