@@ -1210,6 +1210,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #worldMap .map-lbl.locked { background: #dfe3ea; color: #77808f; border-color: #77808f; box-shadow: 0 3px 0 #77808f; }
 #worldMap .map-lbl.locked::before { content: '🔒 '; font-size: 11px; }
 #worldMap .map-lbl.locked.sel { background: #ffe9a8; }
+#worldMap .map-lbl.far { display: flex; flex-direction: column; align-items: center; padding: 3px 12px 4px; background: rgba(255, 255, 255, .92); border-color: #5c6b80; box-shadow: 0 3px 0 #5c6b80; pointer-events: none; font-size: 15px; line-height: 1.15; }
+#worldMap .map-lbl.far small { font-size: 11px; color: #5c6b80; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 #cityPick.fresh #cityName { animation: pulse 1.2s ease-in-out infinite; }
 #worldMap .map-card { position: absolute; left: 50%; bottom: calc(14px + var(--sab)); transform: translateX(-50%); width: min(360px, calc(100vw - 24px)); padding: 14px 14px 16px; border-radius: 24px;
   background: linear-gradient(rgba(40, 34, 92, .92), rgba(27, 24, 56, .94)); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); color: var(--cream); gap: 8px; }

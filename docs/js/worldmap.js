@@ -10,7 +10,7 @@ import { makeGull, flapGull } from './models.js';
 import { DIORAMA, fit, islandDecor, HILLS } from './mapsets.js';
 
 const D_MIN = 11, D_MAX = 95, D_HOME = 25, PITCH = 1.1; // ~63° yukarıdan: uzun maketler üstteki şehrin etiketine binmesin
-const BOUNDS = { x0: -16, x1: 16, z0: -24, z1: 20 };
+const BOUNDS = { x0: -22, x1: 22, z0: -26, z1: 24 }; // uzak adalar (FAR) da kaydırılarak görülebilsin
 const SEA = 0x3aa7d6, SKY = 0x7fd0ee;
 
 const scene = new THREE.Scene();
@@ -196,6 +196,12 @@ function tickCities(dt, t) {
   tickLayer(dt, t);
   for (const c of cities) if (c.pop) { c.pop = Math.max(0, c.pop - dt * 3); const k = 1 + Math.sin(c.pop * Math.PI) * 0.12; c.g.scale.set(k, 1 / k, k); }
   const far = map.d > 42;
+  for (const f of farIs) {
+    f.cloud.position.y = Math.sin(t * 0.5 + f.x) * 0.15; f.cloud.rotation.y = Math.sin(t * 0.15 + f.z) * 0.08;
+    const s = mapToScreen(f.pos), off = s.back || s.x < -80 || s.x > innerWidth + 80 || s.y < -30 || s.y > innerHeight + 30;
+    f.label.style.display = off ? 'none' : '';
+    if (!off) f.label.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) translate(-50%, -50%)`;
+  }
   for (const c of cities) {
     const s = mapToScreen(c.pos), off = far || s.back || s.x < -60 || s.x > innerWidth + 60 || s.y < -30 || s.y > innerHeight + 30;
     c.label.style.display = off ? 'none' : '';
@@ -303,5 +309,37 @@ function tickLayer(dt, t) {
     r.c.cloud.scale.set(1 + e * 1.4, 1 + e * 0.5, 1 + e * 1.4); r.c.cloud.position.y = e * 0.6; r.c.cloud.material.opacity = 0.9 * (1 - e);
     if (k > 0.35 && !r.swapped) { r.swapped = true; swapMat(r.c, false); r.c.pop = 1; r.c.label.classList.remove('locked'); }
     if (k >= 1) { r.c.cloud.visible = false; reveals.splice(i, 1); }
+  }
+}
+
+// ---- uzak dünya ----
+// Uzaklaşınca Türkiye'nin çevresinde bulutlu adalar: henüz açılmayan ülkeler, üstlerinde "Yakında". Yer: [x, z, yarıçapX, yarıçapZ, çimen rengi]
+const FAR = [
+  { id: 'america', at: [-11, -4, 4.0, 3.3, 0x86c95e] },
+  { id: 'japan', at: [10, -16, 1.9, 4.0, 0x8fd07a] },
+  { id: 'safrica', at: [4, 13, 3.5, 2.7, 0xb5c96a] },
+];
+const farIs = [];
+function blobShape(rx, rz, seed) {
+  // düzensiz ada kıyısı: yarıçap iki dalgayla oynar (düz sinüs değil, iki frekans toplamı)
+  const pts = [];
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, k = 0.84 + 0.1 * Math.sin(a * 3 + seed) + 0.07 * Math.sin(a * 5 + seed * 2.3); pts.push([Math.cos(a) * rx * k, Math.sin(a) * rz * k]); }
+  return pts;
+}
+export function buildFar(items) { // items: [{ id, name, sub }]: adlar main.js'ten çevrilmiş gelir
+  for (const it of items) {
+    const f = FAR.find(q => q.id === it.id); if (!f) continue;
+    const [x, z, rx, rz, grass] = f.at;
+    addIsland(blobShape(rx, rz, x * 0.7 + z), x, z, grass);
+    const k = new Kit(); let s = Math.abs(x * 13 + z * 7) | 0; const rnd = () => ((s = (s * 16807 + 11) % 2147483647) / 2147483647);
+    for (let i = 0; i < 14; i++) { // adayı örten bulut kümesi
+      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 0.8, sz = 0.9 + rnd() * 0.9;
+      k.add(new THREE.IcosahedronGeometry(sz, 1), rnd() < 0.3 ? 0xeef4fa : 0xffffff, Math.cos(a) * rx * r, 1.2 + rnd() * 1.4, Math.sin(a) * rz * r);
+    }
+    const cloud = new THREE.Mesh(k.build(), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+    cloud.castShadow = true; const g = new THREE.Group(); g.position.set(x, 0, z); g.add(cloud); scene.add(g);
+    const label = document.createElement('div'); label.className = 'map-lbl far';
+    label.innerHTML = `<b></b><small></small>`; label.firstChild.textContent = it.name; label.lastChild.textContent = it.sub; labelsEl.appendChild(label);
+    farIs.push({ x, z, cloud, label, pos: new THREE.Vector3(x, 0.6, z + rz * 0.95) }); // etiket güney kıyısında: bulut görünsün
   }
 }
