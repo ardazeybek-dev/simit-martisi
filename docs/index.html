@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="3.5.1">
+<meta name="app-version" content="3.6.0">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -132,7 +132,7 @@
   <div class="title-bottom">
     <div class="vs-pill hidden" id="vsPill"></div>
     <div class="vs-pill gift-pill no-steer hidden" id="giftPill"></div>
-    <div class="city-pick no-steer" id="cityPick"><button id="cityPrev" class="city-arrow" aria-label="Önceki şehir">‹</button><b id="cityName">İstanbul</b><button id="cityNext" class="city-arrow" aria-label="Sonraki şehir">›</button></div>
+    <button class="city-pick no-steer" id="cityPick" aria-label="Dünya Haritası"><span class="map-ico" aria-hidden="true">🗺️</span><b id="cityName">İstanbul</b></button>
     <div class="route-map no-steer"><div id="routeMap" class="dots"></div><p id="routeGoal"></p></div>
     <div class="play-row">
       <button class="mode-btn" id="modeBtn" aria-label="Mod seç"><svg class="mode-ico"><use id="modeIco" href="#i-simit"/></svg><span class="mode-txt"><small>Mod</small><b id="modeName">Klasik</b></span></button>
@@ -316,7 +316,7 @@
     <b id="mapCity" class="map-city"></b>
     <div id="mapDots" class="dots"></div>
     <p id="mapGoal"></p>
-    <button class="play-btn" id="mapGo"><svg><use href="#i-play"/></svg><span>Uç!</span></button>
+    <button class="play-btn" id="mapGo"><svg><use href="#i-play"/></svg><span>Uç</span></button>
   </div>
 </section>
 <section id="wardrobe" class="screen modal sheet hidden">

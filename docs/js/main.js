@@ -2363,12 +2363,6 @@ function showTitle() {
   if (!tutorialPending && !nameAsked && netOn() && !myName()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal() && !myName()) { nameAsked = true; openProfile(); } }, 700);
   else if (!tutorialPending && !dailyAuto && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); openDaily(); } }, 700);
 }
-function stepCity(d) { // menüde şehirler arasında gez; kilitli şehir görünür ama uçulmaz
-  if (state !== 'title') return;
-  useCity(CITIES[(CITIES.indexOf(city) + d + CITIES.length) % CITIES.length]);
-  store.set(KEY_CITY, city.id);
-  cityWeather(); applyWeather(weather); resetWorld(false); renderRouteMap();
-}
 function cityWeather() { // menüde şehir değişince o şehirde olmayan hava (İzmir'de kar) yeniden çekilir
   if (!daily && !weatherOk(weather, city.wx)) { weather = pickWeather(city.wx); setWeatherFx(weather); }
 }
@@ -3629,14 +3623,14 @@ onBtn('reviveBtn', () => askRevive());
 onBtn('fishBtn', () => fishRevive());
 onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') playSel(); });
-onBtn('cityPrev', () => stepCity(-1));
-$('cityName').addEventListener('click', e => { e.stopPropagation(); sfx.click(); openMap(); });
+$('cityPick').addEventListener('click', e => { e.stopPropagation(); sfx.click(); openMap(); }); // şehir adı haritanın düğmesi: şehir seçimi haritadan
 onBtn('mapClose', closeMap); onBtn('mapGo', mapGo); map.onTap = id => mapPick(id); onBtn('mapIn', () => mapZoom(0.75)); onBtn('mapOut', () => mapZoom(1.33));
 bindMapInput($('worldMap'), isUi);
 buildCities(CITIES.map(c => ({ id: c.id, name: c.name })), $('mapLabels'));
 buildFar([['america', 'Amerika'], ['japan', 'Japonya'], ['safrica', 'Güney Afrika']].map(([id, n]) => ({ id, name: tr(n), sub: tr('Yakında') }))); // uzaklaşınca görünen, henüz açılmayan ülkeler
 if (!store.get(KEY_MAPSEEN, null)) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).map(c => c.id)); // bundan sonra açılan şehir 'yeni' sayılır
-onBtn('cityNext', () => stepCity(1));
+if (QS.has('yenisehir')) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).slice(0, -1).map(c => c.id)); // deneme: son açılan şehir haritada henüz görülmemiş sayılır (bulut dağılır)
+if (QS.has('harita')) setTimeout(openMap, 1500); // deneme: harita açılışta açılır
 onBtn('missionsBtn', () => { openMissions(); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));
 onBtn('roadOpen', () => { if (state !== 'title') return; backTo.roadPanel = $('profilePanel').classList.contains('hidden') ? null : 'profilePanel'; show('profilePanel', false); renderRoad(); show('roadPanel'); });

@@ -16,3 +16,4 @@ window.I18N_ADD('ru', {"Feribota çarptın!": "Врезался в паром!",
 window.I18N_ADD('ru', {"Dalgaya kapıldın!": "Тебя накрыло волной!", "Teleferik halatına takıldın!": "Зацепился за трос канатной дороги!"});
 window.I18N_ADD('ru', {"Bandırma Vapuruna çarptın!": "Ты врезался в пароход «Бандырма»!", "Vinç halatına takıldın!": "Запутался в тросе крана!"});
 window.I18N_ADD('ru', {"Hamsi!": "Хамса!"});
+window.I18N_ADD('ru', {"Dünya Haritası": "Карта мира", "Geri": "Назад", "Yakınlaştır": "Приблизить", "Uzaklaştır": "Отдалить", "Amerika": "Америка", "Japonya": "Япония", "Güney Afrika": "Южная Африка"});

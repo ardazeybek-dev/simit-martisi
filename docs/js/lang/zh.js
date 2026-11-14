@@ -16,3 +16,4 @@ window.I18N_ADD('zh', {"Feribota çarptın!": "你撞上了渡轮！", "Truva At
 window.I18N_ADD('zh', {"Dalgaya kapıldın!": "被浪卷走了！", "Teleferik halatına takıldın!": "被缆车的绳子缠住了！"});
 window.I18N_ADD('zh', {"Bandırma Vapuruna çarptın!": "你撞上了班德尔马号蒸汽船！", "Vinç halatına takıldın!": "你被起重机钢缆缠住了！"});
 window.I18N_ADD('zh', {"Hamsi!": "凤尾鱼！"});
+window.I18N_ADD('zh', {"Dünya Haritası": "世界地图", "Geri": "返回", "Yakınlaştır": "放大", "Uzaklaştır": "缩小", "Amerika": "美洲", "Japonya": "日本", "Güney Afrika": "南非"});

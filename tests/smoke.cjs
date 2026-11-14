@@ -102,6 +102,16 @@ async function main() {
       step(`${id} opened and closed`);
     }
 
+    // world map: open from the city button, pick a city by its name tag, close
+    await page.click('#cityPick');
+    await page.waitForFunction(() => window.__game.mapView.on, null, { timeout: 5000 }).catch(() => { throw new Error('map did not open'); });
+    await page.waitForTimeout(600);
+    await page.click('.map-lbl[data-pick="izmir"]', { force: true });
+    check(await g(() => document.getElementById('mapCity').textContent.startsWith('İzmir')), 'map: İzmir not selected');
+    await press('mapClose');
+    check(await g(() => !window.__game.mapView.on && !document.getElementById('title').classList.contains('hidden')), 'map: did not close to the title');
+    step('world map opened, city picked, closed');
+
     for (const city of CITIES) {
       await g(c => window.__game.setCity(c), city);
       await g(() => window.__game.startGame());

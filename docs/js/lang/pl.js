@@ -16,3 +16,4 @@ window.I18N_ADD('pl', {"Feribota çarptın!": "Uderzyłeś w prom!", "Truva Atı
 window.I18N_ADD('pl', {"Dalgaya kapıldın!": "Porwała cię fala!", "Teleferik halatına takıldın!": "Zaplątałeś się w linę kolejki!"});
 window.I18N_ADD('pl', {"Bandırma Vapuruna çarptın!": "Uderzyłeś w parowiec Bandırma!", "Vinç halatına takıldın!": "Zaplątałeś się w linę dźwigu!"});
 window.I18N_ADD('pl', {"Hamsi!": "Sardela!"});
+window.I18N_ADD('pl', {"Dünya Haritası": "Mapa świata", "Geri": "Wstecz", "Yakınlaştır": "Przybliż", "Uzaklaştır": "Oddal", "Amerika": "Ameryka", "Japonya": "Japonia", "Güney Afrika": "Afryka Południowa"});

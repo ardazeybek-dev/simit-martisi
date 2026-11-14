@@ -16,3 +16,4 @@ window.I18N_ADD('az', {"Feribota çarptın!": "Bərəyə çırpıldın!", "Truva
 window.I18N_ADD('az', {"Dalgaya kapıldın!": "Dalğaya qapıldın!", "Teleferik halatına takıldın!": "Kanat yolunun ipinə ilişdin!"});
 window.I18N_ADD('az', {"Bandırma Vapuruna çarptın!": "Bandırma gəmisinə çırpıldın!", "Vinç halatına takıldın!": "Kran trosuna ilişdin!"});
 window.I18N_ADD('az', {"Hamsi!": "Hamsi!"});
+window.I18N_ADD('az', {"Dünya Haritası": "Dünya xəritəsi", "Geri": "Geri", "Yakınlaştır": "Yaxınlaşdır", "Uzaklaştır": "Uzaqlaşdır", "Amerika": "Amerika", "Japonya": "Yaponiya", "Güney Afrika": "Cənubi Afrika"});

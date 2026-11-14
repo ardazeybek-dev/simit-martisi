@@ -16,3 +16,4 @@ window.I18N_ADD('el', {"Feribota çarptın!": "Χτύπησες στο φέρι�
 window.I18N_ADD('el', {"Dalgaya kapıldın!": "Σε παρέσυρε το κύμα!", "Teleferik halatına takıldın!": "Μπλέχτηκες στο σχοινί του τελεφερίκ!"});
 window.I18N_ADD('el', {"Bandırma Vapuruna çarptın!": "Χτύπησες το ατμόπλοιο Bandırma!", "Vinç halatına takıldın!": "Μπλέχτηκες στο συρματόσχοινο του γερανού!"});
 window.I18N_ADD('el', {"Hamsi!": "Γαύρος!"});
+window.I18N_ADD('el', {"Dünya Haritası": "Παγκόσμιος χάρτης", "Geri": "Πίσω", "Yakınlaştır": "Μεγέθυνση", "Uzaklaştır": "Σμίκρυνση", "Amerika": "Αμερική", "Japonya": "Ιαπωνία", "Güney Afrika": "Νότια Αφρική"});

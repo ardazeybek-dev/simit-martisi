@@ -16,3 +16,4 @@ window.I18N_ADD('vi', {"Feribota çarptın!": "Bạn đâm vào phà!", "Truva A
 window.I18N_ADD('vi', {"Dalgaya kapıldın!": "Bị sóng cuốn đi!", "Teleferik halatına takıldın!": "Vướng vào dây cáp treo!"});
 window.I18N_ADD('vi', {"Bandırma Vapuruna çarptın!": "Bạn đâm vào tàu hơi nước Bandırma!", "Vinç halatına takıldın!": "Bạn mắc vào dây cáp cần cẩu!"});
 window.I18N_ADD('vi', {"Hamsi!": "Cá cơm!"});
+window.I18N_ADD('vi', {"Dünya Haritası": "Bản đồ thế giới", "Geri": "Quay lại", "Yakınlaştır": "Phóng to", "Uzaklaştır": "Thu nhỏ", "Amerika": "Châu Mỹ", "Japonya": "Nhật Bản", "Güney Afrika": "Nam Phi"});

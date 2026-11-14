@@ -16,3 +16,4 @@ window.I18N_ADD('id', {"Feribota çarptın!": "Kamu menabrak kapal feri!", "Truv
 window.I18N_ADD('id', {"Dalgaya kapıldın!": "Tersapu ombak!", "Teleferik halatına takıldın!": "Tersangkut tali kereta gantung!"});
 window.I18N_ADD('id', {"Bandırma Vapuruna çarptın!": "Kamu menabrak kapal uap Bandırma!", "Vinç halatına takıldın!": "Tersangkut tali derek!"});
 window.I18N_ADD('id', {"Hamsi!": "Ikan teri!"});
+window.I18N_ADD('id', {"Dünya Haritası": "Peta Dunia", "Geri": "Kembali", "Yakınlaştır": "Perbesar", "Uzaklaştır": "Perkecil", "Amerika": "Amerika", "Japonya": "Jepang", "Güney Afrika": "Afrika Selatan"});

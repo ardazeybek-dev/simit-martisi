@@ -16,3 +16,4 @@ window.I18N_ADD('ro', {"Feribota çarptın!": "Te-ai lovit de feribot!", "Truva 
 window.I18N_ADD('ro', {"Dalgaya kapıldın!": "Te-a luat valul!", "Teleferik halatına takıldın!": "Te-ai prins în frânghia telecabinei!"});
 window.I18N_ADD('ro', {"Bandırma Vapuruna çarptın!": "Te-ai izbit de vaporul Bandırma!", "Vinç halatına takıldın!": "Te-ai prins în cablul macaralei!"});
 window.I18N_ADD('ro', {"Hamsi!": "Hamsie!"});
+window.I18N_ADD('ro', {"Dünya Haritası": "Harta lumii", "Geri": "Înapoi", "Yakınlaştır": "Mărește", "Uzaklaştır": "Micșorează", "Amerika": "America", "Japonya": "Japonia", "Güney Afrika": "Africa de Sud"});

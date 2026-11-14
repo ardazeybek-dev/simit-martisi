@@ -16,3 +16,4 @@ window.I18N_ADD('ja', {"Feribota çarptın!": "フェリーにぶつかった！
 window.I18N_ADD('ja', {"Dalgaya kapıldın!": "波にさらわれた！", "Teleferik halatına takıldın!": "ロープウェイのロープに引っかかった！"});
 window.I18N_ADD('ja', {"Bandırma Vapuruna çarptın!": "バンドゥルマ号にぶつかった!", "Vinç halatına takıldın!": "クレーンのワイヤーに引っかかった!"});
 window.I18N_ADD('ja', {"Hamsi!": "カタクチイワシ！"});
+window.I18N_ADD('ja', {"Dünya Haritası": "世界地図", "Geri": "戻る", "Yakınlaştır": "ズームイン", "Uzaklaştır": "ズームアウト", "Amerika": "アメリカ", "Japonya": "日本", "Güney Afrika": "南アフリカ"});

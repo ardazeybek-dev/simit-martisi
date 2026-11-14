@@ -16,3 +16,4 @@ window.I18N_ADD('fr', {"Feribota çarptın!": "Tu as percuté le ferry !", "Truv
 window.I18N_ADD('fr', {"Dalgaya kapıldın!": "Emporté par la vague !", "Teleferik halatına takıldın!": "Pris dans la corde du téléphérique !"});
 window.I18N_ADD('fr', {"Bandırma Vapuruna çarptın!": "Tu as percuté le vapeur Bandırma !", "Vinç halatına takıldın!": "Pris dans le câble de la grue !"});
 window.I18N_ADD('fr', {"Hamsi!": "Anchois !"});
+window.I18N_ADD('fr', {"Dünya Haritası": "Carte du monde", "Geri": "Retour", "Yakınlaştır": "Zoom avant", "Uzaklaştır": "Zoom arrière", "Amerika": "Amérique", "Japonya": "Japon", "Güney Afrika": "Afrique du Sud"});

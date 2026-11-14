@@ -16,3 +16,4 @@ window.I18N_ADD('nl', {"Feribota çarptın!": "Je botste tegen de veerboot!", "T
 window.I18N_ADD('nl', {"Dalgaya kapıldın!": "Meegesleurd door de golf!", "Teleferik halatına takıldın!": "Vast in het touw van de kabelbaan!"});
 window.I18N_ADD('nl', {"Bandırma Vapuruna çarptın!": "Je botste tegen de stoomboot Bandırma!", "Vinç halatına takıldın!": "Vast in de kraankabel!"});
 window.I18N_ADD('nl', {"Hamsi!": "Ansjovis!"});
+window.I18N_ADD('nl', {"Dünya Haritası": "Wereldkaart", "Geri": "Terug", "Yakınlaştır": "Inzoomen", "Uzaklaştır": "Uitzoomen", "Amerika": "Amerika", "Japonya": "Japan", "Güney Afrika": "Zuid-Afrika"});

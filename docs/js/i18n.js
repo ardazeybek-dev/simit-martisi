@@ -1019,6 +1019,9 @@
   Object.assign(EN, {"Hamsi!": "Anchovy!"});
   Object.assign(DE, {"Hamsi!": "Sardelle!"});
   Object.assign(ES, {"Hamsi!": "¡Anchoa!"});
+  Object.assign(EN, {"Dünya Haritası": "World Map", "Geri": "Back", "Yakınlaştır": "Zoom in", "Uzaklaştır": "Zoom out", "Amerika": "America", "Japonya": "Japan", "Güney Afrika": "South Africa"}); // dünya haritası
+  Object.assign(DE, {"Dünya Haritası": "Weltkarte", "Geri": "Zurück", "Yakınlaştır": "Vergrößern", "Uzaklaştır": "Verkleinern", "Amerika": "Amerika", "Japonya": "Japan", "Güney Afrika": "Südafrika"}); // dünya haritası
+  Object.assign(ES, {"Dünya Haritası": "Mapa del mundo", "Geri": "Atrás", "Yakınlaştır": "Acercar", "Uzaklaştır": "Alejar", "Amerika": "América", "Japonya": "Japón", "Güney Afrika": "Sudáfrica"}); // dünya haritası
   var TABLES = { en: EN, de: DE, es: ES };
   // dil menüsünde kendi adıyla görünür; sırası menünün sırası
   var NAMES = { en: 'English', tr: 'Türkçe', de: 'Deutsch', es: 'Español', fr: 'Français', it: 'Italiano', pt: 'Português', nl: 'Nederlands', pl: 'Polski', ro: 'Română',

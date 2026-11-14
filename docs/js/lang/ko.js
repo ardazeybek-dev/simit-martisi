@@ -16,3 +16,4 @@ window.I18N_ADD('ko', {"Feribota çarptın!": "카페리에 부딪혔어!", "Tru
 window.I18N_ADD('ko', {"Dalgaya kapıldın!": "파도에 휩쓸렸어!", "Teleferik halatına takıldın!": "케이블카 밧줄에 걸렸어!"});
 window.I18N_ADD('ko', {"Bandırma Vapuruna çarptın!": "반드르마 증기선에 부딪혔어!", "Vinç halatına takıldın!": "크레인 케이블에 걸렸어!"});
 window.I18N_ADD('ko', {"Hamsi!": "멸치!"});
+window.I18N_ADD('ko', {"Dünya Haritası": "세계 지도", "Geri": "뒤로", "Yakınlaştır": "확대", "Uzaklaştır": "축소", "Amerika": "미국", "Japonya": "일본", "Güney Afrika": "남아프리카"});

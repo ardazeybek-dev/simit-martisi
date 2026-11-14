@@ -53,6 +53,16 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Dünya haritası · 15 Kasım', id: 'harita-heves', t: '🗺️ Harita: bayrak, yol taşları, kilit bulutu', look: [
+      'Menüde şehir adı artık 🗺️ düğmesi, ‹ › okları yok. Dokununca harita açılır.',
+      'Bitirdiğin şehirde kırmızı simitli bayrak dalgalanır. Şehirler arasındaki taş yol bitirilen kısımda altın, tepelerin yanından kıvrılır.',
+      'Sıradaki kilitli şehir gri maketiyle görünür, ötekiler bulutun altında. Etiketlerinde 🔒 var.',
+      'Yeni şehir linki: harita açılınca son açılan şehrin bulutu bir kez dağılır, maket renklenip zıplar, altın sesi gelir. Menüde şehir düğmesi o ana dek nabız atar.'],
+    links: [['Harita', '/?harita'], ['Hepsi açık', '/?hepsi&harita'], ['Yeni şehir bulutu', '/?yenisehir'], ['Yeni şehir · harita', '/?yenisehir&harita']] },
+  { g: 'Dünya haritası · 15 Kasım', id: 'harita-uzak', t: '🌍 Harita: uzak adalar (Yakında)', look: [
+      'Haritada − ile ya da iki parmakla uzaklaş: Amerika, Japonya ve Güney Afrika bulutlu adalar olarak çıkar, altlarında YAKINDA yazar.',
+      'Telefonda üçü de ekrana sığmalı, Güney Afrika alttaki kartın arkasında kalmamalı. Kaydırınca adaların yanına gidilebilmeli.'],
+    links: [['Harita', '/?harita']] },
   { g: 'Trabzon · 14 Kasım', id: 'dalga-yumusak', t: '🌊 Dalga yumuşadı (köşeli blok değil)', look: [
       'Dalga kapısına yaklaş: tepe ve dudak yuvarlak kıvrılmalı, yüzeyde köşe/basamak görünmemeli; köpük tepede yumuşak geçişli, dibinde parlak beyaz bant yok.',
       'Uçlar suya yavaşça inmeli (iki dik kutu gibi değil). Ortadaki alçak sırttan geçince çarpmamalı, yüksek köpüğe girince çarpmalı (kutu çizilenle aynı).'],

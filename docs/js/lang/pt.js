@@ -16,3 +16,4 @@ window.I18N_ADD('pt', {"Feribota çarptın!": "Bateste no ferry!", "Truva Atına
 window.I18N_ADD('pt', {"Dalgaya kapıldın!": "Arrastado pela onda!", "Teleferik halatına takıldın!": "Preso na corda do teleférico!"});
 window.I18N_ADD('pt', {"Bandırma Vapuruna çarptın!": "Bateste no vapor Bandırma!", "Vinç halatına takıldın!": "Ficaste preso no cabo da grua!"});
 window.I18N_ADD('pt', {"Hamsi!": "Anchova!"});
+window.I18N_ADD('pt', {"Dünya Haritası": "Mapa-múndi", "Geri": "Voltar", "Yakınlaştır": "Aproximar", "Uzaklaştır": "Afastar", "Amerika": "América", "Japonya": "Japão", "Güney Afrika": "África do Sul"});

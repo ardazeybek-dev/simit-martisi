@@ -16,3 +16,4 @@ window.I18N_ADD('hi', {"Feribota çarptın!": "तुम फ़ेरी से 
 window.I18N_ADD('hi', {"Dalgaya kapıldın!": "लहर में बह गए!", "Teleferik halatına takıldın!": "केबल कार की रस्सी में फँस गए!"});
 window.I18N_ADD('hi', {"Bandırma Vapuruna çarptın!": "तुम बंदिरमा स्टीमर से टकरा गए!", "Vinç halatına takıldın!": "तुम क्रेन की रस्सी में फँस गए!"});
 window.I18N_ADD('hi', {"Hamsi!": "एंकोवी!"});
+window.I18N_ADD('hi', {"Dünya Haritası": "विश्व मानचित्र", "Geri": "वापस", "Yakınlaştır": "ज़ूम इन", "Uzaklaştır": "ज़ूम आउट", "Amerika": "अमेरिका", "Japonya": "जापान", "Güney Afrika": "दक्षिण अफ़्रीका"});
