@@ -4083,31 +4083,29 @@ function giftOffer() {
   $('giftTitle').textContent = tr(g.wk ? 'Haftalık ödül' : 'Hediye');
   $('giftText').textContent = g.wk ? tr('Haftalık sıralamada {r}. oldun!').replace('{r}', fmt(g.wk)) : tr('Sana hediye geldi!');
   $('giftAmt').innerHTML = (g.n ? `<span>${sim}<b id="giftN">${fmt(g.n)}</b></span>` : '') + (g.f ? `<span>${fi}<b id="giftF">${fmt(g.f)}</b></span>` : '');
-  $('giftWallet').textContent = fmt(wallet); $('giftFish').textContent = fmt(fish); $('giftTake').disabled = false;
+  $('giftTake').disabled = false;
   show('giftPanel'); sfx.record();
 }
-// Topla: kayıt hemen cüzdana yazılır (sayfa kapanırsa kaybolmasın), ekranda ise ödül tık tık azalıp cüzdan tık tık artar
+// Topla: ekran hemen kapanır, kayıt hemen cüzdana yazılır (sayfa kapanırsa kaybolmasın); menünün sol üstündeki simit ve balık sayacı tık tık dolar
 function giftTake() {
   const g = giftWait(), w0 = wallet, f0 = fish;
   if ($('giftTake').disabled) return;
   $('giftTake').disabled = true;
   store.set('simit-martisi-gift', 0); store.set('simit-martisi-gift-fish', 0); store.set('simit-martisi-gift-week', 0);
   wallet += g.n; store.set(KEY_WALLET, wallet); if (g.f) setFish(fish + g.f);
-  const t0 = performance.now(), d = Math.min(2800, 1100 + Math.max(g.n * 0.6, g.f * 180)); // büyük ödül ~2,8 sn, küçük ~1,2 sn
+  show('giftPanel', false);
+  $('titleWallet').textContent = fmt(w0); $('titleFish').textContent = fmt(f0);
+  const t0 = performance.now() + 250, d = Math.min(2800, 1100 + Math.max(g.n * 0.6, g.f * 180)); // büyük ödül ~2,8 sn, küçük ~1,2 sn
   let lastTick = 0;
   const step = now => {
-    const k = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - k, 1.35), n = Math.round(g.n * e), f = Math.round(g.f * e);
-    $('giftWallet').textContent = fmt(w0 + n); $('giftFish').textContent = fmt(f0 + f);
-    if ($('giftN')) $('giftN').textContent = fmt(g.n - n); if ($('giftF')) $('giftF').textContent = fmt(g.f - f);
-    if (now - lastTick > 70 && k < 1) { lastTick = now; sfx.click(); }
+    const k = clamp((now - t0) / d, 0, 1), e = 1 - Math.pow(1 - k, 1.35);
+    $('titleWallet').textContent = fmt(w0 + Math.round(g.n * e)); $('titleFish').textContent = fmt(f0 + Math.round(g.f * e));
+    if (k > 0 && k < 1 && now - lastTick > 70) { lastTick = now; sfx.click(); }
     if (k < 1) return requestAnimationFrame(step);
-    bump($('giftWallet').parentNode); sfx.gold(); vibrate(30);
-    $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
-    setTimeout(() => {
-      show('giftPanel', false);
-      // hediye ekranı açılıştaki günlük ödülü bekletmişse sırası şimdi gelir
-      if (!tutorialPending && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); setTimeout(() => { if (state === 'title' && !menuModal()) openDaily(); }, 350); }
-    }, 700);
+    $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish); // büyük cüzdan yine kısa yazılır
+    if (g.n) bump($('titleWallet').parentNode); if (g.f) bump($('titleFish').parentNode); sfx.gold(); vibrate(30);
+    // hediye ekranı açılıştaki günlük ödülü bekletmişse sırası şimdi gelir
+    if (!tutorialPending && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); setTimeout(() => { if (state === 'title' && !menuModal()) openDaily(); }, 500); }
   };
   requestAnimationFrame(step);
 }
