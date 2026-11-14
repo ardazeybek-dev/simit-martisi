@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="3.4.0">
+<meta name="app-version" content="3.4.1">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -229,10 +229,20 @@
   </div>
 </section>
 
+<section id="giftPanel" class="screen modal hidden">
+  <div class="card gift-card">
+    <div class="gift-ico" id="giftIco">🎁</div>
+    <h2 id="giftTitle">Hediye</h2>
+    <p class="fine" id="giftText"></p>
+    <div class="gift-amt" id="giftAmt"></div>
+    <button class="btn primary" id="giftTake">Topla</button>
+  </div>
+</section>
+
 <section id="dailyPanel" class="screen modal hidden">
   <div class="card">
     <div class="sheet-head"><h2>Ödüller</h2><div class="wallet"><svg class="ico"><use href="#i-simit"/></svg><b id="dlWallet">0</b><svg class="ico"><use href="#i-fish"/></svg><b id="dlFish">0</b></div></div>
-    <div class="tabs"><button class="tab on" id="tabDaily">Günlük ödül</button><button class="tab" id="tabWheel">Şans çarkı</button></div>
+    <div class="tabs"><button class="tab on" id="tabDaily">Günlük ödül<i class="badge dot hidden" id="tabDailyDot"></i></button><button class="tab" id="tabWheel">Şans çarkı<i class="badge dot hidden" id="tabWheelDot"></i></button></div>
     <div id="dailyBox">
       <p class="fine" id="dailyNote"></p>
       <div class="days" id="days"></div>

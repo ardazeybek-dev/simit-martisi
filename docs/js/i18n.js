@@ -983,6 +983,9 @@
   Object.assign(EN, {"Genel": "All-time", "Haftalık": "Weekly", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "The weekly ranking starts {t}. Flights after that show up here."});
   Object.assign(DE, {"Genel": "Gesamt", "Haftalık": "Woche", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "Die Wochenrangliste startet {t}. Flüge danach erscheinen hier."});
   Object.assign(ES, {"Genel": "General", "Haftalık": "Semanal", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "La clasificación semanal empieza el {t}. Los vuelos desde entonces aparecen aquí."});
+  Object.assign(EN, {"Topla": "Collect", "Hediye": "Gift", "Haftalık sıralamada {r}. oldun!": "You placed #{r} in the weekly ranking!", "Sana hediye geldi!": "You got a gift!"});
+  Object.assign(DE, {"Topla": "Einsammeln", "Hediye": "Geschenk", "Haftalık sıralamada {r}. oldun!": "Du bist Platz {r} der Wochenrangliste!", "Sana hediye geldi!": "Du hast ein Geschenk bekommen!"});
+  Object.assign(ES, {"Topla": "Recoger", "Hediye": "Regalo", "Haftalık sıralamada {r}. oldun!": "¡Quedaste en el puesto {r} de la semana!", "Sana hediye geldi!": "¡Te ha llegado un regalo!"});
   Object.assign(EN, {"Vazgeç": "Cancel", "Günlük": "Daily"});
   Object.assign(DE, {"Vazgeç": "Abbrechen", "Günlük": "Täglich"});
   Object.assign(ES, {"Vazgeç": "Cancelar", "Günlük": "Diario"});

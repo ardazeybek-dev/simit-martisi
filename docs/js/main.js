@@ -54,6 +54,7 @@ if (!store.get('simit-martisi-route-v2', false)) {
   store.set('simit-martisi-route-v2', true);
 }
 if (QS.has('hepsi')) for (const c of CITIES) store.set(c.routeKey, c.stops.length - 1); // deneme (yalnız yerelde, test merkezi): ?hepsi → bütün şehirler açık (cüzdana dokunmaz)
+if (QS.has('hediye')) { store.set('simit-martisi-gift', 3000); store.set('simit-martisi-gift-fish', 3); store.set('simit-martisi-gift-week', 1); } // deneme (yalnız yerelde): ?hediye → ödül toplama ekranı (1. sıra örneği)
 const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → her uçuş sonunda rekor ekranı çıkar, gerçek rekora dokunmaz
 const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
@@ -1840,7 +1841,7 @@ function startGame() {
   resetWorld(daily || state !== 'title'); state = 'play';
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel']) show(id, false);
   shownScore = shownSimit = shownDist = shownFish = -1; shownMult = 0;
   ui.combo.classList.remove('on');
   renderPowers();
@@ -2078,7 +2079,7 @@ function togglePrize(on = $('boardPrize').classList.contains('hidden')) {
   show('boardPrize', on); show('boardList', !on); show('boardTier', !on); $('boardHelp').classList.toggle('on', on);
 }
 async function renderBoard() {
-  togglePrize(false);
+  togglePrize(false); show('boardHelp', boardTab === 'wk');
   const seq = ++boardSeq, bestLine = best > 0 ? `${tr('Rekor')} ${fmt(best)}` : '';
   $('boardName').textContent = myName() ? `${myName()} ✎` : tr('Ad seç');
   boardMsg(tr('Yükleniyor…'), '');
@@ -2086,7 +2087,7 @@ async function renderBoard() {
   if (seq !== boardSeq) return;
   if (!b) return boardMsg(tr('Bağlantı yok'), tr('Sıralama şu an açılamadı. İnternete bağlanınca tekrar dene.'), bestLine);
   const hasWk = !!b.wk, tab = hasWk ? boardTab : 'all', src = tab === 'wk' ? b.wk : b; // eski sunucu wk göndermezse yalnız genel
-  show('boardTabs', hasWk);
+  show('boardTabs', hasWk); show('boardHelp', tab === 'wk'); // ödül haftalık listeye göre: "?" yalnız orada
   for (const el of $('boardTabs').children) { el.classList.toggle('on', el.dataset.t === tab); el.setAttribute('aria-selected', el.dataset.t === tab); }
   if (tab === 'wk' && !b.wk.on) { // ilk hafta henüz başlamadı
     const when = nextPrizeAt().toLocaleString(window.I18N.locale, { weekday: 'long', timeZone: 'UTC' }) + ' 00:00 UTC';
@@ -2166,7 +2167,7 @@ let dressing = false, showcase = 0, cosSel = null; // cosSel: panelde dokunulan 
 function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; cosSel = null; $('wardNote').textContent = '';
-  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel']) show(id, false);
+  for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel']) show(id, false);
   renderWardrobe(); show('title', false); show('wardrobe'); podEnter();
 }
 function reloadKeep() { try { sessionStorage.setItem('simit-martisi-keepw', weather); } catch (e) {} location.reload(); }
@@ -2516,7 +2517,7 @@ function replay() {
 function renderMenuBadges() {
   const fresh = missions.filter(m => !m.done && !m.seen).length; // yeni gelen, henüz bakılmamış görevler
   $('misBadge').textContent = fresh; show('misBadge', fresh > 0);
-  show('dailyDot', dailyState().ready || freeSpin());
+  show('dailyDot', dailyState().ready || freeSpin()); tabDots();
   if (state === 'title') $('titleWallet').textContent = walletTxt();
   { const dot = roadOpen() > 0; show('roadDot', dot); show('setDot', dot); show('profDot', dot); }
   $('wardBadge').textContent = look.fresh.length; show('wardBadge', look.fresh.length > 0); // yeni kostüm
@@ -2657,7 +2658,7 @@ function openDaily() {
   $('claimBtn').textContent = tr(d.ready ? 'Al' : 'Tamam');
   show('saveStreak', !!d.lost);
   if (d.lost) $('saveStreak').innerHTML = `${tr('Seriyi kurtar')}: ${tr('Gün')} ${fmt(d.lost % DAILY.length + 1)} · <svg class="ico"><use href="#i-simit"/></svg>${fmt(STREAK_SAVE)}`;
-  dailyTab('daily'); $('dlWallet').textContent = fmt(wallet); $('dlFish').textContent = fmt(fish);
+  dailyTab(!d.ready && freeSpin() ? 'wheel' : 'daily'); $('dlWallet').textContent = fmt(wallet); $('dlFish').textContent = fmt(fish); // yalnız çark bekliyorsa doğrudan çarka
   show('dailyPanel');
 }
 async function claimDaily() {
@@ -2720,10 +2721,13 @@ function renderWheelUi(msg) {
   $('spinFish').classList.toggle('ok', fish >= SPIN_FISH && !spinning); $('spinSimit').classList.toggle('ok', wallet >= SPIN_SIMIT && !spinning); // yetiyorsa parlar, yetmiyorsa söner
   if (spinning) disarmSpin();
   $('spinFish').disabled = $('spinSimit').disabled = $('spinFree').disabled = spinning;
-  show('spinFree', freeSpin() || (spinning && $('spinFree').dataset.on === '1'));
+  show('spinFree', freeSpin() || (spinning && $('spinFree').dataset.on === '1')); tabDots();
   if (msg !== undefined) $('wheelNote').innerHTML = msg;
 }
+// sekme rozetleri: günlük ödül alınmadıysa / bugünkü bedava çevirme duruyorsa (menüdeki nokta hangisi için yandı, belli olsun)
+function tabDots() { show('tabDailyDot', dailyState().ready); show('tabWheelDot', freeSpin()); }
 function dailyTab(t) {
+  tabDots();
   const w = t === 'wheel';
   $('tabDaily').classList.toggle('on', !w); $('tabWheel').classList.toggle('on', w);
   show('dailyBox', !w); show('wheelBox', w);
@@ -2978,7 +2982,7 @@ function setTx(v) {
     if (side && side !== tutLastSide) { tutMoves++; tutLastSide = side; }
   }
 }
-const menuModal = () => !$('dayRunPanel').classList.contains('hidden') || !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden') || !$('roadPanel').classList.contains('hidden') || !$('shopPanel').classList.contains('hidden');
+const menuModal = () => !$('giftPanel').classList.contains('hidden') || !$('dayRunPanel').classList.contains('hidden') || !$('achPanel').classList.contains('hidden') || !$('upPanel').classList.contains('hidden') || !$('missionsPanel').classList.contains('hidden') || !$('dailyPanel').classList.contains('hidden') || !$('settings').classList.contains('hidden') || !$('boardPanel').classList.contains('hidden') || !$('profilePanel').classList.contains('hidden') || !$('roadPanel').classList.contains('hidden') || !$('shopPanel').classList.contains('hidden');
 const isUi = e => e.target.closest && e.target.closest('button, .card, .no-steer');
 addEventListener('pointerdown', e => {
   audio.unlock();
@@ -4068,19 +4072,31 @@ renderer.domElement.addEventListener('webglcontextrestored', () => location.relo
 showTitle();
 // sunucu: profil, bekleyen skor ve (bir kez) cihaz rekoru gönderilir
 if (netOn()) refreshBoard();
-// hediye simit geldi: cüzdana eklenir, menüde turuncu hap çıkar (dokununca ya da uçuş başlayınca kapanır)
-onGift(() => {
-  const n = Math.max(0, Math.floor(+store.get('simit-martisi-gift', 0) || 0)), f = Math.max(0, Math.floor(+store.get('simit-martisi-gift-fish', 0) || 0)), wk = +store.get('simit-martisi-gift-week', 0) || 0;
-  if (!n && !f) return;
+// hediye / haftalık ödül: sunucudan gelince cüzdana kendiliğinden eklenmez, bekler (simit-martisi-gift*). Menüde başka pencere yokken
+// ödül toplama ekranı açılır; "Topla" ile cüzdana geçer. Uçuş sırasında gelirse menüye dönünce açılır
+const giftWait = () => ({ n: Math.max(0, Math.floor(+store.get('simit-martisi-gift', 0) || 0)), f: Math.max(0, Math.floor(+store.get('simit-martisi-gift-fish', 0) || 0)), wk: +store.get('simit-martisi-gift-week', 0) || 0 });
+function giftOffer() {
+  const g = giftWait();
+  if ((!g.n && !g.f) || state !== 'title' || document.querySelector('.screen.modal:not(.hidden)')) return;
+  const sim = '<svg class="ico"><use href="#i-simit"/></svg>', fi = '<svg class="ico"><use href="#i-fish"/></svg>';
+  $('giftIco').textContent = g.wk ? '🏆' : '🎁';
+  $('giftTitle').textContent = tr(g.wk ? 'Haftalık ödül' : 'Hediye');
+  $('giftText').textContent = g.wk ? tr('Haftalık sıralamada {r}. oldun!').replace('{r}', fmt(g.wk)) : tr('Sana hediye geldi!');
+  $('giftAmt').innerHTML = (g.n ? `<span>${sim}${fmt(g.n)}</span>` : '') + (g.f ? `<span>${fi}${fmt(g.f)}</span>` : '');
+  show('giftPanel'); sfx.record();
+}
+function giftTake() {
+  const g = giftWait();
   store.set('simit-martisi-gift', 0); store.set('simit-martisi-gift-fish', 0); store.set('simit-martisi-gift-week', 0);
-  wallet += n; store.set(KEY_WALLET, wallet); if (f) setFish(fish + f);
+  wallet += g.n; store.set(KEY_WALLET, wallet); if (g.f) setFish(fish + g.f);
   $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
-  const got = [n ? tr('+{n} simit').replace('{n}', fmt(n)) : '', f ? tr('+{f} balık').replace('{f}', fmt(f)) : ''].filter(Boolean).join(', ');
-  $('giftPill').textContent = wk ? `🏆 ${wk <= 10 ? tr('Haftalık ödül: {r}. sıra!').replace('{r}', fmt(wk)) : tr('Haftalık ödül')} ${got}`
-    : f ? '🎁 ' + tr('Hediye geldi: {n} simit, {f} balık!').replace('{n}', fmt(n)).replace('{f}', fmt(f)) : '🎁 ' + tr('Hediye geldi: {n} simit!').replace('{n}', fmt(n));
-  show('giftPill'); sfx.record();
-});
-$('giftPill').addEventListener('click', () => show('giftPill', false));
+  show('giftPanel', false); sfx.gold(); vibrate(30);
+  // hediye ekranı açılıştaki günlük ödülü bekletmişse sırası şimdi gelir
+  if (!tutorialPending && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); setTimeout(() => { if (state === 'title' && !menuModal()) openDaily(); }, 350); }
+}
+onGift(() => giftOffer());
+onBtn('giftTake', giftTake);
+setInterval(giftOffer, 1000); // menüde başka pencere kapanınca bekleyen ödül gelsin
 addEventListener('online', () => sync());
 setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gönderim, kapanan sayfa) hemen gitsin
 // shader ön ısıtma: oyun sırasında ilk kez görünen malzemeler takılma yapmasın
@@ -4110,7 +4126,7 @@ window.__game = {
   addFish: (ahead = 40, x = 0) => { const dir = 1, mm = new THREE.Mesh(FISH, vcMat); mm.visible = false; scene.add(mm); fishes.push({ mesh: mm, dir, ax: x, z: gull.position.z - ahead, w: 3.2, T: 0.85, lag: 0, u: -1, done: false, spin: 0, splT: 0 }); },
   setTx: v => (tx = v), autopilot, startGame, showTitle, crash: (why = 'bacaya') => { const s = pw.shield, i = invuln, gd = god; pw.shield = 0; invuln = 0; god = false; crash(why); god = gd; if (state === 'play') { pw.shield = s; invuln = i; } },
   get rivals() { return rivals.map(r => r.kind); }, addRival: (kind, ahead = 30, x = 0, sw = 2) => addRival(gull.position.z - ahead, x, sw, kind), get weather() { return weather; }, get ferries() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack, x: f.x })); },
-  get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
+  get farStop() { return farStop; }, reloadKeep, get busy() { return dressing || ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel'].some(id => !$(id).classList.contains('hidden')); }, get pws() { return powerups.map(p => p.kind); }, get thrown() { return { ...thrownStat }; },
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top, fix: !!o.fix })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },

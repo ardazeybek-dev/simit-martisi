@@ -9,3 +9,4 @@ window.I18N_ADD('ro', {"Hesabını başka cihaza taşı": "Mută-ți contul pe a
 window.I18N_ADD('ro', {"Ana menüye dön, oradan taşı.": "Întoarce-te la meniul principal și mută-l de acolo."});
 window.I18N_ADD('ro', {"Eski cihazından aldığın kodu yaz.": "Scrie codul de pe dispozitivul vechi.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "Valabil 15 minute. Pe dispozitivul nou, înainte să zbori, deschide Profil și scrie acest cod."});
 window.I18N_ADD('ro', {"Genel": "General", "Haftalık": "Săptămâna", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "Clasamentul săptămânii începe {t}. Zborurile de după apar aici."});
+window.I18N_ADD('ro', {"Topla": "Colectează", "Hediye": "Cadou", "Haftalık sıralamada {r}. oldun!": "Ai ieșit pe locul {r} în clasamentul săptămânii!", "Sana hediye geldi!": "Ai primit un cadou!"});

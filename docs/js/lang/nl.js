@@ -9,3 +9,4 @@ window.I18N_ADD('nl', {"Hesabını başka cihaza taşı": "Zet je account over n
 window.I18N_ADD('nl', {"Ana menüye dön, oradan taşı.": "Ga terug naar het hoofdmenu en zet het daar over."});
 window.I18N_ADD('nl', {"Eski cihazından aldığın kodu yaz.": "Typ de code van je oude apparaat.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "15 minuten geldig. Open op je nieuwe apparaat vóór het vliegen Profiel en typ deze code."});
 window.I18N_ADD('nl', {"Genel": "Algemeen", "Haftalık": "Week", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "De weekranglijst begint {t}. Vluchten daarna verschijnen hier."});
+window.I18N_ADD('nl', {"Topla": "Ophalen", "Hediye": "Cadeau", "Haftalık sıralamada {r}. oldun!": "Je bent {r}e geworden in de weekranglijst!", "Sana hediye geldi!": "Je hebt een cadeau gekregen!"});

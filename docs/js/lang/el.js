@@ -9,3 +9,4 @@ window.I18N_ADD('el', {"Hesabını başka cihaza taşı": "Μετάφερε το
 window.I18N_ADD('el', {"Ana menüye dön, oradan taşı.": "Γύρνα στο κύριο μενού και μετάφερέ τον από εκεί."});
 window.I18N_ADD('el', {"Eski cihazından aldığın kodu yaz.": "Γράψε τον κωδικό από την παλιά συσκευή.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "Ισχύει 15 λεπτά. Στη νέα συσκευή, πριν πετάξεις, άνοιξε το Προφίλ και γράψε αυτόν τον κωδικό."});
 window.I18N_ADD('el', {"Genel": "Συνολικά", "Haftalık": "Εβδομάδα", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "Η εβδομαδιαία κατάταξη ξεκινά {t}. Οι πτήσεις μετά από αυτό εμφανίζονται εδώ."});
+window.I18N_ADD('el', {"Topla": "Συλλογή", "Hediye": "Δώρο", "Haftalık sıralamada {r}. oldun!": "Βγήκες {r}ος στην εβδομαδιαία κατάταξη!", "Sana hediye geldi!": "Σου ήρθε δώρο!"});

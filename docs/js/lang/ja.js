@@ -9,3 +9,4 @@ window.I18N_ADD('ja', {"Hesabını başka cihaza taşı": "アカウントを別
 window.I18N_ADD('ja', {"Ana menüye dön, oradan taşı.": "メインメニューに戻ってから移してください。"});
 window.I18N_ADD('ja', {"Eski cihazından aldığın kodu yaz.": "前の端末で取得したコードを入力してください。", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "有効期限15分。新しい端末で飛ぶ前にプロフィールを開き、このコードを入力してください。"});
 window.I18N_ADD('ja', {"Genel": "総合", "Haftalık": "週間", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "週間ランキングは{t}に始まります。それ以降のフライトがここに表示されます。"});
+window.I18N_ADD('ja', {"Topla": "受け取る", "Hediye": "プレゼント", "Haftalık sıralamada {r}. oldun!": "週間ランキングで{r}位になりました！", "Sana hediye geldi!": "プレゼントが届きました！"});

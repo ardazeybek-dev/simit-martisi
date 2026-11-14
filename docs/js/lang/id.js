@@ -9,3 +9,4 @@ window.I18N_ADD('id', {"Hesabını başka cihaza taşı": "Pindahkan akunmu ke p
 window.I18N_ADD('id', {"Ana menüye dön, oradan taşı.": "Kembali ke menu utama dan pindahkan dari sana."});
 window.I18N_ADD('id', {"Eski cihazından aldığın kodu yaz.": "Ketik kode dari perangkat lamamu.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "Berlaku 15 menit. Di perangkat baru, sebelum terbang, buka Profil dan ketik kode ini."});
 window.I18N_ADD('id', {"Genel": "Semua", "Haftalık": "Mingguan", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "Peringkat mingguan dimulai {t}. Penerbangan setelahnya muncul di sini."});
+window.I18N_ADD('id', {"Topla": "Ambil", "Hediye": "Hadiah", "Haftalık sıralamada {r}. oldun!": "Kamu peringkat {r} di peringkat mingguan!", "Sana hediye geldi!": "Kamu dapat hadiah!"});

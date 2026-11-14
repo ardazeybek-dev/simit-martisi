@@ -9,3 +9,4 @@ window.I18N_ADD('az', {"Hesabını başka cihaza taşı": "Hesabını başqa cih
 window.I18N_ADD('az', {"Ana menüye dön, oradan taşı.": "Əsas menyuya qayıt, oradan köçür."});
 window.I18N_ADD('az', {"Eski cihazından aldığın kodu yaz.": "Köhnə cihazından aldığın kodu yaz.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "15 dəqiqə keçərlidir. Yeni cihazında uçmadan əvvəl Profilə gir və bu kodu yaz."});
 window.I18N_ADD('az', {"Genel": "Ümumi", "Haftalık": "Həftəlik", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "Həftəlik sıralama {t} başlayır. Ondan sonra uçanlar burada görünəcək."});
+window.I18N_ADD('az', {"Topla": "Topla", "Hediye": "Hədiyyə", "Haftalık sıralamada {r}. oldun!": "Həftəlik sıralamada {r}. oldun!", "Sana hediye geldi!": "Sənə hədiyyə gəldi!"});

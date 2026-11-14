@@ -9,3 +9,4 @@ window.I18N_ADD('zh', {"Hesabını başka cihaza taşı": "把账号转移到其
 window.I18N_ADD('zh', {"Ana menüye dön, oradan taşı.": "请回到主菜单再转移。"});
 window.I18N_ADD('zh', {"Eski cihazından aldığın kodu yaz.": "输入旧设备上获取的转移码。", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "15 分钟内有效。在新设备上起飞前，打开个人资料并输入此码。"});
 window.I18N_ADD('zh', {"Genel": "总榜", "Haftalık": "周榜", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "周榜将于{t}开始。之后的飞行会显示在这里。"});
+window.I18N_ADD('zh', {"Topla": "领取", "Hediye": "礼物", "Haftalık sıralamada {r}. oldun!": "你在周榜中获得第 {r} 名！", "Sana hediye geldi!": "你收到了一份礼物！"});

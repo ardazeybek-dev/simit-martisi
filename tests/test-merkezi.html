@@ -53,6 +53,15 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'v3.4.1 · 14 Kasım', id: 'odul-topla', t: '🎁 Ödül toplama ekranı', look: [
+      'Hediye ya da haftalık ödül artık cüzdana kendiliğinden girmiyor: menüde 🏆/🎁 ekranı çıkıyor, “Topla”ya basınca ekleniyor. Uçarken gelirse menüye dönünce açılır; günlük ödülle üst üste binmez, toplayınca sıra ona gelir.'],
+    links: [['Haftalık ödül örneği (1. sıra, 3000 simit + 3 balık)', '/?hediye=1']] },
+  { id: 'cark-rozet', t: '🎡 Şans çarkı sekmesinde rozet', look: [
+      'Ödüller penceresinde bugünkü bedava çevirme duruyorsa “Şans çarkı” sekmesinde kırmızı nokta var; günlük ödül alınmadıysa “Günlük ödül” sekmesinde. Yalnız çark bekliyorsa pencere doğrudan çarkta açılır.'],
+    links: [['Menü', '/?city=istanbul&weather=clear']] },
+  { id: 'soru-haftalik', t: '❓ “?” yalnız Haftalık’ta', look: [
+      'Ödül haftalık listeye göre verildiği için ödül tablosunu açan “?” düğmesi Genel sekmesinde yok, Haftalık’ta var.'],
+    links: [['Canlı oyun', 'https://ardazeybek-dev.github.io/simit-martisi/']] },
   { g: 'v3.4.0 · 14 Kasım · sıralama sekmeleri', id: 'haftalik-sekme', t: '🏆 Sıralamada Genel | Haftalık', look: [
       'Sıralamayı aç: solda Genel (herkesin en iyi skoru), sağda Haftalık. Şu an Haftalık’ta “Pazar 00:00 UTC itibarıyla başlıyor” yazmalı; Pazar’dan sonra o hafta uçanlar görünür. Son seçtiğin sekme hatırlanıyor.',
       'Haftalık ödül artık biten haftanın Haftalık listesine göre (ilki 22 Kasım’da). 15 Kasım’daki ödül son kez Genel listeye göre gidiyor.'],

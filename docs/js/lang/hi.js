@@ -9,3 +9,4 @@ window.I18N_ADD('hi', {"Hesabını başka cihaza taşı": "अपना खा�
 window.I18N_ADD('hi', {"Ana menüye dön, oradan taşı.": "मुख्य मेनू पर लौटें और वहीं से ले जाएँ।"});
 window.I18N_ADD('hi', {"Eski cihazından aldığın kodu yaz.": "पुराने डिवाइस से मिला कोड लिखें।", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "15 मिनट तक मान्य। नए डिवाइस पर उड़ने से पहले प्रोफ़ाइल खोलें और यह कोड लिखें।"});
 window.I18N_ADD('hi', {"Genel": "कुल", "Haftalık": "साप्ताहिक", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "साप्ताहिक रैंकिंग {t} शुरू होगी। उसके बाद की उड़ानें यहाँ दिखेंगी।"});
+window.I18N_ADD('hi', {"Topla": "लें", "Hediye": "तोहफ़ा", "Haftalık sıralamada {r}. oldun!": "साप्ताहिक रैंकिंग में तुम {r}वें स्थान पर रहे!", "Sana hediye geldi!": "तुम्हें तोहफ़ा मिला!"});

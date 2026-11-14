@@ -9,3 +9,4 @@ window.I18N_ADD('vi', {"Hesabını başka cihaza taşı": "Chuyển tài khoản
 window.I18N_ADD('vi', {"Ana menüye dön, oradan taşı.": "Quay lại menu chính rồi chuyển từ đó."});
 window.I18N_ADD('vi', {"Eski cihazından aldığın kodu yaz.": "Nhập mã từ thiết bị cũ.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "Hiệu lực 15 phút. Trên thiết bị mới, trước khi bay, mở Hồ sơ và nhập mã này."});
 window.I18N_ADD('vi', {"Genel": "Tổng", "Haftalık": "Tuần", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "Bảng xếp hạng tuần bắt đầu {t}. Các chuyến bay sau đó sẽ hiện ở đây."});
+window.I18N_ADD('vi', {"Topla": "Nhận", "Hediye": "Quà", "Haftalık sıralamada {r}. oldun!": "Bạn đứng hạng {r} bảng xếp hạng tuần!", "Sana hediye geldi!": "Bạn nhận được quà!"});

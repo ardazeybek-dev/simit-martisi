@@ -9,3 +9,4 @@ window.I18N_ADD('ko', {"Hesabını başka cihaza taşı": "계정을 다른 기�
 window.I18N_ADD('ko', {"Ana menüye dön, oradan taşı.": "메인 메뉴로 돌아가서 옮기세요."});
 window.I18N_ADD('ko', {"Eski cihazından aldığın kodu yaz.": "이전 기기에서 받은 코드를 입력하세요.", "15 dakika geçerli. Yeni cihazında uçmadan önce Profil'e gir ve bu kodu yaz.": "15분 동안 유효. 새 기기에서 날기 전에 프로필을 열고 이 코드를 입력하세요."});
 window.I18N_ADD('ko', {"Genel": "전체", "Haftalık": "주간", "Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.": "주간 순위는 {t}에 시작돼요. 그 이후 비행이 여기에 표시돼요."});
+window.I18N_ADD('ko', {"Topla": "받기", "Hediye": "선물", "Haftalık sıralamada {r}. oldun!": "주간 순위 {r}위를 했어요!", "Sana hediye geldi!": "선물이 도착했어요!"});
