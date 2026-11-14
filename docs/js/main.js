@@ -46,8 +46,11 @@ const walletTxt = () => (wallet >= 1e5 ? new Intl.NumberFormat(window.I18N.local
 if (!store.get('simit-martisi-route-v2', false)) {
   const bk = 'simit-martisi-route-backup-v2';
   if (!store.get(bk, null)) store.set(bk, Object.fromEntries(CITIES.filter(c => c.routeKey).map(c => [c.routeKey, store.get(c.routeKey, null)])));
-  for (const c of CITIES) if (c.was) { const i = +store.get(c.routeKey, 0) || 0, n = c.was[clamp(i, 0, c.was.length - 1)];
-    if (i > 0) store.set(c.routeKey, Math.max(0, c.stops.findIndex(s => s[0] === n))); }
+  // başarım "Bir uçuşta {n} m": eskiden varılan iskelenin ESKİ metresi kayda geçer (yeni metreler uçulmadan bedava basamak vermesin)
+  const a = store.get(KEY_ACH, {}) || {}; a.st = a.st || {}; let far = 0;
+  for (const c of CITIES) if (c.was) { const i = +store.get(c.routeKey, 0) || 0, [n, m] = c.was[clamp(i, 0, c.was.length - 1)];
+    if (i > 0) { store.set(c.routeKey, Math.max(0, c.stops.findIndex(s => s[0] === n))); far = Math.max(far, m); } }
+  if (far > (a.st.maxDist || 0)) { a.st.maxDist = far; store.set(KEY_ACH, a); }
   store.set('simit-martisi-route-v2', true);
 }
 if (QS.has('hepsi')) for (const c of CITIES) store.set(c.routeKey, c.stops.length - 1); // deneme (yalnız yerelde, test merkezi): ?hepsi → bütün şehirler açık (cüzdana dokunmaz)
@@ -89,7 +92,8 @@ const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { con
 // Engel aralıkları (spdAt) TABAN hızla kurulur: martı daha hızlı geldiği için tepki süresi gerçekten kısalır (aralık da büyüseydi fark sıfırlanıyordu).
 // Geçilebilirlik tests/passable.cjs ile ölçülür (orada martı şehir hızında). Günlük yarışta yok (herkese aynı). passable.cjs CITY_SPD ile aynı kalmalı
 const CITY_SPD = 0.08;
-const cityIdx = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityBand = m => clamp((m - 500) / 1000, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
+const cityIdx = () => (daily ? 0 : Math.min(4, Math.max(0, CITIES.indexOf(city)))), // 5. şehirden sonra basamak durur (+%32 hız): yeni şehir zorluğu kendi özelliklerinden gelir
+  cityBand = m => clamp((m - 500) / 1000, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
 const cityKAt = m => 1 + CITY_SPD * cityIdx() * cityBand(m);
 // şehir baskısı: aynı bantta heat'e sıra başına ek (özel bölgeler seyrek kaldığı için İzmir zamanla bakınca İstanbul'dan kolaydı: daha çok rakip, kısa açık su, sık yelkenli)
 const CITY_HEAT = 0.8, cityG = () => CITY_HEAT * cityIdx() * cityBand(-genZ / 2);
@@ -1385,7 +1389,7 @@ function generateIn(limit) {
       segCount++;
     }
     else if (genZ - tn.z0 > 30) spawnGap(segCount === 0, genZ - tn.z0);
-    else { spawnTurn(tn); if (segCount % 2 === 0) segCount++; if (difficulty() > 0.6) spawnGap(false, Math.max(18, spdAt(-genZ / 2) * 0.6), true); } // viraj çıkışında ~0,6 sn engelsiz su: martı savrulmadan toparlansın, vapurun ilk bacası hemen gelmesin
+    else { spawnTurn(tn); if (segCount % 2 === 0) segCount++; if (difficulty() > 0.6) spawnGap(false, Math.max(18, spdAt(-genZ / 2) * cityKAt(-genZ / 2) * 0.6), true); } // viraj çıkışında ~0,6 sn (şehir hızıyla: hızlı şehirde de 0,6 sn) engelsiz su: martı savrulmadan toparlansın, vapurun ilk bacası hemen gelmesin
   }
   purge();
 }
@@ -2534,7 +2538,7 @@ let achRun = {}; // bu uçuşta istatistiğe eklenmiş olan (ikinci şansta iki 
 function achVal(id) {
   const s = ach.st;
   if (id === 'maxScore') return Math.max(s.maxScore || 0, best);
-  if (id === 'maxDist') return Math.max(s.maxDist || 0, STOPS[farStop].m);
+  if (id === 'maxDist') return s.maxDist || 0; // varılan iskelenin metresi eklenmez: v3.3'te hat uzayınca uçulmamış metre sayılıyordu (eski varışlar taşımada kayda geçti)
   if (id === 'owned') return look.owned.length;
   return s[id] || 0;
 }
@@ -4127,7 +4131,7 @@ window.__game = {
   get movAll() { return { sails: crossers.map(c => ({ xa: c.xa, side: c.side, k: c.k, z: c.z })), pirates: pirates.map(p => ({ xa: p.xa, side: p.side, k: p.k, z: p.z, os: p.os.map(q => ({ off: q.off, hw: q.o.hw, hd: q.o.hd, z: q.o.z, top: q.o.top, kind: q.o.kind })) })) }; }, // deneme: geçilebilirlik denetimi
   get thrown() { return { ...thrownStat, live: simits.filter(s => s.th).length, boats: boats.length, scene: scene.children.length, flying: simits.filter(s => s.th && !s.taken && s.th.u > 0.45 && s.th.u < 0.8).length }; },
   get mem() { return { ...renderer.info.memory, programs: renderer.info.programs.length }; }, get renderer() { return renderer; }, get scene() { return scene; }, get camera() { return camera; }, get glint() { return glint; },
-  pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = dur(k); renderPowers(); }, get ups() { return { ...ups }; }, setGod: (b) => (god = !!b), spdAt: m => spdAt(m) * cityKAt(m), setQuality,
+  pause, resume, get turns() { return turns.map(u => ({ ...u })); }, get bank() { return lean; }, get heading() { return heading; }, get speed() { return speed; }, addPoints: n => (points += n), power: (k) => { pw[k] = dur(k); renderPowers(); }, get ups() { return { ...ups }; }, setGod: (b) => (god = !!b), spdAt: m => spdAt(m) * cityKAt(m), get cityIdx() { return cityIdx(); }, setQuality,
 };
 // ses bağlamı başlık ekranında boşta kurulur (askıda); ilk dokunuş yalnızca açar → kalkış karesi donmaz
 setTimeout(() => (window.requestIdleCallback || (f => f()))(() => audio.prepare(), { timeout: 2000 }), 1200);
