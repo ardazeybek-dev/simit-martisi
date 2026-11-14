@@ -108,10 +108,11 @@ export const DIORAMA = {
 };
 
 // ada süsü: ağaçlar, karlı tepeler (hepsi tek gövde). avoid: [x, z, r] şehir yerleri
+export const HILLS = [[0.4, 2.2, 1.0], [0.1, -1.9, 1.15], [-2.7, -3.6, 0.75], [2.9, 1.6, 0.7]]; // adadaki tepeler [x, z, yarıçap]: yol taşları bunların üstünden geçmez
 export function islandDecor(rx, rz, avoid, seed = 1) {
   let s = seed; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
   const k = new Kit(), GY = 0.72, ok = (x, z, r) => !avoid.some(([ax, az, ar]) => Math.hypot(ax - x, az - z) < ar + r);
-  const hills = [[0.4, 2.2, 1.0], [0.1, -1.9, 1.15], [-2.7, -3.6, 0.75], [2.9, 1.6, 0.7]];
+  const hills = HILLS;
   for (const [x, z, r] of hills) if (ok(x, z, r * 0.6)) {
     k.add(new THREE.ConeGeometry(r, r * 1.05, 7), 0x5aa84a, x, GY + r * 0.52, z);
     k.add(new THREE.ConeGeometry(r * 0.36, r * 0.38, 7), 0xffffff, x, GY + r * 0.88, z);

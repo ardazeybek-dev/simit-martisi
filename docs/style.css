@@ -1207,6 +1207,10 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #cityName { cursor: pointer; }
 #worldMap .map-lbl { position: absolute; left: 0; top: 0; background: #fff; color: #2b2b3a; border: 3px solid #2b2b3a; border-radius: 12px; padding: 1px 9px; font-weight: 800; font-size: 14px; white-space: nowrap; box-shadow: 0 3px 0 #2b2b3a; will-change: transform; pointer-events: auto; cursor: pointer; }
 #worldMap .map-lbl.sel { background: #ffc93a; }
+#worldMap .map-lbl.locked { background: #dfe3ea; color: #77808f; border-color: #77808f; box-shadow: 0 3px 0 #77808f; }
+#worldMap .map-lbl.locked::before { content: '🔒 '; font-size: 11px; }
+#worldMap .map-lbl.locked.sel { background: #ffe9a8; }
+#cityPick.fresh #cityName { animation: pulse 1.2s ease-in-out infinite; }
 #worldMap .map-card { position: absolute; left: 50%; bottom: calc(14px + var(--sab)); transform: translateX(-50%); width: min(360px, calc(100vw - 24px)); padding: 14px 14px 16px; border-radius: 24px;
   background: linear-gradient(rgba(40, 34, 92, .92), rgba(27, 24, 56, .94)); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); color: var(--cream); gap: 8px; }
 #worldMap .map-city { font-size: 24px; color: var(--cream); }

@@ -7,7 +7,7 @@ import { initShipLights, addShipLights, tickShipLights, tickLamps } from './ship
 import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, MARINA, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, MENDIL_ARM, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker, turtleGeo, TURTLE_FLIP, hivesGeo, HONEY, BEE, gliderGeo } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
-import { map, bindMapInput, mapDraw, mapHome, mapZoom, buildCities, mapSelect } from './worldmap.js';
+import { map, bindMapInput, mapDraw, mapHome, mapZoom, buildCities, mapSelect, mapState, mapReveal } from './worldmap.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
 import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc, makeMoveCode, claimMoveCode, fmtCode } from './net.js';
 
@@ -2319,6 +2319,7 @@ function renderRouteMap() {
   const open = cityOpen(city);
   $('cityName').textContent = city.name; // puan çarpanı adın yanında: rota bitince de cümleye yapışmaz
   if (city.mult > 1) $('cityName').insertAdjacentHTML('beforeend', ` <em class="mult-tag">×${city.mult}</em>`);
+  $('cityPick').classList.toggle('fresh', mapUnseen().length > 0); // yeni şehir açıldı: harita düğmesi göz kırpar
   $('cityPick').classList.toggle('locked', !open); $('playBtn').classList.toggle('locked', !open); $('routeMap').classList.toggle('locked', !open);
   if (!open) {
     $('routeMap').innerHTML = STOPS.map(s => `<i title="${s.name}"></i>`).join('');
@@ -2720,8 +2721,22 @@ function openMap() {
   if (state !== 'title' || mapping) return;
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel']) show(id, false);
   mapping = true; map.on = true; mapHome(); mapPick(city.id, true);
+  mapLayer();
   show('title', false); show('worldMap');
   if (renderer.getPixelRatio() !== POD_PR) renderer.setPixelRatio(POD_PR); // haritada uçuş yok: ekranın tam çözünürlüğü
+}
+// haritanın heves katmanı: bitirilen şehirde bayrak, kilitlide bulut; haritada henüz görülmemiş yeni şehrin bulutu bir kez dağılır
+const KEY_MAPSEEN = 'simit-martisi-mapseen';
+const mapCities = () => CITIES.filter(c => !c.soon);
+const mapUnseen = () => { const seen = store.get(KEY_MAPSEEN, null); return seen ? mapCities().filter(c => cityOpen(c) && !seen.includes(c.id)) : []; };
+function mapLayer() {
+  const st = {}; let next = false;
+  for (const c of mapCities()) st[c.id] = !cityOpen(c) ? (next ? 'locked' : (next = true, 'next')) : routeOf(c) === c.stops.length - 1 ? 'done' : 'open';
+  mapState(st);
+  const fresh = mapUnseen();
+  for (const c of fresh) mapReveal(c.id);
+  if (fresh.length) setTimeout(() => { if (mapping) sfx.gold(); }, 700);
+  store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).map(c => c.id)); // ilk açılışta sessizce kaydolur: eski oyuncuya bulut yağmuru olmaz
 }
 // haritada seçilen şehrin kartı: ad, çarpan, iskele noktaları, hedef; kilitliyse açılma şartı
 let mapSel = null;
@@ -3619,6 +3634,7 @@ $('cityName').addEventListener('click', e => { e.stopPropagation(); sfx.click();
 onBtn('mapClose', closeMap); onBtn('mapGo', mapGo); map.onTap = id => mapPick(id); onBtn('mapIn', () => mapZoom(0.75)); onBtn('mapOut', () => mapZoom(1.33));
 bindMapInput($('worldMap'), isUi);
 buildCities(CITIES.map(c => ({ id: c.id, name: c.name })), $('mapLabels'));
+if (!store.get(KEY_MAPSEEN, null)) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).map(c => c.id)); // bundan sonra açılan şehir 'yeni' sayılır
 onBtn('cityNext', () => stepCity(1));
 onBtn('missionsBtn', () => { openMissions(); show('missionsPanel'); for (const m of missions) m.seen = true; store.set(KEY_MIS, missions); renderMenuBadges(); });
 onBtn('closeMissions', () => show('missionsPanel', false));

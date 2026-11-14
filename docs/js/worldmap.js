@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { BEND, BEND2, LEVEL, LAMP_N } from './scene.js';
 import { Kit, vcMat } from './util.js';
 import { makeGull, flapGull } from './models.js';
-import { DIORAMA, fit, islandDecor } from './mapsets.js';
+import { DIORAMA, fit, islandDecor, HILLS } from './mapsets.js';
 
 const D_MIN = 11, D_MAX = 95, D_HOME = 25, PITCH = 1.1; // ~63° yukarıdan: uzun maketler üstteki şehrin etiketine binmesin
 const BOUNDS = { x0: -16, x1: 16, z0: -24, z1: 20 };
@@ -150,7 +150,7 @@ export function addIsland(pts, ox, oz, grass = 0x7cc95a) {
 }
 export const GROUND_Y = 0.72; // çimenin üstü
 export const TR_SHAPE = [[-1.2, -6.0], [1.6, -5.8], [3.4, -4.6], [3.9, -2.4], [3.6, 0.0], [3.9, 2.2], [3.2, 4.4], [1.2, 5.8], [-1.4, 5.9], [-3.3, 4.6], [-3.6, 2.4], [-3.9, 0.2], [-3.5, -2.2], [-3.6, -4.4]];
-addIsland(TR_SHAPE, 0, 0);
+const trIsland = addIsland(TR_SHAPE, 0, 0);
 
 // ---- şehirler ----
 // Türkiye adasında şehirlerin yeri (açılış sırasıyla aşağıdan yukarı kıvrılan yol): [x, z]
@@ -171,9 +171,11 @@ export function buildCities(list, el) {
     const hit = new THREE.Mesh(new THREE.CylinderGeometry(PAD_R * 1.15, PAD_R * 1.15, h + 0.4, 10), hitMat); hit.position.y = (h + 0.4) / 2; root.add(hit);
     root.userData.pick = c.id; scene.add(root); map.pickables.push(root);
     const label = document.createElement('div'); label.className = 'map-lbl'; label.textContent = c.name; label.dataset.pick = c.id; el.appendChild(label);
-    cities.push({ id: c.id, g: root, pos: new THREE.Vector3(p[0], GROUND_Y + 0.1, p[1] + PAD_R * 0.95), label, tick: model.userData.tick || null });
+    cities.push({ id: c.id, g: root, model: d, h, pos: new THREE.Vector3(p[0], GROUND_Y + 0.1, p[1] + PAD_R * 0.95), label, tick: model.userData.tick || null });
   }
-  scene.add(islandDecor(3.4, 5.4, Object.values(CITY_POS).map(([x, z]) => [x, z, PAD_R + 0.15])));
+  const avoid = Object.values(CITY_POS).map(([x, z]) => [x, z, PAD_R + 0.15]);
+  buildPath(avoid);
+  scene.add(islandDecor(3.4, 5.4, avoid.concat(stones.map(s => [s.x, s.z, 0.1]))));
 }
 // seçili şehrin kaidesinde nabız gibi atan altın halka (uzun maketler ekranda komşusunun üstüne biner: işaret kaidede durur, karışmaz)
 const ring = new THREE.Mesh(new THREE.TorusGeometry(PAD_R * 1.12, 0.07, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffc93a }));
@@ -190,12 +192,116 @@ gull.traverse(o => { if (o.isMesh) o.castShadow = true; });
 function tickCities(dt, t) {
   for (const c of cities) if (c.tick) c.tick(dt, t);
   const a = t * 0.32; gull.position.set(Math.sin(a) * 3.1, 3.2 + Math.sin(t * 0.9) * 0.25, Math.cos(a) * 4.6); gull.rotation.set(0, a + Math.PI, -0.35); flapGull(gull, t * 1.4, 0.6, 0.4);
-  if (selC) { ring.position.set(selC.g.position.x, GROUND_Y + 0.1, selC.g.position.z); ring.scale.setScalar(1 + Math.abs(Math.sin(t * 3)) * 0.08); }
+  if (selC) { ring.position.set(selC.g.position.x, GROUND_Y + 0.16, selC.g.position.z); ring.scale.setScalar(1 + Math.abs(Math.sin(t * 3)) * 0.08); }
+  tickLayer(dt, t);
   for (const c of cities) if (c.pop) { c.pop = Math.max(0, c.pop - dt * 3); const k = 1 + Math.sin(c.pop * Math.PI) * 0.12; c.g.scale.set(k, 1 / k, k); }
   const far = map.d > 42;
   for (const c of cities) {
     const s = mapToScreen(c.pos), off = far || s.back || s.x < -60 || s.x > innerWidth + 60 || s.y < -30 || s.y > innerHeight + 30;
     c.label.style.display = off ? 'none' : '';
     if (!off) c.label.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) translate(-50%, -30%)`;
+  }
+}
+
+// ---- heves katmanı ----
+// Bitirilen şehirde dalgalanan bayrak; şehirleri açılış sırasıyla bağlayan yol taşları (bitirilen kısım altın);
+// kilitli şehirler bulut altında: sıradaki kilitli şehir grileşmiş maketiyle hafif görünür, ötekiler tamamen bulutta.
+// Yeni açılan şehrin bulutu harita açılınca bir kez dağılır (mapReveal). Durumlar main.js'ten gelir: mapState({ id: 'done' | 'open' | 'next' | 'locked' }).
+const stones = []; // { x, z, seg }: seg, yolun hangi şehirden çıktığı (cities sırası)
+let stoneMesh = null;
+function buildPath(avoid) {
+  const hills = HILLS.filter(([x, z, r]) => avoid.every(([ax, az, ar]) => Math.hypot(ax - x, az - z) >= ar + r * 0.6)); // islandDecor'un çizdiği tepeler
+  for (let i = 0; i + 1 < cities.length; i++) {
+    const a = cities[i].g.position, b = cities[i + 1].g.position, dx = b.x - a.x, dz = b.z - a.z, L = Math.hypot(dx, dz), n = Math.round(L / 0.3);
+    // kavis: tepeye en az takılan seçilir (yol tepenin çevresinden dolanır); eşitlikte daha düz olan
+    let best = null;
+    for (const bend of [0.35, -0.35, 0.8, -0.8, 1.3, -1.3, 1.9, -1.9]) {
+      const cx = (a.x + b.x) / 2 - dz / L * bend, cz = (a.z + b.z) / 2 + dx / L * bend, pts = []; let hit = 0;
+      for (let j = 0; j <= n; j++) {
+        const u = j / n, x = (1 - u) * (1 - u) * a.x + 2 * u * (1 - u) * cx + u * u * b.x, z = (1 - u) * (1 - u) * a.z + 2 * u * (1 - u) * cz + u * u * b.z;
+        if (Math.hypot(x - a.x, z - a.z) < PAD_R + 0.22 || Math.hypot(x - b.x, z - b.z) < PAD_R + 0.22) continue;
+        if (hills.some(([hx, hz, hr]) => Math.hypot(hx - x, hz - z) < hr * 1.05) || Math.abs(x) / 3.4 + Math.abs(z) / 5.4 > 1.4) { hit++; continue; }
+        pts.push({ x, z, seg: i });
+      }
+      if (!best || hit < best.hit) best = { hit, pts };
+    }
+    stones.push(...best.pts);
+  }
+  stoneMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.12, 0.05, 8), new THREE.MeshLambertMaterial({ color: 0xffffff }), stones.length);
+  const m = new THREE.Matrix4(), c0 = new THREE.Color(0xfff4d6);
+  const ray = new THREE.Raycaster(), down = new THREE.Vector3(0, -1, 0); trIsland.updateMatrixWorld(true);
+  const groundAt = (x, z) => { ray.set(new THREE.Vector3(x, 5, z), down); const h = ray.intersectObject(trIsland, true)[0]; return h ? h.point.y : GROUND_Y; }; // çimenin kavisli üstü
+  stones.forEach((s, i) => { m.makeRotationY(i * 1.7); m.setPosition(s.x, groundAt(s.x, s.z) + 0.01, s.z); stoneMesh.setMatrixAt(i, m); stoneMesh.setColorAt(i, c0); });
+  stoneMesh.receiveShadow = true; scene.add(stoneMesh);
+}
+// bayrak: direk + kırmızı bez, üstünde simit; tek mesh, direğin çevresinde salınır
+const flagGeo = (() => {
+  const k = new Kit();
+  k.add(new THREE.CylinderGeometry(0.022, 0.028, 1.0, 6), 0xf4f4f4, 0, 0.5, 0);
+  k.add(new THREE.SphereGeometry(0.045, 8, 6), 0xffc93a, 0, 1.02, 0);
+  k.add(new THREE.BoxGeometry(0.46, 0.28, 0.02), 0xe0303a, 0.24, 0.84, 0);
+  k.add(new THREE.TorusGeometry(0.075, 0.028, 6, 14), 0xffffff, 0.25, 0.84, 0.012);
+  return k.build();
+})();
+const greyMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9, metalness: 0, color: 0xb9c1cc });
+function cloudGeo(h, big) {
+  // ikosahedron kümesi: kaidenin çevresinde halka; büyük bulut maketi baştan sona örter
+  const k = new Kit(), n = big ? 9 : 7;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + 0.4, r = PAD_R * (big ? 0.62 : 0.95), s = (big ? 0.42 : 0.26) + ((i * 37) % 5) * 0.035;
+    k.add(new THREE.IcosahedronGeometry(s, 1), i % 3 ? 0xffffff : 0xeef4fa, Math.sin(a) * r, big ? 0.35 + ((i * 53) % 4) * 0.12 * h : 0.12, Math.cos(a) * r);
+  }
+  if (big) { k.add(new THREE.IcosahedronGeometry(0.55, 1), 0xffffff, 0, h * 0.55 + 0.25, 0); k.add(new THREE.IcosahedronGeometry(0.4, 1), 0xf3f7fb, 0.25, h * 0.85 + 0.35, -0.1); }
+  return k.build();
+}
+const cloudMat = () => new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, transparent: true, opacity: 0.9 });
+function swapMat(c, grey) { // yalnız köşe renkli gövdeler grileşir; kendi malzemeli parçalar (şelale suyu) olduğu gibi kalır
+  c.model.traverse(o => { if (!o.isMesh || !(o.userData.mat0 || o.material).vertexColors) return; if (!o.userData.mat0) o.userData.mat0 = o.material; o.material = grey ? greyMat : o.userData.mat0; });
+}
+const reveals = []; // dağılan bulutlar
+export function mapState(st) {
+  reveals.length = 0;
+  for (const c of cities) {
+    const s = st[c.id] || 'locked', locked = s === 'next' || s === 'locked', big = s === 'locked';
+    c.state = s;
+    if (s === 'done' && !c.flag) {
+      c.flag = new THREE.Mesh(flagGeo, vcMat); c.flag.castShadow = true;
+      c.flag.position.set(PAD_R * 0.72, 0.1, -PAD_R * 0.5); c.g.add(c.flag);
+    }
+    if (c.flag) c.flag.visible = s === 'done';
+    swapMat(c, locked);
+    c.model.visible = !big;
+    if (locked && (!c.cloud || c.cloud.userData.big !== big)) {
+      if (c.cloud) c.g.remove(c.cloud);
+      c.cloud = new THREE.Mesh(cloudGeo(c.h, big), cloudMat()); c.cloud.userData.big = big; c.g.add(c.cloud);
+    }
+    if (c.cloud) { c.cloud.visible = locked; c.cloud.scale.setScalar(1); c.cloud.material.opacity = big ? 0.97 : 0.9; }
+    c.label.classList.toggle('locked', locked);
+  }
+  const gold = new THREE.Color(0xffc93a), cream = new THREE.Color(0xfff4d6), dim = new THREE.Color(0xc9c6bb);
+  if (stoneMesh) {
+    stones.forEach((s, i) => { const a = cities[s.seg].state; stoneMesh.setColorAt(i, a === 'done' ? gold : a === 'open' ? cream : dim); });
+    stoneMesh.instanceColor.needsUpdate = true;
+  }
+}
+// yeni açılan şehir: bulut kısa bir bekleyişten sonra dağılır, maket renklenip zıplar
+export function mapReveal(id, delay = 0.6) {
+  const c = cities.find(q => q.id === id); if (!c) return;
+  if (!c.cloud || c.cloud.userData.big) { if (c.cloud) c.g.remove(c.cloud); c.cloud = new THREE.Mesh(cloudGeo(c.h, false), cloudMat()); c.g.add(c.cloud); }
+  c.cloud.visible = true; c.cloud.material.opacity = 0.9; c.model.visible = true; swapMat(c, true); c.label.classList.add('locked');
+  reveals.push({ c, t: -delay });
+}
+export const mapRevealing = () => reveals.length > 0;
+function tickLayer(dt, t) {
+  for (const c of cities) {
+    if (c.flag && c.flag.visible) c.flag.rotation.y = Math.sin(t * 2.2 + c.g.position.x) * 0.35 - 0.2;
+    if (c.cloud && c.cloud.visible && !reveals.some(r => r.c === c)) c.cloud.position.y = Math.sin(t * 0.8 + c.g.position.z) * 0.05;
+  }
+  for (let i = reveals.length - 1; i >= 0; i--) {
+    const r = reveals[i]; r.t += dt; if (r.t < 0) continue;
+    const k = Math.min(r.t / 1.1, 1), e = 1 - (1 - k) * (1 - k);
+    r.c.cloud.scale.set(1 + e * 1.4, 1 + e * 0.5, 1 + e * 1.4); r.c.cloud.position.y = e * 0.6; r.c.cloud.material.opacity = 0.9 * (1 - e);
+    if (k > 0.35 && !r.swapped) { r.swapped = true; swapMat(r.c, false); r.c.pop = 1; r.c.label.classList.remove('locked'); }
+    if (k >= 1) { r.c.cloud.visible = false; reveals.splice(i, 1); }
   }
 }
