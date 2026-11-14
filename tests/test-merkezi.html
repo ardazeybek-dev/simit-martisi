@@ -53,6 +53,9 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'v3.4.2 · 14 Kasım', id: 'odul-tikir', t: '🪙 Ödül tıkır tıkır doluyor', look: [
+      'Ödül ekranında üstte cüzdanın var. “Topla”ya basınca ödül sayısı tık tık azalırken cüzdan aynı hızda artıyor (büyük ödülde ~2,8 sn, küçükte ~1,2 sn), sonunda parlayıp kapanıyor. Hız iyi mi?'],
+    links: [['Ödül ekranı örneği', '/?hediye=1']] },
   { g: 'v3.4.1 · 14 Kasım', id: 'odul-topla', t: '🎁 Ödül toplama ekranı', look: [
       'Hediye ya da haftalık ödül artık cüzdana kendiliğinden girmiyor: menüde 🏆/🎁 ekranı çıkıyor, “Topla”ya basınca ekleniyor. Uçarken gelirse menüye dönünce açılır; günlük ödülle üst üste binmez, toplayınca sıra ona gelir.'],
     links: [['Haftalık ödül örneği (1. sıra, 3000 simit + 3 balık)', '/?hediye=1']] },

@@ -4082,17 +4082,34 @@ function giftOffer() {
   $('giftIco').textContent = g.wk ? '🏆' : '🎁';
   $('giftTitle').textContent = tr(g.wk ? 'Haftalık ödül' : 'Hediye');
   $('giftText').textContent = g.wk ? tr('Haftalık sıralamada {r}. oldun!').replace('{r}', fmt(g.wk)) : tr('Sana hediye geldi!');
-  $('giftAmt').innerHTML = (g.n ? `<span>${sim}${fmt(g.n)}</span>` : '') + (g.f ? `<span>${fi}${fmt(g.f)}</span>` : '');
+  $('giftAmt').innerHTML = (g.n ? `<span>${sim}<b id="giftN">${fmt(g.n)}</b></span>` : '') + (g.f ? `<span>${fi}<b id="giftF">${fmt(g.f)}</b></span>` : '');
+  $('giftWallet').textContent = fmt(wallet); $('giftFish').textContent = fmt(fish); $('giftTake').disabled = false;
   show('giftPanel'); sfx.record();
 }
+// Topla: kayıt hemen cüzdana yazılır (sayfa kapanırsa kaybolmasın), ekranda ise ödül tık tık azalıp cüzdan tık tık artar
 function giftTake() {
-  const g = giftWait();
+  const g = giftWait(), w0 = wallet, f0 = fish;
+  if ($('giftTake').disabled) return;
+  $('giftTake').disabled = true;
   store.set('simit-martisi-gift', 0); store.set('simit-martisi-gift-fish', 0); store.set('simit-martisi-gift-week', 0);
   wallet += g.n; store.set(KEY_WALLET, wallet); if (g.f) setFish(fish + g.f);
-  $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
-  show('giftPanel', false); sfx.gold(); vibrate(30);
-  // hediye ekranı açılıştaki günlük ödülü bekletmişse sırası şimdi gelir
-  if (!tutorialPending && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); setTimeout(() => { if (state === 'title' && !menuModal()) openDaily(); }, 350); }
+  const t0 = performance.now(), d = Math.min(2800, 1100 + Math.max(g.n * 0.6, g.f * 180)); // büyük ödül ~2,8 sn, küçük ~1,2 sn
+  let lastTick = 0;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - k, 1.35), n = Math.round(g.n * e), f = Math.round(g.f * e);
+    $('giftWallet').textContent = fmt(w0 + n); $('giftFish').textContent = fmt(f0 + f);
+    if ($('giftN')) $('giftN').textContent = fmt(g.n - n); if ($('giftF')) $('giftF').textContent = fmt(g.f - f);
+    if (now - lastTick > 70 && k < 1) { lastTick = now; sfx.click(); }
+    if (k < 1) return requestAnimationFrame(step);
+    bump($('giftWallet').parentNode); sfx.gold(); vibrate(30);
+    $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
+    setTimeout(() => {
+      show('giftPanel', false);
+      // hediye ekranı açılıştaki günlük ödülü bekletmişse sırası şimdi gelir
+      if (!tutorialPending && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); setTimeout(() => { if (state === 'title' && !menuModal()) openDaily(); }, 350); }
+    }, 700);
+  };
+  requestAnimationFrame(step);
 }
 onGift(() => giftOffer());
 onBtn('giftTake', giftTake);
