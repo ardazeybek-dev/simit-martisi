@@ -575,7 +575,7 @@ function spawnImbat() {
     }
   }
   const streaks = [];
-  for (let i = 0; i < (ak ? 90 : 70); i++) {
+  for (let i = 0; i < 70; i++) {
     const m = new THREE.Mesh(STREAK, streakMat); m.position.set(rand(-16, 16), 0.5, rand(z1 - 4, z0 + 4)); m.scale.set(rand(0.6, 1.6), 1, rand(0.7, 1.3));
     const sd = flow(m.position.z);
     if (sd < 0) m.rotation.y = Math.PI;
