@@ -5,6 +5,9 @@
 // Ayar: D_MIN / D_MAX (yakınlaşma sınırı), PITCH (bakış eğimi), BOUNDS (kaydırma sınırı, adalar büyüdükçe genişler).
 import * as THREE from 'three';
 import { BEND, BEND2, LEVEL, LAMP_N } from './scene.js';
+import { Kit, vcMat } from './util.js';
+import { makeGull, flapGull } from './models.js';
+import { DIORAMA, fit, islandDecor } from './mapsets.js';
 
 const D_MIN = 11, D_MAX = 95, D_HOME = 25, PITCH = 0.98; // ~56° yukarıdan
 const BOUNDS = { x0: -16, x1: 16, z0: -24, z1: 20 };
@@ -117,6 +120,7 @@ export function mapDraw(renderer, dt, t) {
   const w = innerWidth, h = innerHeight;
   placeCam(w, h);
   sun.position.set(map.tx + 10, 22, map.tz + 9); sun.target.position.set(map.tx, 0, map.tz); sun.target.updateMatrixWorld();
+  tickCities(dt, t);
   if (map.onTick) map.onTick(dt, t);
   _b.copy(BEND.value); _b2.copy(BEND2.value); _lv.copy(LEVEL.value);
   BEND.value.x = 0; BEND2.value.x = 0; LEVEL.value.copy(_id3);
@@ -147,3 +151,40 @@ export function addIsland(pts, ox, oz, grass = 0x7cc95a) {
 export const GROUND_Y = 0.72; // çimenin üstü
 export const TR_SHAPE = [[-1.2, -6.0], [1.6, -5.8], [3.4, -4.6], [3.9, -2.4], [3.6, 0.0], [3.9, 2.2], [3.2, 4.4], [1.2, 5.8], [-1.4, 5.9], [-3.3, 4.6], [-3.6, 2.4], [-3.9, 0.2], [-3.5, -2.2], [-3.6, -4.4]];
 addIsland(TR_SHAPE, 0, 0);
+
+// ---- şehirler ----
+// Türkiye adasında şehirlerin yeri (açılış sırasıyla aşağıdan yukarı kıvrılan yol): [x, z]
+export const CITY_POS = { istanbul: [-2.0, 4.2], izmir: [1.9, 3.2], antalya: [-1.9, 1.5], mugla: [2.2, 0.3], canakkale: [-1.7, -1.1], trabzon: [1.9, -2.5], samsun: [-0.4, -4.1] };
+const PAD_R = 0.82;
+const padGeo = (() => { const k = new Kit(); k.add(new THREE.CylinderGeometry(PAD_R, PAD_R * 1.06, 0.14, 28), 0xfff1c9, 0, 0.07, 0); k.add(new THREE.CylinderGeometry(PAD_R * 1.07, PAD_R * 1.1, 0.06, 28), 0xd9b98a, 0, 0.0, 0); return k.build(); })();
+const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+export const cities = []; // { id, g, pos, label, tick }
+let labelsEl = null;
+export function buildCities(list, el) {
+  labelsEl = el;
+  for (const c of list) {
+    const p = CITY_POS[c.id]; if (!p || !DIORAMA[c.id]) continue;
+    const { g: model, h } = DIORAMA[c.id](), d = fit(model, h);
+    const root = new THREE.Group(); root.position.set(p[0], GROUND_Y, p[1]);
+    const pad = new THREE.Mesh(padGeo, vcMat); pad.receiveShadow = true; root.add(pad);
+    d.position.y = 0.14; root.add(d);
+    const hit = new THREE.Mesh(new THREE.CylinderGeometry(PAD_R * 1.15, PAD_R * 1.15, h + 0.4, 10), hitMat); hit.position.y = (h + 0.4) / 2; root.add(hit);
+    root.userData.pick = c.id; scene.add(root); map.pickables.push(root);
+    const label = document.createElement('div'); label.className = 'map-lbl'; label.textContent = c.name; el.appendChild(label);
+    cities.push({ id: c.id, g: root, pos: new THREE.Vector3(p[0], GROUND_Y + 0.1, p[1] + PAD_R * 0.95), label, tick: model.userData.tick || null });
+  }
+  scene.add(islandDecor(3.4, 5.4, Object.values(CITY_POS).map(([x, z]) => [x, z, PAD_R + 0.15])));
+}
+// martı adanın üstünde tur atar
+const gull = makeGull(); { const b = new THREE.Box3().setFromObject(gull), s = new THREE.Vector3(); b.getSize(s); gull.scale.multiplyScalar(0.7 / Math.max(s.x, s.z)); } scene.add(gull);
+gull.traverse(o => { if (o.isMesh) o.castShadow = true; });
+function tickCities(dt, t) {
+  for (const c of cities) if (c.tick) c.tick(dt, t);
+  const a = t * 0.32; gull.position.set(Math.sin(a) * 3.1, 3.2 + Math.sin(t * 0.9) * 0.25, Math.cos(a) * 4.6); gull.rotation.set(0, a + Math.PI, -0.35); flapGull(gull, t * 1.4, 0.6, 0.4);
+  const far = map.d > 42;
+  for (const c of cities) {
+    const s = mapToScreen(c.pos), off = far || s.back || s.x < -60 || s.x > innerWidth + 60 || s.y < -30 || s.y > innerHeight + 30;
+    c.label.style.display = off ? 'none' : '';
+    if (!off) c.label.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) translate(-50%, -30%)`;
+  }
+}

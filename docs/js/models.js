@@ -3291,3 +3291,6 @@ export function gliderGeo(ci) {
   k.add(new THREE.BoxGeometry(0.9, 0.06, 0.06), 0x2b3a4c, 0, 0.1, 0);
   return (gliderG[ci] = k.build());
 }
+
+// dünya haritası dioramaları (mapsets.js) bu menü parçalarını kullanır
+export { tree as mapTree, ckClock, konakTower };

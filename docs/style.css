@@ -1205,3 +1205,4 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #worldMap .map-zoom button, #mapClose { font-size: 24px; font-weight: 900; line-height: 1; }
 #worldMap .map-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 #cityName { cursor: pointer; }
+#worldMap .map-lbl { position: absolute; left: 0; top: 0; background: #fff; color: #2b2b3a; border: 3px solid #2b2b3a; border-radius: 12px; padding: 1px 9px; font-weight: 800; font-size: 14px; white-space: nowrap; box-shadow: 0 3px 0 #2b2b3a; will-change: transform; }
