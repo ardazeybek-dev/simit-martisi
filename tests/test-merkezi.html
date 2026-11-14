@@ -53,6 +53,18 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Düzeltme · 14 Kasım', id: 'truva-kamera', t: '🐴 Truva Atının altında kamera atın içine girmiyor', look: [
+      'Atın karnının altından geç: kamera artık bacakların üstüne çıkıp gövdenin içine girmiyor; at yaklaşınca kamera alçalıp yataylaşıyor, ekran hiç kapanmamalı.',
+      'Karnın altındaki altın simit yine alınabiliyor olmalı; at geçince kamera eski yüksekliğine yumuşakça döner. Telefon ve yatay ekranda dene.'],
+    links: [['Çanakkale Truva Atı', '/?city=canakkale&hepsi&weather=clear&truva'], ['Truva Atı yağmurda', '/?city=canakkale&hepsi&weather=rain&truva']] },
+  { g: 'Düzeltme · 14 Kasım', id: 'ucurtma-gorunur', t: '🪁 Uçurtmalar denizde net seçiliyor', look: [
+      'Uçurtmalar artık ışıksız ve doygun renkli (kırmızı/sarı, pembe/beyaz, turuncu/lacivert, mor/sarı), kenarlarında koyu kontur var: turkuaz suya karışmamalı.',
+      'Güneş karşıdayken de uçurtma kararmamalı; yağmur ve siste biraz daha parlak. LED sayısı değişmedi.'],
+    links: [['İstanbul 3 km', '/?city=istanbul&hepsi&weather=clear&at=3000&go'], ['Antalya 3 km', '/?city=antalya&hepsi&weather=clear&at=3000&go'], ['Samsun yağmur 3 km', '/?city=samsun&hepsi&weather=rain&at=3000&go']] },
+  { g: 'Düzeltme · 14 Kasım', id: 'irmak-zemin', t: '🌾 Kızılırmak ağzında sazlık zemini titremiyor', look: [
+      'Ağzın iki yanındaki kum ve sazlık zemini artık dalganın üstünde: deniz ve kızıl su zeminin içinden yanıp sönmüyor, tümsekler arasında renk titremesi yok.',
+      'Sazlar, kütükler ve ırmak yatağı zeminin üstünde duruyor; havada asılı ya da gömülü parça olmamalı.'],
+    links: [['Samsun Kızılırmak', '/?city=samsun&hepsi&weather=clear&irmak'], ['Kızılırmak yağmurda', '/?city=samsun&hepsi&weather=rain&irmak']] },
   { g: 'Düzeltme · 14 Kasım', id: 'baca-devam', t: '🛟 Bacaya çarpıp devam edince baca bozuk görünmüyor', look: [
       'Bacaya çarp, Devam (balık/reklam) de: martı artık bacanın içinde değil, yanındaki en boş şeritte kalkıyor; geri sayımda baca tam ve düzgün görünmeli.'],
     links: [['İstanbul 20 km', '/?city=istanbul&hepsi&weather=clear&at=20000&go'], ['Samsun 20 km', '/?city=samsun&hepsi&weather=clear&at=20000&go']] },
