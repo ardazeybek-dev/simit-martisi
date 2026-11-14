@@ -1131,7 +1131,7 @@ function regattaGeo_(ci, s, cup = false) {
   if (cup) return (regCache[key] = cupGeo(ci, s));
   const [sail, band] = REGATTA_COLS[ci], ry = s * 0.9; // yelken iyice açık: arkadan gelen martı yelkeni yüzünden görsün
   const q = new THREE.Shape(); q.moveTo(0, 0); q.lineTo(2.4, 0); q.lineTo(2.15, 5.3); q.lineTo(0, 5.0); q.closePath();
-  const sq = new THREE.ExtrudeGeometry(q, { depth: 0.05, bevelEnabled: false }); sq.rotateY(Math.PI / 2); // y-z düzleminde, +z'ye uzanır
+  const sq = new THREE.ExtrudeGeometry(q, { depth: 0.05, bevelEnabled: false }); sq.rotateY(-Math.PI / 2); // y-z düzleminde, +z'ye (kıça) uzanır: ry ile s yanına açılır, bumba, numara ve REGATTA_BOX'la aynı yere (+π/2 pruvaya ve öbür yana açıyordu)
   const k = hullBands(new Kit(), [[0.22, 0x2b3a4c], [0.34, 0xfdf7ec], [0.08, band]], -0.2, 0.62, 0.66)
     .add(new THREE.BoxGeometry(1.1, 0.05, 2.6), 0xc49a6c, 0, 0.42, 0.1)
     .add(new THREE.CylinderGeometry(0.05, 0.06, 6.2, 5), 0xe8e4da, 0, 3.4, -0.3)
