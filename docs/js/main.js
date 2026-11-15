@@ -3811,8 +3811,11 @@ function updateHud() {
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
 // simit kaçırınca seri biter: kombo yalnızca art arda toplanan simitle büyür
 function missSimit() { if (combo > 0) { combo = 0; comboT = 0; } }
-const COMBO_STEPS = [15, 36, 65, 100]; // x2, x3, x4, x5 için art arda simit. v3.4: 12/30/55/85 ten bir tık daha zor (kombo + 2x ustaları metre başına ~2,5 kat puan alıyordu)
-const mult = () => 1 + COMBO_STEPS.filter(n => combo >= n).length;
+const COMBO_STEPS = [15, 36, 65, 100]; // x1.5, x2, x3, x4 için art arda simit (COMBO_MULT). v3.4: 12/30/55/85 ten bir tık daha zor (kombo + 2x ustaları metre başına ~2,5 kat puan alıyordu)
+// v3.8.8: her kademe bir tık düşük (eskiden x2/x3/x4/x5): x5'te tutulan kombo Mersin'de 500 m'de 16 bin puan veriyordu. Ekranda yazan çarpan gerçek çarpandır
+const COMBO_MULT = [1, 1.5, 2, 3, 4];
+const comboTier = () => COMBO_STEPS.filter(n => combo >= n).length; // 0..4: kuyruk izi, ses, zıplama bu kademeye bakar
+const mult = () => COMBO_MULT[comboTier()];
 function renderPowers() {
   ui.powers.textContent = '';
   for (const k of Object.keys(pw)) {
@@ -4663,7 +4666,7 @@ function frame() {
   for (const s of simits) if (s.free && !s.taken && !s.pulled && s.mesh.visible) { if (!s.th) s.mesh.rotation.y = t * 2.4 + s.z; if (s.gold && Math.random() < dt * 8) sparkle(s.mesh.position, 1, 0xffe08a, 1, 0.6, 0.4); }
   glintTick(dt, simits, gull.position.z);
   tickShipLights(dt, scene, camera, renderer, weather, gull.position.z);
-  trailTick(dt, state === 'play', mult(), comboT / comboT0());
+  trailTick(dt, state === 'play', 1 + comboTier(), comboT / comboT0());
   updateFx(dt);
 
   // ---- kalkan / sis ----
@@ -4841,7 +4844,7 @@ function takeSimit(s) {
     sparkle(tmp.set(s.x, s.y, s.z), 34, 0xffd35a, 6, 0.8, 0.3);
     chunks.emit(tmp, 10, { speed: 4, life: 0.8, size: 0.09, color: [0xffd35a, 0xfff0b0], gravity: 8 });
   } else {
-    sfx.catch(combo, mult());
+    sfx.catch(combo, 1 + comboTier());
     sparkle(tmp.set(s.x, s.y, s.z), 8, 0xffe7a8, 3, 0.45, 0.2);
     chunks.emit(tmp, 7, { speed: 3, life: 0.7, size: 0.075, color: [0xc97835, 0xf6e2b3, 0xb8642a], gravity: 9 });
     vibrate(8);
