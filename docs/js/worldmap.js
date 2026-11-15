@@ -196,7 +196,8 @@ const gull = makeGull(); { const b = new THREE.Box3().setFromObject(gull), s = n
 gull.traverse(o => { if (o.isMesh) o.castShadow = true; });
 function tickCities(dt, t) {
   for (const c of cities) if (c.tick) c.tick(dt, t);
-  const a = t * 0.28; gull.position.set(Math.sin(a) * 3.1, 3.2 + Math.sin(t * 0.9) * 0.25, ISL_ZC + Math.cos(a) * 6.2); // martı uzayan adanın çevresinde gull.rotation.set(0, a + Math.PI, -0.35); flapGull(gull, t * 1.4, 0.6, 0.4);
+  const a = t * 0.28; gull.position.set(Math.sin(a) * 3.1, 3.2 + Math.sin(t * 0.9) * 0.25, ISL_ZC + Math.cos(a) * 6.2); // martı uzayan adanın çevresinde (elips) tur atar
+  gull.rotation.set(0, Math.atan2(-Math.cos(a) * 3.1, Math.sin(a) * 6.2), 0.35); flapGull(gull, t * 1.4, 0.6, 0.4); // burnu gidiş yönüne (elipsin teğeti), içe yatık
   if (selC) { ring.position.set(selC.g.position.x, GROUND_Y + 0.16, selC.g.position.z); ring.scale.setScalar(1 + Math.abs(Math.sin(t * 3)) * 0.08); }
   tickLayer(dt, t);
   for (const c of cities) if (c.pop) { c.pop = Math.max(0, c.pop - dt * 3); const k = 1 + Math.sin(c.pop * Math.PI) * 0.12; c.g.scale.set(k, 1 / k, k); }

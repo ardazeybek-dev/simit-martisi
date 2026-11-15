@@ -27,6 +27,27 @@ function houseRing(k, n, r0, r1, cols, roof = 0xc0573e, skip = () => false) {
     k.add(new THREE.ConeGeometry(w * 0.78, 1.8, 4), roof, x, h + 0.9, z, 0, a + Math.PI / 4);
   }
 }
+// harita Truva Atı: oyuncak gibi dolgun (kalın bacaklar, tombul gövde, iri baş, koyu yele), tekerlekli tahta platformda. Yandan görünür, baş +x
+function toyHorse(k, x, y, z, s) {
+  const W1 = 0xb07a40, W2 = 0x96632f, DARK = 0x5a3a1c, band = (f, yy) => (Math.floor(yy * 1.6) % 2 ? W1 : W2);
+  k.add(box(11 * s, 0.7 * s, 5.2 * s), W2, x, y + 1.15 * s, z);                                                             // platform
+  for (const [dx, dz] of [[-3.8, 2.7], [3.8, 2.7], [-3.8, -2.7], [3.8, -2.7]]) k.add(cyl(1.05 * s, 1.05 * s, 0.4 * s, 14), DARK, x + dx * s, y + 1.05 * s, z + dz * s, Math.PI / 2).add(cyl(0.3 * s, 0.3 * s, 0.5 * s, 8), W1, x + dx * s, y + 1.05 * s, z + dz * s, Math.PI / 2); // tekerlekler
+  for (const [dx, dz] of [[2.6, 1.15], [2.6, -1.15], [-2.6, 1.15], [-2.6, -1.15]]) k.add(box(1.25 * s, 3.4 * s, 1.25 * s), band, x + dx * s, y + 3.2 * s, z + dz * s).add(box(1.45 * s, 0.55 * s, 1.45 * s), DARK, x + dx * s, y + 1.75 * s, z + dz * s); // bacaklar, toynaklar
+  const by = y + 6.4 * s;
+  k.add(new THREE.CapsuleGeometry(2.25 * s, 4.6 * s, 6, 14), (f, yy) => (Math.floor((yy + 9) * 0.9) % 2 ? W1 : W2), x, by, z, 0, 0, Math.PI / 2); // gövde
+  for (const dx of [-1.6, 1.6]) k.add(cyl(2.3 * s, 2.3 * s, 0.35 * s, 16), DARK, x + dx * s, by, z, 0, 0, Math.PI / 2);     // demir kuşaklar
+  k.add(box(2.1 * s, 4.6 * s, 1.9 * s), band, x + 4.1 * s, by + 2.6 * s, z, 0, 0, -0.45)                                    // boyun
+    .add(box(3.4 * s, 2.0 * s, 1.9 * s), W1, x + 5.9 * s, by + 4.9 * s, z, 0, 0, -0.25)                                      // baş
+    .add(box(1.5 * s, 1.4 * s, 1.75 * s), W2, x + 7.3 * s, by + 4.4 * s, z, 0, 0, -0.25)                                     // burun
+    .add(box(1.0 * s, 4.8 * s, 0.6 * s), DARK, x + 3.6 * s, by + 3.4 * s, z, 0, 0, -0.45)                                    // yele
+    .add(box(0.7 * s, 3.4 * s, 0.6 * s), DARK, x - 4.1 * s, by - 1.2 * s, z, 0, 0, 0.35);                                    // kuyruk
+  for (const sd of [-1, 1]) {
+    k.add(new THREE.ConeGeometry(0.35 * s, 1.1 * s, 4), W2, x + 5.2 * s, by + 6.2 * s, z + sd * 0.55 * s)                  // kulaklar
+      .add(new THREE.SphereGeometry(0.3 * s, 8, 6), 0x1a1410, x + 6.3 * s, by + 5.2 * s, z + sd * 0.96 * s)                // gözler
+      .add(new THREE.SphereGeometry(0.12 * s, 6, 4), 0xffffff, x + 6.4 * s, by + 5.3 * s, z + sd * 1.08 * s)
+      .add(box(1.8 * s, 1.3 * s, 0.08 * s), DARK, x - 0.2 * s, by - 0.4 * s, z + sd * 2.28 * s);                            // gizli kapak
+  }
+}
 function cypress(k, x, z, h) { k.add(new THREE.ConeGeometry(h * 0.16, h, 7), 0x2f6b3a, x, h / 2, z); }
 function palm(k, x, z, h) {
   k.add(cyl(0.25, 0.4, h, 6), 0x8a6a45, x, h / 2, z, 0, 0, 0.08);
@@ -74,10 +95,20 @@ export const DIORAMA = {
     return { g, h: 2.2 };
   },
   canakkale() { // Truva Atı taş kaidesinde, yanında küçük Saat Kulesi
-    const k = new Kit();
-    k.add(box(30, 1.6, 12), 0xcfc4ae, 0, 0.8, 0);
-    k.add(truvaGeo(false), null, -2, 1.6, 0);
-    ckClock(k, 12, 1.6, -2, 0.55);
+    // arkada Boğaz (yarım disk deniz, üstünde küçük feribot), önde Kordon: taş meydan, basamaklı kaidede Truva Atı, sağda Saat Kulesi, selviler ve fenerler
+    const k = new Kit(), SEA = 0x3f9fd0, GRASS = 0x7cc95a, SOIL = 0xb08a5a, STONE = 0xd9cfba, STONE2 = 0xbfb39a;
+    k.add(new THREE.CylinderGeometry(13, 13.4, 0.6, 32, 1, false, Math.PI / 2, Math.PI), (f, y) => (y > 0.25 ? SEA : 0x2f7fb0), 0, 0.3, 0);       // Boğaz (arka yarı)
+    k.add(new THREE.CylinderGeometry(13, 13.4, 0.9, 32, 1, false, -Math.PI / 2, Math.PI), (f, y) => (y > 0.4 ? GRASS : SOIL), 0, 0.45, 0);     // kıyı (ön yarı)
+    k.add(box(26, 0.5, 1.2), STONE2, 0, 0.75, 0.2);                                                                                            // rıhtım taşı
+    k.add(box(18, 0.12, 8), STONE, 0, 0.96, 5.2);                                                                                              // Kordon meydanı
+    for (const [w, d, y] of [[13.4, 8.2, 1.2], [12.2, 7.4, 1.6]]) k.add(box(w, 0.4, d), y > 1.4 ? STONE : STONE2, -2, y, 5.2);                 // basamaklı kaide
+    toyHorse(k, -2, 1.8, 5.2, 1);
+    ckClock(k, 7.6, 0.9, 7.6, 0.5);
+    for (const [x, z, h] of [[-11, 4.5, 5], [-10, 8.5, 4.2], [11, 2.6, 4.6], [10.4, 9.6, 3.8]]) k.add(new THREE.ConeGeometry(h * 0.17, h, 7), 0x2f6b3a, x, 0.9 + h / 2, z); // selviler
+    for (const x of [-8.4, 4.4]) { k.add(cyl(0.1, 0.12, 2.6, 6), 0x3a3f48, x, 2.2, 1.2); k.add(new THREE.SphereGeometry(0.32, 8, 6), 0xfff1c8, x, 3.6, 1.2); } // fenerler
+    // feribot: beyaz gövde, kırmızı bant, köprüüstü
+    k.add(box(7, 1.2, 2.4), 0xf6f4ee, 2, 0.9, -7).add(box(7.1, 0.3, 2.5), 0xc8352e, 2, 1.25, -7).add(box(3, 1.2, 2), 0xf6f4ee, 2.6, 2.1, -7).add(box(3.1, 0.35, 2.1), 0x2b4560, 2.6, 2.2, -7).add(cyl(0.25, 0.3, 1.2, 8), 0xc8352e, 1.2, 3, -7);
+    for (const x of [-6, -9.5, 7.5]) k.add(box(1.6, 0.06, 0.25), 0xffffff, x, 0.62, -4 - Math.abs(x) * 0.3); // dalga köpüğü
     return { g: plain([mesh(k.build())]), h: 2.2 };
   },
   trabzon() { // horon halkası: el ele yedi oyuncu, ritimle zıplar
@@ -118,7 +149,8 @@ export const DIORAMA = {
   },
   rize() { // çay bardağı kule: LED'li ince belli bardak, kırmızı tabak, denize doldurulmuş sette pist ve kalkan minik uçak; ışık halkası bardağı tırmanır
     const k = new Kit();
-    k.add(cyl(13, 13.4, 0.6, 28), 0x48b4d8, 0, 0.3, 0);                                   // deniz
+    k.add(cyl(13, 13.4, 0.6, 28), (f, y) => (y > 0.25 ? 0x7cc95a : 0xb08a5a), 0, 0.3, 0);   // kara: havalimanı ve kule çimenin üstünde
+    for (const [x0, x1] of [[-12, -7.4], [7.4, 12]]) for (let z = -7; z <= 1; z += 1.6) if (Math.hypot(x0 < 0 ? x0 + 1 : x1 - 1, z) < 12) k.add(box(x1 - x0, 0.5, 0.8), 0x3f8a36, (x0 + x1) / 2, 0.85, z); // kenarlarda çay sıraları
     k.add(box(24, 1.4, 6), 0x9a9890, 0, 0.7, 6.5).add(box(22, 0.1, 2.4), 0x3d4046, 0, 1.45, 6.5); // dolgu ve pist
     for (let x = -9; x <= 9; x += 3) k.add(box(1.4, 0.12, 0.3), 0xf4f4ee, x, 1.5, 6.5);
     k.add(cyl(6.2, 6.6, 1.6, 24), 0x9a9890, 0, 0.8, -2).add(cyl(4.6, 4, 0.6, 24), 0xc8241c, 0, 1.9, -2).add(new THREE.TorusGeometry(4.55, 0.16, 6, 28), 0xf6f2ea, 0, 2.2, -2, Math.PI / 2);
