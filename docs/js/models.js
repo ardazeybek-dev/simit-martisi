@@ -3011,6 +3011,37 @@ export const TITLE_SETS = {
     terrain(far, -520, -150, 50, 200, 50, 24, hB, (x, y, z) => mixHex(mixHex(0x5f7a55, 0x8b9483, ramp(30, 80, y)), HZ, 0.22));
     return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
   },
+  mersin() { // ön: Mersin kordonu, rıhtımda narenciye teknesi ve kasa yığınları, palmiyeler; solda denizde Kızkalesi · orta: düz kıyı ovası, sık yüksek apartmanlar,
+    // Mersin Metropol kulesi, kıyıda Soli'nin sütunlu caddesi · arka: mavi-gri Toroslar, zirvede az kar
+    const near = new Kit(), mid = new Kit(), far = new Kit();
+    const shore = x => 14 + 1.5 * Math.sin(x * 0.015);
+    const hM = (x, z) => { const d = z - shore(x); return -1 + 2.6 * ramp(-0.5, 3, d) + (5 + 7 * fbm(x * 0.02, z * 0.03)) * ramp(30, 150, d) + 0.8 * fbm(x * 0.06, z * 0.06) * ramp(2, 20, d); };
+    terrain(mid, -340, 340, -2, 150, 136, 60, hM, (x, y, z) => (y < 1 && x < -120 ? 0xe6d6ae : mixHex(mixHex(0xcfc4a0, 0xb8b088, ramp(2, 10, y)), 0x7fa058, ramp(0.5, 0.66, fbm(x * 0.05 + 3, z * 0.05)))));
+    // kordon: taş rıhtım, yanaşık narenciye teknesi, rıhtımda renk renk kasa yığınları, palmiye sırası
+    quay(near, -120, 330, 0xd8d2c2, 0x55524a, 0xc2baa8);
+    near.add(narBoatGeo(), null, 80, 0, -5.4, 0, Math.PI / 2, 0, 0.8);
+    for (let x = 40; x < 125; x += rand(5, 8)) near.add(crateStackGeo((Math.random() * 3) | 0), null, x, 1.2, rand(5, 7.5), 0, rand(-0.3, 0.3), 0, 1.7);
+    for (const [x0, n] of [[-100, 4], [150, 5], [230, 4]]) for (let i = 0; i < n; i++) boat(near, x0 + i * rand(3.2, 4.4), -3.4, rand(-0.12, 0.12));
+    for (let x = -330; x < 330; x += rand(8, 13)) { const z = x < -120 ? rand(16, 22) : rand(10, 13); palm(x < -120 ? mid : near, x, x < -120 ? hM(x, z) : 1.2, z, rand(7.5, 11)); }
+    // Kızkalesi: solda kumsalın açığında, kayalık adacıkta sur dörtgeni
+    const q = kaleGeo(0, true);
+    for (const g of [q.body, q.front, q.back]) near.add(g, null, -205, -0.4, -6, 0, 0.35, 0, 1.25);
+    // Soli: kıyıda sütunlu cadde, kimi tam boy (başlıklı), kimi kırık
+    for (let x = -112; x < -36; x += 6.5) for (const z of [24, 34]) { const y = hM(x, z) - 0.2; mid.add(new THREE.BoxGeometry(1.7, 0.5, 1.7), 0xc0ad89, x, y + 0.25, z); colShaft(mid, x, y + 0.5, z, Math.random() < 0.65 ? 9.5 : rand(2.5, 6), Math.random() < 0.65); }
+    // kent: düz ovada sık, yüksek, beyaz-krem apartmanlar
+    houses(mid, scatter(-330, 330, 30, 150, 8, (x, z) => hM(x, z) > 1.2 && !(x > -120 && x < -28 && z < 46) && Math.hypot(x - 40, z - 70) > 12), hM, { flat: 0.95, h: [8, 26], s: 1.3, cols: [0xf7f4ec, 0xf1ece0, 0xeae2d0, 0xf4e9d4, 0xe6e2da, 0xdfe8ec], lit: 0.06 });
+    for (const [x, z] of scatter(-330, 330, 26, 150, 14, (x, z) => hM(x, z) > 1.5 && fbm(x * 0.05 + 4, z * 0.05) > 0.58)) tree(mid, x, hM(x, z), z, rand(0.8, 1.1));
+    // Mersin Metropol: kentin üstünde yükselen ince cam kule, tepede taç ve sivri uç
+    const mx = 40, mz = 70, my = hM(mx, mz);
+    mid.add(new THREE.CylinderGeometry(4.2, 4.8, 70, 8), (f, y) => (Math.floor((y + 40) / 2.4) % 2 ? 0x6f93b4 : 0xd9dfe4), mx, my + 35, mz, 0, Math.PI / 8, 0)
+      .add(new THREE.CylinderGeometry(5.2, 4.4, 4, 8), 0xe8ecef, mx, my + 72, mz, 0, Math.PI / 8, 0)
+      .add(new THREE.ConeGeometry(1.2, 16, 8), 0xdfe4e8, mx, my + 82, mz);
+    // arka: Toroslar (sırtlı, mavi-gri, zirvelerde az kar)
+    const HZ = 0xdde8ee, ridged = (x, z) => 1 - Math.abs(fbm(x, z) * 2 - 1);
+    const hT = (x, z) => -1 + ramp(165, 220, z) * (40 + 95 * ridged(x * 0.006 + 2, z * 0.011));
+    terrain(far, -520, 520, 160, 340, 140, 30, hT, (x, y, z) => mixHex(mixHex(mixHex(0x8a8466, 0x8a96a8, ramp(25, 80, y)), HZ, 0.25), 0xf6f9fc, ramp(104, 112, y + (fbm(x * 0.05, z * 0.05) - 0.5) * 20)));
+    return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
+  },
   mugla() { // ön: Bodrum limanı, kıçtan rıhtıma bağlı guletler, balıkçı kayıkları · orta: burunda Bodrum Kalesi, yamaca tırmanan beyaz kübik evler, begonviller, antik tiyatro · arka: yel değirmenli sırt
     const near = new Kit(), mid = new Kit(), far = new Kit();
     const pen = x => Math.exp(-(((x + 30) / 24) ** 2)); // kale burnu

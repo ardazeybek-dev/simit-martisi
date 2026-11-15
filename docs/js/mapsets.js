@@ -4,7 +4,7 @@
 // userData.tick(dt, t): canlılık. Ayar: H (maketin haritadaki yüksekliği).
 import * as THREE from 'three';
 import { Kit, vcMat, teaGlassProfile, teaGlassLedTex } from './util.js';
-import { makeWindmill, makeFalls, truvaGeo, bandirmaGeo, horonDancerGeo, BEACH_COLS, ckClock, konakTower, ringTex, planeGeo } from './models.js';
+import { makeWindmill, makeFalls, truvaGeo, bandirmaGeo, horonDancerGeo, BEACH_COLS, ckClock, konakTower, ringTex, planeGeo, kaleGeo } from './models.js';
 
 const cyl = (rt, rb, h, n = 16) => new THREE.CylinderGeometry(rt, rb, h, n);
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
@@ -104,6 +104,17 @@ export const DIORAMA = {
     const g = plain([ship, mesh(k.build(), false)]); ship.position.y = 0.2;
     g.userData.tick = (dt, t) => { ship.rotation.z = Math.sin(t * 1.2) * 0.02; ship.position.y = 0.2 + Math.sin(t * 1.5) * 0.15; };
     return { g, h: 1.5 };
+  },
+  mersin() { // Kızkalesi: denizde kayalık adacık, köşeleri yuvarlak burçlu sur, iki kemerli kapı; kıyıda iki Soli sütunu
+    const k = new Kit();
+    k.add(cyl(13, 13.4, 0.6, 28), 0x48b4d8, 0, 0.3, 0);
+    k.add(box(24, 1.4, 5), 0xe6d6ae, 0, 0.7, 8);
+    for (const x of [-6, -3, 6]) k.add(cyl(0.45, 0.5, x === -3 ? 2.2 : 4.2, 10), 0xe8dcc4, x, 1.4 + (x === -3 ? 1.1 : 2.1), 8).add(box(1.2, 0.3, 1.2), 0xe8dcc4, x, x === -3 ? 3.5 : 5.6, 8);
+    const q = kaleGeo(0, true);
+    for (const g of [q.body, q.front, q.back]) k.add(g, null, 0, 0.5, -1.5, 0, 0.3, 0, 0.56);
+    const g = plain([mesh(k.build())]);
+    g.userData.tick = (dt, t) => { g.position.y = Math.sin(t * 1.1) * 0.03; };
+    return { g, h: 3.4 };
   },
   rize() { // çay bardağı kule: LED'li ince belli bardak, kırmızı tabak, denize doldurulmuş sette pist ve kalkan minik uçak; ışık halkası bardağı tırmanır
     const k = new Kit();
