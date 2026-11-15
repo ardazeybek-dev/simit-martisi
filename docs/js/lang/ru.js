@@ -19,3 +19,4 @@ window.I18N_ADD('ru', {"Hamsi!": "Хамса!"});
 window.I18N_ADD('ru', {"Dünya Haritası": "Карта мира", "Geri": "Назад", "Yakınlaştır": "Приблизить", "Uzaklaştır": "Отдалить", "Amerika": "Америка", "Japonya": "Япония", "Güney Afrika": "Южная Африка"});
 window.I18N_ADD('ru', {"Tebrikler! Rize açıldı!": "Отлично! Ризе открыт!", "Rize kıyısını baştan sona uçtun!": "Ты пролетел всё побережье Ризе!", "Samsun'u bitirince açılır": "Откроется, когда пройдёшь Самсун", "Tebrikler! Mersin açıldı!": "Отлично! Мерсин открыт!", "Mersin kıyısını baştan sona uçtun!": "Ты пролетел всё побережье Мерсина!", "Rize'yi bitirince açılır": "Откроется, когда пройдёшь Ризе"});
 window.I18N_ADD('ru', {"Çay mavnasına çarptın!": "Ты врезался в баржу с чаем!"});
+window.I18N_ADD('ru', {"Kızkalesi surlarına çarptın!": "Ты врезался в стены Кызкалеси!", "Devrilen sütuna çarptın!": "Тебя задела падающая колонна!"});

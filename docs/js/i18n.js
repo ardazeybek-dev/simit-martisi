@@ -1019,6 +1019,9 @@
   Object.assign(EN, {"Bandırma Vapuruna çarptın!": "You hit the Bandırma steamer!", "Vinç halatına takıldın!": "Caught on the crane cable!"});
   Object.assign(DE, {"Bandırma Vapuruna çarptın!": "Gegen den Dampfer Bandırma geprallt!", "Vinç halatına takıldın!": "Im Kranseil hängen geblieben!"});
   Object.assign(ES, {"Bandırma Vapuruna çarptın!": "¡Chocaste con el vapor Bandırma!", "Vinç halatına takıldın!": "¡Te enredaste en el cable de la grúa!"});
+  Object.assign(EN, {"Kızkalesi surlarına çarptın!": "You hit the walls of Kızkalesi!", "Devrilen sütuna çarptın!": "A falling column got you!"});
+  Object.assign(DE, {"Kızkalesi surlarına çarptın!": "Gegen die Mauern von Kızkalesi geprallt!", "Devrilen sütuna çarptın!": "Von einer stürzenden Säule getroffen!"});
+  Object.assign(ES, {"Kızkalesi surlarına çarptın!": "¡Chocaste con las murallas de Kızkalesi!", "Devrilen sütuna çarptın!": "¡Te alcanzó una columna al caer!"});
   Object.assign(EN, {"Çay mavnasına çarptın!": "You hit the tea barge!"});
   Object.assign(DE, {"Çay mavnasına çarptın!": "Gegen den Teekahn geprallt!"});
   Object.assign(ES, {"Çay mavnasına çarptın!": "¡Chocaste con la barcaza de té!"});

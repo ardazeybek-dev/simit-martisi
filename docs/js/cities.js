@@ -71,7 +71,7 @@ export const CITIES = [
       ['Pazar', 9000, "Pazar'a", 330], ['Yeşilköy', 10800, "Yeşilköy'e", 405], ['Ardeşen', 13500, "Ardeşen'e", 510], ['Fındıklı', 17500, "Fındıklı'ya", 2000]],
   },
   {
-    id: 'mersin', name: 'Mersin', mult: 1.8, hard: 4.4, hunger: 4.4, rivK: 0.4, wx: [1.4, 0.6, 0.5, 0], opened: 'Tebrikler! Mersin açıldı!', routeKey: 'simit-martisi-route-mersin', bait: 'simit', kale: true, end: 'Mersin kıyısını baştan sona uçtun!', after: "Rize'yi bitirince açılır",
+    id: 'mersin', name: 'Mersin', mult: 1.8, hard: 4.4, hunger: 4.4, rivK: 0.4, wx: [1.4, 0.6, 0.5, 0], opened: 'Tebrikler! Mersin açıldı!', routeKey: 'simit-martisi-route-mersin', bait: 'simit', kale: true, sutun: true, end: 'Mersin kıyısını baştan sona uçtun!', after: "Rize'yi bitirince açılır",
     stops: [['Mersin Limanı', 0, "Mersin Limanı'na", 0], ['Kültür Parkı', 700, "Kültür Parkı'na", 70], ['Marina', 1500, "Marina'ya", 95], ['Yenişehir', 2400, "Yenişehir'e", 120],
       ['Mezitli', 3400, "Mezitli'ye", 150], ['Soli', 4700, "Soli'ye", 185], ['Tece', 6000, "Tece'ye", 230], ['Davultepe', 7400, "Davultepe'ye", 280],
       ['Tömük', 9000, "Tömük'e", 340], ['Erdemli', 10800, "Erdemli'ye", 415], ['Ayaş', 13500, "Ayaş'a", 520], ['Kızkalesi', 18000, "Kızkalesi'ne", 2100]],

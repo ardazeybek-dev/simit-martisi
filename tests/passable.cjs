@@ -1,13 +1,13 @@
 // Passability check: can a perfect player (knows the whole route, steers at most VLAT units/s sideways) get through?
 // Static obstacles (chimneys, masts, salon glass) plus crossing sailboats and pirate boats (their x follows the gull's z, so it is exact).
-// Rivals and kites move with time and are left out. Needs the game served on 8765 (python serve.py).
+// Rivals and kites move with time and are left out. Needs the game served on 8765 (python serve.py; PORT=8777 for another port).
 // Usage: node tests/passable.cjs [runs] [km] [city,...]   (VLAT=17 by default; VLAT=0 must report failures: sanity check)
 const path = require('path');
 const NPM = path.join(process.env.APPDATA || '', 'npm/node_modules');
 let playwright;
 for (const p of [path.join(NPM, '@playwright/cli/node_modules/playwright'), path.join(NPM, 'playwright'), 'playwright']) { try { playwright = require(p); break; } catch (e) {} }
 const { chromium } = playwright;
-const RUNS = +process.argv[2] || 3, KM = +process.argv[3] || 25, CITIES = (process.argv[4] || 'istanbul,izmir,antalya,mugla,canakkale,trabzon,samsun,rize').split(',');
+const RUNS = +process.argv[2] || 3, KM = +process.argv[3] || 25, CITIES = (process.argv[4] || 'istanbul,izmir,antalya,mugla,canakkale,trabzon,samsun,rize,mersin').split(',');
 const VLAT = process.env.VLAT !== undefined ? +process.env.VLAT : 17, EDGE = 3.85, FLY_Y = 5.15, OBSK = 0.08, DX = 0.05, DZ = 0.4;
 const SPEED_MAX = 43, clamp = (v, a, b) => Math.max(a, Math.min(b, v)); // hız formülü main.js spdCap ile aynı kalmalı
 const overAt = m => clamp((m - 6500) / 7000, 0, 2), spdCap = m => SPEED_MAX * (1 + 0.16 * Math.min(1.3, overAt(m)));
@@ -19,7 +19,7 @@ const spdAt = m => SPD[clamp(Math.round(m / 100), 0, SPD.length - 1)] * cityK(m)
 
 function solve(w) {
   const NX = Math.round(2 * EDGE / DX) + 1, X = i => -EDGE + i * DX;
-  const stat = w.obs.filter(o => o.top > FLY_Y && (o.kind !== 'yelkene' || o.fix) && o.kind !== 'korsana' && o.kind !== 'gulete' && o.kind !== 'feribota' && o.kind !== 'mavnaya' && o.kind !== 'dalgaya' && o.kind !== 'paraşüt ipine' && o.kind !== 'teleferiğe' && o.kind !== 'vince'); // gulet, feribot, çay mavnası ve dalga korsan gibi kayar (movAll); yarış yelkenlisi (fix) yerinde durur; paraşüt ipi, teleferik sepet ipi ve vinç halatı kayar ve incedir, kapatamaz
+  const stat = w.obs.filter(o => o.top > FLY_Y && (o.kind !== 'yelkene' || o.fix) && o.kind !== 'korsana' && o.kind !== 'gulete' && o.kind !== 'feribota' && o.kind !== 'mavnaya' && o.kind !== 'sütuna' && o.kind !== 'dalgaya' && o.kind !== 'paraşüt ipine' && o.kind !== 'teleferiğe' && o.kind !== 'vince'); // gulet, feribot, çay mavnası ve dalga korsan gibi kayar (movAll); yarış yelkenlisi (fix) yerinde durur; paraşüt ipi, teleferik sepet ipi ve vinç halatı kayar ve incedir, kapatamaz
   // z'ye göre sıralı statik engeller: tarama penceresi
   stat.sort((a, b) => b.z - a.z);
   const tail = w.tempo.filter(t => t.kind === 'tail'), calm = w.tempo.filter(t => t.kind === 'calm');
@@ -42,6 +42,7 @@ function solve(w) {
     for (const o of active) if (Math.abs(z - o.z) < o.hd + OBSK) boxes.push([o.x - o.hw - OBSK, o.x + o.hw + OBSK, o.kind]);
     for (const c of w.mov.sails) if (Math.abs(z - c.z) < 0.45 + OBSK) { const cx = c.xa + c.side * clamp((z - c.z) * c.k, -6, 9) + c.side * 1.0; boxes.push([cx - 1.21 - OBSK, cx + 1.21 + OBSK, 'yelkene']); }
     for (const p of w.mov.pirates) { const x = p.xa + p.side * Math.max(-40, z - p.z) * p.k; for (const q of p.os) if (q.top > FLY_Y && Math.abs(z - q.z) < q.hd + OBSK) boxes.push([x + q.off - q.hw - OBSK, x + q.off + q.hw + OBSK, 'korsana']); }
+    for (const c of w.mov.cols || []) if (Math.abs(z - c.z) < c.hd + OBSK) { const q = c.at[clamp(Math.round((z - c.z) / 0.1) + 10, 0, 20)]; if (q) boxes.push([q[0] - OBSK, q[1] + OBSK, 'sütuna']); } // devrilen sütun: x martının z'sine bağlı
     for (const [a, b] of boxes) for (let i = Math.max(0, Math.ceil((a + EDGE) / DX)); i < NX && X(i) < b; i++) nr[i] = 0;
     let any = 0; for (let i = 0; i < NX; i++) any += nr[i];
     if (boxes.length && any * DX < minFree) { minFree = any * DX; minAt = m; }
@@ -55,9 +56,9 @@ function solve(w) {
   const b = await chromium.launch({ args: ['--mute-audio'] });
   const p = await b.newPage({ viewport: { width: 390, height: 844 } });
   await p.route('**/rest/v1/**', r => r.abort());
-  await p.addInitScript(() => { for (const [k, v] of Object.entries({ 'simit-martisi-reset-2026-10-31': '1', 'simit-martisi-eco-reset-2026-11-09': '1', 'simit-martisi-tut': 'true', 'simit-martisi-route': '99', 'simit-martisi-route-izmir': '99' })) localStorage.setItem(k, v); });
+  await p.addInitScript(() => { for (const [k, v] of Object.entries({ 'simit-martisi-reset-2026-10-31': '1', 'simit-martisi-eco-reset-2026-11-09': '1', 'simit-martisi-tut': 'true', 'simit-martisi-route': '99', 'simit-martisi-route-izmir': '99', ...Object.fromEntries(['antalya', 'mugla', 'canakkale', 'trabzon', 'samsun', 'rize', 'mersin'].map(c => ['simit-martisi-route-' + c, '99'])) })) localStorage.setItem(k, v); });
   p.on('pageerror', e => console.log('PAGEERR', e.message));
-  await p.goto('http://localhost:8765/?q=0' + (process.env.QS || ''));
+  await p.goto(`http://localhost:${process.env.PORT || 8765}/?q=0` + (process.env.QS || ''));
   await p.waitForFunction(() => window.__game && __game.state === 'title', null, { timeout: 30000 });
   let total = 0;
   for (const city of CITIES) for (let r = 0; r < RUNS; r++) {

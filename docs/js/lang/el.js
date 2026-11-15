@@ -19,3 +19,4 @@ window.I18N_ADD('el', {"Hamsi!": "Γαύρος!"});
 window.I18N_ADD('el', {"Dünya Haritası": "Παγκόσμιος χάρτης", "Geri": "Πίσω", "Yakınlaştır": "Μεγέθυνση", "Uzaklaştır": "Σμίκρυνση", "Amerika": "Αμερική", "Japonya": "Ιαπωνία", "Güney Afrika": "Νότια Αφρική"});
 window.I18N_ADD('el', {"Tebrikler! Rize açıldı!": "Μπράβο! Το Ριζέ άνοιξε!", "Rize kıyısını baştan sona uçtun!": "Πέταξες όλη την ακτή του Ριζέ!", "Samsun'u bitirince açılır": "Ανοίγει όταν τελειώσεις τη Σαμψούντα", "Tebrikler! Mersin açıldı!": "Μπράβο! Η Μερσίνα άνοιξε!", "Mersin kıyısını baştan sona uçtun!": "Πέταξες όλη την ακτή της Μερσίνας!", "Rize'yi bitirince açılır": "Ανοίγει όταν τελειώσεις το Ριζέ"});
 window.I18N_ADD('el', {"Çay mavnasına çarptın!": "Χτύπησες τη φορτηγίδα με το τσάι!"});
+window.I18N_ADD('el', {"Kızkalesi surlarına çarptın!": "Χτύπησες στα τείχη του Κιζκαλεσί!", "Devrilen sütuna çarptın!": "Σε χτύπησε μια κολόνα που έπεφτε!"});

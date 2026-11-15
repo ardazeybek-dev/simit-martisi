@@ -3574,5 +3574,52 @@ function kaleGeo_(off = 0, mini = false) {
 // sur kamerayla martının arasına girince saydamlaşır (avluda martı görünsün): ön ve arka sur ayrı malzeme, yalnız o sırada takılır
 export const kaleFadeMats = [0, 1].map(() => Object.assign(vcMat.clone(), { transparent: true, opacity: 1, depthWrite: false }));
 
+// ---------------- Soli sütunları (Mersin) ----------------
+// Soli Pompeiopolis'in sütunlu caddesi denize taşmış: şeridin iki yanında taş temel (stylobat) üstünde yivli Korint sütunları, kimi tam boy (başlıklı,
+// arada bir arşitrav kirişi), kimi kırık. Devrilecek sütunlar ayrı (colGeo: kaidesiz, dönme noktası gövdenin dibinde); onların kaidesi sırada kalır.
+// colonnadeGeo(pat): COL_FALL[pat] yuvalarında yalnız kaide. Yuvalar COL_SLOT aralıkla, yerel z = -yuva * COL_SLOT. Yerel x: sütun ekseni ±COL_X
+export const COL_L = 11.5, COL_R = 0.6, COL_X = 5.8, COL_Y = 0.6, COL_SLOT = 7.5, COL_SLOTS = 16;
+export const COL_FALL = [[[1, 4], [-1, 8], [1, 12]], [[-1, 4], [1, 8], [-1, 12]], [[1, 4], [1, 8], [-1, 12]], [[-1, 4], [-1, 8], [1, 12]], [[1, 4], [-1, 8], [-1, 12]]];
+const MARB = 0xe8dcc4, MARB2 = 0xd6c6a6, MARB3 = 0xc0ad89;
+const flutes = f => ((f >> 1) % 2 ? MARB : MARB2);
+function colShaft(k, x, y, z, h, cap) { // gövde (yivli), başlık (yapraklı çan + abaküs); y: gövdenin dibi
+  k.add(new THREE.CylinderGeometry(COL_R * 0.9, COL_R, h, 16, 1, !cap), flutes, x, y + h / 2, z);
+  if (!cap) { k.add(new THREE.CylinderGeometry(COL_R * 0.92, COL_R * 0.92, 0.5, 16), MARB3, x, y + h - 0.2, z, rand(-0.3, 0.3), 0, rand(-0.3, 0.3)); return; } // kırık ağız
+  const t = y + h;
+  k.add(new THREE.CylinderGeometry(COL_R * 1.02, COL_R * 1.02, 0.14, 16), MARB3, x, t + 0.07, z)
+    .add(new THREE.CylinderGeometry(0.88, COL_R * 0.92, 0.8, 8), f => (f % 4 < 2 ? MARB : 0xcabb98), x, t + 0.5, z, 0, Math.PI / 8, 0) // akantus çanı
+    .add(new THREE.BoxGeometry(1.9, 0.3, 1.9), MARB, x, t + 1.05, z);
+  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; k.add(new THREE.BoxGeometry(0.28, 0.32, 0.28), MARB2, x + Math.cos(a) * 0.82, t + 0.78, z + Math.sin(a) * 0.82, 0, -a, 0); } // köşe sarmalları
+}
+function colBase(k, x, z) { k.add(new THREE.BoxGeometry(1.7, 0.36, 1.7), MARB3, x, COL_Y + 0.18, z).add(new THREE.CylinderGeometry(0.82, 0.86, 0.26, 16), MARB2, x, COL_Y + 0.49, z); }
+const COL_CAPH = 1.2, COL_BASEH = 0.62;
+export const COL_PIV = COL_Y + COL_BASEH, COL_FL = COL_L - COL_BASEH;
+let colG = null;
+export function colGeo() { // devrilen sütun: dibi (0,0,0) kaidenin üstünde (COL_PIV), boyu COL_FL (başlık dahil)
+  if (colG) return colG;
+  const k = new Kit(); colShaft(k, 0, 0, 0, COL_L - COL_CAPH - COL_BASEH, true);
+  return (colG = k.build());
+}
+const colonCache = {};
+export function colonnadeGeo(...a) { return pureCall(colonnadeGeo_, a); }
+function colonnadeGeo_(pat) {
+  if (colonCache[pat]) return colonCache[pat];
+  const k = new Kit(), fall = COL_FALL[pat] || [], len = COL_SLOTS * COL_SLOT;
+  for (const sd of [-1, 1]) {
+    const x = sd * COL_X;
+    k.add(new THREE.BoxGeometry(2.6, 1.0, len + 6), (f, y) => (y > 0.3 ? MARB3 : 0x9d927e), x + sd * 0.2, COL_Y - 0.5, -len / 2); // taş temel (dalgaya oturur)
+    let prevFull = false;
+    for (let i = 0; i <= COL_SLOTS; i++) {
+      const z = -i * COL_SLOT; colBase(k, x, z);
+      if (fall.some(([s, j]) => s === sd && j === i)) { prevFull = false; continue; }
+      const r = Math.random();
+      if (r < 0.58) { colShaft(k, x, COL_Y + COL_BASEH, z, COL_L - COL_CAPH - COL_BASEH, true); if (prevFull && Math.random() < 0.55) k.add(new THREE.BoxGeometry(1.5, 0.9, COL_SLOT + 1.2), (f, y) => (y > COL_L + 0.9 ? MARB : MARB2), x, COL_Y + COL_L + 0.45, z + COL_SLOT / 2); prevFull = true; } // arşitrav
+      else if (r < 0.88) { colShaft(k, x, COL_Y + COL_BASEH, z, rand(2.2, 6.5), false); prevFull = false; } // kırık
+      else { k.add(new THREE.CylinderGeometry(COL_R, COL_R, 1.1, 16), MARB2, x - sd * 1.6, 0.9, z + rand(-1.5, 1.5), Math.PI / 2, rand(-0.5, 0.5), 0); prevFull = false; } // devrik tambur (temelin yanında)
+    }
+  }
+  return (colonCache[pat] = k.build());
+}
+
 // dünya haritası dioramaları (mapsets.js) bu menü parçalarını kullanır
 export { tree as mapTree, ckClock, konakTower };

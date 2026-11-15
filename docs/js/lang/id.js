@@ -19,3 +19,4 @@ window.I18N_ADD('id', {"Hamsi!": "Ikan teri!"});
 window.I18N_ADD('id', {"Dünya Haritası": "Peta Dunia", "Geri": "Kembali", "Yakınlaştır": "Perbesar", "Uzaklaştır": "Perkecil", "Amerika": "Amerika", "Japonya": "Jepang", "Güney Afrika": "Afrika Selatan"});
 window.I18N_ADD('id', {"Tebrikler! Rize açıldı!": "Hebat! Rize terbuka!", "Rize kıyısını baştan sona uçtun!": "Kamu terbang menyusuri seluruh pantai Rize!", "Samsun'u bitirince açılır": "Terbuka setelah menyelesaikan Samsun", "Tebrikler! Mersin açıldı!": "Hebat! Mersin terbuka!", "Mersin kıyısını baştan sona uçtun!": "Kamu terbang menyusuri seluruh pantai Mersin!", "Rize'yi bitirince açılır": "Terbuka setelah menyelesaikan Rize"});
 window.I18N_ADD('id', {"Çay mavnasına çarptın!": "Kamu menabrak tongkang teh!"});
+window.I18N_ADD('id', {"Kızkalesi surlarına çarptın!": "Kamu menabrak tembok Kızkalesi!", "Devrilen sütuna çarptın!": "Kamu tertimpa tiang yang roboh!"});

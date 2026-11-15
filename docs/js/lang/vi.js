@@ -19,3 +19,4 @@ window.I18N_ADD('vi', {"Hamsi!": "Cá cơm!"});
 window.I18N_ADD('vi', {"Dünya Haritası": "Bản đồ thế giới", "Geri": "Quay lại", "Yakınlaştır": "Phóng to", "Uzaklaştır": "Thu nhỏ", "Amerika": "Châu Mỹ", "Japonya": "Nhật Bản", "Güney Afrika": "Nam Phi"});
 window.I18N_ADD('vi', {"Tebrikler! Rize açıldı!": "Giỏi lắm! Rize đã mở!", "Rize kıyısını baştan sona uçtun!": "Bạn đã bay hết bờ biển Rize!", "Samsun'u bitirince açılır": "Mở khi hoàn thành Samsun", "Tebrikler! Mersin açıldı!": "Giỏi lắm! Mersin đã mở!", "Mersin kıyısını baştan sona uçtun!": "Bạn đã bay hết bờ biển Mersin!", "Rize'yi bitirince açılır": "Mở khi hoàn thành Rize"});
 window.I18N_ADD('vi', {"Çay mavnasına çarptın!": "Bạn đâm vào sà lan chở trà!"});
+window.I18N_ADD('vi', {"Kızkalesi surlarına çarptın!": "Bạn đâm vào tường thành Kızkalesi!", "Devrilen sütuna çarptın!": "Bạn bị cột đá đổ trúng!"});

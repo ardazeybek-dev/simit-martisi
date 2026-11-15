@@ -19,3 +19,4 @@ window.I18N_ADD('az', {"Hamsi!": "Hamsi!"});
 window.I18N_ADD('az', {"Dünya Haritası": "Dünya xəritəsi", "Geri": "Geri", "Yakınlaştır": "Yaxınlaşdır", "Uzaklaştır": "Uzaqlaşdır", "Amerika": "Amerika", "Japonya": "Yaponiya", "Güney Afrika": "Cənubi Afrika"});
 window.I18N_ADD('az', {"Tebrikler! Rize açıldı!": "Təbriklər! Rize açıldı!", "Rize kıyısını baştan sona uçtun!": "Rize sahilini başdan-başa uçdun!", "Samsun'u bitirince açılır": "Samsunu bitirəndə açılır", "Tebrikler! Mersin açıldı!": "Təbriklər! Mersin açıldı!", "Mersin kıyısını baştan sona uçtun!": "Mersin sahilini başdan-başa uçdun!", "Rize'yi bitirince açılır": "Rizeni bitirəndə açılır"});
 window.I18N_ADD('az', {"Çay mavnasına çarptın!": "Çay barjasına çırpıldın!"});
+window.I18N_ADD('az', {"Kızkalesi surlarına çarptın!": "Qız qalasının divarlarına çırpıldın!", "Devrilen sütuna çarptın!": "Yıxılan sütuna çırpıldın!"});
