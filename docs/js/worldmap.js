@@ -10,7 +10,7 @@ import { makeGull, flapGull } from './models.js';
 import { DIORAMA, fit, islandDecor, HILLS } from './mapsets.js';
 
 const D_MIN = 11, D_MAX = 95, D_HOME = 25, PITCH = 1.1; // ~63° yukarıdan: uzun maketler üstteki şehrin etiketine binmesin
-const BOUNDS = { x0: -22, x1: 22, z0: -26, z1: 24 }; // uzak adalar (FAR) da kaydırılarak görülebilsin
+const BOUNDS = { x0: -24, x1: 27, z0: -28, z1: 28 }; // uzak adalar (FAR) da kaydırılarak görülebilsin
 const SEA = 0x3aa7d6, SKY = 0x7fd0ee;
 
 const scene = new THREE.Scene();
@@ -202,11 +202,12 @@ function tickCities(dt, t) {
   tickLayer(dt, t);
   for (const c of cities) if (c.pop) { c.pop = Math.max(0, c.pop - dt * 3); const k = 1 + Math.sin(c.pop * Math.PI) * 0.12; c.g.scale.set(k, 1 / k, k); }
   const far = map.d > 42;
+  if (farCloud) farCloud.position.y = Math.sin(t * 0.5) * 0.15; // bulutlar hep birlikte hafifçe kabarıp iner
+  const fs = THREE.MathUtils.clamp(36 / map.d, 0.5, 1); // ülke etiketleri uzaklaştıkça küçülür (yan yana ülkelerde üst üste binmesin)
   for (const f of farIs) {
-    f.cloud.position.y = Math.sin(t * 0.5 + f.x) * 0.15; f.cloud.rotation.y = Math.sin(t * 0.15 + f.z) * 0.08;
     const s = mapToScreen(f.pos), off = s.back || s.x < -80 || s.x > innerWidth + 80 || s.y < -30 || s.y > innerHeight + 30;
     f.label.style.display = off ? 'none' : '';
-    if (!off) f.label.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) translate(-50%, -50%)`;
+    if (!off) f.label.style.transform = `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) translate(-50%, -50%) scale(${fs.toFixed(2)})`;
   }
   for (const c of cities) {
     const s = mapToScreen(c.pos), off = far || s.back || s.x < -60 || s.x > innerWidth + 60 || s.y < -30 || s.y > innerHeight + 30;
@@ -324,33 +325,96 @@ function tickLayer(dt, t) {
 }
 
 // ---- uzak dünya ----
-// Uzaklaşınca Türkiye'nin çevresinde bulutlu adalar: henüz açılmayan ülkeler, üstlerinde "Yakında". Yer: [x, z, yarıçapX, yarıçapZ, çimen rengi]
-const FAR = [
-  { id: 'america', at: [-11, -4, 4.0, 3.3, 0x86c95e] },
+// Uzaklaşınca Türkiye'nin çevresinde bulutlu adalar: henüz açılmayan ülkeler, üstlerinde "Yakında". Kabaca gerçek yerlerinde (-z kuzey, +x doğu).
+// Yer: [x, z, yarıçapX, yarıçapZ, çimen rengi]. Her ülkenin çevresinde birkaç adacık, açık denizde de serpiştirilmiş adacıklar (kimi palmiyeli).
+// Hepsi tek gövdede birleşir (köpük, kum, çimen, bulut, ağaç: 5 çizim): ada sayısı artsa da harita kasmaz
+export const FAR = [
+  { id: 'canada', at: [-15, -16, 4.2, 3.0, 0x7fbf6a] },
+  { id: 'america', at: [-12, -4.5, 4.0, 3.2, 0x86c95e] },
+  { id: 'mexico', at: [-16, 4.5, 2.2, 1.7, 0xb8c46a] },
+  { id: 'brazil', at: [-11, 13.5, 3.4, 3.6, 0x5fb54e] },
+  { id: 'argentina', at: [-13, 22.5, 1.8, 3.2, 0x9cc46a] },
+  { id: 'uk', at: [-7.5, -19.5, 1.3, 2.0, 0x79c46a] },
+  { id: 'spain', at: [-11.5, -10.2, 1.7, 1.3, 0xc4c070] },
+  { id: 'france', at: [-7.2, -13.2, 1.7, 1.6, 0x86c95e] },
+  { id: 'germany', at: [-3.4, -16.4, 1.6, 1.6, 0x7cc265] },
+  { id: 'italy', at: [-7, 4.2, 1.0, 2.4, 0x9cc46a] },
+  { id: 'greece', at: [-7.4, 10.4, 1.1, 1.0, 0xb5c46a] },
+  { id: 'russia', at: [2.5, -23, 6.6, 2.6, 0x8cc88a] },
+  { id: 'azerbaijan', at: [7.2, -8, 1.3, 1.1, 0xa8c46a] },
+  { id: 'china', at: [16.5, -8, 4.2, 3.6, 0x86c95e] },
+  { id: 'korea', at: [14.8, -16, 1.0, 1.8, 0x7fbf6a] },
   { id: 'japan', at: [10, -16, 1.9, 4.0, 0x8fd07a] },
-  { id: 'safrica', at: [4, 13, 3.5, 2.7, 0xb5c96a] },
+  { id: 'india', at: [12.5, 3, 2.8, 3.0, 0xa8c46a] },
+  { id: 'saudi', at: [7.4, 8.6, 1.8, 1.4, 0xd8c88a] },
+  { id: 'egypt', at: [-2.6, 10.2, 1.7, 1.3, 0xd2c27a] },
+  { id: 'africa', at: [3.6, 15.4, 4.4, 3.5, 0xb5c96a] },
+  { id: 'indonesia', at: [16, 10.5, 2.4, 1.0, 0x5fb54e] },
+  { id: 'australia', at: [17, 19.5, 4.4, 3.2, 0xc9b86a] },
+  { id: 'nz', at: [24, 24, 0.9, 1.6, 0x79c46a] },
 ];
 const farIs = [];
+let farCloud = null;
 function blobShape(rx, rz, seed) {
   // düzensiz ada kıyısı: yarıçap iki dalgayla oynar (düz sinüs değil, iki frekans toplamı)
   const pts = [];
   for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, k = 0.84 + 0.1 * Math.sin(a * 3 + seed) + 0.07 * Math.sin(a * 5 + seed * 2.3); pts.push([Math.cos(a) * rx * k, Math.sin(a) * rz * k]); }
   return pts;
 }
+// geometrileri tek gövdede birleştirir (konum, normal, isteğe bağlı tek renk)
+function mergeGeos(parts) {
+  const ps = parts.map(({ g, x, y = 0, z, col }) => { const q = (g.index ? g.toNonIndexed() : g); q.translate(x, y, z); return { q, col }; });
+  const n = ps.reduce((t, p) => t + p.q.attributes.position.count, 0), pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), cols = new Float32Array(n * 3), c = new THREE.Color();
+  let o = 0;
+  for (const { q, col } of ps) {
+    const cnt = q.attributes.position.count; pos.set(q.attributes.position.array, o * 3); nor.set(q.attributes.normal.array, o * 3);
+    c.setHex(col === undefined ? 0xffffff : col); for (let i = 0; i < cnt; i++) { cols[(o + i) * 3] = c.r; cols[(o + i) * 3 + 1] = c.g; cols[(o + i) * 3 + 2] = c.b; }
+    o += cnt; q.dispose();
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.BufferAttribute(cols, 3)); g.computeBoundingSphere();
+  return g;
+}
 export function buildFar(items) { // items: [{ id, name, sub }]: adlar main.js'ten çevrilmiş gelir
+  let s = 12345; const rnd = () => ((s = (s * 16807 + 11) % 2147483647) / 2147483647);
+  const foam = [], sand = [], top = [], ck = new Kit(), tk = new Kit(), blobs = [];
+  const island = (x, z, rx, rz, grass) => {
+    const pts = blobShape(rx, rz, x * 0.7 + z);
+    foam.push({ g: islandGeo(pts.map(([a, b]) => [a * 1.08 + (a > 0 ? 0.12 : -0.12), b * 1.06 + (b > 0 ? 0.12 : -0.12)]), 0.05), x, y: 0.02, z });
+    sand.push({ g: islandGeo(pts, 0.35), x, z });
+    top.push({ g: islandGeo(pts.map(([a, b]) => [a * 0.88, b * 0.9]), 0.55), x, y: 0.15, z, col: grass });
+    blobs.push([x, z, Math.max(rx, rz)]);
+  };
+  const free = (x, z, r) => !blobs.some(([bx, bz, br]) => Math.hypot(bx - x, bz - z) < br + r + 0.5) && !(Math.abs(x) < 5.2 && z > -11 && z < 7.5);
+  const palmAt = (x, z, h) => { tk.add(new THREE.CylinderGeometry(0.04, 0.06, h, 5), 0x8a6a45, x, 0.95 + h / 2, z, 0, 0, 0.12); for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; tk.add(new THREE.BoxGeometry(0.5, 0.04, 0.12), 0x3f9a4a, x + Math.sin(a) * 0.22 + 0.06, 0.95 + h, z + Math.cos(a) * 0.22, 0, a + Math.PI / 2, -0.35); } };
   for (const it of items) {
     const f = FAR.find(q => q.id === it.id); if (!f) continue;
     const [x, z, rx, rz, grass] = f.at;
-    addIsland(blobShape(rx, rz, x * 0.7 + z), x, z, grass);
-    const k = new Kit(); let s = Math.abs(x * 13 + z * 7) | 0; const rnd = () => ((s = (s * 16807 + 11) % 2147483647) / 2147483647);
-    for (let i = 0; i < 14; i++) { // adayı örten bulut kümesi
-      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 0.8, sz = 0.9 + rnd() * 0.9;
-      k.add(new THREE.IcosahedronGeometry(sz, 1), rnd() < 0.3 ? 0xeef4fa : 0xffffff, Math.cos(a) * rx * r, 1.2 + rnd() * 1.4, Math.sin(a) * rz * r);
+    island(x, z, rx, rz, grass);
+    for (let i = 0; i < 18; i++) { // adayı örten bulut kümesi (büyük adada daha çok)
+      if (i > 8 + rx * rz && i > 8) break;
+      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 0.8, sz = 0.6 + rnd() * 0.5 + Math.min(rx, rz) * 0.18;
+      ck.add(new THREE.IcosahedronGeometry(sz, 1), rnd() < 0.3 ? 0xeef4fa : 0xffffff, x + Math.cos(a) * rx * r, 1.2 + rnd() * 1.2, z + Math.sin(a) * rz * r);
     }
-    const cloud = new THREE.Mesh(k.build(), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
-    cloud.castShadow = true; const g = new THREE.Group(); g.position.set(x, 0, z); g.add(cloud); scene.add(g);
+    for (let i = 0, made = 0; i < 12 && made < 3; i++) { // kıyısında adacıklar
+      const a = rnd() * Math.PI * 2, d = 1.25 + rnd() * 0.5, ix = x + Math.cos(a) * rx * d, iz = z + Math.sin(a) * rz * d, ir = 0.25 + rnd() * 0.45;
+      if (!free(ix, iz, ir)) continue;
+      island(ix, iz, ir, ir * (0.7 + rnd() * 0.5), 0x8fd07a); made++;
+      if (rnd() < 0.6) palmAt(ix, iz, 0.5 + rnd() * 0.3);
+    }
     const label = document.createElement('div'); label.className = 'map-lbl far';
     label.innerHTML = `<b></b><small></small>`; label.firstChild.textContent = it.name; label.lastChild.textContent = it.sub; labelsEl.appendChild(label);
-    farIs.push({ x, z, cloud, label, pos: new THREE.Vector3(x, 0.6, z + rz * 0.95) }); // etiket güney kıyısında: bulut görünsün
+    farIs.push({ x, z, label, pos: new THREE.Vector3(x, 0.6, z + rz * 0.95) }); // etiket güney kıyısında: bulut görünsün
   }
+  for (let i = 0, made = 0; i < 400 && made < 26; i++) { // açık denizde serpiştirilmiş adacıklar
+    const ix = -23 + rnd() * 50, iz = -27 + rnd() * 54, ir = 0.25 + rnd() * 0.5;
+    if (!free(ix, iz, ir + 0.6)) continue;
+    island(ix, iz, ir, ir * (0.7 + rnd() * 0.5), rnd() < 0.5 ? 0x8fd07a : 0x7cc95a); made++;
+    if (rnd() < 0.5) palmAt(ix, iz, 0.5 + rnd() * 0.3);
+  }
+  const fm = new THREE.Mesh(mergeGeos(foam), lam(0xe8f7ff));
+  const sm = new THREE.Mesh(mergeGeos(sand), lam(0xf2d79a)); sm.castShadow = sm.receiveShadow = true;
+  const tm = new THREE.Mesh(mergeGeos(top), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })); tm.receiveShadow = true;
+  const tr = new THREE.Mesh(tk.build(), vcMat); tr.castShadow = true;
+  farCloud = new THREE.Mesh(ck.build(), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })); farCloud.castShadow = true;
+  scene.add(fm, sm, tm, tr, farCloud);
 }

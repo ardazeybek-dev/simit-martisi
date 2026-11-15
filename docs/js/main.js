@@ -3935,7 +3935,8 @@ $('cityPick').addEventListener('click', e => { e.stopPropagation(); sfx.click();
 onBtn('mapGo', mapGo); map.onTap = id => mapPick(id); onBtn('mapIn', () => mapZoom(0.75)); onBtn('mapOut', () => mapZoom(1.33));
 bindMapInput($('worldMap'), isUi);
 buildCities(CITIES.map(c => ({ id: c.id, name: c.name })), $('mapLabels'));
-buildFar([['america', 'Amerika'], ['japan', 'Japonya'], ['safrica', 'Güney Afrika']].map(([id, n]) => ({ id, name: tr(n), sub: tr('Yakında') }))); // uzaklaşınca görünen, henüz açılmayan ülkeler
+const FAR_NAMES = { canada: 'Kanada', america: 'Amerika', mexico: 'Meksika', brazil: 'Brezilya', argentina: 'Arjantin', uk: 'İngiltere', spain: 'İspanya', france: 'Fransa', germany: 'Almanya', italy: 'İtalya', greece: 'Yunanistan', russia: 'Rusya', azerbaijan: 'Azerbaycan', china: 'Çin', korea: 'Kore', japan: 'Japonya', india: 'Hindistan', saudi: 'Arabistan', egypt: 'Mısır', africa: 'Afrika', indonesia: 'Endonezya', australia: 'Avustralya', nz: 'Yeni Zelanda' }; // haritadaki gelecek ülkeler (worldmap.js FAR)
+buildFar(Object.entries(FAR_NAMES).map(([id, n]) => ({ id, name: tr(n), sub: tr('Yakında') }))); // uzaklaşınca görünen, henüz açılmayan ülkeler
 if (!store.get(KEY_MAPSEEN, null)) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).map(c => c.id)); // bundan sonra açılan şehir 'yeni' sayılır
 if (QS.has('yenisehir')) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).slice(0, -1).map(c => c.id)); // deneme: son açılan şehir haritada henüz görülmemiş sayılır (bulut dağılır)
 if (QS.has('harita')) setTimeout(openMap, 1500); // deneme: harita açılışta açılır
