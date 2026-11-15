@@ -1615,7 +1615,6 @@ function spawnSutun() {
     addSimit(sx, FLY_Y, z - 4.5, false);
     cols.push({ mesh, o, side, xb, z, xa, ta, st: 0, ph: rand(0, 6), dustT: 0, foam: 0 });
   }
-  if (difficulty() > 0.8) addRival(cols[0].z - rand(10, 16), -cols[1].side * rand(2.2, 3), rand(0.3, 0.7), undefined, z0 - 4); // iki sütunun arasında bekleyen rakip
   sutuns.push({ g, z0: cz0, z1: cz0 - len, v, cols });
   chuteZ = cz0 - len - rand(1000, 1400) * (city.oldK || 1);
   genZ = cz0 - len - 6;
@@ -1864,7 +1863,7 @@ function spawnFerry() {
     for (const [a, b] of [[-3.9, tx - SALON_EDGE_G], [tx + SALON_EDGE_G, 3.9]]) obstacle((a + b) / 2, sz, (b - a) / 2, SALON_LEN / 2, SALON_TOP, 'cama');
     for (let z = sz - SALON_LEN / 2 - 1; z < sz + SALON_LEN / 2 + 2; z += 2) blocked.push({ x: 0, z, r: 4.6 });
     for (let z = sz + SALON_LEN / 2 - 1.5; z > sz - SALON_LEN / 2; z -= 2.6) addSimit(x0 + tx, FLY_Y, zc + z, goldRoll(0.06));
-    salon = { tx, sz };
+    salon = { tx, sz, noTail: Math.random() < 0.2 }; // 10 salonlu vapurdan 2'sinde salondan sonra (pruvaya doğru) baca yok
   }
   // bacalar arası en az ~0,3 sn uçuş (hızla büyür): bir yandan öbür yana kıvrılacak zaman kalsın. Sığmayan baca konmaz;
   // rastgele kaydırma bu payı yemez (eskiden ±3 m kayınca bacalar 0,1 sn arayla, hatta üst üste geliyordu)
@@ -1872,14 +1871,7 @@ function spawnFerry() {
   const nCh = Math.min(1 + Math.floor(span / gapMin), 1 + (d > 1 ? 1 : 0) + (d > 2.5 ? 1 : 0) + (L >= 44 && heat() > 1 && Math.random() < 0.15 + heat() * 0.12 ? 1 : 0)); // uzun vapurda geç oyunda dördüncü baca
   const step = nCh > 1 ? span / (nCh - 1) : 0, jit = nCh > 1 ? clamp((step - gapMin) / 2, 0, 3) : 3;
   const chims = [];
-  // bacalar dizilir: biri sola yapışık, biri ortada, biri sağa yapışık (sırası karışık, ortadaki iki yanın arasında: martı kıvrılarak geçer)
-  const s0 = pick([-1, 1]), lay = [s0, 0, -s0, 0];
-  if (nCh === 2) lay.splice(1, 1);
-  for (let i = 0; i < nCh; i++) {
-    let cx = lay[i] ? lay[i] * (EDGE - ft.hw) : rand(-0.6, 0.6); const cz = nCh > 1 ? clamp(-L / 2 + 11 + i * step + rand(-jit, jit), -L / 2 + 9, L / 2 - 3) : -L / 2 + 12 + (L - 16) / 2 + rand(-3, 3);
-    const stuck = EDGE - (Math.abs(cx) + ft.hw) < 0.9; // küpeşteyle arası martı sığmayacak kadar dar: baca küpeşteye yapışık durur (görüntü kurala uysun)
-    if (stuck) cx = (Math.sign(cx) || 1) * (EDGE - ft.hw);
-    if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın
+  const putChim = (cx, cz, stuck) => {
     const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(cx, DECK, cz); c.castShadow = c.receiveShadow = true; g.add(c);
     // yapışık bacanın dış yanı kapalı: engel küpeştenin ötesine uzar, dışarıdan kaytarılmaz; yapışık olmayanın iki yanı da geçilir
     const bIn = Math.abs(cx) - ft.hw, bOut = EDGE + 0.6, sx = Math.sign(cx) || 1;
@@ -1888,6 +1880,22 @@ function spawnFerry() {
     const dark = d > 1.2 && Math.random() < clamp((d - 1) * 0.22 + late() * 0.1, 0, 0.65); // dumanlı baca (öldürmez): geç oyunda bir tık sık (Arda, v3.4: tavan %55 → %65)
     chims.push({ x: x0 + cx, z: zc + cz, dark, t: Math.random() });
     if (dark) smokes.push({ x: x0 + cx, z0: zc + cz + 1.3, z1: zc + cz + 7.5, hw: 1.6, hit: false });
+  };
+  // bacalar dizilir: biri sola yapışık, biri ortada, biri sağa yapışık (sırası karışık, ortadaki iki yanın arasında: martı kıvrılarak geçer)
+  const s0 = pick([-1, 1]), lay = [s0, 0, -s0, 0];
+  if (nCh === 2) lay.splice(1, 1);
+  for (let i = 0; i < nCh; i++) {
+    let cx = lay[i] ? lay[i] * (EDGE - ft.hw) : rand(-0.6, 0.6); const cz = nCh > 1 ? clamp(-L / 2 + 11 + i * step + rand(-jit, jit), -L / 2 + 9, L / 2 - 3) : -L / 2 + 12 + (L - 16) / 2 + rand(-3, 3);
+    const stuck = EDGE - (Math.abs(cx) + ft.hw) < 0.9; // küpeşteyle arası martı sığmayacak kadar dar: baca küpeşteye yapışık durur (görüntü kurala uysun)
+    if (stuck) cx = (Math.sign(cx) || 1) * (EDGE - ft.hw);
+    if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın
+    if (salon && salon.noTail && cz < salon.sz) continue; // salondan çıkınca hemen baca: 10'da 2 vapurda olmaz
+    putChim(cx, cz, stuck);
+  }
+  // salondan sonra baca: 10 salonlu vapurdan 8'inde (yer varsa). Rastgele dizilişte oraya baca düşmediyse geçidin yanına yapışık bir baca konur: çıkan martı ortaya kıvrılır
+  if (salon && !salon.noTail && !chims.some(ch => ch.z - zc < salon.sz - SALON_LEN / 2 - 2)) {
+    const cz = salon.sz - SALON_LEN / 2 - 7 - rand(0, 2);
+    if (cz > -L / 2 + 6) putChim(Math.sign(salon.tx) * (EDGE - ft.hw), cz, true);
   }
   // banklar küpeşte boyunca: oturanlar denize bakar, çoğunun elinde çay, simit yok (yem değil, manzara)
   const mine = [];
@@ -2476,7 +2484,7 @@ const tempoAt = z => tempos.find(u => z < u.z0 && z > u.z1) || null;
 let full = 1, starve = false, shownFull = -1; // tokluk: simit yemeden uçan martı acıkır; çubuk biterse düşer (starve: son anlar, titrer)
 let boltFx = 0;
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
-const GUST = 6.5, COLD_S = 8; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
+const GUST = 4.5, COLD_S = 8; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
 const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0, fast: 0 }; // görevler ve başarımlar için uçuş sayaçları
 
 function resetWorld(newWeather = true) {
@@ -4413,14 +4421,20 @@ function frame() {
     // camlı salonun geçidindeyken savrulma yok: martı iki cam duvarın arasına girdiyse hedef geçidin içinde tutulur, viraj savurması ve rüzgâr işlemez (dar geçitte savrulan martı ölüyordu)
     let inLo = -EDGE, inHi = EDGE, inSalon = false;
     for (const o of obstacles) if (o.kind === 'cama' && Math.abs(o.z - g.z) < o.hd + 0.6) { const a = o.x - o.hw, b = o.x + o.hw; if (b <= g.x + 0.05) { inLo = Math.max(inLo, b + 0.45); inSalon = true; } else if (a >= g.x - 0.05) { inHi = Math.min(inHi, a - 0.45); inSalon = true; } }
-    if (inSalon && inLo < inHi && state === 'play') { tx = clamp(tx, inLo, inHi); padV = clamp(tx, -EDGE, EDGE); }
-    const W = state === 'play' && !inSalon ? imbatW + fallsW : 0;
-    if (state === 'play') { const keep = Math.sign(W) === Math.sign(windW0) ? (Math.abs(W) < Math.abs(windW0) ? windW0 - W : 0) : windW0; if (keep) { tx = clamp(tx + keep, -txl, txl); padV = clamp(tx, -EDGE, EDGE); } }
-    windW0 = W;
-    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim0 = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + W : 0), -EDGE, EDGE);
-    const aim = inSalon && inLo < inHi && state === 'play' ? clamp(tx, inLo, inHi) : aim0;
+    // rüzgârlar (imbat, akıntı, jet, şelale, yağmur esintisi) tek itiş: azalan pay hedefe aktarılır (rüzgâr kesilince geri fırlatmaz). Salonun içinde rüzgâr donar:
+    // ne iter ne bırakır (girişte tüm itişi bir kerede hedefe aktarmak martıyı dar geçitte yana sıçratıyordu); hedef geçidin içinde tutulur
+    const salonIn = inSalon && inLo < inHi && state === 'play';
+    let W;
+    if (salonIn) { W = windW0; tx = clamp(tx, inLo - W, inHi - W); padV = clamp(tx, -EDGE, EDGE); }
+    else {
+      W = state === 'play' ? imbatW + fallsW + wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) : 0;
+      if (state === 'play') { const keep = Math.sign(W) === Math.sign(windW0) ? (Math.abs(W) < Math.abs(windW0) ? windW0 - W : 0) : windW0; if (keep) { tx = clamp(tx + keep, -txl, txl); padV = clamp(tx, -EDGE, EDGE); } }
+      windW0 = W;
+    }
+    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim0 = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + W, -EDGE, EDGE);
+    const aim = salonIn ? clamp(tx + W, inLo, inHi) : aim0;
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
-    if (inSalon && inLo < inHi && state === 'play' && (g.x < inLo - 0.3 || g.x > inHi + 0.3)) { g.x = clamp(g.x, inLo - 0.3, inHi + 0.3); vx = 0; } // hızlı girişte bile cama savrulmaz
+    if (salonIn && (g.x < inLo - 0.3 || g.x > inHi + 0.3)) { g.x = clamp(g.x, inLo - 0.3, inHi + 0.3); vx = 0; } // hızlı girişte bile cama savrulmaz
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (((weather === 'snow' && warmth < 0.25) || starve) && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme (üşüyen ya da aç martı)
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
     gull.rotation.x = damp(gull.rotation.x, -0.05 + Math.sin(t * 1.1) * 0.03 + (starve && state === 'play' ? 0.22 : 0), 4, dt); // aç martının başı düşer
