@@ -4,7 +4,7 @@ import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, update
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, weatherOk, setWeatherFx, updateWeatherFx } from './weather.js';
 import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
-import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, MARINA, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, MENDIL_ARM, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker, turtleGeo, TURTLE_FLIP, hivesGeo, HONEY, BEE, gliderGeo, MAVNA_DECK, MAVNA_GATE, MAVNA_GAP, makeMavna, makeKule, KULE_H, KULE_QR, KULE_RING_TEX, KULE_CHASE_TEX, kuleRingMat, kuleLedMat, runwayGeo, RUNWAY_LEN, RUNWAY_X, planeGeo, PLANE_LEN, PLANE_EXH, planeGlowMat, PLANE_GLOW, kaleGeo, kaleFadeMats, KALE_HZ, KALE_TOP, KALE_MERLON, KALE_GATE, KALE_T, colGeo, colonnadeGeo, COL_FALL, COL_SLOT, COL_SLOTS, COL_X, COL_R, COL_PIV, COL_FL, NAR_COLS, narBoatGeo, crateStackGeo, citrusRingGeo, NAR_LOOKS } from './models.js';
+import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, MARINA, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, MENDIL_ARM, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker, turtleGeo, TURTLE_FLIP, hivesGeo, HONEY, BEE, gliderGeo, MAVNA_DECK, MAVNA_GATE, MAVNA_GAP, makeMavna, makeKule, KULE_H, KULE_QR, KULE_RING_TEX, KULE_CHASE_TEX, kuleRingMat, kuleLedMat, runwayGeo, RUNWAY_LEN, RUNWAY_X, planeGeo, PLANE_LEN, PLANE_EXH, planeGlowMat, PLANE_GLOW, kaleGeo, kaleFadeMats, KALE_HZ, KALE_FLOOR, KALE_TOP, KALE_MERLON, KALE_GATE, KALE_T, colGeo, colonnadeGeo, COL_FALL, COL_SLOT, COL_SLOTS, COL_X, COL_R, COL_PIV, COL_FL, NAR_COLS, narBoatGeo, crateStackGeo, citrusRingGeo, NAR_LOOKS } from './models.js';
 import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { map, bindMapInput, mapDraw, mapHome, mapZoom, buildCities, mapSelect, mapState, mapReveal, buildFar } from './worldmap.js';
@@ -710,6 +710,7 @@ function updateSteam(dt) {
 const UCAK_SOON = QS.has('ucak'), JET_PUSH = 1.85, JET_LEN = 70, JET_A = 0.35, JET_SPOOL = 1.6, UCAK_ACC = 44, UCAK_RISE = 52, PLANE_S = 1.5, JET_EXH = 1.3 * PLANE_S; // PLANE_S: uçağın ölçeği (martının yanında dev görünsün)
 const _jn = new THREE.Vector3();
 function spawnUcak() {
+  if (turnAhead(120)) { spawnGap(false); return; } // jet yelpazesi ve kalkış virajın içine taşmasın: uçak virajdan sonra
   const z0 = genZ, dir = pick([-1, 1]), sd = -dir, srcZ = z0 - 66, zEnd = srcZ - 20;
   const g = new THREE.Group(); scene.add(g);
   const padZ = z0 - 4 - RUNWAY_LEN / 2; // dolgunun ortası: pist parçanın başından kalkış ucuna kadar uzanır (önceki parçanın kıyısına taşmaz)
@@ -898,6 +899,7 @@ const KULE_SOON = QS.has('kule'), KULE_LIFT = 3.6, KULE_CUE = 1.25, KULE_BURST =
 const kuleUp = (s, len) => KULE_LIFT * Math.min(1, s / (len * 0.4)) ** 0.7; // fışkırmanın s. biriminde martının hedef yüksekliği
 function spawnKule() {
   const z0 = genZ, m = -z0 / 2, v = spdAt(m) * cityKAt(m); // martının o metredeki beklenen hızı (birim/sn)
+  if (turnAhead(18 + v * (KULE_CUE + 2 * KULE_BURST + KULE_GAP) + 30)) { spawnGap(false); return; } // buhar kavisleri virajın içine taşmasın: kule virajdan sonra
   let dir = pick([-1, 1]);
   const zc1 = z0 - 8, zA1 = zc1 - v * KULE_CUE, zB1 = zA1 - v * KULE_BURST, zA2 = zB1 - v * KULE_GAP, zB2 = zA2 - v * KULE_BURST, zEnd = zB2 - 10;
   const kz = (zA1 + zB2) / 2;
@@ -1580,7 +1582,11 @@ function colBox(xb, side, th, gy) {
   if (th < 0.02 || COL_FL * Math.cos(th) < h + 0.2) return null;
   return { x: xb - side * h * Math.tan(th), hw: Math.min(1.5, COL_R / Math.cos(th)) };
 }
+// uzun parçalar (sütun sırası, kule, jet) için: üretici yaklaşan virajı ancak 75 birim kala görür; parçanın boyu içinde kurulmamış viraj başlıyorsa önce açık su
+const turnAhead = len => turns.some(u => !u.built && u.z0 > genZ - len);
 function spawnSutun() {
+  // bölüm uzun (~136 birim): üretici virajı ancak 75 birim kala görür, sütun sırası virajın içine taşmasın → önde viraj varsa açık su, sütunlar virajdan sonra
+  if (turnAhead(COL_SLOTS * COL_SLOT + 24)) { spawnGap(false); return; }
   const z0 = genZ, m = -z0 / 2, v = spdAt(m) * cityKAt(m), pat = (Math.random() * COL_FALL.length) | 0, n = difficulty() > 0.45 ? 3 : 2, cz0 = z0 - 10, len = COL_SLOTS * COL_SLOT;
   decor = decor.filter(d => (d.z < cz0 + 8 && d.z > cz0 - len - 8 && Math.abs(d.mesh.position.x) > 4 && Math.abs(d.mesh.position.x) < 9 ? (scene.remove(d.mesh), false) : true)); // sütun sırasının üstünde tekne kalmasın
   const g = new THREE.Group(); scene.add(g);
@@ -2260,6 +2266,7 @@ function animLand(gz) { for (const l of land) if (l.crowd && l.z > gz - 320 && l
 // düşen martının zemini: vapur güvertesi, korsan/yelkenli teknesi ya da deniz (gövdenin içinden suya geçmesin)
 function floorAt(x, z) {
   if (deckUnder(x, z)) return DECK + 0.12;
+  for (const h of horses) if (h.kale && Math.abs(z - h.z) < KALE_HZ + 1.6 && Math.abs(x - h.x) < 11) return KALE_FLOOR + 0.12; // Kızkalesi avlusu ve kaya kaidesi
   for (const h of horses) if (h.vapur && Math.abs(x - h.x) < 8 && Math.abs(z - h.z - (x - h.x) * h.c / h.sn) < 1.6) return BANDIRMA_DECK + 0.12; // vapurun güvertesi
   for (const p of pirates) if (!p.wave && Math.abs(z - p.z) < (p.ferry || p.mavna ? 2.4 : 1.9) && Math.abs(x - p.g.position.x) < (p.ferry ? 7.2 : p.mavna ? 7.9 : 6.6)) return p.ferry ? 1.3 : p.mavna ? MAVNA_DECK + 0.12 : 1.5;
   for (const c of crossers) if (Math.abs(z - c.z) < 1.3 && Math.abs(x - c.mesh.position.x) < 2.9) return 0.85;
