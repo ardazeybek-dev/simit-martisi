@@ -441,7 +441,8 @@ function shipGeo(sail) {
   }
   return k.build();
 }
-const wakeGeo = new Kit().add(new THREE.PlaneGeometry(1, 0.22).rotateX(-Math.PI / 2), 0xffffff).add(new THREE.PlaneGeometry(0.6, 0.12).rotateX(-Math.PI / 2), 0xe8f7ff, -0.7, 0, 0).build();
+// dümen suyu: gemi geçtiği yerde suda köpük beneği bırakır (dünyada kalır), benekler V gibi iki yana açılır, büyüyüp söner; dönüşte iz kıvrılarak arkada kalır
+const wakeGeo = new Kit().add(new THREE.CircleGeometry(1, 9).rotateX(-Math.PI / 2), 0xffffff).build(), WAKE_N = 24, WAKE_LIFE = 2.2, WAKE_DT = WAKE_LIFE / WAKE_N;
 const birdGeo = new Kit().add(new THREE.BoxGeometry(0.16, 0.05, 0.05), 0xf6f6f2).add(new THREE.BoxGeometry(0.05, 0.02, 0.26), 0xf2f2ee, 0.01, 0.05, 0.13, 0.5, 0, 0).add(new THREE.BoxGeometry(0.05, 0.02, 0.26), 0xf2f2ee, 0.01, 0.05, -0.13, -0.5, 0, 0)
   .add(new THREE.BoxGeometry(0.03, 0.02, 0.06), 0x1b1c22, 0.01, 0.1, 0.26, 0.5, 0, 0).add(new THREE.BoxGeometry(0.03, 0.02, 0.06), 0x1b1c22, 0.01, 0.1, -0.26, -0.5, 0, 0).add(new THREE.BoxGeometry(0.04, 0.02, 0.02), 0xf4b52a, 0.1, 0, 0).build();
 const fishGeo = new Kit().add(new THREE.SphereGeometry(0.07, 8, 5), (f, y) => (y > 0 ? 0x3f7fb0 : 0xdde8ee), 0, 0, 0, 0, 0, 0, 1.9, 1, 0.8).add(new THREE.ConeGeometry(0.06, 0.1, 4), 0x3f7fb0, -0.17, 0, 0, 0, 0, Math.PI / 2, 1, 1, 0.3).build();
@@ -458,7 +459,8 @@ function buildSea(blobs, rnd) {
     if (ok && !lanes.some(l => Math.hypot(l.cx - cx, l.cz - cz) < (l.L + L) / 2 + 1)) lanes.push({ cx, cz, dx, dz, L, w, sail, th: rnd() * 6.28, v: (sail ? 0.45 : 0.7) / (L * 1.6) });
   }
   const nb = lanes.filter(l => !l.sail).length;
-  sea3.cargo = inst(shipGeo(false), Math.max(1, nb), true); sea3.sails = inst(shipGeo(true), Math.max(1, lanes.length - nb), true); sea3.wake = inst(wakeGeo, Math.max(1, lanes.length));
+  sea3.cargo = inst(shipGeo(false), Math.max(1, nb), true); sea3.sails = inst(shipGeo(true), Math.max(1, lanes.length - nb), true); sea3.wake = inst(wakeGeo, Math.max(1, lanes.length * WAKE_N * 3)); sea3.wake.material = new THREE.MeshBasicMaterial({ color: 0xeaf7fb }); // köpük ışıktan etkilenmez: gri duman gibi değil, ak köpük
+  for (const l of lanes) { l.trail = []; l.dropT = 0; }
   sea3.ships = lanes;
   // kuş sürüleri: açık denizin üstünde büyük çemberler, V düzeni
   for (let i = 0; i < 4; i++) sea3.flocks.push({ cx: -14 + rnd() * 28, cz: -18 + rnd() * 36, r: 5 + rnd() * 6, y: 2.4 + rnd() * 1.2, v: (0.12 + rnd() * 0.08) * (rnd() < 0.5 ? -1 : 1), ph: rnd() * 6.28, n: 4 + ((rnd() * 3) | 0) });
@@ -481,8 +483,19 @@ function tickSea(dt, t) {
     _se.set(Math.sin(t * 1.3 + i) * 0.03, yaw, Math.sin(t * 0.9 + i) * 0.04); _sq.setFromEuler(_se);
     _sm.compose(_sp.set(x, 0.02 + Math.sin(t * 1.6 + i) * 0.015, z), _sq, _ss.set(1, 1, 1));
     (l.sail ? sea3.sails : sea3.cargo).setMatrixAt(l.sail ? si++ : ci++, _sm);
-    _se.set(0, yaw, 0); _sq.setFromEuler(_se); const bx = Math.cos(yaw), bz = -Math.sin(yaw), wl = l.sail ? 0.5 : 0.9;
-    _sm.compose(_sp.set(x - bx * (wl * 0.5 + (l.sail ? 0.3 : 0.55)), 0.015, z - bz * (wl * 0.5 + (l.sail ? 0.3 : 0.55))), _sq, _ss.set(wl, 1, l.sail ? 0.7 : 1)); sea3.wake.setMatrixAt(i, _sm);
+    const bx = Math.cos(yaw), bz = -Math.sin(yaw), st = l.sail ? 0.3 : 0.56; // kıç: burnun tersinde
+    if ((l.dropT -= dt) <= 0) { l.dropT = WAKE_DT; l.trail.unshift({ x: x - bx * st, z: z - bz * st, px: -bz, pz: bx, yaw, age: 0, j: [Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5], s: 0.8 + Math.random() * 0.4 }); if (l.trail.length > WAKE_N) l.trail.pop(); }
+    const K = l.sail ? 0.55 : 1;
+    for (let j = 0; j < WAKE_N; j++) for (const sd of [-1, 0, 1]) { // iki yan dalga (V) ve ortada pervane köpüğü
+      const q = l.trail[j], idx = (i * WAKE_N + j) * 3 + sd + 1;
+      if (sd === 0 && q) q.age += dt;
+      const u = q ? Math.min(1, q.age / WAKE_LIFE) : 1;
+      if (!q || (sd === 0 && u > 0.45)) { _sm.makeScale(0, 0, 0); sea3.wake.setMatrixAt(idx, _sm); continue; }
+      const jj = q.j[sd + 1], spread = sd ? (0.06 + u * 0.46) * K + jj * 0.04 : jj * 0.05, fade = sd ? Math.pow(1 - u, 0.8) : 1 - u / 0.45;
+      const r = ((sd ? 0.06 + u * 0.12 : 0.09 + u * 0.1) * K * fade + 0.001) * q.s;
+      _se.set(0, q.yaw + (sd ? sd * 0.5 : 0), 0); _sq.setFromEuler(_se);
+      _sm.compose(_sp.set(q.x + q.px * sd * spread + q.px * (sd ? 0 : spread), 0.012 + (sd ? 0 : 0.002), q.z + q.pz * sd * spread + q.pz * (sd ? 0 : spread)), _sq, _ss.set(r * 1.7, 1, r)); sea3.wake.setMatrixAt(idx, _sm);
+    }
   }
   let bi = 0;
   for (const f of sea3.flocks) {
