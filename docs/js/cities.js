@@ -8,6 +8,8 @@
 // mill/gulet/diver/cup: Muğla'nın yel değirmeni rüzgârı (imbat kalıbı), Mavi Yolculuk guleti (korsan kalıbı), sünger dalgıcı kabarcıkları (şelale kalıbı) ve Bodrum Cup (yelken yarışı kalıbı)
 // kopru/truva/akinti/feribot: Çanakkale'nin 1915 Köprüsü (Galata kalıbı), Truva Atı (sabit kapı), Boğaz akıntısı (imbat kalıbı, ortada yön değiştirir) ve Kilitbahir feribotu (korsan kalıbı)
 // hamsi/dalga/teleferik/horon: Trabzon'un hamsi sürüsü (zıplayan balık kalıbı), Karadeniz dalgası (korsan kalıbı), Boztepe teleferiği (paraşüt kalıbı) ve horon teknesi (plaj kalıbı)
+// mavna/ucak/kule: Rize'nin çay mavnası (korsan kalıbı, çuval yığınları), kalkan uçağın jet rüzgârı (imbat kalıbı, uçak şeride kuyruk verip gaz açar, sonra kalkar)
+// ve çay bardağı kule (Düden kalıbının yeni hâli: LED halkası bardağı tırmanınca buhar fışkırır ve martıyı kaldırır; ışık zamanlamayı söyler)
 // rivK: özel parçalar açık suyun yerini aldığı için kalan açık suya eklenen rakip olasılığı (yoksa 0)
 // wx: hava çarpanları [açık, yağmur, sis, kar] (yoksa mevsim olasılığı aynen; 0 = o hava bu şehirde hiç çıkmaz)
 // mult: puan çarpanı (zor şehir biraz daha çok puan; sunucu submit_score aynı çarpanla denetler)
@@ -60,7 +62,7 @@ export const CITIES = [
       ['Doğupark', 8700, "Doğupark'a", 320], ['Tekkeköy', 10500, "Tekkeköy'e", 395], ['Çarşamba', 13000, "Çarşamba'ya", 500], ['Terme', 17000, "Terme'ye", 1900]],
   },
   {
-    id: 'rize', name: 'Rize', mult: 1.7, hard: 4.0, hunger: 4.6, rivK: 0.4, wx: [0.5, 3, 1.6, 0], opened: 'Tebrikler! Rize açıldı!', routeKey: 'simit-martisi-route-rize', bait: 'simit', end: 'Rize kıyısını baştan sona uçtun!', after: "Samsun'u bitirince açılır",
+    id: 'rize', name: 'Rize', mult: 1.7, hard: 4.0, hunger: 4.6, rivK: 0.4, wx: [0.5, 3, 1.6, 0], opened: 'Tebrikler! Rize açıldı!', routeKey: 'simit-martisi-route-rize', bait: 'simit', mavna: true, ucak: true, kule: true, end: 'Rize kıyısını baştan sona uçtun!', after: "Samsun'u bitirince açılır",
     stops: [['İyidere', 0, "İyidere'ye", 0], ['Derepazarı', 700, "Derepazarı'na", 65], ['Fener', 1500, "Fener'e", 90], ['Rize Kalesi', 2400, "Rize Kalesi'ne", 115],
       ['Ziraat', 3400, "Ziraat'e", 145], ['Gündoğdu', 4700, "Gündoğdu'ya", 180], ['Çayeli', 6000, "Çayeli'ne", 225], ['Madenli', 7400, "Madenli'ye", 270],
       ['Pazar', 9000, "Pazar'a", 330], ['Yeşilköy', 10800, "Yeşilköy'e", 405], ['Ardeşen', 13500, "Ardeşen'e", 510], ['Fındıklı', 17500, "Fındıklı'ya", 2000]],

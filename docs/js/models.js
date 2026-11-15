@@ -3227,6 +3227,190 @@ export const TITLE_SETS = {
   },
 };
 
+// ---------------- Rize: çay mavnası, çay bardağı kule, kalkan uçak ----------------
+// Çay işçileri: başörtülü çaycı kadın (yeşil önlük) ve kasketli çaycı amca. Mavnadaki atıcılar ve kulenin rıhtımındakiler bunlar
+export const TEA_LOOKS = [
+  { id: 'cayci1', kind: 'teyze', shirt: 0x3f8a46, pants: 0x2f3b4c, skin: 0xd49b74, hair: 0, skirt: true, hat: 'esarp', hatCol: 0xe8d8a8, pose: 'down' },
+  { id: 'cayci2', kind: 'amca', shirt: 0xf2efe6, pants: 0x3a3f4a, skin: 0xc98d68, hair: 2, hat: 'kasket', hatCol: 0x3b3b3b, must: 0x2e211a, jacket: 0x2f6a3a, pose: 'down' },
+];
+
+// ---------------- çay mavnası (Rize) ----------------
+// Korsan kalıbı (main.js spawnPirate, city.mavna): Rize limanından çay çuvalı taşıyan düz güverteli mavna şeridi yandan keser. Pruva -z.
+// Martı boyunda dolu yerler (MAVNA_GATE [merkez, yarı boy, yarı en, tepe], yerel z, kutulara her yana 0.25 m pay): pruvadaki yüksek çuval yığını (-6.9..-4.1),
+// ortadaki yüksek yığın (-0.6..2.4) ve kıçtaki kaptan köşkü (4.9..7.5, direk ve baca dahil). Aradaki güverte kapı (MAVNA_GAP): iki çay işçisi simidi oraya atar.
+// Köşkün önündeki alçak yığının (2.6..4.6) tepesi martının altında kalır: üstünden geçilir (kutusu var, tepesi alçak).
+export const MAVNA_DECK = 1.1;
+export const MAVNA_GATE = [[-5.5, 1.65, 2.5, 7.7], [0.9, 1.75, 2.5, 7.15], [3.6, 1.25, 2.5, 3.7], [6.2, 1.55, 1.85, 9.2]], MAVNA_GAP = -2.35;
+const SACK = [0xf1ead8, 0xe8dfc6, 0xf4efe2, 0xe2d6b8], SACK_G = 0x2f7a3a, SACK_GEO = new THREE.SphereGeometry(1, 7, 4); // çuval: yassı yastık (komşusuna hafif biner, aralarda kara boşluk kalmaz)
+// çuval yığını: krem dokuma çuvallar, arada yeşil baskılı; sıra sıra şaşırtmalı (tuğla gibi), her biri hafif yamuk. Üstte bağlama kayışları
+function sackStack(k, z0, z1, top) {
+  const L = 0.9, H = 0.55, W = 1.38, n = Math.round((z1 - z0) / L);
+  let row = 0;
+  for (let y = MAVNA_DECK + H / 2; y + H / 2 <= top + 0.02; y += H, row++) {
+    const sh = row % 2 ? L / 2 : 0, last = y + H * 1.5 > top + 0.02;
+    for (let i = 0; i < n - (sh ? 1 : 0); i++) for (const x of [-1.4, 0, 1.4]) {
+      if (last && Math.random() < 0.12) continue; // tepede birkaç çuval eksik: düz duvar gibi durmasın
+      const c = pick(SACK), plain = Math.random() < 0.25, yy = y + rand(-0.03, 0.03); // çoğu krem çuvalın ortasında yeşil baskı bandı; arada düz çuval
+      k.add(SACK_GEO, plain ? c : (f, cy) => (Math.abs(cy - yy) < H * 0.13 ? SACK_G : c), x + rand(-0.06, 0.06), yy, z0 + L / 2 + sh + i * L, rand(-0.05, 0.05), rand(-0.1, 0.1), rand(-0.05, 0.05), W * 0.56, H * 0.62, L * 0.6);
+    }
+  }
+  const zc = (z0 + z1) / 2;
+  for (const x of [-2.12, 2.12]) for (const dz of [-(z1 - z0) / 3, (z1 - z0) / 3]) k.add(new THREE.BoxGeometry(0.05, top - MAVNA_DECK, 0.12), 0xc8352e, x, (top + MAVNA_DECK) / 2, zc + dz); // kırmızı kayışlar
+  k.add(new THREE.BoxGeometry(4.3, 0.06, 0.12), 0xc8352e, 0, top + 0.02, zc - (z1 - z0) / 3).add(new THREE.BoxGeometry(4.3, 0.06, 0.12), 0xc8352e, 0, top + 0.02, zc + (z1 - z0) / 3);
+}
+let mavnaG = null;
+export function mavnaGeo() {
+  if (mavnaG) return mavnaG;
+  const D = MAVNA_DECK, WHITE = 0xf2efe9, RED = 0xc8352e, WIN = 0x34485c;
+  const k = new Kit()
+    .add(new THREE.BoxGeometry(4.6, 0.9, 15.6), 0x7a2a22, 0, -0.1, 0)                                            // su altı: pas kırmızısı
+    .add(new THREE.BoxGeometry(4.66, 0.55, 15.7), 0x1d1f24, 0, 0.62, 0)                                          // kara borda
+    .add(new THREE.BoxGeometry(4.7, 0.12, 15.8), 0xe0b030, 0, 0.92, 0)                                           // sarı yaka bandı
+    .add(new THREE.BoxGeometry(4.4, 0.08, 15.4), 0x6d6a62, 0, D - 0.02, 0)                                       // güverte
+    .add(new THREE.BoxGeometry(4.5, 0.9, 1.6), 0x1d1f24, 0, 0.55, -8.2, -0.45)                                    // pruva: kalkık rampa burnu
+    .add(new THREE.BoxGeometry(4.0, 0.12, 1.5), 0xe0b030, 0, 1.0, -8.45, -0.45);
+  for (const s of [-1, 1]) {
+    k.add(new THREE.BoxGeometry(0.08, 0.45, 15.2), 0x1d1f24, s * 2.3, D + 0.2, 0);                                // küpeşte
+    for (const z of [-7.2, -3.6, 0.3, 4.8]) k.add(new THREE.CylinderGeometry(0.24, 0.24, 0.4, 8), 0x2a2d33, s * 2.36, 0.62, z, 0, 0, Math.PI / 2); // borda lastikleri
+    lifeRing(k, 0.3, s * 2.42, D + 0.9, 5.3, 0);
+  }
+  sackStack(k, -6.9, -4.1, 7.6);
+  sackStack(k, -0.6, 2.4, 7.0);
+  sackStack(k, 2.65, 4.6, 3.55);
+  for (const [z0, z1, top] of [[-6.9, -4.1, 7.6], [-0.6, 2.4, 7.0]]) k.add(new THREE.BoxGeometry(4.35, 0.1, z1 - z0 + 0.1), 0x3f8a46, 0, top + 0.08, (z0 + z1) / 2); // üstte yeşil branda
+  // kaptan köşkü: beyaz, pencere bandı, kırmızı saçak; üstte küçük köprüüstü, direkte Türk bayrağı, kara-kırmızı baca
+  k.add(new THREE.BoxGeometry(3.0, 2.5, 2.7), WHITE, 0, D + 1.25, 6.2)
+    .add(new THREE.BoxGeometry(3.06, 0.6, 2.4), WIN, 0, D + 1.85, 6.1)
+    .add(new THREE.BoxGeometry(3.3, 0.18, 3.0), RED, 0, D + 2.6, 6.2)
+    .add(new THREE.BoxGeometry(2.1, 1.3, 1.7), WHITE, 0, D + 3.35, 6.0)
+    .add(new THREE.BoxGeometry(2.16, 0.5, 1.5), WIN, 0, D + 3.5, 5.95)
+    .add(new THREE.BoxGeometry(2.3, 0.14, 1.9), RED, 0, D + 4.05, 6.0)
+    .add(new THREE.CylinderGeometry(0.06, 0.08, 3.2, 5), 0xe8ebee, 0, D + 5.6, 5.8)
+    .add(new THREE.BoxGeometry(0.04, 0.7, 1.05), 0xe30a17, 0, D + 6.8, 6.35)
+    .add(new THREE.CircleGeometry(0.22, 10), 0xffffff, 0.03, D + 6.8, 6.2, 0, Math.PI / 2).add(new THREE.CircleGeometry(0.22, 10), 0xffffff, -0.03, D + 6.8, 6.2, 0, -Math.PI / 2)
+    .add(new THREE.CylinderGeometry(0.34, 0.38, 2.2, 10), (f, y) => (y > D + 4.3 ? RED : 0x1d1f24), 0, D + 3.5, 7.3);
+  return (mavnaG = k.build());
+}
+// tayfa: kaptan köşkün kapısında, bir işçi pruvada; throwers: kapıdaki güvertede simit tutan iki çay işçisi (main.js atış kalıbıyla fırlatır)
+export function makeMavna() {
+  const g = new THREE.Group();
+  const h = new THREE.Mesh(mavnaGeo(), vcMat); h.castShadow = true; g.add(h);
+  addCrew(g, [[1.9, MAVNA_DECK, 4.85, 0.3], [-0.4, MAVNA_DECK, -7.4, 0]]);
+  const throwers = [[-0.9, -3.0], [0.9, -1.7]].map(([x, z], i) => {
+    const p = makePerson(true, TEA_LOOKS[i]); p.mesh.position.set(x, MAVNA_DECK, z); p.mesh.scale.setScalar(0.85); g.add(p.mesh);
+    return p;
+  });
+  return { g, throwers };
+}
+
+// ---------------- çay bardağı kule (Rize) ----------------
+// Düden kalıbı (main.js spawnFalls, city.kule): Rize-Artvin Havalimanı'nın ince belli çay bardağı biçimli kulesi. Şeridin yanında denize doldurulmuş yuvarlak
+// rıhtımda, kırmızı tabağın üstünde durur. Gövde tek parça (LatheGeometry), üstü tek canvas dokusuyla kaplı LED noktalar: çoğu kırmızı (demli çay),
+// ağza doğru beyaz, en üstte kırmızı bant. Üstüne geçen ikinci kılıfta (kuleRingMat) parlak bir ışık halkası doku kaydırılarak bardağı tırmanır:
+// halka ağza varınca çaydan buhar fışkırır (main.js). Yerel: kule ekseni x=0, y=0 deniz; rıhtım her yöne KULE_QR. KULE_H: bardağın ağzı
+export const KULE_H = 17.2, KULE_QR = 5.0;
+const KULE_PROFILE = (() => { // ince belli bardak: dipte hafif şişkin, belde ince, ağza doğru açılır. Noktalar yay boyunca eşit aralıklı (LED satırları düzgün dizilsin)
+  const ctl = [[1.55, 0], [2.05, 1.6], [2.2, 3.4], [1.85, 5.8], [1.5, 8.0], [1.62, 10.2], [2.25, 12.6], [2.85, 14.6], [3.05, 15.6]];
+  const c = new THREE.SplineCurve(ctl.map(([r, y]) => new THREE.Vector2(r, y)));
+  return c.getSpacedPoints(48);
+})();
+const KULE_BASE = 1.55; // bardağın dibi (tabağın üstü)
+function kuleLathe(s = 1) { return new THREE.LatheGeometry(KULE_PROFILE.map(p => new THREE.Vector2(p.x * s, p.y + KULE_BASE)), 40); }
+// LED dokusu: kara-kızıl zemin üstünde şaşırtmalı nokta ızgarası. Satırın yüksekliği v: altta koyu kırmızı (dip), gövde parlak kırmızı, ağza yakın beyaz, en üstte kırmızı bant
+export const kuleLedMat = new THREE.MeshBasicMaterial({ map: canvasTex(256, 512, (g, w, h) => {
+  g.fillStyle = '#2a0805'; g.fillRect(0, 0, w, h);
+  const cols = 40, rows = 64;
+  for (let j = 0; j < rows; j++) {
+    const v = 1 - (j + 0.5) / rows; // canvas üstü = bardağın ağzı
+    for (let i = 0; i < cols; i++) {
+      const x = (i + (j % 2) * 0.5 + 0.5) / cols * w, y = (j + 0.5) / rows * h, n = 0.75 + 0.25 * Math.sin(i * 12.9898 + j * 78.233) * Math.sin(i * 3.1 + j * 1.7);
+      let col;
+      if (v > 0.955) col = `rgb(${(255 * n) | 0},${(40 * n) | 0},${(30 * n) | 0})`;              // en üstte kırmızı bant
+      else if (v > 0.84) col = `rgb(255,${(238 + 17 * n) | 0},${(214 + 30 * n) | 0})`;            // ağız: beyaz
+      else if (v > 0.8) col = j % 2 ? 'rgb(255,226,200)' : `rgb(255,${(70 * n) | 0},${(50 * n) | 0})`; // beyazdan kırmızıya geçiş
+      else col = `rgb(${(200 + 55 * n) | 0},${(28 + 30 * n * (1 - v)) | 0},${(20 * n) | 0})`;     // demli çay
+      g.fillStyle = col; g.beginPath(); g.arc(x, y, v > 0.955 ? 2.6 : 2.0, 0, Math.PI * 2); g.fill();
+    }
+  }
+}) });
+kuleLedMat.map.wrapS = THREE.RepeatWrapping; kuleLedMat.map.repeat.set(2, 1);
+// halka dokusu: ortada parlak, yumuşak kenarlı ince bant (yalnız ortası dolu, uçlar boş: kaydırınca tek halka görünür)
+const ringTex = (wrap) => { const t = canvasTex(4, 256, (g, w, h) => { const r = g.createLinearGradient(0, 0, 0, h); r.addColorStop(0, 'rgba(255,240,200,0)'); r.addColorStop(0.4, 'rgba(255,240,200,0)'); r.addColorStop(0.47, 'rgba(255,250,235,1)'); r.addColorStop(0.53, 'rgba(255,250,235,1)'); r.addColorStop(0.6, 'rgba(255,240,200,0)'); r.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }); if (wrap) t.wrapT = THREE.RepeatWrapping; return t; };
+export const KULE_RING_TEX = ringTex(false), KULE_CHASE_TEX = ringTex(true); // tek halka (işaret) ve art arda halkalar (buhar fışkırırken)
+export const kuleRingMat = new THREE.MeshBasicMaterial({ map: KULE_RING_TEX, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+let kuleG = null;
+export function kuleGeo() { // { body: LED'li bardak, ring: halka kılıfı, base: rıhtım + tabak + çay yüzü (vcMat) }
+  if (kuleG) return kuleG;
+  const k = new Kit(), stone = vert((f, y, x, z) => mixHex(0x7d786e, 0xa8a296, ramp(-0.6, 1.4, y)));
+  k.add(new THREE.CylinderGeometry(KULE_QR, KULE_QR + 0.6, 1.4, 28), stone, 0, 0.0, 0);                          // dolgu rıhtım
+  for (let i = 0; i < 26; i++) { const a = i / 26 * Math.PI * 2 + rand(-0.08, 0.08); k.add(new THREE.IcosahedronGeometry(rand(0.55, 0.85), 0), vert((f, y) => mixHex(0x5e5a52, 0x9a958a, y + 0.4)), Math.cos(a) * (KULE_QR + 0.45), rand(-0.3, 0.1), Math.sin(a) * (KULE_QR + 0.45), rand(0, 3), rand(0, 3), 0, 1, 0.7, 1); } // kıyı taşları
+  k.add(new THREE.CylinderGeometry(3.9, 3.3, 0.45, 32), 0xc8241c, 0, 0.92, 0)                                    // kırmızı tabak
+    .add(new THREE.TorusGeometry(3.85, 0.12, 6, 32), 0xf6f2ea, 0, 1.15, 0, Math.PI / 2)                          // tabağın beyaz yaldızlı kenarı
+    .add(new THREE.CylinderGeometry(1.75, 1.75, 0.42, 24), 0xf6f2ea, 0, 1.34, 0)                                  // bardağın oturduğu halka
+    .add(new THREE.CircleGeometry(2.96, 32), 0x7a1208, 0, KULE_BASE + 15.35, 0, -Math.PI / 2)                    // çayın yüzü
+    .add(new THREE.TorusGeometry(3.04, 0.09, 6, 40), 0xfff4e6, 0, KULE_BASE + 15.6, 0, Math.PI / 2)              // ağzın beyaz kenarı
+    .add(new THREE.BoxGeometry(0.9, 1.4, 0.12), 0x3a3f48, 0, 2.3, 2.2)                                            // kapı
+    .add(new THREE.BoxGeometry(1.4, 0.12, 0.8), 0xd8d2c4, 0, 1.58, 2.6);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + 0.4; k.add(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 4), 0xe8ebee, Math.cos(a) * 3.0, 1.65, Math.sin(a) * 3.0); } // korkuluk dikmeleri
+  return (kuleG = { body: kuleLathe(1), ring: kuleLathe(1.02), base: k.build() });
+}
+export function makeKule() {
+  const g = new THREE.Group(), q = kuleGeo();
+  const base = new THREE.Mesh(q.base, vcMat); base.castShadow = true; base.receiveShadow = true; g.add(base);
+  const body = new THREE.Mesh(q.body, kuleLedMat); g.add(body);
+  const ring = new THREE.Mesh(q.ring, kuleRingMat); ring.renderOrder = 2; g.add(ring);
+  g.userData.ring = ring;
+  return g;
+}
+
+// ---------------- kalkan uçak ve deniz dolgusu pist (Rize) ----------------
+// İmbat kalıbı (main.js spawnImbat, city.ucak): Rize-Artvin Havalimanı denize doldurulmuş: şeridin yanında taş kıyılı geniş dolgu, üstünde apron, taksi yolu ve pist.
+// Yerel: dolgunun şeride bakan kenarı x=0, dolgu +x'e uzanır, boyu z (RUNWAY_LEN). Pistin ekseni x=RUNWAY_X
+export const RUNWAY_LEN = 220, RUNWAY_W = 30, RUNWAY_X = 17;
+let runwayG = null;
+export function runwayGeo() {
+  if (runwayG) return runwayG;
+  const k = new Kit(), H = 0.55;
+  k.add(new THREE.BoxGeometry(RUNWAY_W, 1.3, RUNWAY_LEN), 0x9a9890, RUNWAY_W / 2, H - 0.65, 0)                   // dolgu
+    .add(new THREE.BoxGeometry(9, 0.06, RUNWAY_LEN - 6), 0x3a3d42, RUNWAY_X, H + 0.02, 0)                        // pist
+    .add(new THREE.BoxGeometry(8, 0.05, RUNWAY_LEN - 10), 0x55585e, 5.5, H + 0.01, 0);                            // şeride yakın apron / taksi yolu
+  for (let z = -RUNWAY_LEN / 2 + 8; z < RUNWAY_LEN / 2 - 8; z += 9) k.add(new THREE.BoxGeometry(0.35, 0.05, 4.5), 0xf4f4ee, RUNWAY_X, H + 0.06, z); // orta çizgi
+  for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.22, 0.05, RUNWAY_LEN - 8), 0xf4f4ee, RUNWAY_X + s * 4.1, H + 0.06, 0);           // pist kenar çizgileri
+  for (let z = -RUNWAY_LEN / 2 + 4; z < RUNWAY_LEN / 2 - 4; z += 4.5) k.add(new THREE.BoxGeometry(0.18, 0.05, 1.6), 0xe8c33a, 5.5, H + 0.05, z); // taksi yolu sarı çizgisi
+  for (let z = -RUNWAY_LEN / 2; z <= RUNWAY_LEN / 2; z += rand(1.3, 2.1)) k.add(new THREE.IcosahedronGeometry(rand(0.6, 0.95), 0), vert((f, y) => mixHex(0x5e5a52, 0xa8a296, y + 0.5)), rand(-0.3, 0.3), rand(-0.2, 0.2), z, rand(0, 3), rand(0, 3), 0, 1, 0.75, 1); // şerit kenarında kıyı taşları
+  for (let z = -RUNWAY_LEN / 2 + 20; z < RUNWAY_LEN / 2; z += 30) k.add(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 5), 0x9aa0a6, 1.2, H + 1.1, z).add(new THREE.BoxGeometry(0.5, 0.3, 0.5), 0xffe7a0, 1.2, H + 2.25, z); // apron lambaları
+  return (runwayG = k.build());
+}
+// uçak: beyaz gövde, kırmızı kuyruk ve kırmızı karın çizgisi, kanat altında iki motor. Burun -z, yerel y=0 tekerlek altı. PLANE_EXH: motorların arkası (jet çıkışı)
+export const PLANE_LEN = 11, PLANE_EXH = [[-2.25, 0.85, 1.3], [2.25, 0.85, 1.3]];
+let planeG = null;
+export function planeGeo() {
+  if (planeG) return planeG;
+  const W = 0xf6f6f2, RED = 0xd0202a, GREY = 0xb8bec6, Y = 1.55;
+  const k = new Kit()
+    .add(new THREE.CylinderGeometry(0.78, 0.78, 8.2, 14), W, 0, Y, 0.2, Math.PI / 2)                                        // gövde
+    .add(new THREE.SphereGeometry(0.78, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), W, 0, Y, -3.9, -Math.PI / 2, 0, 0, 1, 1.9, 1) // burun
+    .add(new THREE.ConeGeometry(0.78, 2.6, 14), W, 0, Y + 0.25, 5.6, Math.PI / 2, 0, 0, 1, 1, 0.55)                       // kuyruk konisi
+    .add(new THREE.BoxGeometry(1.2, 0.32, 0.5), 0x2c3a4c, 0, Y + 0.42, -4.55, 0.45)                                        // kokpit camı
+    .add(new THREE.BoxGeometry(0.06, 0.18, 6.8), 0x2c3a4c, 0.76, Y + 0.3, 0.3).add(new THREE.BoxGeometry(0.06, 0.18, 6.8), 0x2c3a4c, -0.76, Y + 0.3, 0.3) // pencere sırası
+    .add(new THREE.BoxGeometry(0.4, 0.12, 8.4), RED, 0, Y - 0.72, 0.2)                                                      // karın çizgisi
+    .add(new THREE.BoxGeometry(0.18, 2.5, 1.9), RED, 0, Y + 1.7, 5.75, -0.35)                                              // dikey kuyruk
+    .add(new THREE.BoxGeometry(4.2, 0.12, 1.1), W, 0, Y + 0.35, 6.1, 0, 0, 0)                                              // yatay kuyruk
+    .add(new THREE.CylinderGeometry(0.12, 0.12, 0.9, 6), 0x2a2d33, 0, 0.45, -3.2).add(new THREE.CylinderGeometry(0.22, 0.22, 0.2, 8), 0x1d1f24, 0, 0.22, -3.2, 0, 0, Math.PI / 2); // burun tekeri
+  for (const s of [-1, 1]) {
+    k.add(new THREE.BoxGeometry(4.6, 0.16, 1.9), W, s * 2.9, Y - 0.35, 0.6, 0, s * 0.32, 0)                               // kanat (geriye açılı)
+      .add(new THREE.BoxGeometry(0.12, 0.7, 0.9), RED, s * 5.1, Y - 0.05, 1.6, 0, s * 0.32, 0)                             // kanat ucu
+      .add(new THREE.CylinderGeometry(0.42, 0.36, 1.7, 12), GREY, s * 2.25, 0.85, 0.45, Math.PI / 2)                       // motor
+      .add(new THREE.CylinderGeometry(0.43, 0.43, 0.3, 12), 0x8a9098, s * 2.25, 0.85, -0.45, Math.PI / 2)
+      .add(new THREE.CircleGeometry(0.34, 12), 0x2a2d33, s * 2.25, 0.85, -0.61, 0, Math.PI)
+      .add(new THREE.CylinderGeometry(0.11, 0.11, 0.9, 6), 0x2a2d33, s * 0.95, 0.45, 0.9).add(new THREE.CylinderGeometry(0.26, 0.26, 0.24, 8), 0x1d1f24, s * 0.95, 0.22, 0.9, 0, 0, Math.PI / 2); // ana teker
+  }
+  return (planeG = k.build());
+}
+// motor alevi: iki motorun arkasında turuncu-sarı ışık diski (toplanır parlaklık; main.js gaz verildikçe büyütür). Tek geometri, tek malzeme
+export const planeGlowMat = new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+export const PLANE_GLOW = (() => { const k = new Kit(); for (const [x, y, z] of PLANE_EXH) k.add(new THREE.CircleGeometry(0.36, 12), 0xffffff, x, y, z, 0, 0, 0).add(new THREE.ConeGeometry(0.3, 1.4, 10, 1, true), 0xffffff, x, y, z + 0.7, -Math.PI / 2); return k.build(); })();
+
 // ---------------- Muğla: Caretta caretta, çam balı kovanları, Ölüdeniz yamaç paraşütü ----------------
 // Caretta (Dalyan/İztuzu): turuncu kahve plakalı kabuk, sarımsı kafa ve yüzgeçler, iri göz. Pruva -z, su çizgisi y=0. Ön yüzgeçler ayrı parça (main.js kürek çektirir).
 // TURTLE_FLIP: sağ ön yüzgeç, kökü (0,0,0); sol için scale.x = -1

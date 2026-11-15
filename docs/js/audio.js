@@ -139,6 +139,9 @@ export const sfx = {
   sling() { sweep(0.8, 0.28, 500, 3400, 0, 1); tone('triangle', 520, 0.35, 0.07, { f1: 1240 }); tone('triangle', 780, 0.3, 0.05, { f1: 1860, when: 0.07 }); },
   thunder() { hiss(2.2, 0.5, 160, 'lowpass', 0.3, 0.7); hiss(0.5, 0.25, 700, 'lowpass', 0.25); },
   gust() { sweep(1.6, 0.16, 250, 900, 0, 1.4); },
+  jet() { sweep(2.4, 0.2, 160, 1300, 0, 1.6); tone('sawtooth', 180, 2.2, 0.03, { f1: 760, attack: 0.5, filter: 1400 }); }, // jet: gaz açılan motorun uğultusu yükselir
+  steam() { hiss(0.9, 0.24, 3200, 'highpass', 0, 0.7); hiss(0.6, 0.14, 700, 'bandpass', 0.05, 1); }, // çaydanlık gibi fışkıran buhar
+  chime() { tone('sine', 1568, 0.22, 0.045); tone('sine', 2093, 0.3, 0.035, { when: 0.07 }); }, // kulenin ışık halkası tırmanmaya başladı
   shiver() { for (let i = 0; i < 3; i++) tone('triangle', 520 - i * 40, 0.06, 0.04, { when: i * 0.07 }); },
   click() { tone('triangle', 1200, 0.05, 0.07); },
   record() { [0, 4, 7, 12, 7, 12, 16].forEach((s, i) => tone('square', 523 * Math.pow(2, s / 12), 0.16, 0.05, { when: i * 0.09, filter: 2600 })); },

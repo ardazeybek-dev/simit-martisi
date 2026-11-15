@@ -111,6 +111,9 @@ function lampsOf(kind, o = {}) {
   } else if (kind === 'carferry') { // arabalı feribot (pruva -z): rampa portalında fener, direkte beyaz, köprüüstü ve salon pencereleri, seyir fenerleri
     a.push(L(0, 7.95, -5.6, 6, 1.4), L(0, 11.1, 1.6, 1, 1.2)); nav(a, 2.5, 7.2, 1.0, -1);
     for (const s of [-1, 1]) { for (const z of [0.9, 1.6, 2.3]) a.push(L(s * 1.84, 7.65, z, 0, 1.1)); row(a, s * 2.44, 5.25, -1, 5.6, 1.1, 0.65); }
+  } else if (kind === 'mavna') { // çay mavnası (pruva -z): kaptan köşkü ve köprüüstü pencereleri, direkte beyaz, seyir fenerleri, çuval yığınlarının üstünde birer fener
+    a.push(L(0, 7.9, 5.8, 1, 1.2), L(0, 8.85, -5.5, 6, 1.1), L(0, 8.25, 0.9, 6, 1.1)); nav(a, 2.35, 1.6, -7.6, -1);
+    for (const s of [-1, 1]) { for (const z of [5.4, 6.1, 6.8]) a.push(L(s * 1.54, 2.95, z, 0, 1.1)); a.push(L(s * 1.09, 4.6, 5.95, 0, 1)); }
   } else if (kind === 'pier') { // iskele binası (koridora bakan yüz -x): pencereler, saçakta fenerler, iskele ucunda beyaz, saat kadranı
     for (let z = -6; z <= 6; z += 2) { if (Math.random() < 0.7) a.push(L(-3.62, 5, z, 0, 1.3)); if (Math.abs(z) > 1 && Math.random() < 0.6) a.push(L(-3.62, 2.3, z, 0, 1.3)); }
     for (const z of [-5, 0, 5]) a.push(L(-8.4, 3.95, z, 6));
