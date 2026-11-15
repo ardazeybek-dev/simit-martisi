@@ -115,11 +115,15 @@ export function teaGlassProfile() {
   const ctl = [[1.55, 0], [2.05, 1.6], [2.2, 3.4], [1.85, 5.8], [1.5, 8.0], [1.62, 10.2], [2.25, 12.6], [2.85, 14.6], [3.05, 15.6]];
   return (teaProf = new THREE.SplineCurve(ctl.map(([r, y]) => new THREE.Vector2(r, y))).getSpacedPoints(48));
 }
-// LED dokusu: kara-kızıl zemin üstünde şaşırtmalı nokta ızgarası. Canvas üstü = bardağın ağzı: en üstte kırmızı bant, ağızda beyaz, gövde demli çay kırmızısı.
-// grey: dünya haritasında kilitli şehrin grileşmiş hâli (aynı desen, renksiz)
+// LED dokusu: demli çay zemini üstünde şaşırtmalı nokta ızgarası. Canvas üstü = bardağın ağzı: en üstte kırmızı bant, ağızda beyaz, gövde demli çay kırmızısı.
+// Zemin kara değil koyu çay: uzakta noktalar karışınca bardak kara-kızıl leke değil, içi çay dolu cam gibi okunur. GLINT sütunlarında noktalar beyaza çalar
+// (camın dikey parıltısı; doku iki kez sarıldığı için gövdede karşılıklı iki parıltı). grey: dünya haritasında kilitli şehrin grileşmiş hâli (aynı desen, renksiz)
+const GLINT = i => Math.max(0, 1 - Math.abs(i - 7) / 2.2) + 0.35 * Math.max(0, 1 - Math.abs(i - 11) / 1.2); // 40 sütunda parıltının gücü 0..1
 export function teaGlassLedTex(grey = false) {
   const t = canvasTex(256, 512, (g, w, h) => {
-    g.fillStyle = grey ? '#5d6066' : '#2a0805'; g.fillRect(0, 0, w, h);
+    const bg = g.createLinearGradient(0, 0, 0, h); // zemin: ağızda açık camsı, gövdede koyu çay
+    if (grey) bg.addColorStop(0, '#5d6066'), bg.addColorStop(1, '#5d6066'); else bg.addColorStop(0, '#6a2a22'), bg.addColorStop(0.17, '#8a5a52'), bg.addColorStop(0.2, '#5a120a'), bg.addColorStop(1, '#3e0904');
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
     const cols = 40, rows = 64;
     for (let j = 0; j < rows; j++) {
       const v = 1 - (j + 0.5) / rows;
@@ -131,9 +135,25 @@ export function teaGlassLedTex(grey = false) {
         else if (v > 0.84) col = `rgb(255,${(238 + 17 * n) | 0},${(214 + 30 * n) | 0})`;             // ağız: beyaz
         else if (v > 0.8) col = j % 2 ? 'rgb(255,226,200)' : `rgb(255,${(70 * n) | 0},${(50 * n) | 0})`;  // beyazdan kırmızıya geçiş
         else col = `rgb(${(200 + 55 * n) | 0},${(28 + 30 * n * (1 - v)) | 0},${(20 * n) | 0})`;      // demli çay
+        const gl = grey ? 0 : GLINT(i) * (v > 0.955 ? 0.3 : 0.75);
+        if (gl > 0) { const m = col.match(/\d+/g).map(Number); col = `rgb(${m.map(c => (c + (255 - c) * gl) | 0).join(',')})`; }
         g.fillStyle = col; g.beginPath(); g.arc(x, y, v > 0.955 ? 2.6 : 2.0, 0, Math.PI * 2); g.fill();
       }
     }
+  });
+  t.wrapS = THREE.RepeatWrapping; t.repeat.set(2, 1);
+  return t;
+}
+// ufuk bardağı: aynı renkler noktasız, yumuşak geçişli (ufukta nokta ızgarası titreşip kararıyordu); cam parıltısı yatay geçişle
+export function teaGlassFarTex() {
+  const t = canvasTex(64, 128, (g, w, h) => {
+    const v = g.createLinearGradient(0, 0, 0, h);
+    v.addColorStop(0, '#ff3a2a'); v.addColorStop(0.04, '#ff3a2a'); v.addColorStop(0.05, '#fff2e4'); v.addColorStop(0.15, '#ffe9da'); v.addColorStop(0.2, '#ff5a40');
+    v.addColorStop(0.24, '#e8261a'); v.addColorStop(0.7, '#c41d12'); v.addColorStop(1, '#8c120a');
+    g.fillStyle = v; g.fillRect(0, 0, w, h);
+    const s = g.createLinearGradient(0, 0, w, 0); // iki parıltı (doku iki kez sarılır: biri)
+    s.addColorStop(0, 'rgba(255,255,255,0)'); s.addColorStop(0.12, 'rgba(255,245,235,.65)'); s.addColorStop(0.2, 'rgba(255,255,255,0)'); s.addColorStop(0.27, 'rgba(255,245,235,.25)'); s.addColorStop(0.32, 'rgba(255,255,255,0)'); s.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = s; g.fillRect(0, h * 0.05, w, h * 0.95);
   });
   t.wrapS = THREE.RepeatWrapping; t.repeat.set(2, 1);
   return t;

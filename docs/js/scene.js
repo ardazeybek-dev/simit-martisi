@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { rand, pick, canvasTex, Kit, teaGlassProfile, teaGlassLedTex } from './util.js';
+import { rand, pick, canvasTex, Kit, teaGlassProfile, teaGlassLedTex, teaGlassFarTex } from './util.js';
+import { planeGeo } from './models.js';
 
 // ---------------- renk paleti (gün batımı İstanbul) ----------------
 // Varsayılan yumuşak pastel; ?pal=old eski koyu, doygun gün batımı (karşılaştırma için)
@@ -912,14 +913,13 @@ function buildRize() {
   // çay bardağı kule: LED dokulu tek gövde (ufukta yağmurda da kırmızı-beyaz parlar), kırmızı tabak
   const TX = 46, TS = 1.9;
   add(new THREE.CylinderGeometry(4.2 * TS / 1.9, 3.6 * TS / 1.9, 0.8, 20), mP, TX, 1.9, AZ - 1, far, 0xc8241c);
-  const led = new THREE.MeshBasicMaterial({ map: teaGlassLedTex(), fog: false });
+  const led = new THREE.MeshBasicMaterial({ map: teaGlassFarTex(), fog: false });
   const tw = new THREE.Mesh(new THREE.LatheGeometry(teaGlassProfile().map(p => new THREE.Vector2(p.x * TS, p.y * TS)), 24), led); tw.position.set(TX, 2.2, AZ - 1); tw.renderOrder = 1; far.add(tw);
+  // sis tülü: bardağın önünde havanın renginde yarı saydam kılıf (applyWeather: siste kalın, yağmurda ince, açıkta yok); bardak puslu ama yine ışıl ışıl
+  teaMist = new THREE.Mesh(new THREE.LatheGeometry(teaGlassProfile().map(p => new THREE.Vector2(p.x * TS * 1.04 + 0.15, p.y * TS)), 24), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+  teaMist.position.copy(tw.position); teaMist.renderOrder = 2; far.add(teaMist); applyMist();
   // uçak: pistin doğu ucunda bekler, batıya koşar, kalkar, kentin üstünden tırmanıp kaybolur; sonra yeniden pistte belirir
-  const pk = new Kit();
-  pk.add(new THREE.BoxGeometry(14, 1.6, 1.6), 0xf6f6f2, 0, 1.6, 0).add(new THREE.BoxGeometry(3, 0.9, 1.2), 0xf6f6f2, -7.6, 1.5, 0)
-    .add(new THREE.BoxGeometry(2.6, 3, 0.25), 0xd0202a, 6.4, 3.6, 0).add(new THREE.BoxGeometry(3, 0.25, 15), 0xf2f2ee, 0.4, 1.2, 0).add(new THREE.BoxGeometry(1.6, 0.2, 5), 0xf2f2ee, 6.4, 2.2, 0)
-    .add(new THREE.BoxGeometry(12, 0.25, 1.64), 0xd0202a, -0.5, 0.95, 0);
-  const pm = new THREE.Mesh(pk.build(), basic(0xffffff)); pm.renderOrder = 1;
+  const pm = new THREE.Mesh(planeGeo().clone(), basic(0xffffff)); pm.renderOrder = 1; pm.rotation.y = Math.PI / 2; pm.scale.setScalar(1.6); pm.position.y = -1.6; // oyundaki uçağın aynısı, burnu -x
   const pg = new THREE.Group(); pg.add(pm); pg.position.set(AX1 - 20, 1.6, AZ + 1); far.add(pg);
   farPlane = { g: pg, t: 0, wait: rand(4, 10), x0: AX1 - 20, z: AZ + 1 };
   const glowTex = glow();
@@ -1028,7 +1028,7 @@ export function setCityLook(id) {
   farCity = id;
   Object.assign(PAL, BASE_PAL, CITY_PAL[id]);
   far.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
-  far.clear(); farMats.length = 0; farShips.length = 0;
+  far.clear(); farMats.length = 0; farShips.length = 0; teaMist = null;
   (FAR[id] || FAR.istanbul)();
   mergeFar();
   hemi.groundColor.setHex(PAL.hemiGround); sunLight.color.setHex(PAL.sunLight);
@@ -1148,8 +1148,11 @@ const WEATHER = {
 };
 const _t = new THREE.Color();
 const toned = (hex, w) => new THREE.Color(hex).lerp(_t, w.amt);
+let teaMist = null, mistKind = 'clear';
+const MIST = { clear: 0, rain: 0.22, snow: 0.3, fog: 0.5 };
+function applyMist() { if (!teaMist) return; teaMist.material.opacity = MIST[mistKind] || 0; teaMist.visible = teaMist.material.opacity > 0; if (scene.fog) teaMist.material.color.copy(scene.fog.color); }
 export function applyWeather(kind) {
-  const w = WEATHER[kind] || WEATHER.clear; _t.setHex(w.tint);
+  const w = WEATHER[kind] || WEATHER.clear; _t.setHex(w.tint); mistKind = kind;
   const u = skyMat.uniforms, ws = { amt: w.sky || w.amt }; // yağmurda gök ayrıca koyulaşır: bulutlu, kurşuni
   u.top.value.copy(toned(PAL.skyTop, ws)); u.mid.value.copy(toned(PAL.skyMid, ws)); u.low.value.copy(toned(PAL.skyLow, ws)); u.hor.value.copy(toned(PAL.horizon, ws));
   u.sunCol.value.setHex(PAL.sun).multiplyScalar(w.sun);
@@ -1162,4 +1165,5 @@ export function applyWeather(kind) {
     const amt = Math.min(0.85, w.amt * (kind === 'fog' ? 1.6 : 1.1));
     if (m.userData.wash) m.userData.wash.value.set(_t.r, _t.g, _t.b, amt); else m.color.copy(toned(m.userData.base, { amt }));
   }
+  applyMist();
 }

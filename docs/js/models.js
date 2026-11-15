@@ -3410,31 +3410,41 @@ export function runwayGeo() {
   for (let z = -RUNWAY_LEN / 2 + 20; z < RUNWAY_LEN / 2; z += 30) k.add(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 5), 0x9aa0a6, 1.2, H + 1.1, z).add(new THREE.BoxGeometry(0.5, 0.3, 0.5), 0xffe7a0, 1.2, H + 2.25, z); // apron lambaları
   return (runwayG = k.build());
 }
-// uçak: beyaz gövde, kırmızı kuyruk ve kırmızı karın çizgisi, kanat altında iki motor. Burun -z, yerel y=0 tekerlek altı. PLANE_EXH: motorların arkası (jet çıkışı)
+// uçak: dar gövdeli yolcu jeti. Gövde torna profili (yuvarlak burun, kuyrukta yukarı kalkan incelen koni), ok açılı incelen kanatlar (hafif dihedral,
+// uçta kırmızı winglet), kanat altında askılı iki motor (gri ağız halkası, koyu fan), ok açılı yatay kuyruk, kırmızı dikey kuyruk, karında açık gri.
+// Burun -z, yerel y=0 tekerlek altı. PLANE_EXH: motorların arkası (jet çıkışı)
 export const PLANE_LEN = 11, PLANE_EXH = [[-2.25, 0.85, 1.3], [2.25, 0.85, 1.3]];
 let planeG = null;
+// düzlem şekli (plan: [yan, boy] noktaları) → kalınlık th ile katı levha; yan = x, boy = z (kanat) ya da yan = z, boy = y (dikey kuyruk)
+const slab = (pts, th) => { const sh = new THREE.Shape(pts.map(([u, v]) => new THREE.Vector2(u, v))); const g = new THREE.ExtrudeGeometry(sh, { depth: th, bevelEnabled: false }); g.translate(0, 0, -th / 2); return g; };
 export function planeGeo() {
   if (planeG) return planeG;
-  const W = 0xf6f6f2, RED = 0xd0202a, GREY = 0xb8bec6, Y = 1.55;
+  const W = 0xf6f6f2, BELLY = 0xd9dde2, RED = 0xd0202a, GREY = 0xb8bec6, DARK = 0x2c3a4c, Y = 1.55;
+  // gövde: profil burundan (t=0) kuyruğa (t=10.7); z = t - 5.1. Kuyruk konisi yukarı kalkar
+  const prof = [[0, 0], [0.32, 0.1], [0.56, 0.4], [0.72, 0.95], [0.79, 1.7], [0.8, 2.6], [0.8, 7.0], [0.74, 8.0], [0.58, 9.0], [0.36, 9.9], [0.16, 10.5], [0.02, 10.7]];
+  const fus = new THREE.LatheGeometry(prof.map(([r, t]) => new THREE.Vector2(r, t - 5.1)), 16); fus.rotateX(Math.PI / 2); fus.computeVertexNormals();
+  { const p = fus.attributes.position; for (let i = 0; i < p.count; i++) { const z = p.getZ(i); if (z > 1.9) p.setY(i, p.getY(i) * (1 - 0.12 * ramp(1.9, 5.6, z)) + 0.62 * ramp(1.9, 5.6, z) ** 1.4); } fus.computeVertexNormals(); }
   const k = new Kit()
-    .add(new THREE.CylinderGeometry(0.78, 0.78, 8.2, 14), W, 0, Y, 0.2, Math.PI / 2)                                        // gövde
-    .add(new THREE.SphereGeometry(0.78, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), W, 0, Y, -3.9, -Math.PI / 2, 0, 0, 1, 1.9, 1) // burun
-    .add(new THREE.ConeGeometry(0.78, 2.6, 14), W, 0, Y + 0.25, 5.6, Math.PI / 2, 0, 0, 1, 1, 0.55)                       // kuyruk konisi
-    .add(new THREE.BoxGeometry(1.2, 0.32, 0.5), 0x2c3a4c, 0, Y + 0.42, -4.55, 0.45)                                        // kokpit camı
-    .add(new THREE.BoxGeometry(0.06, 0.18, 6.8), 0x2c3a4c, 0.76, Y + 0.3, 0.3).add(new THREE.BoxGeometry(0.06, 0.18, 6.8), 0x2c3a4c, -0.76, Y + 0.3, 0.3) // pencere sırası
-    .add(new THREE.BoxGeometry(0.4, 0.12, 8.4), RED, 0, Y - 0.72, 0.2)                                                      // karın çizgisi
-    .add(new THREE.BoxGeometry(0.18, 2.5, 1.9), RED, 0, Y + 1.7, 5.75, -0.35)                                              // dikey kuyruk
-    .add(new THREE.BoxGeometry(4.2, 0.12, 1.1), W, 0, Y + 0.35, 6.1, 0, 0, 0)                                              // yatay kuyruk
+    .add(fus, vert((f, y) => (y < Y - 0.38 ? BELLY : W)), 0, Y, 0)                                                         // gövde (karın açık gri)
+    .add(new THREE.BoxGeometry(0.5, 0.2, 0.36), DARK, 0, Y + 0.42, -4.1, -0.55).add(new THREE.BoxGeometry(0.42, 0.2, 0.3), DARK, 0.42, Y + 0.32, -4.0, -0.5, 0.5).add(new THREE.BoxGeometry(0.42, 0.2, 0.3), DARK, -0.42, Y + 0.32, -4.0, -0.5, -0.5) // kokpit camları
+    .add(new THREE.BoxGeometry(0.05, 0.16, 6.2), DARK, 0.79, Y + 0.22, 0.1).add(new THREE.BoxGeometry(0.05, 0.16, 6.2), DARK, -0.79, Y + 0.22, 0.1)      // pencere sırası
+    .add(new THREE.BoxGeometry(0.05, 0.1, 7.6), RED, 0.795, Y - 0.08, -0.2).add(new THREE.BoxGeometry(0.05, 0.1, 7.6), RED, -0.795, Y - 0.08, -0.2)     // kırmızı yan çizgi
+    .add(slab([[3.4, 0.55], [5.8, 0.55], [6.05, 3.0], [5.3, 3.0]], 0.16), RED, 0, Y, 0, 0, -Math.PI / 2, 0)                        // dikey kuyruk (ok açılı)
     .add(new THREE.CylinderGeometry(0.12, 0.12, 0.9, 6), 0x2a2d33, 0, 0.45, -3.2).add(new THREE.CylinderGeometry(0.22, 0.22, 0.2, 8), 0x1d1f24, 0, 0.22, -3.2, 0, 0, Math.PI / 2); // burun tekeri
   for (const s of [-1, 1]) {
-    k.add(new THREE.BoxGeometry(4.6, 0.16, 1.9), W, s * 2.9, Y - 0.35, 0.6, 0, s * 0.32, 0)                               // kanat (geriye açılı)
-      .add(new THREE.BoxGeometry(0.12, 0.7, 0.9), RED, s * 5.1, Y - 0.05, 1.6, 0, s * 0.32, 0)                             // kanat ucu
-      .add(new THREE.CylinderGeometry(0.42, 0.36, 1.7, 12), GREY, s * 2.25, 0.85, 0.45, Math.PI / 2)                       // motor
-      .add(new THREE.CylinderGeometry(0.43, 0.43, 0.3, 12), 0x8a9098, s * 2.25, 0.85, -0.45, Math.PI / 2)
-      .add(new THREE.CircleGeometry(0.34, 12), 0x2a2d33, s * 2.25, 0.85, -0.61, 0, Math.PI)
+    const wing = slab([[0.5, -0.5], [5.7, 1.95], [5.7, 2.6], [0.5, 1.9]].map(([u, v]) => [s * u, v]), 0.14); wing.rotateX(Math.PI / 2);
+    const tail = slab([[0.2, 4.2], [2.5, 5.45], [2.5, 5.9], [0.2, 5.4]].map(([u, v]) => [s * u, v]), 0.1); tail.rotateX(Math.PI / 2);
+    k.add(wing, W, 0, Y - 0.32, 0, 0, 0, s * 0.07)                                                                       // kanat (ok açılı, dihedral)
+      .add(new THREE.BoxGeometry(0.1, 0.75, 0.6), RED, s * 5.68, Y + 0.32, 2.35, 0.35, 0, -s * 0.15)                     // winglet
+      .add(tail, W, 0, Y + 0.5, 0, 0, 0, s * 0.1)                                                                       // yatay kuyruk
+      .add(new THREE.BoxGeometry(0.14, 0.32, 1.0), GREY, s * 2.25, 1.2, 0.35)                                            // motor askısı
+      .add(new THREE.CylinderGeometry(0.44, 0.36, 1.8, 14), W, s * 2.25, 0.85, 0.4, Math.PI / 2)                         // motor kaportası
+      .add(new THREE.TorusGeometry(0.4, 0.07, 6, 14), GREY, s * 2.25, 0.85, -0.5)                                       // ağız halkası
+      .add(new THREE.CircleGeometry(0.4, 14), 0x23262c, s * 2.25, 0.85, -0.47, 0, Math.PI)                              // fan
+      .add(new THREE.ConeGeometry(0.22, 0.5, 10), 0x55595f, s * 2.25, 0.85, 1.35, Math.PI / 2)                          // egzoz konisi
       .add(new THREE.CylinderGeometry(0.11, 0.11, 0.9, 6), 0x2a2d33, s * 0.95, 0.45, 0.9).add(new THREE.CylinderGeometry(0.26, 0.26, 0.24, 8), 0x1d1f24, s * 0.95, 0.22, 0.9, 0, 0, Math.PI / 2); // ana teker
   }
-  return (planeG = k.build());
+  return (planeG = k.build({ smooth: true }));
 }
 // motor alevi: iki motorun arkasında turuncu-sarı ışık diski (toplanır parlaklık; main.js gaz verildikçe büyütür). Tek geometri, tek malzeme
 export const planeGlowMat = new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });

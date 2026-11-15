@@ -707,7 +707,7 @@ function updateSteam(dt) {
 // (jetAt; yelpazenin çizgisi şeridi verevine keser, karşı kenara doğru uzaklaşır). Simitler yelpazenin değdiği yerde karşıya savrulur. Martı kuyruğun hizasına
 // gelince frenler bırakılır: uçak pistte hızlanır, pistle hizalanır, kalkar ve denizin üstüne dönerek martının önünde tırmanır; yelpaze onunla gidip söner.
 // Ayar: JET_PUSH (en çok itiş), JET_LEN (yelpaze boyu), JET_A (bekleyişteki açı), UCAK_ACC (kalkış ivmesi), imbatZ aralığı. ?ucak → hemen gelir
-const UCAK_SOON = QS.has('ucak'), JET_PUSH = 2.7, JET_LEN = 70, JET_A = 0.35, JET_SPOOL = 1.6, UCAK_ACC = 44, UCAK_RISE = 52, PLANE_S = 1.5, JET_EXH = 1.3 * PLANE_S; // PLANE_S: uçağın ölçeği (martının yanında dev görünsün)
+const UCAK_SOON = QS.has('ucak'), JET_PUSH = 1.85, JET_LEN = 70, JET_A = 0.35, JET_SPOOL = 1.6, UCAK_ACC = 44, UCAK_RISE = 52, PLANE_S = 1.5, JET_EXH = 1.3 * PLANE_S; // PLANE_S: uçağın ölçeği (martının yanında dev görünsün)
 const _jn = new THREE.Vector3();
 function spawnUcak() {
   const z0 = genZ, dir = pick([-1, 1]), sd = -dir, srcZ = z0 - 66, zEnd = srcZ - 20;
@@ -727,7 +727,7 @@ function spawnUcak() {
   const sims = [], x = rand(-1.5, 1.5);
   for (const dz of [6, 9.4]) addSimit(x, FLY_Y, z0 - dz, false);
   for (let z = z0 - 18; z > zEnd + 4; z -= rand(5, 7.5)) { const s = addSimit(clamp(sd * rand(0.6, 3.2), -LANE + 0.6, LANE - 0.6), FLY_Y, z, goldRoll(0.06)); s.vx = dir; s.spin = dir * rand(3, 6); sims.push(s); }
-  if (difficulty() > 0.8) { addRival(srcZ + rand(30, 48), dir * rand(2.2, 3.2), rand(0.4, 0.9), undefined, z0 - 4); if (Math.random() < 0.6) addRival(srcZ + rand(-14, 6), rand(-2.6, 2.6), rand(0.6, 1.2), undefined, z0 - 4); addRival(z0 - rand(4, 10), rand(-2.4, 2.4), rand(0.6, 1.2), undefined, z0 - 2); } // rüzgâraltında bekleyen martı; çoğu kez jetin ardında bir rakip daha; yelpazeden önce girişte bir rakip
+  if (difficulty() > 0.8) { addRival(srcZ + rand(30, 48), dir * rand(2.2, 3.2), rand(0.4, 0.9), undefined, z0 - 4); if (Math.random() < 0.35) addRival(srcZ + rand(-14, 6), rand(-2.6, 2.6), rand(0.6, 1.2), undefined, z0 - 4); addRival(z0 - rand(4, 10), rand(-2.4, 2.4), rand(0.6, 1.2), undefined, z0 - 2); } // rüzgâraltında bekleyen martı; çoğu kez jetin ardında bir rakip daha; yelpazeden önce girişte bir rakip
   imbats.push({ g, z0, z1: padZ - RUNWAY_LEN / 2, pz0: padZ + RUNWAY_LEN / 2, pz1: padZ - RUNWAY_LEN / 2, dir, streaks, sims, felt: false, mills: [], gust: null, zm: null, swirl: null, flipped: false, bank: null, plume: null, drifts: [],
     jet: { plane, glow, sd, a, x: cx, z: cz, y: 0.55, v: 0, vy: 0, roll: 0, phase: 0, srcZ, zEnd, spool: 0, puffT: 0, hit: false } });
   imbatZ = zEnd - rand(1300, 1700) * (city.oldK || 1); // ~0,65-0,85 km'de bir
@@ -2372,7 +2372,7 @@ function resetWorld(newWeather = true) {
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; tempos = []; tempoZ = 0; tempoN = 0; tempoK = 1; tempoIn = null; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
   Math.random = R0;
-  if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(city.wx); applyWeather(weather); setWeatherFx(weather); } // başlıkta görülen hava uçuşta da sürer
+  if (newWeather) { weather = daily ? (ruleOn('fog') ? 'fog' : 'clear') : pickWeather(city.wx); applyWeather(weather); setWeatherFx(weather, city.rainK); } // başlıkta görülen hava uçuşta da sürer
   boltFx = 0; renderer.toneMappingExposure = 1;
   wind = 0; gustT = 0; gustNext = rand(6, 9); boltNext = rand(4, 9); hornNext = rand(5, 10); warmth = 1; shownWarm = -1;
   show('warm', false); $('warm').classList.remove('cold');
@@ -2552,7 +2552,8 @@ function showTitle() {
   else if (!tutorialPending && !dailyAuto && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) setTimeout(() => { if (state === 'title' && !dressing && !menuModal()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); openDaily(); } }, 700);
 }
 function cityWeather() { // menüde şehir değişince o şehirde olmayan hava (İzmir'de kar) yeniden çekilir
-  if (!daily && !weatherOk(weather, city.wx)) { weather = pickWeather(city.wx); setWeatherFx(weather); }
+  if (!daily && !weatherOk(weather, city.wx)) weather = pickWeather(city.wx);
+  setWeatherFx(weather, city.rainK); // yağmur yoğunluğu şehre göre (Rize sağanak)
 }
 function startGame() {
   recShowClose();
