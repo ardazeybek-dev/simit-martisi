@@ -17,3 +17,4 @@ window.I18N_ADD('it', {"Dalgaya kapıldın!": "Travolto dall'onda!", "Teleferik 
 window.I18N_ADD('it', {"Bandırma Vapuruna çarptın!": "Hai urtato il piroscafo Bandırma!", "Vinç halatına takıldın!": "Ti sei impigliato nel cavo della gru!"});
 window.I18N_ADD('it', {"Hamsi!": "Acciuga!"});
 window.I18N_ADD('it', {"Dünya Haritası": "Mappa del mondo", "Geri": "Indietro", "Yakınlaştır": "Ingrandisci", "Uzaklaştır": "Riduci", "Amerika": "America", "Japonya": "Giappone", "Güney Afrika": "Sudafrica"});
+window.I18N_ADD('it', {"Tebrikler! Rize açıldı!": "Bravo! Rize è aperta!", "Rize kıyısını baştan sona uçtun!": "Hai sorvolato tutta la costa di Rize!", "Samsun'u bitirince açılır": "Si apre quando finisci Samsun", "Tebrikler! Mersin açıldı!": "Bravo! Mersin è aperta!", "Mersin kıyısını baştan sona uçtun!": "Hai sorvolato tutta la costa di Mersin!", "Rize'yi bitirince açılır": "Si apre quando finisci Rize"});

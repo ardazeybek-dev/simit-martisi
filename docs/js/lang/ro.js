@@ -17,3 +17,4 @@ window.I18N_ADD('ro', {"Dalgaya kapıldın!": "Te-a luat valul!", "Teleferik hal
 window.I18N_ADD('ro', {"Bandırma Vapuruna çarptın!": "Te-ai izbit de vaporul Bandırma!", "Vinç halatına takıldın!": "Te-ai prins în cablul macaralei!"});
 window.I18N_ADD('ro', {"Hamsi!": "Hamsie!"});
 window.I18N_ADD('ro', {"Dünya Haritası": "Harta lumii", "Geri": "Înapoi", "Yakınlaştır": "Mărește", "Uzaklaştır": "Micșorează", "Amerika": "America", "Japonya": "Japonia", "Güney Afrika": "Africa de Sud"});
+window.I18N_ADD('ro', {"Tebrikler! Rize açıldı!": "Bravo! Rize s-a deschis!", "Rize kıyısını baştan sona uçtun!": "Ai zburat toată coasta din Rize!", "Samsun'u bitirince açılır": "Se deschide după ce termini Samsun", "Tebrikler! Mersin açıldı!": "Bravo! Mersin s-a deschis!", "Mersin kıyısını baştan sona uçtun!": "Ai zburat toată coasta din Mersin!", "Rize'yi bitirince açılır": "Se deschide după ce termini Rize"});

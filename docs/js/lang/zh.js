@@ -17,3 +17,4 @@ window.I18N_ADD('zh', {"Dalgaya kapıldın!": "被浪卷走了！", "Teleferik h
 window.I18N_ADD('zh', {"Bandırma Vapuruna çarptın!": "你撞上了班德尔马号蒸汽船！", "Vinç halatına takıldın!": "你被起重机钢缆缠住了！"});
 window.I18N_ADD('zh', {"Hamsi!": "凤尾鱼！"});
 window.I18N_ADD('zh', {"Dünya Haritası": "世界地图", "Geri": "返回", "Yakınlaştır": "放大", "Uzaklaştır": "缩小", "Amerika": "美洲", "Japonya": "日本", "Güney Afrika": "南非"});
+window.I18N_ADD('zh', {"Tebrikler! Rize açıldı!": "太棒了！里泽已开放！", "Rize kıyısını baştan sona uçtun!": "你飞完了里泽的整条海岸！", "Samsun'u bitirince açılır": "完成萨姆松后开放", "Tebrikler! Mersin açıldı!": "太棒了！梅尔辛已开放！", "Mersin kıyısını baştan sona uçtun!": "你飞完了梅尔辛的整条海岸！", "Rize'yi bitirince açılır": "完成里泽后开放"});
