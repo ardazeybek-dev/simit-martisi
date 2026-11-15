@@ -870,9 +870,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #achPanel .ach.done .ach-bar { visibility: hidden; }
 .ach-stub { display: flex; justify-content: center; gap: 4px; }
 .ach-stub i { width: 13px; height: 13px; border-radius: 50%; border: 1.5px dashed rgba(75, 36, 22, .38); }
-.ach-stub i.on { border: 0; background: var(--card-b, #3f1b14); box-shadow: inset 0 2px 2px rgba(0, 0, 0, .55), 0 0 0 1.5px #b5672e; }
-.ach-stub i.on + i.on { box-shadow: inset 0 2px 2px rgba(0, 0, 0, .55), 0 0 0 1.5px #7d899c; }
-.ach-stub i.on + i.on + i.on { box-shadow: inset 0 2px 2px rgba(0, 0, 0, .55), 0 0 0 1.5px #cf9213; }
+.ach-stub i { border-color: var(--tier, rgba(75, 36, 22, .38)); }
+.ach-stub i.on { border: 0; background: var(--tier, #b5672e); box-shadow: inset 0 2px 2px rgba(0, 0, 0, .35), 0 0 0 1.5px rgba(75, 36, 22, .45); } /* evrenin rengi: bronz, gümüş, altın */
 #achPanel .ach-get { justify-self: center; flex-direction: column; gap: 0; padding: 4px 6px 2px; border-radius: 7px; font-size: 16px; line-height: 1;
   background: rgba(196, 48, 43, .06); color: #c4302b; border: 2.5px solid currentColor; box-shadow: inset 0 0 0 1.5px var(--paper), inset 0 0 0 3px rgba(196, 48, 43, .5);
   transform: rotate(-9deg); animation: stamp 1.8s ease-in-out infinite; }

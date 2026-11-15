@@ -3436,20 +3436,21 @@ function renderMenuBadges() {
 // Kalıcı; her biri üç kademe (bronz, gümüş, altın). Sayaçlar her uçuşun sonunda (showOver) toplanır,
 // rekor ve en uzak iskele eski kayıtlardan gelir: önceden oynayan sıfırdan başlamaz. Ödül panelden alınır, uçuşta bildirim yok.
 const ACH = [
-  { id: 'simit', name: 'Simit avcısı', text: 'Toplam {n} simit kap', n: [10000, 50000, 200000] },
-  { id: 'gold', name: 'Altın göz', text: 'Toplam {n} altın simit kap', n: [1000, 5000, 20000] },
-  { id: 'maxDist', name: 'Boğaz yolcusu', text: 'Bir uçuşta {n} m uç', n: [1000, 3000, 6800] },
-  { id: 'maxScore', name: 'Rekortmen', text: 'Bir uçuşta {n} puan yap', n: [50000, 150000, 500000] },
-  { id: 'maxCombo', name: 'Seri ustası', text: '{n} simitlik seri yap', n: [100, 250, 500] },
-  { id: 'steal', name: 'Hınzır martı', text: 'Yolcuların elinden toplam {n} simit kap', n: [3000, 10000, 30000] },
-  { id: 'near', name: 'Kıl payı', text: 'Toplam {n} kez kıl payı geç', n: [300, 1500, 5000] },
-  { id: 'turn', name: 'Viraj ustası', text: 'Toplam {n} kusursuz viraj al', n: [1000, 3000, 10000] },
-  { id: 'dolphin', name: 'Yunus dostu', text: 'Toplam {n} yunusun üstünden geç', n: [100, 600, 2000] },
-  { id: 'bridge', name: 'Köprü altı', text: 'Toplam {n} kez köprü altından geç', n: [30, 150, 500] },
-  { id: 'runs', name: 'Sadık martı', text: '{n} kez uç', n: [100, 500, 2000] },
-  { id: 'owned', name: 'Moda martı', text: '{n} kostüm al', n: [3, 8, 17] },
+  { id: 'simit', name: 'Simit avcısı', text: 'Toplam {n} simit kap', n: [10000, 50000, 200000, 400000, 700000, 1000000, 1500000, 2500000, 5000000] },
+  { id: 'gold', name: 'Altın göz', text: 'Toplam {n} altın simit kap', n: [1000, 5000, 20000, 40000, 70000, 100000, 150000, 250000, 500000] },
+  { id: 'maxDist', name: 'Boğaz yolcusu', text: 'Bir uçuşta {n} m uç', n: [1000, 3000, 6800, 15000, 25000, 35000, 50000, 75000, 120000] },
+  { id: 'maxScore', name: 'Rekortmen', text: 'Bir uçuşta {n} puan yap', n: [50000, 150000, 500000, 1000000, 2000000, 3500000, 5000000, 8000000, 15000000] },
+  { id: 'maxCombo', name: 'Seri ustası', text: '{n} simitlik seri yap', n: [100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000] },
+  { id: 'steal', name: 'Hınzır martı', text: 'Yolcuların elinden toplam {n} simit kap', n: [3000, 10000, 30000, 50000, 80000, 120000, 160000, 250000, 400000] },
+  { id: 'near', name: 'Kıl payı', text: 'Toplam {n} kez kıl payı geç', n: [300, 1500, 5000, 8000, 12000, 18000, 25000, 40000, 60000] },
+  { id: 'turn', name: 'Viraj ustası', text: 'Toplam {n} kusursuz viraj al', n: [1000, 3000, 10000, 15000, 25000, 40000, 60000, 90000, 150000] },
+  { id: 'dolphin', name: 'Yunus dostu', text: 'Toplam {n} yunusun üstünden geç', n: [100, 600, 2000, 3000, 5000, 8000, 12000, 20000, 35000] },
+  { id: 'bridge', name: 'Köprü altı', text: 'Toplam {n} kez köprü altından geç', n: [30, 150, 500, 800, 1200, 1800, 2500, 4000, 6000] },
+  { id: 'runs', name: 'Sadık martı', text: '{n} kez uç', n: [100, 500, 2000, 3000, 5000, 7500, 10000, 15000, 25000] },
+  { id: 'owned', name: 'Moda martı', text: '{n} kostüm al', n: [3, 5, 8, 10, 12, 14, 15, 16, 17] },
 ];
-const ACH_R = [25, 75, 200];
+// v3.9.3: üç evre (bronz, gümüş, altın), her evrede üç nokta: dokuz adım. Eski üç kademe = bronz evre (alınmış ödüller yerinde kalır)
+const ACH_R = [25, 50, 75, 100, 150, 200, 300, 450, 700], ACH_STEPS = 9;
 // her başarımın kendi simgesi (hepsi aynı madalya olunca liste şablon gibi duruyordu)
 const ACH_ICON = { simit: 'i-simit', gold: 'i-sun', maxDist: 'i-pin', maxScore: 'i-trophy', maxCombo: 'i-bolt', steal: 'i-hand', near: 'i-near', turn: 'i-turn', dolphin: 'i-wave', bridge: 'i-bridge', runs: 'i-play', owned: 'i-hanger' };
 const ach = Object.assign({ st: {}, got: {} }, store.get(KEY_ACH, {}));
@@ -3478,10 +3479,10 @@ function renderAch() {
   $('achWallet').textContent = fmt(wallet);
   const box = $('achList'); box.textContent = '';
   for (const a of ACH) {
-    const tier = achTier(a.id), got = ach.got[a.id] || 0, v = achVal(a.id), next = a.n[Math.min(got, 2)];
+    const tier = achTier(a.id), got = ach.got[a.id] || 0, v = achVal(a.id), L = a.n.length, stage = Math.min(2, Math.floor(got / 3)); // stage: 0 bronz, 1 gümüş, 2 altın
     const d = document.createElement('div');
-    d.className = 'ach' + (got >= 3 ? ' done' : ''); d.dataset.t = got; d.dataset.next = Math.min(got, 2);
-    const goal = tier > got ? a.n[got] : a.n[Math.min(tier, 2)];
+    d.className = 'ach' + (got >= L ? ' done' : ''); d.dataset.t = Math.ceil(got / 3); d.dataset.next = stage;
+    const goal = tier > got ? a.n[got] : a.n[Math.min(tier, L - 1)];
     d.innerHTML = `<span class="ach-i"><svg><use href="#${ACH_ICON[a.id] || 'i-medal'}"/></svg></span><div class="ach-m"><b></b><small></small><span class="ach-bar"><i style="width:${Math.min(1, v / goal) * 100}%"></i></span></div>`;
     d.querySelector('b').textContent = tr(a.name);
     d.querySelector('small').textContent = `${tr(a.text).replace('{n}', fmt(goal))} · ${fmt(Math.min(v, goal))}/${fmt(goal)}`;
@@ -3490,8 +3491,8 @@ function renderAch() {
       b.innerHTML = `+${fmt(ACH_R[got])}<svg class="ico"><use href="#i-simit"/></svg>`;
       b.addEventListener('click', e => { e.stopPropagation(); claimAch(a.id); });
       d.appendChild(b);
-    } else d.insertAdjacentHTML('beforeend', `<span class="ach-stub">${[0, 1, 2].map(i => `<i class="${i < got ? 'on' : ''}"></i>`).join('')}</span>`);
-    void next; box.appendChild(d);
+    } else d.insertAdjacentHTML('beforeend', `<span class="ach-stub">${[0, 1, 2].map(i => `<i class="${i < got - stage * 3 ? 'on' : ''}"></i>`).join('')}</span>`); // içinde bulunulan evrenin üç noktası
+    box.appendChild(d);
   }
 }
 function claimAch(id) {
@@ -3709,11 +3710,11 @@ const BADGES = [
   ...fam('fish', 'i-fish', [[100, 'Balıkçı'], [1000, 'Balık reisi']], 'Toplam {n} balık yakala', () => ach.st.fish || 0),
   ...fam('sim', 'i-simit', [[100000, 'Simit sevdalısı'], [1000000, 'Simit sarayı']], 'Toplam {n} simit kap', () => ach.st.simit || 0),
   ...CITIES.filter(c => !c.soon).map(c => ({ id: 'city-' + c.id, fam: 'city', icon: 'i-trophy', n: 1, name: c.name, text: c.end, lab: c.name, v: () => (routeOf(c) === c.stops.length - 1 ? 1 : 0) })),
-  ...fam('nefes', 'i-trophy', [[1, 'Tek nefes'], [3, 'Güçlü kanat'], [9, 'Türkiye turu']], '{n} şehri tek uçuşta, ikinci şans kullanmadan bitir', () => (ach.st.oneRun || []).length, n => `${n} ${tr('şehir')}`),
-  { id: 'fun-perhiz', fam: 'fun', icon: 'i-simit', n: 100, name: 'Perhizkâr', text: 'Simit yemeden {n} m uç', lab: '100 m', v: () => ach.st.fast || 0 },
-  { id: 'fun-kil', fam: 'fun', icon: 'i-near', n: 25, name: 'Kıl payı ustası', text: 'Bir uçuşta {n} kez kıl payı geç', lab: '25', v: () => ach.st.nearRun || 0 },
-  { id: 'fun-altin', fam: 'fun', icon: 'i-medal', n: 20, name: 'Altın yağmuru', text: 'Bir uçuşta {n} altın simit kap', lab: '20', v: () => ach.st.goldRun || 0 },
-  { id: 'fun-gece', fam: 'fun', icon: 'i-sun', n: 1, name: 'Gece martısı', text: 'Gece yarısından sonra uç', lab: '?', v: () => ach.st.night || 0 },
+  ...fam('nefes', 'i-trophy', [[1, 'Tek nefes'], [3, 'Güçlü kanat'], [9, 'Türkiye turu']], '{n} farklı şehri, her birini kendi uçuşunda ölmeden ve ikinci şanssız baştan sona uç', () => (ach.st.oneRun || []).length, n => `${n} ${tr('şehir')}`),
+  { id: 'fun-perhiz', fam: 'fun', icon: 'i-simit', n: 115, name: 'Perhizkâr', text: 'Simit yemeden {n} m uç', lab: '115 m', v: () => ach.st.fast || 0 },
+  { id: 'fun-kil', fam: 'fun', icon: 'i-near', n: 75, name: 'Kıl payı ustası', text: 'Bir uçuşta {n} kez kıl payı geç', lab: '75', v: () => ach.st.nearRun || 0 },
+  { id: 'fun-altin', fam: 'fun', icon: 'i-medal', n: 100, name: 'Altın yağmuru', text: 'Bir uçuşta {n} altın simit kap', lab: '100', v: () => ach.st.goldRun || 0 },
+  { id: 'fun-gece', fam: 'fun', icon: 'i-sun', n: 1, name: 'Gece kuşu', text: 'Gece yarısından sonra uç', lab: '?', v: () => ach.st.night || 0 },
   ...[['rain', 'i-drop', 'Yağmur kuşu', 'Yağmurda bir uçuşta {n} m uç'], ['snow', 'i-snow', 'Kar tanesi', 'Karda bir uçuşta {n} m uç'], ['fog', 'i-fog', 'Sis kaptanı', 'Siste bir uçuşta {n} m uç']]
     .map(([w, icon, name, text]) => ({ id: 'wx-' + w, fam: 'wx', icon, n: 2000, name, text, lab: '2000 m', v: () => ach.st['wx_' + w] || 0 })),
 ];
