@@ -18,3 +18,4 @@ window.I18N_ADD('fr', {"Bandırma Vapuruna çarptın!": "Tu as percuté le vapeu
 window.I18N_ADD('fr', {"Hamsi!": "Anchois !"});
 window.I18N_ADD('fr', {"Dünya Haritası": "Carte du monde", "Geri": "Retour", "Yakınlaştır": "Zoom avant", "Uzaklaştır": "Zoom arrière", "Amerika": "Amérique", "Japonya": "Japon", "Güney Afrika": "Afrique du Sud"});
 window.I18N_ADD('fr', {"Tebrikler! Rize açıldı!": "Bravo ! Rize est ouverte !", "Rize kıyısını baştan sona uçtun!": "Tu as survolé toute la côte de Rize !", "Samsun'u bitirince açılır": "S'ouvre quand tu termines Samsun", "Tebrikler! Mersin açıldı!": "Bravo ! Mersin est ouverte !", "Mersin kıyısını baştan sona uçtun!": "Tu as survolé toute la côte de Mersin !", "Rize'yi bitirince açılır": "S'ouvre quand tu termines Rize"});
+window.I18N_ADD('fr', {"Çay mavnasına çarptın!": "Tu as heurté la barge à thé !"});

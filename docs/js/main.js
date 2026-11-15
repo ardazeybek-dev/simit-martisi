@@ -94,8 +94,9 @@ const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { con
 // Engel aralıkları (spdAt) TABAN hızla kurulur: martı daha hızlı geldiği için tepki süresi gerçekten kısalır (aralık da büyüseydi fark sıfırlanıyordu).
 // Geçilebilirlik tests/passable.cjs ile ölçülür (orada martı şehir hızında). Günlük yarışta yok (herkese aynı). passable.cjs CITY_SPD ile aynı kalmalı
 const CITY_SPD = 0.08;
-// hız basamağı Çanakkale'ye kadar tam (+%32), sonra yarım: Trabzon +%36, Samsun +%40; kalabalık (cityG) sırayla tam büyümeye devam eder
-const cityRank = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityIdx = () => Math.min(4, cityRank()) + 0.5 * Math.max(0, cityRank() - 4),
+// hız basamağı Çanakkale'ye kadar tam (+%32), sonra yarım: Trabzon +%36, Samsun +%40; Samsun'dan sonra üç çeyrek: Rize +%46 (açık su artık her yerde dolu:
+// kalabalık tavanda, yeni şehri zorlaştıran asıl kaldıraç hız); kalabalık (cityG) sırayla tam büyümeye devam eder
+const cityRank = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityIdx = () => Math.min(4, cityRank()) + 0.5 * Math.max(0, Math.min(6, cityRank()) - 4) + 0.75 * Math.max(0, cityRank() - 6),
   cityBand = m => clamp((m - 500) / 1000, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
 const cityKAt = m => 1 + CITY_SPD * cityIdx() * clamp((m - 500) / 3500, 0, 1) * clamp((14000 - m) / 6000, 0, 1); // şehir hızı 4 km'ye yayılır (2. km'de Samsun İstanbul'un 8. km'si gibiydi); kalabalık (cityBand) 1,5 km'de tam
 // şehir baskısı: aynı bantta heat'e sıra başına ek (özel bölgeler seyrek kaldığı için İzmir zamanla bakınca İstanbul'dan kolaydı: daha çok rakip, kısa açık su, sık yelkenli)
@@ -316,7 +317,7 @@ function throwVolleys(z0, len, first, dense) {
   let z = z0 - (first ? 24 : 7), x = rand(-2, 2), side = pick([-1, 1]);
   while (z > end) {
     const n = dense ? pick([3, 4, 4, 5]) : pick([2, 3, 4]), bz = z - (n - 1) * 1.7 + rand(-2, 2); // kimi iki parça atar, kimi dört (tek parça az geliyordu)
-    if (imbats.some(q => q.jet && -q.dir === side && bz < q.z0 + 10 && bz > q.z1 - 10)) side = -side; // Rize: havalimanı dolgusunun üstüne kayık konmaz
+    if (padSide(bz) === side) side = -side; // Rize: havalimanı dolgusunun üstüne kayık konmaz
     const b = makeSimitBoat(side); b.g.position.set(side * rand(9.5, 11), 0, bz); b.g.rotation.y = rand(-0.3, 0.3); scene.add(b.g); addShipLights(b.g, 'simitboat');
     const bt = { ...b, z: bz, hand: 0, thrown: 0 };
     boats.push(bt); decor.push({ mesh: b.g, z: bz, ph: Math.random() * 6 });
@@ -711,7 +712,7 @@ const _jn = new THREE.Vector3();
 function spawnUcak() {
   const z0 = genZ, dir = pick([-1, 1]), sd = -dir, srcZ = z0 - 66, zEnd = srcZ - 20;
   const g = new THREE.Group(); scene.add(g);
-  const padZ = srcZ - 5; // dolgunun ortası: pist kuyruğun 80 m gerisinden kalkış ucuna kadar uzanır
+  const padZ = z0 - 4 - RUNWAY_LEN / 2; // dolgunun ortası: pist parçanın başından kalkış ucuna kadar uzanır (önceki parçanın kıyısına taşmaz)
   decor = decor.filter(d => (d.z < padZ + RUNWAY_LEN / 2 + 6 && d.z > padZ - RUNWAY_LEN / 2 - 6 && d.mesh.position.x * sd > 5.5 ? (scene.remove(d.mesh), false) : true)); // dolgunun içine düşen kıyı dekoru
   const pad = new THREE.Mesh(runwayGeo(), vcMat); pad.position.set(sd * (LANE + 2.6), 0, padZ); if (sd < 0) pad.rotation.y = Math.PI; pad.receiveShadow = true; g.add(pad);
   // uçak: burun (sd·sin a, -cos a) yönünde; kuyruk şeride yakın (LANE+4,5), motorların arkası (src) yelpazenin tepesi
@@ -726,13 +727,15 @@ function spawnUcak() {
   const sims = [], x = rand(-1.5, 1.5);
   for (const dz of [6, 9.4]) addSimit(x, FLY_Y, z0 - dz, false);
   for (let z = z0 - 18; z > zEnd + 4; z -= rand(5, 7.5)) { const s = addSimit(clamp(sd * rand(0.6, 3.2), -LANE + 0.6, LANE - 0.6), FLY_Y, z, goldRoll(0.06)); s.vx = dir; s.spin = dir * rand(3, 6); sims.push(s); }
-  if (difficulty() > 0.8) addRival(srcZ + rand(14, 44), dir * rand(2.2, 3.2), rand(0.4, 0.9), undefined, z0 - 4); // rüzgâraltında bekleyen martı
-  imbats.push({ g, z0, z1: padZ - RUNWAY_LEN / 2, dir, streaks, sims, felt: false, mills: [], gust: null, zm: null, swirl: null, flipped: false, bank: null, plume: null, drifts: [],
+  if (difficulty() > 0.8) { addRival(srcZ + rand(30, 48), dir * rand(2.2, 3.2), rand(0.4, 0.9), undefined, z0 - 4); if (Math.random() < 0.6) addRival(srcZ + rand(-14, 6), rand(-2.6, 2.6), rand(0.6, 1.2), undefined, z0 - 4); } // rüzgâraltında bekleyen martı; çoğu kez jetin ardında bir rakip daha
+  imbats.push({ g, z0, z1: padZ - RUNWAY_LEN / 2, pz0: padZ + RUNWAY_LEN / 2, pz1: padZ - RUNWAY_LEN / 2, dir, streaks, sims, felt: false, mills: [], gust: null, zm: null, swirl: null, flipped: false, bank: null, plume: null, drifts: [],
     jet: { plane, glow, sd, a, x: cx, z: cz, y: 0.55, v: 0, vy: 0, roll: 0, phase: 0, srcZ, zEnd, spool: 0, puffT: 0, hit: false } });
-  imbatZ = zEnd - rand(1000, 1400) * (city.oldK || 1);
+  imbatZ = zEnd - rand(1300, 1700) * (city.oldK || 1); // ~0,65-0,85 km'de bir
+  pirateZ = Math.min(pirateZ, padZ - RUNWAY_LEN / 2 - 6); fallsZ = Math.min(fallsZ, padZ - RUNWAY_LEN / 2 - 6); // mavnanın ucu ve kule dolgunun yanına düşmesin: dolgu bitene kadar beklerler
   genZ = zEnd;
-  spawnGap(false, Math.max(36, padZ - RUNWAY_LEN / 2 - zEnd + 8)); // pistin geri kalanı boyunca açık su (dolgunun yanına şelale/kule gibi kıyı parçası düşmesin)
 }
+// Rize: havalimanı dolgusu şeridin bir yanını kaplar; o yanda (dolgunun boyunca) iskele, kule ve simitçi kayığı kurulmaz. Döner: dolgunun yanı (yoksa 0)
+const padSide = z => { for (const b of imbats) if (b.jet && z < b.pz0 + 10 && z > b.pz1 - 10) return -b.dir; return 0; };
 // yelpazenin (x, z) noktasındaki gücü 0..1: motorların arkasından (src) jet yönünde d kadar, yanına l kadar
 function jetAt(j, x, z) {
   if (j.spool < 0.01) return 0;
@@ -812,7 +815,8 @@ function spawnPirate() {
   }
   if (dl) for (const dz of [9, 5.5, 0]) addSimit(gapX, FLY_Y, pz + dz, dz === 0, THROW_ON); // kapının geleceği yer: ortada altın
   pirates.push({ g, xa, side, k: rand(0.08, 0.12), z: pz, os, gapX, ph: Math.random() * 6, gulet: gu, ferry: fe, mavna: mv, wave: dl, spT: 0, done: false });
-  pirateZ = pz - rand(700, 1000) * (city.gulet ? city.oldK || 1 : 1);
+  if (mv && difficulty() > 0.8) addRival(z0 - rand(4, 12), rand(-2.8, 2.8), rand(0.5, 1.2), undefined, z0 - 2); // Rize: mavnanın önünde bir rakip (kapıya hizalanırken dikkat ister)
+  pirateZ = pz - (mv ? rand(600, 850) : rand(700, 1000)) * (city.gulet ? city.oldK || 1 : 1);
   genZ = z0 - 58;
 }
 function updatePirates(gz, dt = 0) {
@@ -893,9 +897,11 @@ function updateFalls(dt, gz) {
 const KULE_SOON = QS.has('kule'), KULE_LIFT = 3.6, KULE_CUE = 1.25, KULE_BURST = 0.95, KULE_GAP = 1.35;
 const kuleUp = (s, len) => KULE_LIFT * Math.min(1, s / (len * 0.4)) ** 0.7; // fışkırmanın s. biriminde martının hedef yüksekliği
 function spawnKule() {
-  const z0 = genZ, dir = pick([-1, 1]), m = -z0 / 2, v = spdAt(m) * cityKAt(m); // martının o metredeki beklenen hızı (birim/sn)
+  const z0 = genZ, m = -z0 / 2, v = spdAt(m) * cityKAt(m); // martının o metredeki beklenen hızı (birim/sn)
+  let dir = pick([-1, 1]);
   const zc1 = z0 - 8, zA1 = zc1 - v * KULE_CUE, zB1 = zA1 - v * KULE_BURST, zA2 = zB1 - v * KULE_GAP, zB2 = zA2 - v * KULE_BURST, zEnd = zB2 - 10;
   const kz = (zA1 + zB2) / 2;
+  if ([z0, kz, zEnd].some(z => padSide(z) === dir)) dir = -dir; // kule havalimanı dolgusunun karşı yakasında
   if (THROW_ON) throwVolleys(z0, 16, false);
   decor = decor.filter(d => (d.z < z0 + 10 && d.z > zEnd - 10 && Math.sign(d.mesh.position.x) === dir && Math.abs(d.mesh.position.x) > 6 ? (scene.remove(d.mesh), false) : true)); // rıhtımın çevresi boş
   const g = makeKule(); g.position.set(dir * (LANE + KULE_QR + 1.6), 0, kz); g.rotation.y = rand(0, 6); scene.add(g);
@@ -915,9 +921,9 @@ function spawnKule() {
   }
   if (top) { scene.remove(top.s.mesh); simits.splice(simits.indexOf(top.s), 1); addSimit(top.s.x, top.s.y, top.s.z, true); } // ikinci kavsin tepesinde altın
   for (let z = zc1 - 4; z > zEnd + 4; z -= rand(5.5, 7.5)) addSimit(-dir * rand(1.4, 2.6), FLY_Y, z, false); // buharsız yarıda alçak çizgi
-  if (difficulty() > 0.8) addRival(zB1 - rand(4, 14), -dir * rand(2.4, 3.2), rand(0.3, 0.7), undefined, z0 - 4); // buharsız yarıda bekleyen rakip
+  if (difficulty() > 0.8) for (const zz of [zA1 + rand(-4, 6), zB1 - rand(4, 14), zB2 + rand(-6, 6)]) addRival(zz, -dir * rand(1.8, 3.2), rand(0.3, 0.7), undefined, z0 - 4); // buharsız yarıda bekleyen rakipler: buhara binen onları aşar
   falls.push({ g, z: kz, zA: zA1, zB: zB2, dir, acc: 0, felt: false, kule: { zc: [zc1, zA2 + v * KULE_CUE], zs, ring: g.userData.ring, burst: -1, cue: -1, idle: rand(0, 1), puffT: 0 }, ph: Math.random() * 6 });
-  fallsZ = zEnd - rand(1600, 2000) * (city.oldK || 1);
+  fallsZ = zEnd - rand(2300, 2900) * (city.oldK || 1); // ~1,2-1,45 km'de bir
   genZ = zEnd;
   spawnGap(false, Math.max(36, Math.round(speed * 1.3 + 8))); // kalkmış martı inerken vapur gelmesin
 }
@@ -2002,7 +2008,8 @@ function spawnScenery(limit) {
 // iskele kesiti: açık su, kıyıda iskele binası (son durakta fener), koridorun üstünde isim tabelalı kapı.
 // Kapıya giden simit dizisi tabelanın tam altındaki altın simitte biter; kapıdan geçince varış.
 function spawnPier() {
-  const i = pierI++, z0 = genZ, gz = z0 - PIER_HALF, side = pick([-1, 1]), last = i === STOPS.length - 1;
+  const i = pierI++, z0 = genZ, gz = z0 - PIER_HALF, last = i === STOPS.length - 1;
+  let side = pick([-1, 1]); if (padSide(gz) === side || padSide(gz + 20) === side || padSide(gz - 20) === side) side = -side; // Rize: iskele havalimanı dolgusunun karşısında
   stopM[i] = -gz / 2;
   decor = decor.filter(d => (Math.abs(d.z - gz) < (d.vz ? 90 : 34) && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true));
   land = land.filter(l => (Math.abs(l.z - gz) < 60 ? (scene.remove(l.mesh), false) : true));
@@ -2348,7 +2355,7 @@ function resetWorld(newWeather = true) {
   pirateZ = !(city.pirate || city.gulet || city.feribot || city.dalga || city.mavna) ? -Infinity : PIRATE_SOON || GULET_SOON || FERRY_SOON || DALGA_SOON || MAVNA_SOON ? -90 : city.dalga ? -rand(2400, 2600) : city.mavna ? -rand(1650, 1850) : city.gulet ? -rand(2600, 2800) : city.feribot ? -rand(950, 1150) : -rand(1050, 1300); // ilk korsan teknesi Kaleiçi'nden sonra, ilk gulet / feribot ~0,5 km (şehrin ilk özelliği), ilk dalga ~1,25 km, ilk çay mavnası ~0,85-0,9 km
   hamsiZ = !city.hamsi ? -Infinity : HAMSI_SOON ? -90 : -rand(1420, 1600); // ilk hamsi sürüsü ~0,71-0,8 km (Trabzon'un ilk özelliği; balık şansı 700 m'den sonra)
   horseZ = !(city.truva || city.bandirma) ? -Infinity : TRUVA_SOON || BANDIRMA_SOON ? -90 : -rand(1950, 2200); // ilk Truva Atı / Bandırma Vapuru ~1-1,1 km
-  fallsZ = !(city.falls || city.diver || city.kule) ? -Infinity : FALLS_SOON || DIVER_SOON || KULE_SOON ? -90 : city.kule ? -rand(2350, 2550) : city.diver ? -rand(3500, 3700) : -rand(1600, 1900); // ilk şelale Mermerli'den önce, ilk dalgıç ~0,9-1 km, ilk çay bardağı kule ~1,2 km
+  fallsZ = !(city.falls || city.diver || city.kule) ? -Infinity : FALLS_SOON || DIVER_SOON || KULE_SOON ? -90 : city.kule ? -rand(2050, 2250) : city.diver ? -rand(3500, 3700) : -rand(1600, 1900); // ilk şelale Mermerli'den önce, ilk dalgıç ~0,9-1 km, ilk çay bardağı kule ~1,05-1,15 km (uçak dolgusu bitene kadar bekler)
   beachZ = !(city.beach || city.horon) ? -Infinity : BEACH_SOON || HORON_SOON ? -90 : city.horon ? -rand(1950, 2150) : -rand(550, 750); // ilk plaj Konyaaltı açıklarında, ilk horon teknesi ~1-1,1 km
   balloonZ = !city.balloons ? -Infinity : BALLOON_SOON ? -90 : city.marina ? -rand(700, 900) : -rand(1000, 1300); // ilk balonlar ~0,5-0,65 km (Kordon), Muğla'da ~0,35-0,45 km (ilk özellik)
   regattaZ = !(city.regatta || city.cup) ? -Infinity : REGATTA_SOON || CUP_SOON ? -90 : city.cup ? -rand(4000, 4300) : -rand(2500, 2800); // ilk yarış ~1,25-1,4 km (Bodrum Cup ~1,15-1,3 km)

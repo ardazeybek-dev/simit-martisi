@@ -18,3 +18,4 @@ window.I18N_ADD('hi', {"Bandırma Vapuruna çarptın!": "तुम बंदि�
 window.I18N_ADD('hi', {"Hamsi!": "एंकोवी!"});
 window.I18N_ADD('hi', {"Dünya Haritası": "विश्व मानचित्र", "Geri": "वापस", "Yakınlaştır": "ज़ूम इन", "Uzaklaştır": "ज़ूम आउट", "Amerika": "अमेरिका", "Japonya": "जापान", "Güney Afrika": "दक्षिण अफ़्रीका"});
 window.I18N_ADD('hi', {"Tebrikler! Rize açıldı!": "शाबाश! रिज़े खुल गया!", "Rize kıyısını baştan sona uçtun!": "तुमने रिज़े का पूरा तट उड़ लिया!", "Samsun'u bitirince açılır": "सैमसन पूरा करने पर खुलता है", "Tebrikler! Mersin açıldı!": "शाबाश! मेर्सिन खुल गया!", "Mersin kıyısını baştan sona uçtun!": "तुमने मेर्सिन का पूरा तट उड़ लिया!", "Rize'yi bitirince açılır": "रिज़े पूरा करने पर खुलता है"});
+window.I18N_ADD('hi', {"Çay mavnasına çarptın!": "तुम चाय की नाव से टकरा गए!"});

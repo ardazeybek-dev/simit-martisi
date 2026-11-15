@@ -18,3 +18,4 @@ window.I18N_ADD('ko', {"Bandırma Vapuruna çarptın!": "반드르마 증기선�
 window.I18N_ADD('ko', {"Hamsi!": "멸치!"});
 window.I18N_ADD('ko', {"Dünya Haritası": "세계 지도", "Geri": "뒤로", "Yakınlaştır": "확대", "Uzaklaştır": "축소", "Amerika": "미국", "Japonya": "일본", "Güney Afrika": "남아프리카"});
 window.I18N_ADD('ko', {"Tebrikler! Rize açıldı!": "잘했어! 리제가 열렸어!", "Rize kıyısını baştan sona uçtun!": "리제 해안을 끝까지 날았어!", "Samsun'u bitirince açılır": "삼순을 끝내면 열려", "Tebrikler! Mersin açıldı!": "잘했어! 메르신이 열렸어!", "Mersin kıyısını baştan sona uçtun!": "메르신 해안을 끝까지 날았어!", "Rize'yi bitirince açılır": "리제를 끝내면 열려"});
+window.I18N_ADD('ko', {"Çay mavnasına çarptın!": "차 바지선에 부딪혔어!"});
