@@ -2318,7 +2318,7 @@ let campT = 0, campSide = 0; // kenara yapışan martı: o kenara rakip gönderi
 let hicT = 0, hicY = 0; // Hıçkıran martı: sonraki hıçkırığa kalan süre, sıçrama yüksekliği
 // puan, sol sütuna sığmazsa küçülür (uzun puan kombo halkasının altına taşıyordu). Yalnız hane sayısı değişince ölçülür
 let scoreLen = -1;
-function fitScore() { const el = ui.score; el.style.fontSize = ''; const w = el.parentElement.clientWidth; if (w > 0 && el.scrollWidth > w) el.style.fontSize = Math.floor(parseFloat(getComputedStyle(el).fontSize) * w / el.scrollWidth) + 'px'; }
+function fitScore() { const el = ui.score; el.style.fontSize = ''; const w = el.parentElement.clientWidth - 6, fit = w > 0 && el.scrollWidth > w; el.classList.toggle('fit', fit); if (fit) el.style.fontSize = Math.floor(parseFloat(getComputedStyle(el).fontSize) * w / el.scrollWidth) + 'px'; } // sığdırılan uzun skor küçük zıplar: son rakam halkanın altına girmesin
 addEventListener('resize', () => { scoreLen = -1; });
 // oynama süresi (gerçek saniye, duraklatma sayılmaz): uçuşun süresi duraklatma ekranında, toplamı ayarlarda
 let runReal = 0, lastEatD = 0, noEat = 0; // lastEatD: önceki karenin mesafesi, noEat: son simitten beri uçulan

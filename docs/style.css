@@ -63,6 +63,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .score { white-space: nowrap; font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -.5px; transform-origin: left center; font-variant-numeric: tabular-nums; }
 .score.bump { animation: bump .28s cubic-bezier(.3, 1.8, .5, 1); }
 @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+.score.fit.bump { animation-name: bumpS; } /* sütuna sığdırılmış uzun skor: zıplayınca halkaya binmesin */
+@keyframes bumpS { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
 .score.dolph { animation: dolph .6s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes dolph { 0% { transform: scale(1); } 30% { transform: scale(1.34) rotate(-4deg); color: #8fe3ff; text-shadow: 0 0 14px #3fb8ff, 0 0 28px rgba(63, 184, 255, .7), 0 2px 0 rgba(27, 24, 56, .45); } 70% { color: #bff0ff; } 100% { transform: scale(1); } }
 .score.near { animation: nearx .6s ease-out; }
@@ -204,7 +206,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   box-shadow: 0 4px 0 rgba(15, 13, 36, .35); }
 .stat-card .ico { width: 24px; height: 24px; }
 #shopPanel .card { --card-a: #1f5d8c; --card-b: #123552; --card-sh: rgba(6, 20, 36, .55); --glass: rgba(0, 0, 0, .25); }
-#shopPanel .shop-card { overflow: hidden; padding-top: 58px; }
+#shopPanel .shop-card { overflow: hidden; padding-top: 58px; display: flex; flex-direction: column; } /* kısa ekranda kart ekrana sığana dek büzülür: ızgara kendi içinde kayar, Tamam hep görünür */
+#shopPanel .shop-card > * { flex-shrink: 0; }
+#shopPanel .shop-grid { flex-shrink: 1; min-height: 120px; overflow-y: auto; touch-action: pan-y; grid-auto-rows: max-content; align-content: start; padding: 2px; margin: -2px -2px 12px; }
 .shop-awning { position: absolute; left: 0; right: 0; top: 0; height: 50px; background: repeating-linear-gradient(90deg, #e5484d 0 30px, #fff4e2 30px 60px);
   -webkit-mask: radial-gradient(15px at 50% 0, #000 98%, transparent) 0 100% / 30px 15px repeat-x, linear-gradient(#000 0 0) top / 100% calc(100% - 15px) no-repeat;
   mask: radial-gradient(15px at 50% 0, #000 98%, transparent) 0 100% / 30px 15px repeat-x, linear-gradient(#000 0 0) top / 100% calc(100% - 15px) no-repeat;
@@ -523,7 +527,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .stats b { display: block; font-size: 19px; line-height: 1.1; }
 .stats span { font-size: 12.5px; opacity: .65; font-weight: 600; }
 .best-line { margin: 8px 0 4px; font-weight: 700; opacity: .75; }
-.actions { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; }
+.actions { display: grid; grid-template-columns: minmax(max-content, 1.6fr) minmax(max-content, 1fr); gap: 10px; }
+.actions .btn { padding-left: 12px; padding-right: 12px; } /* uzun dilde (Поделиться) iki buton kartın içinde kalsın */
 #reviveBtn { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 8px; }
 #reviveBtn:disabled { opacity: .6; }
 #fishBtn { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(#8fdcff, #3b9fd0); box-shadow: 0 4px 0 #1f6f99; color: #06283a; }
@@ -1082,6 +1087,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .ward-slots { width: min(96vw, 540px); gap: 10px; }
 #wardSlots .ward-slot { padding: 10px 8px 11px; gap: 8px; }
 #wardSlots .ward-slot small { font-size: 15px; padding: 2px 12px 1px; }
+@media (max-width: 380px) { #wardSlots .ward-slot small { font-size: 13px; padding: 2px 6px 1px; } } /* dar telefonda uzun dil (Gefieder) çerçeveden taşmasın */
 #wardSlots .slot-items { min-height: 76px; }
 /* giyili parçalar tek satırda: kutu boyu sabit, parça çoğaldıkça küçülür (alt alta dizilip kutu yukarı uzamasın, martıyı kapatmasın) */
 #wardSlots .slot-items { flex-wrap: nowrap; justify-content: center; height: 76px; min-height: 0; gap: 4px; }

@@ -53,6 +53,12 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Hata turu · 16 Kasım', id: 'kucuk-ekran', t: '📱 Küçük ve yatay ekranda menüler', look: [
+      'Mağaza: küçük telefonda (iPhone SE) ve telefon yatayken alttaki ürünler ve Tamam ekranın dışında kalıyordu, çıkılamıyordu. Şimdi ürünler kendi içinde kayıyor, Tamam hep görünür. Dik normal telefonda eskisi gibi kaymadan tamamı sığar.',
+      'Oyun sonu (Rusça gibi uzun dilde): Paylaş butonu kartın kenarından taşıyordu; iki buton artık kartın içinde.',
+      '6 haneli skor (360 px telefon): simit kapınca zıplayan skorun son rakamı ×2 halkasının altına giriyordu; uzun skor artık küçük zıplıyor.',
+      'Gardırop (Almanca, dar telefon): Gefieder etiketi ahşap çerçeveden taşmıyor.'],
+    links: [['Mağaza', '/'], ['Ayarlar → dil Русский, sonra uç ve düş', '/']] },
   { g: 'Öğretici · 15 Kasım', id: 'ilk-ders', t: '👆 İlk uçuşta elle gösterilen kaçış dersi + yeni mekanik kartları', look: [
       'İlk uçuşta (?tut ile her seferinde) önce sağda bir rakip martı gelir: oyun yavaşlar, el sola kaydırır, altında "Sola kaydır". Sola geçince hız döner. Sonra soldaki rakip için "Sağa kaydır".',
       'Hiç dokunmazsan ders takılmaz: ağır çekim en fazla ~3,5 sn sürer, rakip geçince ders biter. İkinci uçuşta ders yok.',
