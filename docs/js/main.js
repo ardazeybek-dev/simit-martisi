@@ -313,6 +313,7 @@ function addSimit(x, y, z, gold, piece = false) {
 // Açık suda simitler havada asılı durmaz: kenardaki simitçi, simidini bölüp parçalarını martıya atar. Atış martının uzaklığına göre
 // zamanlanır; simit kavis çizip yakalama noktasına martıyla aynı anda iner, kaçarsa denize düşer. İniş yeri önceden görünmez.
 // Ayar: THROW_T (uçuş süresi, sn), THROW_H (kavis yüksekliği). ?throw=0 → eski, havada duran simitler.
+const SALON_EDGE_X = 2.25, SALON_EDGE_G = 1.35; // camlı salonun kenar geçidi: merkez ve yarı genişlik (geçit 0,9..3,6)
 const THROW_ON = QS.get('throw') !== '0';
 const BRIDGE_SOON = QS.has('bridge'), SALON_ALL = QS.has('salon'); // ?bridge → ilk köprü hemen gelir (deneme için)
 // Çanakkale (city.kopru): 1915 Çanakkale Köprüsü, Galata kalıbı; balıkçı yerine tabliyeden bakım halatları (ucunda boya kovası) ve boyacı iskeleleri sarkar.
@@ -446,12 +447,12 @@ function spawnGap(first, fixLen, quiet) {
       }
     } else {
       const n = kind === 'flock' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : kind !== 'mix' ? (camp && d >= 0.6 && kind !== 'quiet' && !(tempoAt(z0 - 20)?.kind === 'calm') ? 1 : 0) : camp && d >= 0.6 ? 2 : d < 0.6 ? 0 : d < 1.6 ? (Math.random() < 0.55 ? 1 : 0) : d < 3 ? 1 + (Math.random() < 0.25 ? 1 : 0) : 1 + (Math.random() < 0.6 ? 1 : 0) + (Math.random() < late() * 0.25 ? 1 : 0); // rakipler seyrek: tek tek gelir, okunabilsin
-      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) + (Math.random() < endB() * 0.3 ? 1 : 0) + (Math.random() < tierG() * 0.15 ? 1 : 0) + (Math.random() < SPECIAL_RIV() ? 1 : 0) + (Math.random() < cityG() * 0.6 ? 1 : 0) : 0) + (kind !== 'quiet' && kind !== 'rain' && kind !== 'pod' ? longX : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
-      if (kind === 'kites' || (kind === 'mix' && d > 1.3 && Math.random() < 0.14 + d * 0.04 + heat() * 0.05)) {
+      for (let i = 0, nn = n + (kind === 'mix' || kind === 'flock' ? (Math.random() < heat() * 0.3 ? 1 : 0) + (Math.random() < (heat() - 1.8) * 0.3 ? 1 : 0) + (Math.random() < overG() * 0.35 ? 1 : 0) + (Math.random() < endB() * 0.3 ? 1 : 0) + (Math.random() < tierG() * 0.15 ? 1 : 0) + (Math.random() < SPECIAL_RIV() ? 1 : 0) + (Math.random() < cityG() * 0.6 ? 1 : 0) : 0) + (kind !== 'quiet' && kind !== 'rain' && kind !== 'pod' ? longX : 0); i < nn; i++) { const z = freeZ(10, len - 6); if (z !== null) addRival(z, camp && i === 0 ? camp * rand(2.9, 3.4) : Math.random() < 0.5 ? rand(-0.9, 0.9) : rand(-3, 3), rand(0.6, 1.6), undefined, z0 - 4); } // yarısı ortadan gelir // kendi açık suyunda kalır, önceki vapura (salona) dalmaz
+      if (kind === 'kites' || (kind === 'mix' && d > 1.1 && Math.random() < 0.22 + d * 0.04 + heat() * 0.05)) {
         const nk = (kind === 'kites' ? 2 + (d > 3 && Math.random() < 0.4 ? 1 : 0) : d > 3 && Math.random() < 0.4 ? 2 : 1) + longX + (Math.random() < endB() * 0.15 ? 1 : 0); // son 3 iskelede ara sıra bir uçurtma daha
         for (let i = 0; i < nk; i++) {
           const z = freeZ(10, len - 8); if (z === null) continue;
-          addKite(rand(-2.6, 2.6), z, rand(1, 2));
+          addKite(Math.random() < 0.6 ? rand(-0.8, 0.8) : rand(-2.6, 2.6), z, rand(1, 2)); // çoğu şeridin ortasında: ortada kıpırdamadan uçulmasın
         }
       }
     }
@@ -1855,10 +1856,11 @@ function spawnFerry() {
   // camlı salon: zorlaştıkça bazı vapurlar kapalı salonlu olur; martı ortadaki geçitten geçmek zorunda, içinde simit dizisi
   let salon = null;
   if (ft.salon && (SALON_ALL || (d > 0.4 && Math.random() < 0.38 + endB() * 0.08))) { // son 3 iskelede camlı salon daha sık // ?salon → her vapur salonlu (deneme için)
-    const tx = pick([-0.6, 0, 0.6]), sz = rand(-2, 4), geo = salonGeo(tx);
+    // geçit en kenarda ve dar (SALON_EDGE_X, yarı genişlik SALON_EDGE_G): ortası kapalı, martı en sağa ya da en sola kaçmak zorunda (eskiden ortada 5,2 birimlik geçit vardı)
+    const tx = pick([-1, 1]) * SALON_EDGE_X, sz = rand(-2, 4), geo = salonGeo(tx, SALON_EDGE_G);
     const solid = new THREE.Mesh(geo.solid, vcMat); solid.position.z = sz; solid.castShadow = solid.receiveShadow = true; g.add(solid);
     const glass = new THREE.Mesh(geo.glass, glassMat); glass.position.z = sz; glass.renderOrder = 3; g.add(glass);
-    for (const [a, b] of [[-3.9, tx - SALON_GAP], [tx + SALON_GAP, 3.9]]) obstacle((a + b) / 2, sz, (b - a) / 2, SALON_LEN / 2, SALON_TOP, 'cama');
+    for (const [a, b] of [[-3.9, tx - SALON_EDGE_G], [tx + SALON_EDGE_G, 3.9]]) obstacle((a + b) / 2, sz, (b - a) / 2, SALON_LEN / 2, SALON_TOP, 'cama');
     for (let z = sz - SALON_LEN / 2 - 1; z < sz + SALON_LEN / 2 + 2; z += 2) blocked.push({ x: 0, z, r: 4.6 });
     for (let z = sz + SALON_LEN / 2 - 1.5; z > sz - SALON_LEN / 2; z -= 2.6) addSimit(x0 + tx, FLY_Y, zc + z, goldRoll(0.06));
     salon = { tx, sz };
@@ -5013,7 +5015,11 @@ function autopilot() {
   const g = gull.position;
   let target = 0, bestD = 1e9;
   for (const s of simits) { const d = g.z - (s.th ? s.th.cz : s.z); if (!s.taken && d > 2 && d < 30 && d < bestD) { bestD = d; target = s.th ? s.th.cx : s.x; } }
-  for (const o of obstacles) { const d = g.z - o.z; if (d > -1 && d < 14 && Math.abs(target - o.x) < o.hw + 1.4) target = o.x + (target > o.x ? 1 : -1) * (o.hw + 1.8); }
+  { // önümüzdeki engellerin kapattığı aralıklar: hedefe en yakın boş noktaya git (kenar geçitli salon gibi geniş duvarlarda tek tek itmek duvara sokuyordu)
+    const bl = obstacles.filter(o => !o.ghost && o.top > FLY_Y && g.z - o.z > -(o.hd + 1) && g.z - o.z < 14 + o.hd).map(o => [o.x - o.hw - 0.55, o.x + o.hw + 0.55]);
+    const free = x => x >= -EDGE + 0.3 && x <= EDGE - 0.3 && !bl.some(([a, b]) => x > a && x < b);
+    if (!free(target)) { let best = target, bd = 1e9; for (let x = -EDGE + 0.3; x <= EDGE - 0.3; x += 0.1) if (free(x) && Math.abs(x - target) < bd) { bd = Math.abs(x - target); best = x; } target = best; }
+  }
   tx = clamp(target + Math.sign(lean) * push, -LANE * 1.25, LANE * 1.25);
 }
 
@@ -5123,6 +5129,8 @@ window.__game = {
   get balloons() { return balloonSets.map(b => ({ z: b.z, n: b.n, got: b.got, done: b.done, u: b.list.map(s => +s.bal.u.toFixed(2)), ahead: +(gull.position.z - b.z).toFixed(1) })); },
   get flamingos() { return flamFlocks.map(f => ({ z0: f.z0, n: f.n, delta: !!f.delta, storks: f.birds.filter(b => b.sp === 0).length, herons: f.birds.filter(b => b.sp === 1).length, birds: f.birds.length, up: f.birds.filter(b => b.u >= 0).length, ahead: +(gull.position.z - f.z0).toFixed(1) })); },
   get chutes() { return chutes.map(c => ({ z: c.z, tel: !!c.tel, vinc: !!c.vinc, xa: +c.xa.toFixed(2), ropeX: +c.o.x.toFixed(2), boatX: +c.boat.position.x.toFixed(2), ahead: +(gull.position.z - c.z).toFixed(1) })); },
+  get gx() { return gull.position.x; }, get gz() { return gull.position.z; },
+  get crashInfo() { const o = crashObs; return o ? { kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hw: o.hw, hd: o.hd, gx: +gull.position.x.toFixed(2), gz: +gull.position.z.toFixed(2), gy: +gull.position.y.toFixed(2) } : null; },
   get sutun() { return sutuns.map(s => ({ z0: s.z0, n: s.cols.length, cols: s.cols.map(c => ({ ahead: +(gull.position.z - c.z).toFixed(1), side: c.side, xa: +c.xa.toFixed(2), st: c.st, th: +(c.side * c.mesh.rotation.z).toFixed(2), ox: +c.o.x.toFixed(2), hw: +c.o.hw.toFixed(2) })) })); },
   get rize() { // deneme: Rize parçaları (jet itişi, kule kaldırması, mavna)
     return { w: +imbatW.toFixed(2), lift: +fallsLift.toFixed(2), gx: +gull.position.x.toFixed(2), gy: +gull.position.y.toFixed(2), steam: steams.length,

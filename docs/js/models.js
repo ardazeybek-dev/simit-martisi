@@ -2063,10 +2063,11 @@ export const glassMat = new THREE.MeshStandardMaterial({ color: 0xa8dcf0, transp
 // forceSinglePass: şeffaf çift yüzlü malzemeyi three.js iki geçişte çizip her geçişte needsUpdate yapıyor (her kare shader yeniden seçimi)
 const salonCache = new Map();
 export function salonGeo(...a) { return pureCall(salonGeo_, a); }
-function salonGeo_(tx) {
-  if (salonCache.has(tx)) return salonCache.get(tx);
+function salonGeo_(tx, gap = SALON_GAP) { // gap: geçidin yarı genişliği
+  const key = tx + ':' + gap;
+  if (salonCache.has(key)) return salonCache.get(key);
   const k = new Kit(), gk = new Kit(), Lz = SALON_LEN;
-  for (const [a, b] of [[-3.9, tx - SALON_GAP], [tx + SALON_GAP, 3.9]]) {
+  for (const [a, b] of [[-3.9, tx - gap], [tx + gap, 3.9]]) {
     const w = b - a, c = (a + b) / 2;
     k.add(new THREE.BoxGeometry(w, 0.8, Lz), 0xf3efe6, c, DECK + 0.4, 0);                 // alt duvar
     k.add(new THREE.BoxGeometry(w + 0.06, 0.22, Lz + 0.06), 0x2b4560, c, DECK + 2.05, 0); // katlar arası bant
@@ -2076,8 +2077,8 @@ function salonGeo_(tx) {
     gk.add(new THREE.BoxGeometry(w, 1.15, Lz), 0xffffff, c, DECK + 1.37, 0);                // 1. kat camı
     gk.add(new THREE.BoxGeometry(w, SALON_TOP - DECK - 2.4, Lz), 0xffffff, c, (DECK + 2.16 + SALON_TOP - 0.2) / 2, 0); // 2. kat camı
   }
-  for (let z = -Lz / 2; z <= Lz / 2 + 0.01; z += 3.5) k.add(new THREE.BoxGeometry(SALON_GAP * 2 + 0.2, 0.12, 0.14), 0xf3efe6, tx, SALON_TOP - 0.1, z); // geçidin tavan kirişleri
-  gk.add(new THREE.BoxGeometry(SALON_GAP * 2, 0.05, Lz), 0xffffff, tx, SALON_TOP - 0.15, 0); // cam tavan
+  for (let z = -Lz / 2; z <= Lz / 2 + 0.01; z += 3.5) k.add(new THREE.BoxGeometry(gap * 2 + 0.2, 0.12, 0.14), 0xf3efe6, tx, SALON_TOP - 0.1, z); // geçidin tavan kirişleri
+  gk.add(new THREE.BoxGeometry(gap * 2, 0.05, Lz), 0xffffff, tx, SALON_TOP - 0.15, 0); // cam tavan
   const out = { solid: k.build(), glass: gk.build() };
   salonCache.set(tx, out);
   return out;
