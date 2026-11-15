@@ -3364,6 +3364,7 @@ function renderMissions(box, fill = false) {
 function openMissions() {
   const fill = misPending, gain = fill ? missions.filter(m => m.done && !m.wasDone).reduce((t, m) => t + Math.round(m.r * (perk('kurye') ? 1.15 : 1) * (perk('tray') ? 1.1 : 1)), 0) : 0;
   renderMissions($('titleMis'), fill);
+  $('misSet').textContent = `${tr('Bugünkü görev seti')} ${Math.min(Math.max(1, misLv.sets), MIS_SETS)}/${MIS_SETS}`; // günde üç set: kaçıncıdasın
   $('misWallet').textContent = fmt(wallet - gain);
   if (!fill) return;
   misPending = false;
@@ -4407,11 +4408,17 @@ function frame() {
     }
     // rüzgâr (imbat, akıntı, jet, şelale) martıyı iter; azalırken ya da biterken geri fırlatmaz: azalan pay hedefe (tx) aktarılır, martı rüzgârın bıraktığı yerde kalır.
     // Eskiden hedef = tx + rüzgârdı: rüzgâra karşı sağa basan oyuncu rüzgâr kesilince bir anda sağa kayıyordu. padV (kaydırma çubuğu) da yeni hedefi bilir: parmak oynayınca sıçrama olmaz
-    const W = state === 'play' ? imbatW + fallsW : 0;
+    // camlı salonun geçidindeyken savrulma yok: martı iki cam duvarın arasına girdiyse hedef geçidin içinde tutulur, viraj savurması ve rüzgâr işlemez (dar geçitte savrulan martı ölüyordu)
+    let inLo = -EDGE, inHi = EDGE, inSalon = false;
+    for (const o of obstacles) if (o.kind === 'cama' && Math.abs(o.z - g.z) < o.hd + 0.6) { const a = o.x - o.hw, b = o.x + o.hw; if (b <= g.x + 0.05) { inLo = Math.max(inLo, b + 0.45); inSalon = true; } else if (a >= g.x - 0.05) { inHi = Math.min(inHi, a - 0.45); inSalon = true; } }
+    if (inSalon && inLo < inHi && state === 'play') { tx = clamp(tx, inLo, inHi); padV = clamp(tx, -EDGE, EDGE); }
+    const W = state === 'play' && !inSalon ? imbatW + fallsW : 0;
     if (state === 'play') { const keep = Math.sign(W) === Math.sign(windW0) ? (Math.abs(W) < Math.abs(windW0) ? windW0 - W : 0) : windW0; if (keep) { tx = clamp(tx + keep, -txl, txl); padV = clamp(tx, -EDGE, EDGE); } }
     windW0 = W;
-    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + W : 0), -EDGE, EDGE);
+    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim0 = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + W : 0), -EDGE, EDGE);
+    const aim = inSalon && inLo < inHi && state === 'play' ? clamp(tx, inLo, inHi) : aim0;
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
+    if (inSalon && inLo < inHi && state === 'play' && (g.x < inLo - 0.3 || g.x > inHi + 0.3)) { g.x = clamp(g.x, inLo - 0.3, inHi + 0.3); vx = 0; } // hızlı girişte bile cama savrulmaz
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (((weather === 'snow' && warmth < 0.25) || starve) && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme (üşüyen ya da aç martı)
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
     gull.rotation.x = damp(gull.rotation.x, -0.05 + Math.sin(t * 1.1) * 0.03 + (starve && state === 'play' ? 0.22 : 0), 4, dt); // aç martının başı düşer

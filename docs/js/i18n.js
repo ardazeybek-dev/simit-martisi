@@ -1031,6 +1031,9 @@
   Object.assign(EN, {"{n} farklı şehri, her birini kendi uçuşunda ölmeden ve ikinci şanssız baştan sona uç": "Fly {n} different cities from start to end, each in its own flight without dying or a second chance", "Gece kuşu": "Night owl"});
   Object.assign(DE, {"{n} farklı şehri, her birini kendi uçuşunda ölmeden ve ikinci şanssız baştan sona uç": "Fliege {n} verschiedene Städte komplett, jede in einem eigenen Flug ohne Absturz und zweite Chance", "Gece kuşu": "Nachteule"});
   Object.assign(ES, {"{n} farklı şehri, her birini kendi uçuşunda ölmeden ve ikinci şanssız baştan sona uç": "Vuela {n} ciudades distintas de principio a fin, cada una en su propio vuelo sin caer ni segunda oportunidad", "Gece kuşu": "Ave nocturna"});
+  Object.assign(EN, {"Bugünkü görev seti": "Today's mission set"});
+  Object.assign(DE, {"Bugünkü görev seti": "Heutiges Aufgabenset"});
+  Object.assign(ES, {"Bugünkü görev seti": "Set de misiones de hoy"});
   Object.assign(EN, {"Çay mavnasına çarptın!": "You hit the tea barge!"});
   Object.assign(DE, {"Çay mavnasına çarptın!": "Gegen den Teekahn geprallt!"});
   Object.assign(ES, {"Çay mavnasına çarptın!": "¡Chocaste con la barcaza de té!"});
