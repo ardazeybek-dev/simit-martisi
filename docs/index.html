@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="3.9.1">
+<meta name="app-version" content="3.9.2">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -83,10 +83,10 @@
 <div id="pops"></div>
 
 <header id="hud" class="hidden">
+  <div id="trip" class="trip hidden"><div class="trip-bar"><i id="tripFill"></i></div><div id="tripDots" class="trip-dots"></div><svg id="tripGull" class="trip-gull" viewBox="0 0 24 14"><path d="M1 8 Q6 1 12 7 Q18 1 23 8 Q18 5 12 11 Q6 5 1 8Z"/></svg><b id="tripLeft" class="trip-left"></b></div>
   <div class="hud-l">
     <div id="score" class="score">0</div>
     <div class="sub"><svg class="ico"><use href="#i-simit"/></svg><b id="simits">0</b><span class="sep"></span><b id="dist">0</b><small>m</small><span id="hudFish" class="hud-fish hidden"><span class="sep"></span><svg class="ico"><use href="#i-fish"/></svg><b id="fishN">0</b></span></div>
-    <div id="route" class="route"><svg class="ico"><use href="#i-pin"/></svg><span id="routeTo">Karaköy</span><span class="rbar"><i id="routeFill"></i></span><b id="routeLeft">0</b><small>m</small></div>
   </div>
   <div id="combo" class="combo">
     <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="track"/><circle id="comboRing" cx="20" cy="20" r="16" class="ring" pathLength="100"/></svg>

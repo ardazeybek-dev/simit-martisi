@@ -3814,14 +3814,20 @@ function updateHud() {
   if (fish !== shownFish) { shownFish = fish; $('fishN').textContent = fmt(fish); show('hudFish', false); } // uçuşta balık sayısı yazmaz (telefonda üst köşe kalabalıktı); yakalanınca "Balık!" balonu ve ses yeter
   const dm = Math.floor(dist);
   if (dm !== shownDist) { ui.dist.textContent = fmt(dm); shownDist = dm; }
-  // hat çubuğu: sıradaki iskele, kalan metre, aradaki yolun ne kadarı uçuldu
+  // rota çubuğu: şehrin baştan sona hattı. Noktalar iskeleler (geçilen altın), martı uçulan yolun oranında soldan sağa; sağda son iskeleye kalan yol
+  const end = stopM[stopM.length - 1] || 1;
   if (stopI !== shownStop) {
-    shownStop = stopI; shownLeft = -1; show('route', stopI < STOPS.length);
-    if (stopI < STOPS.length) $('routeTo').textContent = STOPS[stopI].name;
+    shownStop = stopI; shownLeft = -1;
+    const box = $('tripDots');
+    if (box._for !== stopM) { box._for = stopM; box.textContent = ''; for (const [i, m] of stopM.entries()) { const d = document.createElement('i'); d.style.left = `${(m / end) * 100}%`; if (i === stopM.length - 1) d.className = 'end'; box.appendChild(d); } }
+    [...box.children].forEach((d, i) => d.classList.toggle('got', i < stopI));
+    show('trip', stopM.length > 1);
   }
-  if (stopI < STOPS.length) {
-    const a = stopM[stopI - 1], b = stopM[stopI], left = Math.max(0, Math.ceil(b - dist));
-    if (left !== shownLeft) { shownLeft = left; $('routeLeft').textContent = fmt(left); $('routeFill').style.transform = `scaleX(${clamp((dist - a) / (b - a), 0, 1)})`; }
+  const left = Math.max(0, Math.ceil(end - dist));
+  if (left !== shownLeft) {
+    shownLeft = left; const u = clamp(dist / end, 0, 1);
+    $('tripFill').style.transform = `scaleX(${u})`; $('tripGull').style.left = `${u * 100}%`;
+    $('tripLeft').textContent = left > 0 ? (left >= 1000 ? `${(left / 1000).toLocaleString(window.I18N.lang, { maximumFractionDigits: 1, minimumFractionDigits: 1 })} km` : `${fmt(left)} m`) : '';
   }
 }
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
