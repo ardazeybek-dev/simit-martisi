@@ -2773,7 +2773,7 @@ function showOver() {
   }
   const achBefore = achReady(), bdgBefore = badgesGot(); achRecord();
   if (!revives) countMission('runs');
-  checkMissions(); for (const m of missions) m.v = misProgress(m); // menüye dönünce uçuş sayaçları sıfırlanır: panel bu uçuşun ilerlemesini buradan dolar
+  checkMissions(); if (!daily) for (const m of missions) m.v = misProgress(m); // Günün Uçuşu görevleri ilerletmez; menüye dönünce uçuş sayaçları sıfırlanır: panel bu uçuşun ilerlemesini buradan dolar
   store.set(KEY_MIS, missions); bank();
   // rekor bonusu: rekor kıran, bu uçuşta cüzdana kazandığı kadar bir daha alır (yeniden doğuşla ikinci rekorda yalnız yeni kısmı)
   const recGain = isBest ? Math.max(0, banked - recPaid) : 0;
@@ -3334,8 +3334,9 @@ function refillMissions() {
   }
   store.set(KEY_MIS, missions); store.set(KEY_MISLV, misLv);
 }
-function countMission(k, n = 1) { for (const m of missions) if (!m.done && m.k === k) m.p = (m.p || 0) + n; }
+function countMission(k, n = 1) { if (daily) return; for (const m of missions) if (!m.done && m.k === k) m.p = (m.p || 0) + n; }
 function checkMissions() {
+  if (daily) return; // Günün Uçuşu (özel mod) görev ilerletmez: yalnız eğlence ve simit için
   for (const m of missions) {
     if (m.done || misProgress(m) < m.n) continue;
     m.done = true; wallet += Math.round(m.r * (perk('kurye') ? 1.15 : 1) * (perk('tray') ? 1.1 : 1)); store.set(KEY_WALLET, wallet); store.set(KEY_MIS, missions); // Kurye: +%15
@@ -3469,6 +3470,7 @@ function achVal(id) {
 const achTier = id => ACH.find(a => a.id === id).n.filter(n => achVal(id) >= n).length;
 const achReady = () => ACH.reduce((k, a) => k + Math.max(0, achTier(a.id) - (ach.got[a.id] || 0)), 0);
 function achRecord() { // uçuş sonu: farkı ekle, en iyileri güncelle
+  if (daily) { const ps = Math.floor(runReal); ach.st.playSec = (ach.st.playSec || 0) + ps - (achRun.playSec || 0); achRun.playSec = ps; store.set(KEY_ACH, ach); return; } // Günün Uçuşu başarım/rozet sayaçlarına yazılmaz; oyun süresi yine sayılır
   const now = { simit: Math.floor(simitCount), gold: Math.floor(goldCount), steal: run.steal, near: run.near, turn: run.turn, dolphin: run.dolphin, bridge: run.bridge, runs: 1, distTot: Math.floor(dist), fish: fishRun, playSec: Math.floor(runReal) };
   for (const k in now) { ach.st[k] = (ach.st[k] || 0) + now[k] - (achRun[k] || 0); achRun[k] = now[k]; }
   ach.st.maxScore = Math.max(ach.st.maxScore || 0, total());
@@ -3716,8 +3718,8 @@ const BADGES = [
   ...CITIES.filter(c => !c.soon).map(c => ({ id: 'city-' + c.id, fam: 'city', icon: 'i-trophy', n: 1, name: c.name, text: c.end, lab: c.name, v: () => (routeOf(c) === c.stops.length - 1 ? 1 : 0) })),
   ...fam('nefes', 'i-trophy', [[1, 'Tek nefes'], [3, 'Güçlü kanat'], [9, 'Türkiye turu']], '{n} farklı şehri, her birini kendi uçuşunda ölmeden ve ikinci şanssız baştan sona uç', () => (ach.st.oneRun || []).length, n => `${n} ${tr('şehir')}`),
   { id: 'fun-perhiz', fam: 'fun', icon: 'i-simit', n: 115, name: 'Perhizkâr', text: 'Simit yemeden {n} m uç', lab: '115 m', v: () => ach.st.fast || 0 },
-  { id: 'fun-kil', fam: 'fun', icon: 'i-near', n: 75, name: 'Kıl payı ustası', text: 'Bir uçuşta {n} kez kıl payı geç', lab: '75', v: () => ach.st.nearRun || 0 },
-  { id: 'fun-altin', fam: 'fun', icon: 'i-medal', n: 100, name: 'Altın yağmuru', text: 'Bir uçuşta {n} altın simit kap', lab: '100', v: () => ach.st.goldRun || 0 },
+  { id: 'fun-kil', fam: 'fun', icon: 'i-near', n: 105, name: 'Kıl payı ustası', text: 'Bir uçuşta {n} kez kıl payı geç', lab: '105', v: () => ach.st.nearRun || 0 },
+  { id: 'fun-altin', fam: 'fun', icon: 'i-medal', n: 250, name: 'Altın yağmuru', text: 'Bir uçuşta {n} altın simit kap', lab: '250', v: () => ach.st.goldRun || 0 },
   { id: 'fun-gece', fam: 'fun', icon: 'i-sun', n: 1, name: 'Gece kuşu', text: 'Gece yarısından sonra uç', lab: '?', v: () => ach.st.night || 0 },
   ...[['rain', 'i-drop', 'Yağmur kuşu', 'Yağmurda bir uçuşta {n} m uç'], ['snow', 'i-snow', 'Kar tanesi', 'Karda bir uçuşta {n} m uç'], ['fog', 'i-fog', 'Sis kaptanı', 'Siste bir uçuşta {n} m uç']]
     .map(([w, icon, name, text]) => ({ id: 'wx-' + w, fam: 'wx', icon, n: 2000, name, text, lab: '2000 m', v: () => ach.st['wx_' + w] || 0 })),
@@ -3879,7 +3881,7 @@ function pause() {
   $('pauseWallet').textContent = fmt(Math.floor(wallet)); $('pauseFish').textContent = fmt(fish); // cüzdan: elindeki simit ve balık
   { // kalan görevler: bu uçuşun ilerlemesiyle birlikte (nerede olduğun, kaç görev kaldığı)
     const left = missions.filter(m => !m.done && misProgress(m) < m.n).length;
-    $('pauseMis').parentElement.classList.toggle('hidden', !missions.length); renderMissions($('pauseMis'));
+    $('pauseMis').parentElement.classList.toggle('hidden', !missions.length || daily); // Günün Uçuşu görev ilerletmez: duraklatmada görev listesi yok renderMissions($('pauseMis'));
     $('pauseMisH').textContent = `${tr('Görevler')} · ${left ? tr('{n} görev kaldı').replace('{n}', fmt(left)) : tr('Görevlerin hepsi bitti!')}`;
   }
   audio.suspend();
