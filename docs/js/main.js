@@ -2293,6 +2293,11 @@ let speed = 15, playT = 0, points = 0, simitCount = 0, goldCount = 0, combo = 0,
 let crashObs = null, crashHead = true, crashT = 0, vy = 0, cause = '', trauma = 0, hitStop = 0, timeScale = 1, flapPh = 0, flapPow = 0.5, flapBurst = 0;
 let campT = 0, campSide = 0; // kenara yapışan martı: o kenara rakip gönderilir (her köşe eşit zor)
 let hicT = 0, hicY = 0; // Hıçkıran martı: sonraki hıçkırığa kalan süre, sıçrama yüksekliği
+// puan, sol sütuna sığmazsa küçülür (uzun puan kombo halkasının altına taşıyordu). Yalnız hane sayısı değişince ölçülür
+let scoreLen = -1;
+function fitScore() { const el = ui.score; el.style.fontSize = ''; const w = el.parentElement.clientWidth; if (w > 0 && el.scrollWidth > w) el.style.fontSize = Math.floor(parseFloat(getComputedStyle(el).fontSize) * w / el.scrollWidth) + 'px'; }
+addEventListener('resize', () => { scoreLen = -1; });
+let windW0 = 0; // önceki karenin rüzgâr itişi (azalan pay hedefe aktarılır)
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
 const pw = { magnet: 0, shield: 0, double: 0, tea: 0 };
 let teaK = 1; // Çay Molası: simülasyon bu oranla akar (yumuşak geçiş)
@@ -2485,7 +2490,7 @@ function resetWorld(newWeather = true) {
   gliderZ = !city.yamac ? -Infinity : GLIDER_SOON ? -90 : -rand(1550, 1700); // ilk yamaç paraşütü ~0,8 km
   beeZ = !city.ari ? -Infinity : BEE_SOON ? -90 : -rand(2050, 2250); // ilk kovanlar ~1,05 km
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
-  gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0;
+  gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0; windW0 = 0;
   speed = 18; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashObs = null; crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishTry = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
@@ -2688,7 +2693,7 @@ function startGame() {
   qWarm = 4;
   show('title', false); show('over', false); show('hud'); show('pause', false);
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel']) show(id, false);
-  shownScore = shownSimit = shownDist = shownFish = -1; shownMult = 0;
+  shownScore = shownSimit = shownDist = shownFish = -1; shownMult = 0; scoreLen = -1;
   ui.combo.classList.remove('on');
   renderPowers();
   if (tutorialPending) startTutorial();
@@ -3769,14 +3774,14 @@ function revive() {
     for (let x = -EDGE; x <= EDGE + 1e-6; x += 0.25) { const r = room(x) - Math.abs(x - gull.position.x) * 0.02; if (r > br + 0.3) { br = r; bx = x; } }
     gull.position.x = bx;
   }
-  tx = gull.position.x; vx = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
+  tx = gull.position.x; vx = 0; windW0 = 0; crashT = 0; vy = 0; splashed = false; hitStop = 0; timeScale = 1; trauma = 0;
   combo = 0; comboT = 0;
   pw.shield = dur('shield') * (perk('pacifier') ? 1.25 : 1); invuln = 0.35; // kalkan bir sonraki gerçek çarpmada kırılır
   for (const o of obstacles) if (Math.abs(o.z - gull.position.z) < o.hd + 6) o.ghost = true; // çarptığı engelin içinden çıkarken kalkan harcanmasın
   for (const r of rivals) if (Math.abs(r.mesh.position.z - gull.position.z) < 6) { r.hit = true; r.spin = r.mesh.position.x > gull.position.x ? 1 : -1; } // yanındaki rakip savrulup gider
   for (const k of kites) if (Math.abs(k.z - gull.position.z) < 6) k.ghost = true;
   show('over', false); show('hud'); hideTutorial();
-  shownScore = shownSimit = shownDist = -1; shownMult = 0;
+  shownScore = shownSimit = shownDist = -1; shownMult = 0; scoreLen = -1;
   ui.combo.classList.remove('on'); renderPowers(); updateHud();
   sfx.power(); audio.music(true); audio.duck(false);
   state = 'countdown'; countdown = 1.5; cdShown = 0; show('countdown');
@@ -3793,7 +3798,7 @@ function confetti(id = 'confetti', n = 46) {
 }
 function updateHud() {
   const s = total();
-  if (s !== shownScore) { ui.score.textContent = fmt(s); shownScore = s; }
+  if (s !== shownScore) { const txt = fmt(s); ui.score.textContent = txt; shownScore = s; if (txt.length !== scoreLen) { scoreLen = txt.length; fitScore(); } }
   if (Math.floor(simitCount) !== shownSimit) { shownSimit = Math.floor(simitCount); ui.simits.textContent = fmt(shownSimit); }
   if (fish !== shownFish) { shownFish = fish; $('fishN').textContent = fmt(fish); show('hudFish', false); } // uçuşta balık sayısı yazmaz (telefonda üst köşe kalabalıktı); yakalanınca "Balık!" balonu ve ses yeter
   const dm = Math.floor(dist);
@@ -4376,7 +4381,12 @@ function frame() {
       if ((hicT -= dt) <= 0) { hicT = 2 + R0() * 2.5; vx += (R0() < 0.5 ? -1 : 1) * (10 + R0() * 5); hicY = 1; vibrate(15); sfx.click(); }
       hicY = damp(hicY, 0, 5, dt); gullSize(hicY);
     }
-    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + imbatW + fallsW : 0), -EDGE, EDGE);
+    // rüzgâr (imbat, akıntı, jet, şelale) martıyı iter; azalırken ya da biterken geri fırlatmaz: azalan pay hedefe (tx) aktarılır, martı rüzgârın bıraktığı yerde kalır.
+    // Eskiden hedef = tx + rüzgârdı: rüzgâra karşı sağa basan oyuncu rüzgâr kesilince bir anda sağa kayıyordu. padV (kaydırma çubuğu) da yeni hedefi bilir: parmak oynayınca sıçrama olmaz
+    const W = state === 'play' ? imbatW + fallsW : 0;
+    if (state === 'play') { const keep = Math.sign(W) === Math.sign(windW0) ? (Math.abs(W) < Math.abs(windW0) ? windW0 - W : 0) : windW0; if (keep) { tx = clamp(tx + keep, -txl, txl); padV = clamp(tx, -EDGE, EDGE); } }
+    windW0 = W;
+    const k = ruleOn('chubby') ? 120 : 230, c = 2 * Math.sqrt(k) * 0.95, aim = clamp(tx - Math.sign(lean) * push * (1 - clamp(Math.sign(lean) * tx / EDGE, 0, 1)) + (state === 'play' ? wind * (MOBILE ? 0.16 : 0.32) * (perk('night') ? 0.8 : 1) + W : 0), -EDGE, EDGE);
     for (let i = 0, n = Math.ceil(dt * 60), h = dt / Math.max(1, n); i < n; i++) { vx += ((aim - g.x) * k - vx * c) * h; g.x += vx * h; }
     gull.rotation.z = damp(gull.rotation.z, clamp(-vx * 0.07 - lean * 0.5, -0.85, 0.85), 10, dt) + (((weather === 'snow' && warmth < 0.25) || starve) && state === 'play' ? Math.sin(t * 55) * 0.05 : 0); // titreme (üşüyen ya da aç martı)
     gull.rotation.y = damp(gull.rotation.y, clamp(-vx * 0.025 - lean * 0.28, -0.45, 0.45), 10, dt);
