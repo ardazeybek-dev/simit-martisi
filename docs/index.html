@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="app-version" content="3.9.5">
+<meta name="app-version" content="3.9.6">
 <title>Simit Martısı</title>
 <meta name="description" content="İstanbul vapurlarının üstünde simit kapan bir martı ol. Tek parmakla oynanan, tarayıcıda ve telefonda çalışan 3D oyun.">
 <meta name="theme-color" content="#1c2456">
@@ -83,7 +83,7 @@
 <div id="pops"></div>
 
 <header id="hud" class="hidden">
-  <div id="trip" class="trip hidden"><div class="trip-bar"><i id="tripFill"></i></div><div id="tripDots" class="trip-dots"></div><svg id="tripGull" class="trip-gull" viewBox="0 0 24 14"><path d="M1 8 Q6 1 12 7 Q18 1 23 8 Q18 5 12 11 Q6 5 1 8Z"/></svg><b id="tripLeft" class="trip-left"></b></div>
+  <div id="trip" class="trip hidden"><div class="trip-bar"><i id="tripFill"></i></div><div id="tripDots" class="trip-dots"></div><svg id="tripGull" class="trip-gull" viewBox="0 0 36 22"><defs><linearGradient id="tgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9d3dc"/></linearGradient><linearGradient id="tgW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9c4cf"/><stop offset="1" stop-color="#7d8a98"/></linearGradient></defs><path class="tg-wf" d="M13 11 Q16 2 23 1 Q21 6 20 11Z" fill="url(#tgW)" stroke="#1b1838" stroke-width=".7"/><path d="M4 12 Q2 9 6 9 L9 10 Q14 7.5 22 9.5 Q27 9 29 10.5 Q27 12.5 23 13.5 Q16 16 9 14 Q6 15 4 12Z" fill="url(#tgB)" stroke="#1b1838" stroke-width=".9"/><path d="M29 10.2 L34 11.3 L29 12.1Z" fill="#f4b52a"/><circle cx="26.6" cy="10.3" r="0.9" fill="#1b1c22"/><path d="M3 11.5 L0.5 10 L1 13.2Z" fill="#1b1c22"/><path class="tg-wb" d="M12 11 Q17 3 26 2.5 Q22 8 20 12Z" fill="url(#tgW)" stroke="#1b1838" stroke-width=".6"/><path d="M24.5 3 L26 2.5 L24 5.5Z" fill="#1b1c22"/></svg><b id="tripLeft" class="trip-left"></b></div>
   <div class="hud-l">
     <div id="score" class="score">0</div>
     <div class="sub"><svg class="ico"><use href="#i-simit"/></svg><b id="simits">0</b><span class="sep"></span><b id="dist">0</b><small>m</small><span id="hudFish" class="hud-fish hidden"><span class="sep"></span><svg class="ico"><use href="#i-fish"/></svg><b id="fishN">0</b></span></div>
@@ -305,7 +305,7 @@
       <button class="toggle" data-toggle="vibe"><span>Titreşim</span><i></i></button>
     </div>
     <label class="lang-row"><span>Dil</span><select id="langSel" aria-label="Dil"></select></label>
-    <p class="lang-row play-row"><span>Toplam oyun süresi</span><b id="setPlayTime">0 dk</b></p>
+    <p class="play-row"><span>Toplam oyun süresi</span><b id="setPlayTime">0 dk</b></p>
     <button class="btn primary" id="closeSettings">Tamam</button>
   </div>
 </section>
@@ -384,6 +384,8 @@
   setTimeout(function () { var m = document.getElementById('loaderMsg'); if (m && document.getElementById('loader')) m.textContent = I18N.t('Oyun yüklenemedi. Bağlantını kontrol edip sayfayı yenile.'); }, 15000);
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    // ana ekrandan açılan uygulama arka planda günlerce canlı kalabiliyor: her öne gelişte yeni sürüme bak (varsa controllerchange ile menüde yenilenir)
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.update(); }).catch(function () {}); });
     // yeni sürüm devraldıysa sayfa eski kodla kalmasın: menüdeyse hemen, uçuştaysa ana menüye dönünce yenilenir
     var hadSw = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange', function () {

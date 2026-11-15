@@ -3831,7 +3831,7 @@ function updateHud() {
   if (left !== shownLeft) {
     shownLeft = left; const u = clamp(dist / end, 0, 1);
     $('tripFill').style.transform = `scaleX(${u})`; $('tripGull').style.left = `${u * 100}%`;
-    $('tripLeft').textContent = left > 0 ? (left >= 1000 ? `${(left / 1000).toLocaleString(window.I18N.lang, { maximumFractionDigits: 1, minimumFractionDigits: 1 })} km` : `${fmt(left)} m`) : '';
+    $('tripLeft').textContent = left > 0 ? (left >= 1000 ? `${Math.floor(left / 1000)} km` : `${fmt(left)} m`) : ''; // küsuratsız: 5,9 km → 5 km
   }
 }
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
