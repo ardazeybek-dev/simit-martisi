@@ -816,7 +816,7 @@ function spawnPirate() {
   if (dl) for (const dz of [9, 5.5, 0]) addSimit(gapX, FLY_Y, pz + dz, dz === 0, THROW_ON); // kapının geleceği yer: ortada altın
   pirates.push({ g, xa, side, k: rand(0.08, 0.12), z: pz, os, gapX, ph: Math.random() * 6, gulet: gu, ferry: fe, mavna: mv, wave: dl, spT: 0, done: false });
   if (mv && difficulty() > 0.8) addRival(z0 - rand(4, 12), rand(-2.8, 2.8), rand(0.5, 1.2), undefined, z0 - 2); // Rize: mavnanın önünde bir rakip (kapıya hizalanırken dikkat ister)
-  pirateZ = pz - (mv ? rand(600, 850) : rand(700, 1000)) * (city.gulet ? city.oldK || 1 : 1);
+  pirateZ = pz - (mv ? rand(560, 800) : rand(700, 1000)) * (city.gulet ? city.oldK || 1 : 1);
   genZ = z0 - 58;
 }
 function updatePirates(gz, dt = 0) {

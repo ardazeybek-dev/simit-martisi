@@ -62,7 +62,7 @@ export const CITIES = [
       ['Doğupark', 8700, "Doğupark'a", 320], ['Tekkeköy', 10500, "Tekkeköy'e", 395], ['Çarşamba', 13000, "Çarşamba'ya", 500], ['Terme', 17000, "Terme'ye", 1900]],
   },
   {
-    id: 'rize', name: 'Rize', mult: 1.7, hard: 4.0, hunger: 4.6, rivK: 0.9, wx: [0.5, 3, 1.6, 0], opened: 'Tebrikler! Rize açıldı!', routeKey: 'simit-martisi-route-rize', bait: 'simit', mavna: true, ucak: true, kule: true, end: 'Rize kıyısını baştan sona uçtun!', after: "Samsun'u bitirince açılır",
+    id: 'rize', name: 'Rize', mult: 1.7, hard: 4.0, hunger: 4.6, rivK: 1, wx: [0.5, 3, 1.6, 0], opened: 'Tebrikler! Rize açıldı!', routeKey: 'simit-martisi-route-rize', bait: 'simit', mavna: true, ucak: true, kule: true, end: 'Rize kıyısını baştan sona uçtun!', after: "Samsun'u bitirince açılır",
     stops: [['İyidere', 0, "İyidere'ye", 0], ['Derepazarı', 700, "Derepazarı'na", 65], ['Fener', 1500, "Fener'e", 90], ['Rize Kalesi', 2400, "Rize Kalesi'ne", 115],
       ['Ziraat', 3400, "Ziraat'e", 145], ['Gündoğdu', 4700, "Gündoğdu'ya", 180], ['Çayeli', 6000, "Çayeli'ne", 225], ['Madenli', 7400, "Madenli'ye", 270],
       ['Pazar', 9000, "Pazar'a", 330], ['Yeşilköy', 10800, "Yeşilköy'e", 405], ['Ardeşen', 13500, "Ardeşen'e", 510], ['Fındıklı', 17500, "Fındıklı'ya", 2000]],

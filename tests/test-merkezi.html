@@ -53,6 +53,29 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Rize · 15 Kasım', id: 'rize-kule', t: '🍵 Çay bardağı kule (yeni mekanik)', look: [
+      'Şeridin yanında denize doldurulmuş yuvarlak sette dev çay bardağı (Rize-Artvin Havalimanı kulesi): ince belli bardak, gövdesi LED noktalı; çoğu kırmızı, ağzı beyaz, en üstte kırmızı bant, altında kırmızı tabak.',
+      'Mekanik ışıkla zamanlama: parlak bir ışık halkası bardağın dibinden ağzına tırmanır, ağza varınca çaydan buhar fışkırır (halkalar art arda koşar, şeridin kule yarısında sudan buhar kalkar). O an kule tarafındaysan martı yükselir ve yüksek simit kavsini toplar. Bu iki kez olur; ikinci kavsin tepesinde altın simit var.',
+      'Buhar tarafına geçmeyen düz uçar: öbür yarıda alçak simit çizgisi ve bekleyen rakipler var. Halkayı görüp yana geçmek yetiyor mu, kavis martının kalktığı yere denk geliyor mu?'],
+    links: [['Hemen gelsin', '/?city=rize&hepsi&weather=clear&kule'], ['Sisli havada', '/?city=rize&hepsi&weather=fog&kule']] },
+  { g: 'Rize · 15 Kasım', id: 'rize-ucak', t: '✈️ Kalkan uçak / jet rüzgârı', look: [
+      'Şeridin bir yanında denize doldurulmuş havalimanı: taş kıyılı gri dolgu, apron, pist. Taksi yolunda büyük beyaz uçak (kırmızı kuyruk) kuyruğunu şeride verip açılı bekliyor.',
+      'Yaklaşınca gaz açar: motor ağızları turuncu parlar, egzoz tüter, beyaz jet çizgileri kuyruktan şeride verevine yayılır. Yelpazenin içinde martı öbür yana itilir (ortada güçlü, kenarda zayıf), simitler de karşıya savrulur; rüzgâraltında rakip bekleyebilir.',
+      'Martı kuyruk hizasına gelince uçak frenleri bırakır, pistte hızlanır, kalkar ve denizin üstüne dönerek martının önünde tırmanır. İtiş okunuyor mu, adil mi?'],
+    links: [['Hemen gelsin', '/?city=rize&hepsi&weather=clear&ucak'], ['Yağmurda', '/?city=rize&hepsi&weather=rain&ucak']] },
+  { g: 'Rize · 15 Kasım', id: 'rize-mavna', t: '🚢 Çay mavnası', look: [
+      'Korsan/feribot kalıbı: çay çuvalı yüklü düz güverteli mavna şeridi yandan kesiyor. Pruvadaki ve ortadaki yüksek çuval yığınları (krem çuvallar, yeşil baskı bandı, kırmızı kayış, üstte yeşil branda) ve kıçtaki kaptan köşkü engel.',
+      'Ön iki yığının arasındaki güverte kapı: oradaki iki çay işçisi (başörtülü teyze, kasketli amca) simidi kapıya atıyor. Köşkün önündeki alçak yığının üstünden geçilebilir. Mavnanın önünde çoğu kez bir rakip var.',
+      'Yığına değince “Çay mavnasına çarptın!” yazmalı.'],
+    links: [['Hemen gelsin', '/?city=rize&hepsi&weather=clear&mavna']] },
+  { g: 'Rize · 15 Kasım', id: 'rize-manzara', t: '⛰️ Rize: ufuk ve menü sahnesi', look: [
+      'Uçuşta ufuk: yağmurlu yeşil-gri gök, sise gömülü sivri Kaçkar dorukları (tepeler karlı), yamaçlarda parça parça çay sıraları, tepede Rize Kalesi (surlar, burç, bayrak), beyaz kent; kıyının önünde havalimanı dolgusu ve LED’li çay bardağı kule. Ara sıra pistten bir uçak kalkıp kentin üstünden uzaklaşıyor (geniş ekranda iyi görünür).',
+      'Menüde: önde rıhtıma bağlı çay mavnası ve çuval yığınları, ortada baştan aşağı çay teraslı yamaç, evler, tepede kale; kıyıda setin üstünde LED’li çay bardağı kule.'],
+    links: [['Rize menüsü', '/?city=rize&hepsi&weather=clear'], ['Yağmurda', '/?city=rize&hepsi&weather=rain']] },
+  { g: 'Rize · 15 Kasım', id: 'rize-harita', t: '🗺️ Haritada Rize', look: [
+      'Ada kuzeye uzadı: Samsun’un üstünde Rize maketi (LED’li çay bardağı, kırmızı tabak, pist ve kalkıp inen minik uçak, bardağı tırmanan ışık halkaları). Üstte bir şehirlik daha boş yer var (Mersin).',
+      'Rize kilitliyken bardak gri görünmeli. Telefonda dik ve yatay tutup etiketlerin birbirine binip binmediğine bak.'],
+    links: [['Harita', '/?city=rize&hepsi&harita']] },
   { g: 'Dünya haritası · 15 Kasım', id: 'harita-heves', t: '🗺️ Harita: bayrak, yol taşları, kilit bulutu', look: [
       'Menüde şehir adı artık 🗺️ düğmesi, ‹ › okları yok. Dokununca harita açılır.',
       'Bitirdiğin şehirde kırmızı simitli bayrak dalgalanır. Şehirler arasındaki taş yol bitirilen kısımda altın, tepelerin yanından kıvrılır.',
