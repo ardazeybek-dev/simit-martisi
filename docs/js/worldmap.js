@@ -151,7 +151,7 @@ export function addIsland(pts, ox, oz, grass = 0x7cc95a) {
   g.add(foam, sand, top); scene.add(g);
   return g;
 }
-export const GROUND_Y = 0.72; // çimenin üstü
+export const GROUND_Y = 0.95; // çimenin üstü (çim: 0,15 + kalınlık 0,55 + pah 0,25; eskiden 0,72 sanılıyordu, kaideler ve bayrak dipleri çime gömülüyordu)
 // ada kuzeye (-z) uzar: Samsun'dan sonra Rize ve bir şehirlik daha yer (Mersin). ISL_ZC / ISL_RZ: adanın z ortası ve süs alanının yarı boyu
 export const ISL_ZC = -1.65, ISL_RZ = 7.1;
 export const TR_SHAPE = [[-1.2, -6.0], [1.6, -5.8], [3.4, -4.6], [3.9, -2.4], [3.6, 0.0], [3.9, 2.2], [3.4, 4.5], [3.8, 6.6], [3.1, 8.4], [1.2, 9.3], [-1.4, 9.3], [-3.2, 8.2], [-3.8, 6.3], [-3.4, 4.4], [-3.6, 2.4], [-3.9, 0.2], [-3.5, -2.2], [-3.6, -4.4]];
@@ -282,7 +282,7 @@ export function mapState(st) {
     c.state = s;
     if (s === 'done' && !c.flag) {
       c.flag = new THREE.Mesh(flagGeo, vcMat); c.flag.castShadow = true;
-      c.flag.position.set(PAD_R * 0.72, 0.1, -PAD_R * 0.5); c.g.add(c.flag);
+      c.flag.position.set(PAD_R * 0.9, 0, -PAD_R * 0.9); c.g.add(c.flag); // kaidenin arka sağında, çimde: geniş maketlerin (Muğla evleri) içine girmez
     }
     if (c.flag) c.flag.visible = s === 'done';
     swapMat(c, locked);

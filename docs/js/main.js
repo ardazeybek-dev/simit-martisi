@@ -107,11 +107,21 @@ const spdAt = m => SPD_TAB[clamp(Math.round(m / 100), 0, SPD_TAB.length - 1)];
 const STOP_K = QS.has('stop') ? (+QS.get('stop') || 0.15) : 1; // ?stop → duraklar çok yakın, ?stop=0.02 daha da yakın (deneme için)
 const routeOf = c => clamp(+store.get(c.routeKey, 0) || 0, 0, c.stops.length - 1); // o şehirde şimdiye dek varılan en uzak iskele
 const cityOpen = c => { const i = CITIES.indexOf(c); return !c.soon && (i <= 0 || routeOf(CITIES[i - 1]) === CITIES[i - 1].stops.length - 1); };
+const KALE_OFF_ALL = [-2.4, -1.8, 1.8, 2.4]; // Kızkalesi arka kapısının kayması (çeşit başına bir maket)
 let city, STOPS, farStop;
 function useCity(c) {
   city = c; farStop = routeOf(c);
   STOPS = c.stops.map(([name, m, to, gift]) => ({ name, m: Math.round(m * STOP_K), to, gift }));
   setCityLook(c.id); setBait(c.bait);
+  if (c.sutun || c.kale) preBuild([...COL_FALL.map((_, i) => () => colonnadeGeo(i)), ...KALE_OFF_ALL.map(o => () => kaleGeo(o))]);
+}
+// şehre özgü maket çeşitleri uçuşta ilk çıktıklarında kurulursa telefonda 60-90 ms takılır: şehir seçilince boş anlarda birer birer önceden kurulur (önbellekte kalır)
+const preQ = [];
+function preBuild(list) {
+  preQ.push(...list);
+  const run = () => { const f = preQ.shift(); if (!f) return; f(); next(); };
+  const next = () => (window.requestIdleCallback ? requestIdleCallback(run, { timeout: 150 }) : setTimeout(run, 60));
+  if (preQ.length === list.length) next();
 }
 // meydan okuma: paylaşılan link #c=puan-metre-şehir taşır. Açan kişi başlıkta hedefi görür, o şehirde arkadaşının düştüğü metrede
 // suda mavi bayraklı bir şamandıra durur. Geçilene kadar saklanır; yeni link eskisinin yerini alır.
@@ -1141,7 +1151,7 @@ function spawnBandirma() {
 // Mersin (city.kale): aynı kalıp, Kızkalesi. Denizdeki kale şeridin üstünde durur (kaleGeo): ön ve arka sur engel (fix), ortalarındaki kemerli kapılar
 // birbirinden kaymış (off): martı ön kapıdan avluya girer, avlunun içinde kayıp arka kapıdan çıkar. Simit çizgisi iki kapıyı birleştirir, avlunun ortasında altın;
 // kaleyi baştan sona geçene Truva'daki bonus. Burçlar ve yan surlar şeridin dışında. ?kizkalesi → hemen gelir
-const KALE_SOON = QS.has('kizkalesi'), KALE_OFF = [-2.4, -1.8, 1.8, 2.4];
+const KALE_SOON = QS.has('kizkalesi'), KALE_OFF = KALE_OFF_ALL;
 function spawnKale() {
   const z0 = genZ, hz = z0 - 40, off = pick(KALE_OFF), gx = rand(Math.max(-2.2, -2.2 - off), Math.min(2.2, 2.2 - off)), gx2 = gx + off, zf = hz + KALE_HZ, zb = hz - KALE_HZ;
   decor = decor.filter(d => (Math.abs(d.z - hz) < KALE_HZ + 6 && Math.abs(d.mesh.position.x) < 16 ? (scene.remove(d.mesh), false) : true)); // adacığın üstünde tekne kalmasın

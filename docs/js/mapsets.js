@@ -123,6 +123,7 @@ export const DIORAMA = {
     for (let x = -9; x <= 9; x += 3) k.add(box(1.4, 0.12, 0.3), 0xf4f4ee, x, 1.5, 6.5);
     k.add(cyl(6.2, 6.6, 1.6, 24), 0x9a9890, 0, 0.8, -2).add(cyl(4.6, 4, 0.6, 24), 0xc8241c, 0, 1.9, -2).add(new THREE.TorusGeometry(4.55, 0.16, 6, 28), 0xf6f2ea, 0, 2.2, -2, Math.PI / 2);
     const S = 1.25, led = new THREE.Mesh(new THREE.LatheGeometry(teaGlassProfile().map(p => new THREE.Vector2(p.x * S, p.y * S + 2.2)), 28), new THREE.MeshBasicMaterial({ map: teaGlassLedTex() }));
+    { const pr = teaGlassProfile(), q = pr[pr.length - 4]; k.add(new THREE.CircleGeometry(q.x * S * 0.99, 28), 0x7a2412, 0, q.y * S + 2.2, -2, -Math.PI / 2); } // bardağın ağzında demli çay (üstten bakınca bardak boş görünmesin)
     led.position.z = -2; led.castShadow = true; led.userData.greyMat = new THREE.MeshBasicMaterial({ map: teaGlassLedTex(true) }); // kilitliyken gri (worldmap swapMat)
     const tex = ringTex(true); tex.repeat.y = 2;
     const ring = new THREE.Mesh(new THREE.LatheGeometry(teaGlassProfile().map(p => new THREE.Vector2(p.x * S * 1.03, p.y * S + 2.2)), 28), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -146,7 +147,7 @@ export const HILLS = [[0.4, 2.2, 1.0], [0.1, -1.9, 1.15], [-2.7, -3.6, 0.75], [2
 // rx/rz: süs alanının yarı boyları, zc: alanın ortası (ada kuzeye uzadıkça kayar)
 export function islandDecor(rx, rz, avoid, seed = 1, zc = 0) {
   let s = seed; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  const k = new Kit(), GY = 0.72, ok = (x, z, r) => !avoid.some(([ax, az, ar]) => Math.hypot(ax - x, az - z) < ar + r);
+  const k = new Kit(), GY = 0.95, ok = (x, z, r) => !avoid.some(([ax, az, ar]) => Math.hypot(ax - x, az - z) < ar + r);
   const hills = HILLS;
   for (const [x, z, r] of hills) if (ok(x, z, r * 0.6)) {
     k.add(new THREE.ConeGeometry(r, r * 1.05, 7), 0x5aa84a, x, GY + r * 0.52, z);
