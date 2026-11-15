@@ -48,7 +48,7 @@ const worldPerPx = h => (2 * map.d * Math.tan(THREE.MathUtils.degToRad(cam.fov /
 
 export function mapHome() { // yatay kısa ekranda kart sol altta: ada sağdaki boş alanın ortasına gelsin (kartın yarı genişliği kadar sola bakılır)
   const land = innerWidth > innerHeight && innerHeight <= 560;
-  map.d = D_HOME; placeCam(innerWidth, innerHeight); map.tx = land ? -(290 + 14) / 2 * worldPerPx(innerHeight) : 0; map.tz = land ? 0.4 : 2.2; map.vx = map.vz = 0;
+  map.d = D_HOME; placeCam(innerWidth, innerHeight); map.tx = land ? -(290 + 14) / 2 * worldPerPx(innerHeight) : 0; map.tz = land ? 0.4 + ISL_ZC * 0.4 : 2.2 + ISL_ZC * 0.8; map.vx = map.vz = 0; // ada kuzeye uzadı: bakış da kayar
 }
 export function mapFocus(x, z, d) { map.tx = x; map.tz = z; if (d) map.d = d; map.vx = map.vz = 0; clampView(); }
 
@@ -152,12 +152,14 @@ export function addIsland(pts, ox, oz, grass = 0x7cc95a) {
   return g;
 }
 export const GROUND_Y = 0.72; // çimenin üstü
-export const TR_SHAPE = [[-1.2, -6.0], [1.6, -5.8], [3.4, -4.6], [3.9, -2.4], [3.6, 0.0], [3.9, 2.2], [3.2, 4.4], [1.2, 5.8], [-1.4, 5.9], [-3.3, 4.6], [-3.6, 2.4], [-3.9, 0.2], [-3.5, -2.2], [-3.6, -4.4]];
+// ada kuzeye (-z) uzar: Samsun'dan sonra Rize ve bir şehirlik daha yer (Mersin). ISL_ZC / ISL_RZ: adanın z ortası ve süs alanının yarı boyu
+export const ISL_ZC = -1.65, ISL_RZ = 7.1;
+export const TR_SHAPE = [[-1.2, -6.0], [1.6, -5.8], [3.4, -4.6], [3.9, -2.4], [3.6, 0.0], [3.9, 2.2], [3.4, 4.5], [3.8, 6.6], [3.1, 8.4], [1.2, 9.3], [-1.4, 9.3], [-3.2, 8.2], [-3.8, 6.3], [-3.4, 4.4], [-3.6, 2.4], [-3.9, 0.2], [-3.5, -2.2], [-3.6, -4.4]];
 const trIsland = addIsland(TR_SHAPE, 0, 0);
 
 // ---- şehirler ----
 // Türkiye adasında şehirlerin yeri (açılış sırasıyla aşağıdan yukarı kıvrılan yol): [x, z]
-export const CITY_POS = { istanbul: [-2.0, 4.2], izmir: [1.9, 3.2], antalya: [-1.9, 1.5], mugla: [2.2, 0.3], canakkale: [-1.7, -1.1], trabzon: [1.9, -2.5], samsun: [-0.4, -4.1] };
+export const CITY_POS = { istanbul: [-2.0, 4.2], izmir: [1.9, 3.2], antalya: [-1.9, 1.5], mugla: [2.2, 0.3], canakkale: [-1.7, -1.1], trabzon: [1.9, -2.5], samsun: [-0.4, -4.1], rize: [1.8, -5.8] }; // Mersin'e yer: [-1.6, -7.5]
 const PAD_R = 0.82;
 const padGeo = (() => { const k = new Kit(); k.add(new THREE.CylinderGeometry(PAD_R, PAD_R * 1.06, 0.14, 28), 0xfff1c9, 0, 0.07, 0); k.add(new THREE.CylinderGeometry(PAD_R * 1.07, PAD_R * 1.1, 0.06, 28), 0xd9b98a, 0, 0.0, 0); return k.build(); })();
 const hitMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -178,7 +180,7 @@ export function buildCities(list, el) {
   }
   const avoid = Object.values(CITY_POS).map(([x, z]) => [x, z, PAD_R + 0.15]);
   buildPath(avoid);
-  scene.add(islandDecor(3.4, 5.4, avoid.concat(stones.map(s => [s.x, s.z, 0.1]))));
+  scene.add(islandDecor(3.4, ISL_RZ, avoid.concat(stones.map(s => [s.x, s.z, 0.1])), 1, ISL_ZC));
 }
 // seçili şehrin kaidesinde nabız gibi atan altın halka (uzun maketler ekranda komşusunun üstüne biner: işaret kaidede durur, karışmaz)
 const ring = new THREE.Mesh(new THREE.TorusGeometry(PAD_R * 1.12, 0.07, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffc93a }));
@@ -194,7 +196,7 @@ const gull = makeGull(); { const b = new THREE.Box3().setFromObject(gull), s = n
 gull.traverse(o => { if (o.isMesh) o.castShadow = true; });
 function tickCities(dt, t) {
   for (const c of cities) if (c.tick) c.tick(dt, t);
-  const a = t * 0.32; gull.position.set(Math.sin(a) * 3.1, 3.2 + Math.sin(t * 0.9) * 0.25, Math.cos(a) * 4.6); gull.rotation.set(0, a + Math.PI, -0.35); flapGull(gull, t * 1.4, 0.6, 0.4);
+  const a = t * 0.28; gull.position.set(Math.sin(a) * 3.1, 3.2 + Math.sin(t * 0.9) * 0.25, ISL_ZC + Math.cos(a) * 6.2); // martı uzayan adanın çevresinde gull.rotation.set(0, a + Math.PI, -0.35); flapGull(gull, t * 1.4, 0.6, 0.4);
   if (selC) { ring.position.set(selC.g.position.x, GROUND_Y + 0.16, selC.g.position.z); ring.scale.setScalar(1 + Math.abs(Math.sin(t * 3)) * 0.08); }
   tickLayer(dt, t);
   for (const c of cities) if (c.pop) { c.pop = Math.max(0, c.pop - dt * 3); const k = 1 + Math.sin(c.pop * Math.PI) * 0.12; c.g.scale.set(k, 1 / k, k); }
@@ -229,7 +231,7 @@ function buildPath(avoid) {
       for (let j = 0; j <= n; j++) {
         const u = j / n, x = (1 - u) * (1 - u) * a.x + 2 * u * (1 - u) * cx + u * u * b.x, z = (1 - u) * (1 - u) * a.z + 2 * u * (1 - u) * cz + u * u * b.z;
         if (Math.hypot(x - a.x, z - a.z) < PAD_R + 0.22 || Math.hypot(x - b.x, z - b.z) < PAD_R + 0.22) continue;
-        if (hills.some(([hx, hz, hr]) => Math.hypot(hx - x, hz - z) < hr * 1.05) || Math.abs(x) / 3.4 + Math.abs(z) / 5.4 > 1.4) { hit++; continue; }
+        if (hills.some(([hx, hz, hr]) => Math.hypot(hx - x, hz - z) < hr * 1.05) || Math.abs(x) / 3.4 + Math.abs(z - ISL_ZC) / ISL_RZ > 1.4) { hit++; continue; }
         pts.push({ x, z, seg: i });
       }
       if (!best || hit < best.hit) best = { hit, pts };
@@ -264,8 +266,13 @@ function cloudGeo(h, big) {
   return k.build();
 }
 const cloudMat = () => new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, transparent: true, opacity: 0.9 });
-function swapMat(c, grey) { // yalnız köşe renkli gövdeler grileşir; kendi malzemeli parçalar (şelale suyu) olduğu gibi kalır
-  c.model.traverse(o => { if (!o.isMesh || !(o.userData.mat0 || o.material).vertexColors) return; if (!o.userData.mat0) o.userData.mat0 = o.material; o.material = grey ? greyMat : o.userData.mat0; });
+function swapMat(c, grey) { // yalnız köşe renkli gövdeler grileşir; kendi malzemeli parçalar (şelale suyu) olduğu gibi kalır. greyMat'i olan (Rize'nin LED'li bardağı) kendi grisine döner, greyHide gizlenir
+  c.model.traverse(o => {
+    if (!o.isMesh) return;
+    if (o.userData.greyHide) { o.visible = !grey; return; }
+    const gm = o.userData.greyMat; if (!gm && !(o.userData.mat0 || o.material).vertexColors) return;
+    if (!o.userData.mat0) o.userData.mat0 = o.material; o.material = grey ? gm || greyMat : o.userData.mat0;
+  });
 }
 const reveals = []; // dağılan bulutlar
 export function mapState(st) {

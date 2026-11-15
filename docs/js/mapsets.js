@@ -3,8 +3,8 @@
 // yalnız kıpırdayanlar ayrı mesh (değirmen kanadı, horoncular). Her biri oyun ölçüsünde kurulur, sonra fit() ile haritadaki boyuna küçülür.
 // userData.tick(dt, t): canlılık. Ayar: H (maketin haritadaki yüksekliği).
 import * as THREE from 'three';
-import { Kit, vcMat } from './util.js';
-import { makeWindmill, makeFalls, truvaGeo, bandirmaGeo, horonDancerGeo, BEACH_COLS, ckClock, konakTower } from './models.js';
+import { Kit, vcMat, teaGlassProfile, teaGlassLedTex } from './util.js';
+import { makeWindmill, makeFalls, truvaGeo, bandirmaGeo, horonDancerGeo, BEACH_COLS, ckClock, konakTower, ringTex, planeGeo } from './models.js';
 
 const cyl = (rt, rb, h, n = 16) => new THREE.CylinderGeometry(rt, rb, h, n);
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
@@ -105,11 +105,35 @@ export const DIORAMA = {
     g.userData.tick = (dt, t) => { ship.rotation.z = Math.sin(t * 1.2) * 0.02; ship.position.y = 0.2 + Math.sin(t * 1.5) * 0.15; };
     return { g, h: 1.5 };
   },
+  rize() { // çay bardağı kule: LED'li ince belli bardak, kırmızı tabak, denize doldurulmuş sette pist ve kalkan minik uçak; ışık halkası bardağı tırmanır
+    const k = new Kit();
+    k.add(cyl(13, 13.4, 0.6, 28), 0x48b4d8, 0, 0.3, 0);                                   // deniz
+    k.add(box(24, 1.4, 6), 0x9a9890, 0, 0.7, 6.5).add(box(22, 0.1, 2.4), 0x3d4046, 0, 1.45, 6.5); // dolgu ve pist
+    for (let x = -9; x <= 9; x += 3) k.add(box(1.4, 0.12, 0.3), 0xf4f4ee, x, 1.5, 6.5);
+    k.add(cyl(6.2, 6.6, 1.6, 24), 0x9a9890, 0, 0.8, -2).add(cyl(4.6, 4, 0.6, 24), 0xc8241c, 0, 1.9, -2).add(new THREE.TorusGeometry(4.55, 0.16, 6, 28), 0xf6f2ea, 0, 2.2, -2, Math.PI / 2);
+    const S = 1.25, led = new THREE.Mesh(new THREE.LatheGeometry(teaGlassProfile().map(p => new THREE.Vector2(p.x * S, p.y * S + 2.2)), 28), new THREE.MeshBasicMaterial({ map: teaGlassLedTex() }));
+    led.position.z = -2; led.castShadow = true; led.userData.greyMat = new THREE.MeshBasicMaterial({ map: teaGlassLedTex(true) }); // kilitliyken gri (worldmap swapMat)
+    const tex = ringTex(true); tex.repeat.y = 2;
+    const ring = new THREE.Mesh(new THREE.LatheGeometry(teaGlassProfile().map(p => new THREE.Vector2(p.x * S * 1.03, p.y * S + 2.2)), 28), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    ring.position.z = -2; ring.userData.greyHide = true;
+    const plane = mesh(planeGeo()); plane.scale.setScalar(0.55); plane.rotation.y = -Math.PI / 2; // burun +x: pist boyunca
+    const g = plain([mesh(k.build()), led, ring, plane]);
+    let px = -10, wait = 1;
+    g.userData.tick = (dt, t) => {
+      tex.offset.y -= dt * 0.7; // halkalar bardağı tırmanır
+      if ((wait -= dt) > 0) { plane.position.set(-10, 1.5, 6.5); plane.rotation.z = 0; return; }
+      px += dt * (4 + (px + 10) * 0.9); plane.position.x = px; // pistte hızlanır, kalkar, tırmanır
+      if (px > 0) { plane.position.y = 1.5 + (px * 0.35) ** 1.4; plane.rotation.z = 0.25; }
+      if (px > 22) { px = -10; wait = 3 + Math.random() * 3; }
+    };
+    return { g, h: 2.3 };
+  },
 };
 
 // ada süsü: ağaçlar, karlı tepeler (hepsi tek gövde). avoid: [x, z, r] şehir yerleri
-export const HILLS = [[0.4, 2.2, 1.0], [0.1, -1.9, 1.15], [-2.7, -3.6, 0.75], [2.9, 1.6, 0.7]]; // adadaki tepeler [x, z, yarıçap]: yol taşları bunların üstünden geçmez
-export function islandDecor(rx, rz, avoid, seed = 1) {
+export const HILLS = [[0.4, 2.2, 1.0], [0.1, -1.9, 1.15], [-2.7, -3.6, 0.75], [2.9, 1.6, 0.7], [-0.2, -6.4, 0.8], [2.9, -8.2, 0.55]]; // adadaki tepeler [x, z, yarıçap]: yol taşları bunların üstünden geçmez
+// rx/rz: süs alanının yarı boyları, zc: alanın ortası (ada kuzeye uzadıkça kayar)
+export function islandDecor(rx, rz, avoid, seed = 1, zc = 0) {
   let s = seed; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
   const k = new Kit(), GY = 0.72, ok = (x, z, r) => !avoid.some(([ax, az, ar]) => Math.hypot(ax - x, az - z) < ar + r);
   const hills = HILLS;
@@ -117,9 +141,9 @@ export function islandDecor(rx, rz, avoid, seed = 1) {
     k.add(new THREE.ConeGeometry(r, r * 1.05, 7), 0x5aa84a, x, GY + r * 0.52, z);
     k.add(new THREE.ConeGeometry(r * 0.36, r * 0.38, 7), 0xffffff, x, GY + r * 0.88, z);
   }
-  for (let i = 0; i < 70; i++) {
-    const x = (rnd() - 0.5) * rx * 2, z = (rnd() - 0.5) * rz * 2;
-    if (Math.abs(x) / rx + Math.abs(z) / rz > 1.45 || Math.hypot(x / rx, z / rz) > 0.92 || !ok(x, z, 0.35) || hills.some(([hx, hz, hr]) => Math.hypot(hx - x, hz - z) < hr)) continue;
+  for (let i = 0; i < 90; i++) {
+    const x = (rnd() - 0.5) * rx * 2, z = zc + (rnd() - 0.5) * rz * 2;
+    if (Math.abs(x) / rx + Math.abs(z - zc) / rz > 1.45 || Math.hypot(x / rx, (z - zc) / rz) > 0.92 || !ok(x, z, 0.35) || hills.some(([hx, hz, hr]) => Math.hypot(hx - x, hz - z) < hr)) continue;
     const h = 0.45 + rnd() * 0.3;
     k.add(cyl(0.04, 0.05, 0.16, 5), 0x7a5634, x, GY + 0.08, z);
     k.add(new THREE.ConeGeometry(h * 0.38, h, 6), rnd() < 0.5 ? 0x2f8a3e : 0x3c9b48, x, GY + 0.14 + h / 2, z);

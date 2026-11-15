@@ -3364,7 +3364,7 @@ function kuleLathe(s = 1) { return new THREE.LatheGeometry(teaGlassProfile().map
 // LED dokusu (util.js teaGlassLedTex): kara-kızıl zemin üstünde nokta ızgarası; altta demli çay kırmızısı, ağza yakın beyaz, en üstte kırmızı bant
 export const kuleLedMat = new THREE.MeshBasicMaterial({ map: teaGlassLedTex() });
 // halka dokusu: ortada parlak, yumuşak kenarlı ince bant (yalnız ortası dolu, uçlar boş: kaydırınca tek halka görünür)
-const ringTex = (wrap) => { const t = canvasTex(4, 256, (g, w, h) => { const r = g.createLinearGradient(0, 0, 0, h); r.addColorStop(0, 'rgba(255,240,200,0)'); r.addColorStop(0.4, 'rgba(255,240,200,0)'); r.addColorStop(0.47, 'rgba(255,250,235,1)'); r.addColorStop(0.53, 'rgba(255,250,235,1)'); r.addColorStop(0.6, 'rgba(255,240,200,0)'); r.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }); if (wrap) t.wrapT = THREE.RepeatWrapping; return t; };
+export const ringTex = (wrap) => { const t = canvasTex(4, 256, (g, w, h) => { const r = g.createLinearGradient(0, 0, 0, h); r.addColorStop(0, 'rgba(255,240,200,0)'); r.addColorStop(0.4, 'rgba(255,240,200,0)'); r.addColorStop(0.47, 'rgba(255,250,235,1)'); r.addColorStop(0.53, 'rgba(255,250,235,1)'); r.addColorStop(0.6, 'rgba(255,240,200,0)'); r.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }); if (wrap) t.wrapT = THREE.RepeatWrapping; return t; };
 export const KULE_RING_TEX = ringTex(false), KULE_CHASE_TEX = ringTex(true); // tek halka (işaret) ve art arda halkalar (buhar fışkırırken)
 export const kuleRingMat = new THREE.MeshBasicMaterial({ map: KULE_RING_TEX, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
 let kuleG = null;
