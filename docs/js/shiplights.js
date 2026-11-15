@@ -79,12 +79,12 @@ function lampsOf(kind, o = {}) {
     for (const x of [-2.6, -1.3, 0, 1.3, 2.6]) if (Math.random() < 0.6) a.push(L(x, 9.2, -15.4, 0));
     for (const s of [-1, 1]) { row(a, s * 3.6, 9.2, -19.5, -16.5, 1.5, 0.5); row(a, s * 3.6, 7, -19.5, -16.5, 1.5, 0.3); }
     a.push(L(0, 14.1, -16.5, 1, 1.6), L(0, 4.6, 22, 1, 1.4)); nav(a, 4.35, 10.2, -16.6, 1);
-  } else if (kind === 'tanker') { // pruva +z
+  } else if (kind === 'tanker') { // pruva +z, köprüüstü kıçta (-24)
     for (const y of [5.6, 7.6, 9.6]) {
-      for (const x of [-3, -1.5, 0, 1.5, 3]) if (Math.random() < 0.45) a.push(L(x, y, 20.4, 0));
-      for (const s of [-1, 1]) row(a, s * 4.05, y, 22, 26, 2, 0.35);
+      for (const x of [-3, -1.5, 0, 1.5, 3]) if (Math.random() < 0.45) a.push(L(x, y, -20.4, 0));
+      for (const s of [-1, 1]) row(a, s * 4.05, y, -26, -22, 2, 0.35);
     }
-    a.push(L(0, 15.1, 17, 1, 1.6), L(0, 9.7, -27, 1, 1.4)); nav(a, 5.4, 10.8, 16.4, 1);
+    a.push(L(0, 15.1, -22, 1, 1.6), L(0, 9.7, 27, 1, 1.4)); nav(a, 5.4, 10.8, -21.4, 1);
   } else if (kind === 'ferry') { // pruva -z
     const len = o.L || 50, ys = o.type === 'buyuk' ? [1.07, 1.62] : o.type === 'motor' ? [1.55] : [1.5];
     for (const y of ys) for (const s of [-1, 1]) row(a, s * 4.07, y, -len / 2 + 9, len / 2 - 8, 3.2, 0.45);
@@ -164,7 +164,7 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
   time += dt;
   const k = WEATHER_K[weather] || 0, kLed = LED_K[weather] || 0, fog = scene.fog;
   if (!k && !kLed) { points.visible = false; for (const sh of ships) if (!rootOf(sh.obj).parent) ships.delete(sh); return; } // yağmursuz havada da sahneden çıkan gemi kayıttan düşsün (sızıntı)
-  const far = fog ? fog.far * 1.8 : 400, near = fog ? fog.far : 260; // gemi üretildiği an (~280 m) ışığı görünür, sisin sınırında tam parlak (eskiden 18 m'de doluyordu)
+  const far = fog ? fog.far : 400, near = fog ? fog.near + (fog.far - fog.near) * 0.55 : 260; // ışık gövdeyle birlikte sisten çıkar (eskiden sisin 1,8 katında yanıyordu: gemiden önce ışığı beliriyordu; daha önce de 18 m'de doluyordu)
   renderer.getDrawingBufferSize(_sz); mat.uniforms.uHalfH.value = _sz.y / 2; mat.uniforms.uMinPx.value = 2.2 * renderer.getPixelRatio();
   const cam = camera.position;
   let n = 0;

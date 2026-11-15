@@ -53,6 +53,12 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Gemiler · 15 Kasım', id: 'uzak-gemiler', t: '🚢 Dış şeritteki ve ufuktaki gemiler düzeldi', look: [
+      'Dış şeritte seyreden vapurlar artık burnu önde gidiyor (eskiden geri geri kayıyordu). Tankerin köprüüstü ve bacası kıçta, sivri burun önde.',
+      'İskele yaklaşırken yakındaki gemi birden silinmiyor: iskele kurulacak yere baştan gemi konmuyor (ölçüm: 7 şehirde görünürken silinen büyük gemi 24 → 3, kalanlar sisin en dibinde).',
+      'Yağmur/gece ışıkları gemiyle birlikte sisten çıkıyor (eskiden ışık gemiden önce, boşlukta beliriyordu). Ufkun yanındaki gemi ön sıradaki gemilerin içinden geçmiyor, ucunda bekleyip arkadan dönüyor.',
+      'Bak: yağmurlu havada sağdaki/soldaki büyük gemiler önce ışık olarak mı beliriyor? İskele öncesi gemi kayboluyor mu? Virajda ufuk gemileri iç içe giriyor mu?'],
+    links: [['Yağmur', '/?city=istanbul&weather=rain'], ['Açık hava', '/?city=istanbul&weather=clear']] },
   { g: 'Kombo · 15 Kasım', id: 'plaj-kombo', t: '🏖️ Antalya çift simitleri seriyi bozmuyor', look: [
       'Plaj atıcıları her seferinde iki renk atar (sol/sağ, ikişer simit). Bir renk seçtiysen o çiftin öbür rengi ve seçtiğinden kaçırdığın simit kombo kademesini düşürmez.',
       'Önceden iki rengi birden almaya çalışınca (zikzak) aradaki kaçan simit seriyi bir kademe indiriyordu. Aynı kural Trabzon horonu ve Mersin narenciyesinde de geçerli.',

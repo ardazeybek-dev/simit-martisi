@@ -2076,10 +2076,12 @@ function pieceAt(z, side) {
     || imbats.some(b => (b.mills.length || b.bank || b.jet) && -b.dir === side && z < b.z0 + 12 && z > b.z1 - 12)
     || chutes.some(c => Math.abs(c.z - z) < 24) || sutuns.some(s => z < s.z0 + 8 && z > s.z1 - 8) || flamFlocks.some(f => z < f.z0 + 6 && z > f.z1 - 6) || balloonSets.some(b => b.side === side && Math.abs(b.z - z) < 14);
 }
+// sıradaki iskelelerin yakını: oraya gemi konmaz (iskele kurulunca yakındaki gemiyi siliyordu: görünürdeki gemi birden yok oluyordu)
+const nearStop = (z, r) => piers.some(p => Math.abs(p.z - z) < r) || STOPS.slice(pierI).some(st => Math.abs(-2 * st.m - z) < r);
 function spawnScenery(limit) {
   while (sceneryZ > limit) {
     sceneryZ -= rand(22, 52);
-    if (Math.random() < 0.85 && !(shedT > 0) && !piers.some(p => Math.abs(p.z - sceneryZ) < 34)) { // yük anında yeni yan tekne çıkmaz
+    if (Math.random() < 0.85 && !(shedT > 0) && !nearStop(sceneryZ, 44)) { // yük anında yeni yan tekne çıkmaz
       const side = pick([-1, 1]), r = Math.random();
       if (pieceAt(sceneryZ, side)) continue;
       const b = r < 0.5 ? makeFishingBoat(side) : r < 0.78 ? makeSailboat() : makeYacht();
@@ -2089,7 +2091,7 @@ function spawnScenery(limit) {
     }
     if (sceneryZ < cruiseZ) {
       cruiseZ = sceneryZ - rand(380, 700);
-      if (!land.some(l => l.mesh.position.x > 30 && l.mesh.position.x < 45 && Math.abs(l.z - sceneryZ) < 220)) { // Kız Kulesi bu yakadaysa gemi çıkmaz
+      if (!nearStop(sceneryZ - 40, 80) && !land.some(l => l.mesh.position.x > 30 && l.mesh.position.x < 45 && Math.abs(l.z - sceneryZ) < 220)) { // Kız Kulesi bu yakadaysa gemi çıkmaz
         const c = makeCruise(), flip = Math.random() < 0.5;
         c.position.set(rand(62, 88), 0, sceneryZ - 40); c.scale.setScalar(rand(1.4, 1.7)); c.rotation.y = rand(-0.25, 0.25) + (flip ? Math.PI : 0);
         c.userData.face = flip ? Math.PI / 2 : -Math.PI / 2; // yolcular koridora (martıya) dönük
@@ -2100,7 +2102,7 @@ function spawnScenery(limit) {
       maidenZ = sceneryZ - rand(1100, 1700);
       const ship = land.find(l => l.crowd && l.mesh.position.x > 50 && Math.abs(l.z - sceneryZ) < 220); // yolcu gemisi yakınsa öbür yakaya
       const m = makeMaiden(), side = ship ? -1 : pick([-1, 1]);
-      if (!bridges.some(b => Math.abs(b.z - sceneryZ + 20) < 30)) { // Kız Kulesi köprünün üstüne düşmez
+      if (!nearStop(sceneryZ - 20, 80) && !bridges.some(b => Math.abs(b.z - sceneryZ + 20) < 30)) { // Kız Kulesi köprünün üstüne düşmez
         m.position.set(side * rand(34, 40), 0, sceneryZ - 20); m.rotation.y = side > 0 ? 0 : Math.PI;
         scene.add(m); land.push({ mesh: m, z: sceneryZ - 20, crowd: true });
       }
@@ -2110,7 +2112,7 @@ function spawnScenery(limit) {
     if (sceneryZ < anchorZ) {
       anchorZ = sceneryZ - rand(160, 280);
       const side = pick([-1, 1]), x = side * rand(125, 160), z = sceneryZ - rand(0, 30);
-      if (!land.some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - z) < 150)) {
+      if (!nearStop(z, 80) && !land.some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - z) < 150)) {
         const tank = Math.random() < 0.45, s = new THREE.Mesh(tank ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat);
         s.position.set(x, -0.2, z); s.scale.setScalar(rand(1.6, 2)); s.rotation.y = rand(-0.15, 0.15) + (Math.random() < 0.5 ? Math.PI : 0); // şeride paralel: yan yatıp seyir şeridine taşmaz
         scene.add(s); land.push({ mesh: s, z }); addShipLights(s, tank ? 'tanker' : 'cargo');
@@ -2118,7 +2120,7 @@ function spawnScenery(limit) {
     }
     // açıkta seyreden gemiler: dış şeritte karşıdan gelen ya da bizimle giden vapur, daha açıkta şilep. Dokunulmaz, yalnız manzara.
     // Demirli teknelerin (±15-40) dışında kendi şeritleri var; Kız Kulesi, yolcu gemisi ya da başka gemi o yakada yakınsa çıkmaz
-    if (Math.random() < 0.2 && !piers.some(p => Math.abs(p.z - sceneryZ) < 90) && !bridges.some(b => Math.abs(b.z - sceneryZ) < 90)) {
+    if (Math.random() < 0.2 && !nearStop(sceneryZ, 160) && !bridges.some(b => Math.abs(b.z - sceneryZ) < 90)) {
       const big = Math.random() < 0.55, side = pick([-1, 1]), x = side * (big ? rand(66, 84) : rand(50, 57));
       const busy = [...land, ...decor.filter(d => d.vz)].some(l => Math.sign(l.mesh.position.x) === side && Math.abs(l.mesh.position.x) > 30 && Math.abs(l.z - sceneryZ) < 170);
       if (!busy) {
@@ -2126,7 +2128,7 @@ function spawnScenery(limit) {
         if (big) { const tank = Math.random() < 0.35; g.add(new THREE.Mesh(tank ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat)); addShipLights(g, tank ? 'tanker' : 'cargo'); }
         else { const ft = pickFerryType(), fl = pick(ft.lengths); g.add(new THREE.Mesh(ferryGeo(fl, ft.id), vcMat)); const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(0, DECK, 0); g.add(c); addShipLights(g, 'ferry', { L: fl, type: ft.id }); }
         const toward = Math.random() < 0.6; // çoğu karşıdan gelir
-        g.rotation.y = toward ? 0 : Math.PI; g.position.set(x, 0, sceneryZ);
+        g.rotation.y = toward === big ? 0 : Math.PI; // pruva gidiş yönüne: şilep/tanker pruvası +z, vapurunki −z (eskiden vapurlar geri geri gidiyordu) g.position.set(x, 0, sceneryZ);
         scene.add(g); decor.push({ mesh: g, z: sceneryZ, ph: Math.random() * 6, calm: true, vz: (toward ? 1 : -1) * rand(3, 6) });
       }
     }
@@ -4339,6 +4341,7 @@ function podDraw(dt) {
 const clock = new THREE.Clock();
 let t = 0;
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+const FAR_SIDE_Z = -170; // yan ufuk gemisinin en ileri z'si (ön sıra −240'ta, gövde yarı boyu ~45)
 const _frustum = new THREE.Frustum(), _fw = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _qy = new THREE.Quaternion(), _m4 = new THREE.Matrix4();
 let firstFrame = true;
 function frame() {
@@ -4641,8 +4644,16 @@ function frame() {
   _frustum.setFromProjectionMatrix(_m4.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
   tickFar(dt); // Rize ufkunda kalkan uçak
   for (const s of farShips) {
+    // yan ufuktaki gemi (döndürülmüş sıra) ön sıraların (z −240, −318) önünde kalır: yalnız z ∈ [FAR_SIDE_Z, FAR_SHIP_W] arasında kayar,
+    // ucunda gözden çıkınca arkaya (kameranın gerisine) geçer, görünürken ucunda bekler (eskiden ön sıraların içinden geçiyordu: gemiler iç içe)
+    const k = s.parent !== far ? -Math.sin(s.parent.rotation.y) : 0; // dünya z = k · yerel x
+    const lo = k ? Math.min(FAR_SIDE_Z / k, FAR_SHIP_W / k) : -FAR_SHIP_W, hi = k ? Math.max(FAR_SIDE_Z / k, FAR_SHIP_W / k) : FAR_SHIP_W, span = hi - lo;
     s.position.x += s.userData.v * dt;
-    if (Math.abs(s.position.x) > FAR_SHIP_W && !_frustum.intersectsObject(s)) { s.position.x -= Math.sign(s.position.x) * 2 * FAR_SHIP_W; s.updateMatrixWorld(); if (_frustum.intersectsObject(s)) s.position.x += Math.sign(s.position.x) * 2 * FAR_SHIP_W; }
+    if (s.position.x > hi || s.position.x < lo) {
+      const dir = s.position.x > hi ? -1 : 1, x0 = s.position.x;
+      if (!_frustum.intersectsObject(s)) { s.position.x += dir * span; s.updateMatrixWorld(); if (_frustum.intersectsObject(s)) s.position.x = x0; }
+      if (k && s.position.x === x0) s.position.x = dir < 0 ? hi : lo; // yan gemi görünürken ucunda durur
+    }
   }
   updatePirates(g.z, dt); updateSteam(dt); updateHorses(g.z, dt); updateHamsi(dt, g.z); updateHoron(g.z); updateFalls(dt, g.z); updateRegattas(g.z); updateFlamingos(dt, g.z); updateChutes(g.z); updateSutun(dt, g.z); updateTurtles(dt, g.z); updateGliders(g.z); updateBees(dt, g.z);
   for (const c of crossers) { // martı geldiğinde xa'da olacak şekilde yandan kayar

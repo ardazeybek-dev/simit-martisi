@@ -1604,13 +1604,13 @@ function tankerGeo_(ci) {
   for (let z = -16; z < 16; z += 8) k.add(new THREE.BoxGeometry(5.5, 1.2, 0.8), 0xd9d4c8, 0, 4.3, z); // geçitler
   k.add(new THREE.BoxGeometry(5, 0.8, 1.4), 0xe0a53a, 0, 4.4, 0); // manifold vinci
   k.add(new THREE.CylinderGeometry(0.15, 0.15, 5, 5), 0xe0a53a, 1.8, 6.4, 0, 0, 0, 0.5);
-  k.add(new THREE.BoxGeometry(W - 0.6, 7, 7), 0xf3efe6, 0, 7.3, L / 2 - 5); // köprüüstü (kıçta)
-  for (const y of [5.6, 7.6, 9.6]) k.add(new THREE.BoxGeometry(W - 0.5, 0.5, 7.05), 0x2b4560, 0, y, L / 2 - 5);
-  k.add(new THREE.BoxGeometry(W + 2.4, 0.25, 2), 0xf3efe6, 0, 10.6, L / 2 - 7.6); // köprü kanatları
-  k.add(new THREE.CylinderGeometry(1.0, 1.15, 3.4, 8), TANKER_COLS[ci], 0, 12.3, L / 2 - 3.2); // baca
-  k.add(new THREE.CylinderGeometry(1.02, 1.02, 0.6, 8), 0x16171c, 0, 13.8, L / 2 - 3.2);
-  k.add(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), 0xf3efe6, 0, 13, L / 2 - 7);
-  k.add(new THREE.CylinderGeometry(0.08, 0.08, 6, 4), 0xf3efe6, 0, 6.6, -L / 2 + 2); // pruva direği
+  k.add(new THREE.BoxGeometry(W - 0.6, 7, 7), 0xf3efe6, 0, 7.3, -L / 2 + 5); // köprüüstü (kıçta: pruva +z, sivri uç)
+  for (const y of [5.6, 7.6, 9.6]) k.add(new THREE.BoxGeometry(W - 0.5, 0.5, 7.05), 0x2b4560, 0, y, -L / 2 + 5);
+  k.add(new THREE.BoxGeometry(W + 2.4, 0.25, 2), 0xf3efe6, 0, 10.6, -L / 2 + 7.6); // köprü kanatları
+  k.add(new THREE.CylinderGeometry(1.0, 1.15, 3.4, 8), TANKER_COLS[ci], 0, 12.3, -L / 2 + 3.2); // baca
+  k.add(new THREE.CylinderGeometry(1.02, 1.02, 0.6, 8), 0x16171c, 0, 13.8, -L / 2 + 3.2);
+  k.add(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), 0xf3efe6, 0, 13, -L / 2 + 7);
+  k.add(new THREE.CylinderGeometry(0.08, 0.08, 6, 4), 0xf3efe6, 0, 6.6, L / 2 - 2); // pruva direği
   return (tankerCache[ci] = k.build());
 }
 
