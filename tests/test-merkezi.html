@@ -53,6 +53,27 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Mersin · 15 Kasım', id: 'mersin-sutun', t: '🏛️ Devrilen Soli sütunları (yeni mekanik)', look: [
+      'Şeridin iki yanında taş temel üstünde Soli\'nin sütun sırası: kimi tam boy (başlıklı, arada arşitrav kirişi), kimi kırık.',
+      'Yaklaşınca bazı sütunlar düzensiz sallanıp dibinden ve başlığından toz atar (çatırtı sesi), sonra şeride devrilir ve boylu boyunca suya yatar (sıçrama, köpük).',
+      'Devrik sütunun altından geçilebilir (bir sütunun altında altın simit var); çarpan yer sütunun martı boyunu kestiği nokta. Suya yatınca engel değil.',
+      'Bak: devrilme her seferinde martı vardığında aynı yerde mi, kaçacak yer hep var mı, toz ve köpük telefonda kasıyor mu?'],
+    links: [['Hemen gelsin', '/?city=mersin&hepsi&weather=clear&sutun']] },
+  { g: 'Mersin · 15 Kasım', id: 'mersin-kale', t: '🏰 Kızkalesi', look: [
+      'Denizdeki kale şeridin üstünde: kayalık adacık, köşelerde yuvarlak burçlar, ön ve arka surda kemerli kapı (kapılar birbirinden kaymış).',
+      'Ön kapıdan avluya girip içeride kayarak arka kapıdan çık; avlunun ortasında altın, kaleyi geçince bonus. Avludayken martıyla kamera arasındaki sur saydamlaşır.',
+      'Bak: kapıdan geçiş rahat mı, sur saydamlaşırken göz yoruyor mu, kaleden çıkınca hemen vapur gelmiyor mu?'],
+    links: [['Hemen gelsin', '/?city=mersin&hepsi&weather=clear&kizkalesi']] },
+  { g: 'Mersin · 15 Kasım', id: 'mersin-narenciye', t: '🍊 Narenciye teknesi', look: [
+      'Şeridin yanında kasa kasa narenciye yüklü uzun tekne; her atıcının yanında kendi renginde kasa yığını (portakal, limon, mandalina), işçinin önlüğü ve şapkası aynı renk.',
+      'Atılan simidin çevresinde o rengin kabuk halkası var; aynı rengi art arda yakalayınca seri büyür (plajdaki renk zinciri).',
+      'Bak: portakal ile mandalina havada ayrılıyor mu?'],
+    links: [['Hemen gelsin', '/?city=mersin&hepsi&weather=clear&narenciye']] },
+  { g: 'Mersin · 15 Kasım', id: 'mersin-manzara', t: '🌴 Mersin: ufuk, menü sahnesi, harita', look: [
+      'Uçuşta ufuk: puslu sıcak gök, uzun mavi-gri Toroslar, düz kıyıda yüksek beyaz apartmanlar, ince Mersin Metropol kulesi, solda limanın kırmızı vinçleri, sağda Soli sütunları ve açıkta Kızkalesi.',
+      'Menüde: kordonda narenciye teknesi ve kasalar, palmiyeler, Metropol kulesi, kıyıda Soli sütunları, solda denizde Kızkalesi.',
+      'Haritada Rize\'nin üstünde Kızkalesi maketi; Rize bitince Mersin açılır, Türkiye Mersin ile biter.'],
+    links: [['Mersin menüsü', '/?city=mersin&hepsi&weather=clear'], ['Harita', '/?city=mersin&hepsi&harita']] },
   { g: 'Rize · 15 Kasım', id: 'rize-kule', t: '🍵 Çay bardağı kule (yeni mekanik)', look: [
       'Şeridin yanında denize doldurulmuş yuvarlak sette dev çay bardağı (Rize-Artvin Havalimanı kulesi): ince belli bardak, gövdesi LED noktalı; çoğu kırmızı, ağzı beyaz, en üstte kırmızı bant, altında kırmızı tabak.',
       'Mekanik ışıkla zamanlama: parlak bir ışık halkası bardağın dibinden ağzına tırmanır, ağza varınca çaydan buhar fışkırır (halkalar art arda koşar, şeridin kule yarısında sudan buhar kalkar). O an kule tarafındaysan martı yükselir ve yüksek simit kavsini toplar. Bu iki kez olur; ikinci kavsin tepesinde altın simit var.',
