@@ -203,6 +203,7 @@ function tickCities(dt, t) {
   for (const c of cities) if (c.pop) { c.pop = Math.max(0, c.pop - dt * 3); const k = 1 + Math.sin(c.pop * Math.PI) * 0.12; c.g.scale.set(k, 1 / k, k); }
   const far = map.d > 42;
   if (farCloud) farCloud.position.y = Math.sin(t * 0.5) * 0.15; // bulutlar hep birlikte hafifçe kabarıp iner
+  tickSea(dt, t);
   const fs = THREE.MathUtils.clamp(36 / map.d, 0.5, 1); // ülke etiketleri uzaklaştıkça küçülür (yan yana ülkelerde üst üste binmesin)
   for (const f of farIs) {
     const s = mapToScreen(f.pos), off = s.back || s.x < -80 || s.x > innerWidth + 80 || s.y < -30 || s.y > innerHeight + 30;
@@ -417,4 +418,95 @@ export function buildFar(items) { // items: [{ id, name, sub }]: adlar main.js't
   const tr = new THREE.Mesh(tk.build(), vcMat); tr.castShadow = true;
   farCloud = new THREE.Mesh(ck.build(), new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })); farCloud.castShadow = true;
   scene.add(fm, sm, tm, tr, farCloud);
+  buildSea(blobs, rnd);
+}
+
+// ---- denizde hayat: gemiler, kuş sürüleri, zıplayan balıklar ----
+// Hepsi InstancedMesh (gemi, yelkenli, köpük izi, kuş, balık, sıçrama halkası: 6 çizim). Gemiler karaya değmeyen dar elips rotalarda gidip döner (rota kurulurken
+// her noktası adalardan ve Türkiye'den pay bırakılarak denenir), kuşlar V düzeninde açık denizin üstünde tur atar, balıklar adaların çevresinde arada bir sudan zıplar.
+export const sea3 = { ships: [], flocks: [], fish: [] };
+const _sm = new THREE.Matrix4(), _sq = new THREE.Quaternion(), _sp = new THREE.Vector3(), _ss = new THREE.Vector3(), _se = new THREE.Euler();
+function shipGeo(sail) {
+  const k = new Kit();
+  if (sail) {
+    k.add(new THREE.BoxGeometry(0.62, 0.12, 0.2), 0xf6f4ee, 0, 0.06, 0).add(new THREE.BoxGeometry(0.64, 0.04, 0.21), 0x2f6fb4, 0, 0.02, 0)
+      .add(new THREE.CylinderGeometry(0.012, 0.012, 0.62, 4), 0xd8d2c4, 0.04, 0.42, 0)
+      .add(new THREE.ConeGeometry(0.2, 0.54, 3), 0xfdfbf4, -0.04, 0.4, 0, 0, Math.PI / 2, 0, 0.12, 1, 1);
+  } else {
+    const CC = [0xc8352e, 0x2f6fb4, 0x2e8a52, 0xe0a030];
+    k.add(new THREE.BoxGeometry(1.1, 0.12, 0.3), 0xb8352e, 0, 0.04, 0).add(new THREE.BoxGeometry(1.12, 0.1, 0.31), 0x2b3440, 0, 0.14, 0)
+      .add(new THREE.ConeGeometry(0.155, 0.28, 4), 0x2b3440, 0.68, 0.11, 0, 0, Math.PI / 4, -Math.PI / 2, 1, 1, 0.7);
+    for (let i = 0; i < 6; i++) k.add(new THREE.BoxGeometry(0.13, 0.1, 0.26), CC[i % 4], 0.38 - i * 0.14, 0.24, 0);
+    k.add(new THREE.BoxGeometry(0.16, 0.2, 0.28), 0xf6f4ee, -0.46, 0.29, 0).add(new THREE.BoxGeometry(0.17, 0.05, 0.29), 0x2b4560, -0.46, 0.34, 0).add(new THREE.CylinderGeometry(0.035, 0.04, 0.14, 6), 0xc8352e, -0.5, 0.45, 0);
+  }
+  return k.build();
+}
+const wakeGeo = new Kit().add(new THREE.PlaneGeometry(1, 0.22).rotateX(-Math.PI / 2), 0xffffff).add(new THREE.PlaneGeometry(0.6, 0.12).rotateX(-Math.PI / 2), 0xe8f7ff, -0.7, 0, 0).build();
+const birdGeo = new Kit().add(new THREE.BoxGeometry(0.16, 0.05, 0.05), 0xf6f6f2).add(new THREE.BoxGeometry(0.05, 0.02, 0.26), 0xf2f2ee, 0.01, 0.05, 0.13, 0.5, 0, 0).add(new THREE.BoxGeometry(0.05, 0.02, 0.26), 0xf2f2ee, 0.01, 0.05, -0.13, -0.5, 0, 0)
+  .add(new THREE.BoxGeometry(0.03, 0.02, 0.06), 0x1b1c22, 0.01, 0.1, 0.26, 0.5, 0, 0).add(new THREE.BoxGeometry(0.03, 0.02, 0.06), 0x1b1c22, 0.01, 0.1, -0.26, -0.5, 0, 0).add(new THREE.BoxGeometry(0.04, 0.02, 0.02), 0xf4b52a, 0.1, 0, 0).build();
+const fishGeo = new Kit().add(new THREE.SphereGeometry(0.07, 8, 5), (f, y) => (y > 0 ? 0x3f7fb0 : 0xdde8ee), 0, 0, 0, 0, 0, 0, 1.9, 1, 0.8).add(new THREE.ConeGeometry(0.06, 0.1, 4), 0x3f7fb0, -0.17, 0, 0, 0, 0, Math.PI / 2, 1, 1, 0.3).build();
+const splashGeo = new Kit().add(new THREE.TorusGeometry(0.16, 0.025, 4, 14).rotateX(Math.PI / 2), 0xffffff).build();
+function inst(geo, n, shadow = false) { const m = new THREE.InstancedMesh(geo, vcMat, n); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.castShadow = shadow; scene.add(m); return m; }
+function buildSea(blobs, rnd) {
+  const land = (x, z, pad) => blobs.some(([bx, bz, br]) => Math.hypot(bx - x, bz - z) < br * 1.15 + pad) || ((x / 4.6) ** 2 + ((z + 1.65) / 8.4) ** 2 < (1 + pad / 4.5) ** 2);
+  // gemi rotaları: dar elips (gidiş bir yandan, dönüş öbür yandan); her noktası karadan pay bırakır
+  const lanes = [];
+  for (let i = 0; i < 900 && lanes.length < 14; i++) {
+    const sail = lanes.length >= 8, L = sail ? 2.5 + rnd() * 3 : 5 + rnd() * 8, cx = -22 + rnd() * 46, cz = -25 + rnd() * 50, a = rnd() * Math.PI, w = sail ? 0.5 : 0.35;
+    const dx = Math.cos(a), dz = Math.sin(a); let ok = true;
+    for (let u = 0; u < 1 && ok; u += 0.04) { const th = u * Math.PI * 2; if (land(cx + dx * L / 2 * Math.cos(th) - dz * w * Math.sin(th), cz + dz * L / 2 * Math.cos(th) + dx * w * Math.sin(th), sail ? 0.5 : 0.8)) ok = false; }
+    if (ok && !lanes.some(l => Math.hypot(l.cx - cx, l.cz - cz) < (l.L + L) / 2 + 1)) lanes.push({ cx, cz, dx, dz, L, w, sail, th: rnd() * 6.28, v: (sail ? 0.45 : 0.7) / (L * 1.6) });
+  }
+  const nb = lanes.filter(l => !l.sail).length;
+  sea3.cargo = inst(shipGeo(false), Math.max(1, nb), true); sea3.sails = inst(shipGeo(true), Math.max(1, lanes.length - nb), true); sea3.wake = inst(wakeGeo, Math.max(1, lanes.length));
+  sea3.ships = lanes;
+  // kuş sürüleri: açık denizin üstünde büyük çemberler, V düzeni
+  for (let i = 0; i < 4; i++) sea3.flocks.push({ cx: -14 + rnd() * 28, cz: -18 + rnd() * 36, r: 5 + rnd() * 6, y: 2.4 + rnd() * 1.2, v: (0.12 + rnd() * 0.08) * (rnd() < 0.5 ? -1 : 1), ph: rnd() * 6.28, n: 4 + ((rnd() * 3) | 0) });
+  sea3.birds = inst(birdGeo, sea3.flocks.reduce((t, f) => t + f.n, 0));
+  // balıklar: adaların ve kıyıların yakınında açık su; her biri kendi aralığında zıplar
+  for (let i = 0; i < 600 && sea3.fish.length < 18; i++) {
+    const x = -22 + rnd() * 46, z = -25 + rnd() * 50;
+    if (land(x, z, 0.4) || !land(x, z, 3.5)) continue; // karaya değmeyen ama kıyıya yakın su
+    sea3.fish.push({ x, z, a: rnd() * 6.28, T: 2.5 + rnd() * 4, t: rnd() * 6 });
+  }
+  sea3.fishM = inst(fishGeo, sea3.fish.length); sea3.splash = inst(splashGeo, sea3.fish.length);
+}
+function tickSea(dt, t) {
+  if (!sea3.cargo) return;
+  let ci = 0, si = 0;
+  for (const [i, l] of sea3.ships.entries()) {
+    l.th += l.v * dt * 6.283;
+    const c = Math.cos(l.th), sn = Math.sin(l.th), x = l.cx + l.dx * l.L / 2 * c - l.dz * l.w * sn, z = l.cz + l.dz * l.L / 2 * c + l.dx * l.w * sn;
+    const vx = -l.dx * l.L / 2 * sn - l.dz * l.w * c, vz = -l.dz * l.L / 2 * sn + l.dx * l.w * c, yaw = Math.atan2(-vz, vx); // burun +x: gidiş yönüne
+    _se.set(Math.sin(t * 1.3 + i) * 0.03, yaw, Math.sin(t * 0.9 + i) * 0.04); _sq.setFromEuler(_se);
+    _sm.compose(_sp.set(x, 0.02 + Math.sin(t * 1.6 + i) * 0.015, z), _sq, _ss.set(1, 1, 1));
+    (l.sail ? sea3.sails : sea3.cargo).setMatrixAt(l.sail ? si++ : ci++, _sm);
+    _se.set(0, yaw, 0); _sq.setFromEuler(_se); const bx = Math.cos(yaw), bz = -Math.sin(yaw), wl = l.sail ? 0.5 : 0.9;
+    _sm.compose(_sp.set(x - bx * (wl * 0.5 + (l.sail ? 0.3 : 0.55)), 0.015, z - bz * (wl * 0.5 + (l.sail ? 0.3 : 0.55))), _sq, _ss.set(wl, 1, l.sail ? 0.7 : 1)); sea3.wake.setMatrixAt(i, _sm);
+  }
+  let bi = 0;
+  for (const f of sea3.flocks) {
+    const a = f.ph + t * f.v, hx = f.cx + Math.cos(a) * f.r, hz = f.cz + Math.sin(a) * f.r, yaw = Math.atan2(-Math.cos(a) * f.v, -Math.sin(a) * f.v); // teğet
+    const fx = Math.cos(yaw), fz = -Math.sin(yaw), px = -fz, pz = fx;
+    for (let j = 0; j < f.n; j++) {
+      const row = Math.ceil(j / 2), side = j % 2 ? 1 : -1, x = hx - fx * row * 0.35 + px * side * row * 0.32, z = hz - fz * row * 0.35 + pz * side * row * 0.32;
+      const flap = Math.sin(t * 9 + j * 1.3 + f.ph);
+      _se.set(side * 0.08 * Math.sign(f.v), yaw, 0); _sq.setFromEuler(_se);
+      _sm.compose(_sp.set(x, f.y + Math.sin(t * 0.8 + j) * 0.08 + flap * 0.02, z), _sq, _ss.set(1, 0.35 + 0.65 * flap, 1)); sea3.birds.setMatrixAt(bi++, _sm);
+    }
+  }
+  for (const [i, f] of sea3.fish.entries()) {
+    f.t += dt; const J = 0.85, u = (f.t % f.T) / J; // her T sn'de bir zıplar, J sn sürer
+    if (u < 1) {
+      const fx = Math.cos(f.a), fz = -Math.sin(f.a), x = f.x + fx * (u - 0.5) * 0.9, z = f.z + fz * (u - 0.5) * 0.9, y = 0.02 + Math.sin(u * Math.PI) * 0.55;
+      _se.set(0, f.a, Math.cos(u * Math.PI) * 0.9); _sq.setFromEuler(_se); _sm.compose(_sp.set(x, y, z), _sq, _ss.set(1, 1, 1));
+    } else _sm.makeScale(0, 0, 0);
+    sea3.fishM.setMatrixAt(i, _sm);
+    const w = (f.t % f.T) / J; // sıçrama: çıkışta ve dalışta halka büyüyüp söner
+    const ring = w < 0.3 ? w / 0.3 : w > 0.95 && w < 1.45 ? (w - 0.95) / 0.5 : -1;
+    if (ring >= 0) { const end = w > 0.9, rx = f.x + Math.cos(f.a) * (end ? 0.45 : -0.45), rz = f.z - Math.sin(f.a) * (end ? 0.45 : -0.45); _sm.compose(_sp.set(rx, 0.02, rz), _sq.identity(), _ss.setScalar(0.4 + ring * 1.2 * (1 - ring * 0.4))); }
+    else _sm.makeScale(0, 0, 0);
+    sea3.splash.setMatrixAt(i, _sm);
+  }
+  for (const m of [sea3.cargo, sea3.sails, sea3.wake, sea3.birds, sea3.fishM, sea3.splash]) m.instanceMatrix.needsUpdate = true;
 }
