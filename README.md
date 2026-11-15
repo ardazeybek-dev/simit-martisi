@@ -183,6 +183,27 @@ Without the SDK (ad blocker, local run) every portal call is a no-op and the gam
 The build patches `docs/` source by exact string match and stops with `patch '<name>': expected 1 match` when the game code changed. Update the matching line in `build.py` then.
 New game features need no new patch: call portal functions as `window.PF && PF.x ? ... : fallback`, never declare `PF` or `T` in `main.js` (the build injects them), and wrap new texts in `tr()` and add them to the `EN` table in `docs/js/i18n.js` (shared by both builds; static HTML texts are translated once at load).
 
+## Store app (Capacitor)
+
+`app/` wraps the game as an Android and iOS app. All game files ship inside the app (three.js and the font from `platform/vendor/`), so it starts offline and never opens a browser; the leaderboard still talks to Supabase.
+
+Needs Node 22+, JDK 21 (`JAVA_HOME`) and the Android SDK (platform 36, path in `app/android/local.properties` as `sdk.dir=C:/...` with forward slashes). iOS needs a Mac with Xcode.
+
+```
+cd app
+npm install
+python build.py            # docs/ -> app/www (no service worker, no CDN, adds native.js)
+npx cap sync
+cd android && gradlew bundleRelease   # signed .aab for Play (app/build/outputs/bundle/release)
+npx cap open ios                      # on the Mac: archive and upload from Xcode
+```
+
+- `app/native.js`: Android back button (pause in flight, close the open panel, else send the app to the background) and pause when the app leaves the screen.
+- Release signing reads `app/android/keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`); it and the `.jks` are never committed.
+- Icons and splash: `app/assets/` (square, opaque 1024 icon; Android adaptive background scaled to 85% so the wing tips stay inside the mask), regenerate with `npx capacitor-assets generate --android --ios`.
+- Version: `versionCode`/`versionName` in `app/android/app/build.gradle`; raise `versionCode` on every Play upload.
+- Privacy policy: `docs/gizlilik.html` (live at `/gizlilik.html`).
+
 ## Project structure
 
 ```

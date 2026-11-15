@@ -1,0 +1,7 @@
+{
+  "appId": "com.simitmartisi.game",
+  "appName": "Simit Martısı",
+  "webDir": "www",
+  "backgroundColor": "#1c1a3a",
+  "android": { "allowMixedContent": false }
+}
