@@ -105,3 +105,36 @@ export function canvasTex(w, h, draw) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+
+// ---------------- Rize çay bardağı kulesi (oyun, ufuk, menü ve dünya haritası aynı biçimi ve LED dokusunu kullanır) ----------------
+// ince belli bardak profili: dipte hafif şişkin, belde ince, ağza doğru açılır (yarıçap x, yükseklik y; dip y=0, ağız ~15,6). Noktalar yay boyunca eşit aralıklı:
+// LatheGeometry'nin v'si nokta sırasıyla gider, LED satırları gövdede düzgün dizilsin
+let teaProf = null;
+export function teaGlassProfile() {
+  if (teaProf) return teaProf;
+  const ctl = [[1.55, 0], [2.05, 1.6], [2.2, 3.4], [1.85, 5.8], [1.5, 8.0], [1.62, 10.2], [2.25, 12.6], [2.85, 14.6], [3.05, 15.6]];
+  return (teaProf = new THREE.SplineCurve(ctl.map(([r, y]) => new THREE.Vector2(r, y))).getSpacedPoints(48));
+}
+// LED dokusu: kara-kızıl zemin üstünde şaşırtmalı nokta ızgarası. Canvas üstü = bardağın ağzı: en üstte kırmızı bant, ağızda beyaz, gövde demli çay kırmızısı.
+// grey: dünya haritasında kilitli şehrin grileşmiş hâli (aynı desen, renksiz)
+export function teaGlassLedTex(grey = false) {
+  const t = canvasTex(256, 512, (g, w, h) => {
+    g.fillStyle = grey ? '#5d6066' : '#2a0805'; g.fillRect(0, 0, w, h);
+    const cols = 40, rows = 64;
+    for (let j = 0; j < rows; j++) {
+      const v = 1 - (j + 0.5) / rows;
+      for (let i = 0; i < cols; i++) {
+        const x = (i + (j % 2) * 0.5 + 0.5) / cols * w, y = (j + 0.5) / rows * h, n = 0.75 + 0.25 * Math.sin(i * 12.9898 + j * 78.233) * Math.sin(i * 3.1 + j * 1.7);
+        let col;
+        if (grey) { const l = (v > 0.84 && v <= 0.955 ? 215 : 160) * n | 0; col = `rgb(${l},${l},${l + 6})`; }
+        else if (v > 0.955) col = `rgb(${(255 * n) | 0},${(40 * n) | 0},${(30 * n) | 0})`;               // en üstte kırmızı bant
+        else if (v > 0.84) col = `rgb(255,${(238 + 17 * n) | 0},${(214 + 30 * n) | 0})`;             // ağız: beyaz
+        else if (v > 0.8) col = j % 2 ? 'rgb(255,226,200)' : `rgb(255,${(70 * n) | 0},${(50 * n) | 0})`;  // beyazdan kırmızıya geçiş
+        else col = `rgb(${(200 + 55 * n) | 0},${(28 + 30 * n * (1 - v)) | 0},${(20 * n) | 0})`;      // demli çay
+        g.fillStyle = col; g.beginPath(); g.arc(x, y, v > 0.955 ? 2.6 : 2.0, 0, Math.PI * 2); g.fill();
+      }
+    }
+  });
+  t.wrapS = THREE.RepeatWrapping; t.repeat.set(2, 1);
+  return t;
+}

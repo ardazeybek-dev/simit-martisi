@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex, seeded, hash } from './util.js';
-import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook } from './scene.js';
+import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook, tickFar } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, weatherOk, setWeatherFx, updateWeatherFx } from './weather.js';
 import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
@@ -2444,6 +2444,7 @@ function updateTitleSet(gz) {
     const geos = TITLE_SETS[city.id]();
     set = titleSets[city.id] = new THREE.Group(); scene.add(set);
     for (const k in TITLE_LAYERS) { const m = new THREE.Mesh(geos[k], softMat); m.scale.setScalar(TITLE_SCALE); m.userData.follow = TITLE_LAYERS[k]; set.add(m); set.userData[k] = m; }
+    if (geos.led) { const m = new THREE.Mesh(geos.led.geo, kuleLedMat); m.position.set(geos.led.x, geos.led.y, geos.led.z); set.userData[geos.led.layer].add(m); } // Rize: LED'li çay bardağı kule (kendi malzemesi)
     if (city.maiden) { const k = makeMaiden(); k.position.set(46, 0, -34); k.rotation.y = -Math.PI / 2 - 0.35; set.userData.near.add(k); set.userData.crowd = k; } // İstanbul: önde Kız Kulesi, terastakiler el sallar
   }
   if (set.userData.crowd) animCrowd(set.userData.crowd, t);
@@ -4456,6 +4457,7 @@ function frame() {
   animLand(g.z); updateFlocks(dt, g.z); updateMarks(g.z); updateTitleSet(g.z);
   // ufuk gemileri: uca varınca öbür uca geçer, ama yalnız ekranda görünmüyorken (gözün önünde silinip belirmesin)
   _frustum.setFromProjectionMatrix(_m4.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+  tickFar(dt); // Rize ufkunda kalkan uçak
   for (const s of farShips) {
     s.position.x += s.userData.v * dt;
     if (Math.abs(s.position.x) > FAR_SHIP_W && !_frustum.intersectsObject(s)) { s.position.x -= Math.sign(s.position.x) * 2 * FAR_SHIP_W; s.updateMatrixWorld(); if (_frustum.intersectsObject(s)) s.position.x += Math.sign(s.position.x) * 2 * FAR_SHIP_W; }

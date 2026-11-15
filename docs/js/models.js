@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Kit, vcMat, softMat, rand, pick, canvasTex } from './util.js';
+import { Kit, vcMat, softMat, rand, pick, canvasTex, teaGlassProfile, teaGlassLedTex } from './util.js';
 // önbelleğe giren geometri kurulurken dünya tohumuna dokunulmaz: günün uçuşunda önbellek dolu ya da boş olsa da rota aynı kalır
 const RND0 = Math.random;
 function pureCall(fn, a) { const r = Math.random; Math.random = RND0; try { return fn(...a); } finally { Math.random = r; } }
@@ -3225,6 +3225,56 @@ export const TITLE_SETS = {
     far.add(new THREE.BoxGeometry(7, 4, 5), 0xe8e4da, tb.x, tb.y - 5, tb.z);
     return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT) };
   },
+  rize() { // ön: Rize limanında rıhtıma bağlı çay mavnası, rıhtımda çay çuvalı yığınları, kayıklar · orta: kıyıdan dimdik kalkan, baştan aşağı çay teraslı yamaç, yamaca tırmanan beyaz evler, tepede Rize Kalesi (surlar, burç, bayrak); sağda denize doldurulmuş yuvarlak sette LED'li çay bardağı kule (led: ayrı malzeme) · arka: sise gömülü sivri, karlı Kaçkar dorukları
+    const near = new Kit(), mid = new Kit(), far = new Kit();
+    const shore = x => 15 + 2 * Math.sin(x * 0.013);
+    const kale = (x, z) => bump(x, z, -95, 70, 40, 26); // kale tepesi
+    const hM = (x, z) => { const d = z - shore(x); return -1 + 3.2 * ramp(-0.5, 3, d) + (52 + 18 * fbm(x * 0.02, z * 0.03)) * ramp(6, 120, d) ** 1.15 + 16 * kale(x, z) * ramp(18, 45, d) + 1.5 * fbm(x * 0.06, z * 0.06) * ramp(2, 20, d); };
+    const slope = (x, z) => Math.abs(hM(x, z + 1) - hM(x, z - 1)) / 2;
+    terrain(mid, -340, 340, -2, 150, 136, 80, hM, (x, y, z) => {
+      if (y < 0.7) return 0x6d6a5e; // ıslak taş
+      const g = mixHex(mixHex(0x4f9a3e, 0x2f7232, ramp(6, 40, y)), 0x245a2a, ramp(0.55, 0.7, fbm(x * 0.05 + 2, z * 0.05)) * 0.7);
+      const tea = ramp(0.36, 0.44, fbm(x * 0.022 + 7, z * 0.035)) * ramp(30, 52, z) * (1 - kale(x, z)); // evlerin üstü baştan aşağı çay bahçesi: eşyükselti sıraları
+      return mixHex(g, Math.floor(y / 1.5) % 2 ? 0x96d65a : 0x2a6a2a, tea);
+    });
+    // liman: taş rıhtım, rıhtıma yanaşık çay mavnası, kayıklar; rıhtımda çay çuvalı yığınları
+    quay(near, -330, 330, 0xcfc9bb, 0x55524a, 0xb9b2a2);
+    near.add(mavnaGeo(), null, 70, 0, -6.4, 0, Math.PI / 2, 0, 2.1);
+    for (const [x0, n] of [[-300, 5], [-200, 4], [-130, 5], [110, 6], [230, 5]]) for (let i = 0; i < n; i++) boat(near, x0 + i * rand(3.2, 4.4), -3.4, rand(-0.12, 0.12));
+    for (const x0 of [-110, 20, 108, 160]) for (let r = 0; r < 3; r++) for (let i = 0; i < 5 - r; i++) { // çuval yığını: piramit, krem çuvallar yeşil bantlı
+      const yy = 1.7 + r * 0.95, c = pick([0xf1ead8, 0xe8dfc6, 0xf4efe2]);
+      near.add(new THREE.SphereGeometry(1, 8, 5), (f, cy) => (Math.abs(cy - yy) < 0.13 ? 0x2f7a3a : c), x0 + (i - (4 - r) / 2) * 1.5 + rand(-0.1, 0.1), yy, 6 + rand(-0.2, 0.2), 0, rand(-0.2, 0.2), 0, 0.78, 0.5, 0.62);
+    }
+    for (let x = -320; x < 320; x += rand(10, 15)) if (Math.abs(x - 70) > 20) tree(near, x, 1.05, rand(14.5, 16.5), rand(0.7, 0.9));
+    // Rize Kalesi: tepede dişli sur, köşe kuleleri, kare burç, bayrak
+    const kx = -95, kz = 70, ky = hM(kx, kz) - 0.6, ST = 0xc9bea6, ST2 = 0xa89c84;
+    mid.add(new THREE.BoxGeometry(24, 4.5, 2), ST, kx, ky + 2.2, kz - 7).add(new THREE.BoxGeometry(2, 4.5, 14), ST, kx - 12, ky + 2.2, kz).add(new THREE.BoxGeometry(2, 4.5, 14), ST, kx + 12, ky + 2.2, kz);
+    for (let x = -11; x <= 11; x += 2) mid.add(new THREE.BoxGeometry(1, 1, 2), ST, kx + x, ky + 4.9, kz - 7);
+    for (const dx of [-12, 12]) { mid.add(new THREE.CylinderGeometry(2.2, 2.4, 7, 10), ST2, kx + dx, ky + 3.5, kz - 7); for (let a = 0; a < 6; a++) mid.add(new THREE.BoxGeometry(0.9, 0.9, 0.9), ST2, kx + dx + Math.sin(a) * 2, ky + 7.4, kz - 7 + Math.cos(a) * 2); }
+    mid.add(new THREE.BoxGeometry(7, 11, 7), ST, kx, ky + 5.5, kz);
+    for (let a = 0; a < 4; a++) for (const d of [-2.4, 0, 2.4]) mid.add(new THREE.BoxGeometry(1, 1.1, 1), ST, kx + (a % 2 ? d : (a ? 3 : -3)), ky + 11.5, kz + (a % 2 ? (a > 2 ? 3 : -3) : d));
+    mid.add(new THREE.CylinderGeometry(0.12, 0.12, 5, 5), 0xe8e4da, kx, ky + 13.5, kz).add(new THREE.BoxGeometry(0.06, 1.5, 2.4), 0xe30a17, kx, ky + 15.2, kz + 1.25)
+      .add(new THREE.CircleGeometry(0.4, 12), 0xffffff, kx + 0.04, ky + 15.2, kz + 0.9, 0, Math.PI / 2);
+    // evler: kıyıdan yamaca basamak basamak; yukarıda seyrelir, kale tepesinin eteğinde kesilir
+    const BK_H = [0xf6f4ee, 0xf1ece0, 0xe6e2d6, 0xf4efe2, 0xdfe6e6, 0xefe2c8], tx = -12, tz = 6;
+    const pts = scatter(-330, 300, 20, 120, 6.2, (x, z) => hM(x, z) > 2.5 && slope(x, z) < 1.4 && kale(x, z) < 0.35 && Math.hypot(x - tx, z - tz) > 22 && Math.random() < 0.85 - 0.8 * ramp(28, 80, z));
+    houses(mid, pts, hM, { flat: 0.15, h: [3.2, 6.8], s: 0.85, cols: BK_H, roofs: [0x8a8f93, 0x7d8388, 0xa8473f, 0x9aa0a4], lit: 0.05 });
+    for (const [x, z] of scatter(-330, 330, 22, 150, 9, (x, z) => hM(x, z) > 3 && kale(x, z) < 0.3 && fbm(x * 0.05 + 2, z * 0.05) > 0.5)) tree(mid, x, hM(x, z), z, rand(0.7, 1.05));
+    // çay bardağı kulenin seti: kıyının önüne doldurulmuş yuvarlak taş set, kırmızı tabak (bardak led olarak ayrı çizilir)
+    mid.add(new THREE.CylinderGeometry(15, 16, 3, 28), 0x9a9890, tx, 0.3, tz).add(new THREE.CylinderGeometry(9.5, 8.5, 1.2, 28), 0xc8241c, tx, 2.2, tz)
+      .add(new THREE.TorusGeometry(9.4, 0.3, 6, 32), 0xf6f2ea, tx, 2.8, tz, Math.PI / 2);
+    for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; mid.add(new THREE.IcosahedronGeometry(rand(1.2, 1.8), 0), vert((f, y) => mixHex(0x5e5a52, 0x9a958a, y + 0.6)), tx + Math.cos(a) * 15.5, 0, tz + Math.sin(a) * 15.5, rand(0, 3), rand(0, 3)); }
+    // arka: sise gömülü sivri Kaçkar dorukları: yamaçta orman, üstte kaya, tepelerde kar
+    const HZ = 0xcfdcdc;
+    const hR = (x, z) => -1 + (130 + 50 * fbm(x * 0.014, 3) + 40 * Math.abs(Math.sin(x * 0.011 + 0.6))) * ramp(140, 230, z) ** 1.2 * (1 - 0.15 * ramp(270, 320, z));
+    terrain(far, -520, 520, 145, 330, 150, 34, hR, (x, y, z) => {
+      const tea = ramp(0.4, 0.48, fbm(x * 0.03 + 7, z * 0.03)) * ramp(8, 16, y) * (1 - ramp(50, 62, y));
+      const g = mixHex(mixHex(0x2a6e2a, 0x1c4a22, ramp(10, 80, y)), Math.floor(y / 2.4) % 2 ? 0x86c04e : 0x2f6a2a, tea);
+      const rock = mixHex(0x7d8580, 0x9aa29c, fbm(x * 0.05, y * 0.05));
+      return mixHex(mixHex(mixHex(g, rock, ramp(95, 120, y)), 0xf2f5f4, ramp(135, 155, y)), HZ, 0.14 + 0.2 * ramp(60, 100, y) * (1 - ramp(120, 150, y))); // ortası sise gömülü
+    });
+    return { near: near.build(SOFT), mid: mid.build(SOFT), far: far.build(SOFT), led: { layer: 'mid', geo: new THREE.LatheGeometry(teaGlassProfile().map(p => new THREE.Vector2(p.x * 2.3, p.y * 2.3 + 2.6)), 32), x: tx, y: 0, z: tz } };
+  },
 };
 
 // ---------------- Rize: çay mavnası, çay bardağı kule, kalkan uçak ----------------
@@ -3309,31 +3359,10 @@ export function makeMavna() {
 // ağza doğru beyaz, en üstte kırmızı bant. Üstüne geçen ikinci kılıfta (kuleRingMat) parlak bir ışık halkası doku kaydırılarak bardağı tırmanır:
 // halka ağza varınca çaydan buhar fışkırır (main.js). Yerel: kule ekseni x=0, y=0 deniz; rıhtım her yöne KULE_QR. KULE_H: bardağın ağzı
 export const KULE_H = 17.2, KULE_QR = 5.0;
-const KULE_PROFILE = (() => { // ince belli bardak: dipte hafif şişkin, belde ince, ağza doğru açılır. Noktalar yay boyunca eşit aralıklı (LED satırları düzgün dizilsin)
-  const ctl = [[1.55, 0], [2.05, 1.6], [2.2, 3.4], [1.85, 5.8], [1.5, 8.0], [1.62, 10.2], [2.25, 12.6], [2.85, 14.6], [3.05, 15.6]];
-  const c = new THREE.SplineCurve(ctl.map(([r, y]) => new THREE.Vector2(r, y)));
-  return c.getSpacedPoints(48);
-})();
 const KULE_BASE = 1.55; // bardağın dibi (tabağın üstü)
-function kuleLathe(s = 1) { return new THREE.LatheGeometry(KULE_PROFILE.map(p => new THREE.Vector2(p.x * s, p.y + KULE_BASE)), 40); }
-// LED dokusu: kara-kızıl zemin üstünde şaşırtmalı nokta ızgarası. Satırın yüksekliği v: altta koyu kırmızı (dip), gövde parlak kırmızı, ağza yakın beyaz, en üstte kırmızı bant
-export const kuleLedMat = new THREE.MeshBasicMaterial({ map: canvasTex(256, 512, (g, w, h) => {
-  g.fillStyle = '#2a0805'; g.fillRect(0, 0, w, h);
-  const cols = 40, rows = 64;
-  for (let j = 0; j < rows; j++) {
-    const v = 1 - (j + 0.5) / rows; // canvas üstü = bardağın ağzı
-    for (let i = 0; i < cols; i++) {
-      const x = (i + (j % 2) * 0.5 + 0.5) / cols * w, y = (j + 0.5) / rows * h, n = 0.75 + 0.25 * Math.sin(i * 12.9898 + j * 78.233) * Math.sin(i * 3.1 + j * 1.7);
-      let col;
-      if (v > 0.955) col = `rgb(${(255 * n) | 0},${(40 * n) | 0},${(30 * n) | 0})`;              // en üstte kırmızı bant
-      else if (v > 0.84) col = `rgb(255,${(238 + 17 * n) | 0},${(214 + 30 * n) | 0})`;            // ağız: beyaz
-      else if (v > 0.8) col = j % 2 ? 'rgb(255,226,200)' : `rgb(255,${(70 * n) | 0},${(50 * n) | 0})`; // beyazdan kırmızıya geçiş
-      else col = `rgb(${(200 + 55 * n) | 0},${(28 + 30 * n * (1 - v)) | 0},${(20 * n) | 0})`;     // demli çay
-      g.fillStyle = col; g.beginPath(); g.arc(x, y, v > 0.955 ? 2.6 : 2.0, 0, Math.PI * 2); g.fill();
-    }
-  }
-}) });
-kuleLedMat.map.wrapS = THREE.RepeatWrapping; kuleLedMat.map.repeat.set(2, 1);
+function kuleLathe(s = 1) { return new THREE.LatheGeometry(teaGlassProfile().map(p => new THREE.Vector2(p.x * s, p.y + KULE_BASE)), 40); }
+// LED dokusu (util.js teaGlassLedTex): kara-kızıl zemin üstünde nokta ızgarası; altta demli çay kırmızısı, ağza yakın beyaz, en üstte kırmızı bant
+export const kuleLedMat = new THREE.MeshBasicMaterial({ map: teaGlassLedTex() });
 // halka dokusu: ortada parlak, yumuşak kenarlı ince bant (yalnız ortası dolu, uçlar boş: kaydırınca tek halka görünür)
 const ringTex = (wrap) => { const t = canvasTex(4, 256, (g, w, h) => { const r = g.createLinearGradient(0, 0, 0, h); r.addColorStop(0, 'rgba(255,240,200,0)'); r.addColorStop(0.4, 'rgba(255,240,200,0)'); r.addColorStop(0.47, 'rgba(255,250,235,1)'); r.addColorStop(0.53, 'rgba(255,250,235,1)'); r.addColorStop(0.6, 'rgba(255,240,200,0)'); r.addColorStop(1, 'rgba(255,240,200,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }); if (wrap) t.wrapT = THREE.RepeatWrapping; return t; };
 export const KULE_RING_TEX = ringTex(false), KULE_CHASE_TEX = ringTex(true); // tek halka (işaret) ve art arda halkalar (buhar fışkırırken)
