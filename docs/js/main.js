@@ -1582,8 +1582,8 @@ const _pt = new THREE.Vector3(), _ph = new THREE.Vector3(), _pd = new THREE.Vect
 // sallanıp dibinden ve başlığından toz atar (uyarı, COL_WARN sn), sonra şeride devrilir (hızlanarak: açı ~ τ²) ve boylu boyunca suya yatar. Devrilme martının z'sine
 // bağlı (spawn anındaki beklenen hız v): martı vardığında sütun hep aynı açıdadır, martı boyunu xa'da keser. İsabet kutusu her karede sütunun martı boyunu kestiği
 // yerde (genişliği açıyla büyür); sütunun ucu martının altına inince ya da suya yatınca engel değildir, köpüğü kalır. Simitler kesişimin boş yanında: sütunun
-// altında (eğik gövdenin altından geçilir) ya da yer yoksa alçak dibinin üstünde; bir sütunun altında altın. Ayar: COL_TF (devrilme süresi), COL_WARN, chuteZ aralığı. ?sutun → hemen gelir
-const SUTUN_SOON = QS.has('sutun'), COL_TF = 1.5, COL_THF = 1.62, COL_WARN = 1.15, COL_DUST = 0xd9c6a0;
+// karşı yanında, eğik gövdenin altında: sütun yavaş devrilir (COL_TF), varışta 30-45° diktir, kesişme noktası ağır kayar (yatık varışta saniyede 20 birim kayıp şeridin çoğunu kapatıyordu). Bir sütunun altında altın. Ayar: COL_TF (devrilme süresi), COL_WARN, chuteZ aralığı. ?sutun → hemen gelir
+const SUTUN_SOON = QS.has('sutun'), COL_TF = 2.6, COL_THF = 1.62, COL_WARN = 1.15, COL_DUST = 0xd9c6a0;
 let sutuns = [];
 const colTh = tau => (tau <= 0 ? 0 : COL_THF * Math.min(1, tau / COL_TF) ** 2);
 // sütunun gy boyunu kestiği yer (yoksa null): dibi xb'de, şeride doğru th kadar devrik
@@ -1603,11 +1603,11 @@ function spawnSutun() {
   const row = new THREE.Mesh(colonnadeGeo(pat), vcMat); row.position.z = cz0; row.castShadow = row.receiveShadow = true; g.add(row);
   const goldI = (Math.random() * n) | 0, cols = [];
   for (const [i, [side, slot]] of COL_FALL[pat].slice(0, n).entries()) {
-    const z = cz0 - slot * COL_SLOT, xb = side * COL_X, xa = rand(-2.4, 2.4), tha = Math.atan2(side * (xb - xa), FLY_Y - COL_PIV), ta = COL_TF * Math.sqrt(tha / COL_THF);
+    const z = cz0 - slot * COL_SLOT, xb = side * COL_X, tha = rand(0.52, 0.79), xa = xb - side * (FLY_Y - COL_PIV) * Math.tan(tha), ta = COL_TF * Math.sqrt(tha / COL_THF);
     const mesh = new THREE.Mesh(colGeo(), vcMat); mesh.position.set(xb, COL_PIV, z); mesh.castShadow = true; g.add(mesh);
     const o = { x: 99, z, hw: COL_R, hd: COL_R + 0.1, top: 99, kind: 'sütuna', passed: false };
     obstacles.push(o);
-    let sx = xa - side * 1.9; if (Math.abs(sx) > THROW_X) sx = xa + side * 1.9; // gövdenin altı; şeridin dışına düşerse dibin üstü
+    const sx = clamp(xa - side * 2.4, -THROW_X, THROW_X); // simit yolu eğik gövdenin altında, kesişmenin şerit içi yanında: varışta sütun 30-45° dik, kesişme yavaş (~5 birim/sn) kayar, tehlike bandı ~±1
     for (const dz of [9, 5]) addSimit(sx, FLY_Y, z + dz, false);
     addSimit(sx, FLY_Y, z, i === goldI);
     addSimit(sx, FLY_Y, z - 4.5, false);
