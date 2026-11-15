@@ -2943,7 +2943,7 @@ function renderMapCard() {
 function mapGo() {
   const c = mapSel;
   if (!c || !cityOpen(c)) { bump($('mapGo'), 'shake'); vibrate(30); return; }
-  closeMap(); if (state === 'title') startGame();
+  closeMap(); // Seç: şehir seçili kalır, ana menüye dönülür (uçuş oradan başlar; haritada geri tuşu yok)
 }
 function closeMap() {
   if (!mapping) return;
@@ -3813,7 +3813,7 @@ onBtn('fishBtn', () => fishRevive());
 onBtn('wardrobeBtn', () => openWardrobe());
 onBtn('playBtn', () => { if (state === 'title') playSel(); });
 $('cityPick').addEventListener('click', e => { e.stopPropagation(); sfx.click(); openMap(); }); // şehir adı haritanın düğmesi: şehir seçimi haritadan
-onBtn('mapClose', closeMap); onBtn('mapGo', mapGo); map.onTap = id => mapPick(id); onBtn('mapIn', () => mapZoom(0.75)); onBtn('mapOut', () => mapZoom(1.33));
+onBtn('mapGo', mapGo); map.onTap = id => mapPick(id); onBtn('mapIn', () => mapZoom(0.75)); onBtn('mapOut', () => mapZoom(1.33));
 bindMapInput($('worldMap'), isUi);
 buildCities(CITIES.map(c => ({ id: c.id, name: c.name })), $('mapLabels'));
 buildFar([['america', 'Amerika'], ['japan', 'Japonya'], ['safrica', 'Güney Afrika']].map(([id, n]) => ({ id, name: tr(n), sub: tr('Yakında') }))); // uzaklaşınca görünen, henüz açılmayan ülkeler

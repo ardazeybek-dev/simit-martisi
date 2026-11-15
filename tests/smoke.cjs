@@ -109,9 +109,9 @@ async function main() {
     await page.waitForTimeout(600);
     await page.click('.map-lbl[data-pick="izmir"]', { force: true });
     check(await g(() => document.getElementById('mapCity').textContent.startsWith('İzmir')), 'map: İzmir not selected');
-    await press('mapClose');
-    check(await g(() => !window.__game.mapView.on && !document.getElementById('title').classList.contains('hidden')), 'map: did not close to the title');
-    step('world map opened, city picked, closed');
+    await page.click('#mapGo', { force: true }); // the button pulses: never "stable" for Playwright
+    check(await g(() => !window.__game.mapView.on && !document.getElementById('title').classList.contains('hidden') && window.__game.state === 'title'), 'map: Select did not close to the title');
+    step('world map opened, city picked, Select closed it to the title');
 
     for (const city of CITIES) {
       await g(c => window.__game.setCity(c), city);

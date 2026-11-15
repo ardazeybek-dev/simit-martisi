@@ -1203,7 +1203,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #worldMap .map-title { color: #fff; font-size: 20px; font-weight: 800; text-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
 #worldMap .map-top .grow { flex: 1; }
 #worldMap .map-zoom { position: absolute; right: calc(16px + var(--sar)); top: calc(76px + var(--sat)); display: flex; flex-direction: column; gap: 8px; }
-#worldMap .map-zoom button, #mapClose { font-size: 24px; font-weight: 900; line-height: 1; }
+#worldMap .map-zoom button { font-size: 24px; font-weight: 900; line-height: 1; }
 #worldMap .map-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 #worldMap .map-lbl { position: absolute; left: 0; top: 0; background: #fff; color: #2b2b3a; border: 3px solid #2b2b3a; border-radius: 12px; padding: 1px 9px; font-weight: 800; font-size: 14px; white-space: nowrap; box-shadow: 0 3px 0 #2b2b3a; will-change: transform; pointer-events: auto; cursor: pointer; }
 #worldMap .map-lbl.sel { background: #ffc93a; }
