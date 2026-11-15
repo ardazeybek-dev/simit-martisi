@@ -906,13 +906,14 @@ const WAVE_SUB = 5;
 function waveGeo_() {
   const NX = 128, NP = WAVE_PROF.length;
   const shade = (j, H, x) => { // kontrol noktası rengi: arka denizle aynı koyu yeşil-mavi, tepede ve dudakta köpük (yalnız kırılan yüksek kısımda), tüpün içi ışık alan açık yeşil, yüz saydam yeşil
-    const br = ramp(3.6, 6.0, H), n = fbm(x * 0.45, j * 1.3), foam = mixHex(0xf2fafb, 0xdaeef1, n);
+    // v3.9.5: buz dağı gibi durmasın: tepe kar beyazı değil yarı köpüklü turkuaz, kameraya bakan yüz dikey akış çizgili açık turkuaz, tüpün içi ışıklı, dipte kırılan beyaz köpük
+    const br = ramp(3.6, 6.0, H), n = fbm(x * 0.45, j * 1.3), st = fbm(x * 1.7, 3.1 + j * 0.2), foam = mixHex(0xf2fafb, 0xdaeef1, n);
     const v = j <= 2 ? mixHex(0x0e4a5a, 0x1d6a72, WAVE_PROF[j][1])
-      : j === 3 ? mixHex(0x2a8a86, mixHex(0x5fb4ae, foam, 0.4), br)
-      : j <= 6 ? mixHex(mixHex(0x2f8f8a, 0x6fc2bc, n), foam, br * 0.9)
-      : j === 7 ? mixHex(0x3f9e98, 0x9fdcd6, br)
-      : j <= 9 ? mixHex(0x1d6f78, j === 8 ? 0x3aa39a : 0x2a8580, br)
-      : mixHex(0x1d6f78, foam, br * (j === 10 ? 0.45 : 0.3));
+      : j === 3 ? mixHex(0x2f9a94, 0x4fb5ad, br)
+      : j <= 6 ? mixHex(mixHex(0x5cc0b6, 0x8fd8cf, n), foam, br * (j === 5 ? 0.6 : 0.35)) // dudak: köpük yalnız ucunda
+      : j === 7 ? mixHex(0x5fc6bb, 0xb6ece5, br)                                            // tüpün içi: ışık geçen su
+      : j <= 9 ? mixHex(mixHex(0x2a9690, 0x5cc4ba, ramp(0.35, 0.75, st)), 0x7fd6cc, j === 8 ? 0.25 * br : 0) // yüz: aşağı akan açık çizgiler
+      : mixHex(0x6fc9bf, foam, j === 10 ? 0.8 : 0.55);                                     // dipte kırılan köpük
     // güneş önde (-z): kameraya bakan köpük gölgede kalıp griye kayıyordu; köpük köşeleri doğrusal renkte biraz parlatılır (eskisinden yumuşak)
     return new THREE.Color().setHex(v).multiplyScalar((j >= 4 && j <= 6) || j >= 10 ? 1 + 0.3 * br : 1);
   };

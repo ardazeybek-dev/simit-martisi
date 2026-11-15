@@ -313,6 +313,7 @@ function addSimit(x, y, z, gold, piece = false) {
 // Açık suda simitler havada asılı durmaz: kenardaki simitçi, simidini bölüp parçalarını martıya atar. Atış martının uzaklığına göre
 // zamanlanır; simit kavis çizip yakalama noktasına martıyla aynı anda iner, kaçarsa denize düşer. İniş yeri önceden görünmez.
 // Ayar: THROW_T (uçuş süresi, sn), THROW_H (kavis yüksekliği). ?throw=0 → eski, havada duran simitler.
+const sideX = (a, b) => pick([-1, 1]) * rand(a, b); // kapılar/geçitler ortada değil bir yana yakın
 const SALON_EDGE_X = 2.25, SALON_EDGE_G = 1.35; // camlı salonun kenar geçidi: merkez ve yarı genişlik (geçit 0,9..3,6)
 const THROW_ON = QS.get('throw') !== '0';
 const BRIDGE_SOON = QS.has('bridge'), SALON_ALL = QS.has('salon'); // ?bridge → ilk köprü hemen gelir (deneme için)
@@ -476,7 +477,7 @@ function spawnGap(first, fixLen, quiet) {
     seedAt('gf', genN); // balık atılıp atılmamasından bağımsız: günün uçuşunda güç ve şamandıralar herkes için aynı
     if (segCount > 4 && Math.random() < 0.2) { // güçlendirme seyrek: açık suların ~%20'sinde, ilk birkaç açık suda yok (0,33 → 0,27 → 0,2: her yerde güçle dolaşılmasın)
       const z = z0 - len * 0.5;
-      const kind = pickPw(['magnet', 'double', 'shield', 'tea'].concat(perk('nazar') ? ['shield'] : []).filter(k => pwFree(k, z) && (k !== 'shield' || -z / 2 > 1500))); // kalkan tek pay ve ilk 1,5 km'de yok (geç oyunda iki paydı) // Nazar: kalkan daha sık
+      const kind = pickPw(['magnet', 'double', 'shield', 'tea'].concat(perk('nazar') ? ['shield'] : [], city.id === 'rize' ? ['tea', 'tea'] : []).filter(k => pwFree(k, z) && (k !== 'shield' || -z / 2 > 1500))); // kalkan tek pay ve ilk 1,5 km'de yok (geç oyunda iki paydı) // Nazar: kalkan daha sık // Rize: çay üç pay
       if (kind) {
       const x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
       const p = makePowerUp(kind); p.position.set(x, FLY_Y, z); scene.add(p);
@@ -810,7 +811,7 @@ const PIRATE_SOON = QS.has('pirate'), GULET_SOON = QS.has('gulet'), FERRY_SOON =
 let pirates = [], pirateZ = 0;
 function spawnPirate() {
   const fe = !!city.feribot, dl = !!city.dalga, mv = !!city.mavna, GATE = dl ? WAVE_GATE : fe ? FERRY_GATE : mv ? MAVNA_GATE : PIRATE_GATE, GAP = dl ? WAVE_GAP : fe ? FERRY_GAP : mv ? MAVNA_GAP : PIRATE_GAP;
-  const z0 = genZ, pz = z0 - 40, side = pick([-1, 1]), gapX = rand(-1.8, 1.8), xa = gapX - side * GAP;
+  const z0 = genZ, pz = z0 - 40, side = pick([-1, 1]), gapX = sideX(0.9, 1.9), xa = gapX - side * GAP; // kapı kenara yakın: ortada kalan martı kaçmak zorunda
   if (THROW_ON) throwVolleys(z0, 24, false);
   decor = decor.filter(d => (Math.abs(d.z - pz) < 22 && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // kayarken yan teknelerin içinden geçmesin
   const gu = !!city.gulet, { g, throwers } = dl ? makeWave() : fe ? makeCarFerry() : mv ? makeMavna() : makePirateShip(gu);
@@ -842,7 +843,7 @@ function updatePirates(gz, dt = 0) {
 }
 // dalga: denizle hafifçe kalkıp iner (kutular yalnız x'te kayar), kırılan tepeden düzensiz aralıklarla serpinti, kapıdan geçince su sıçrar
 function waveTick(p, x, gz, dt) {
-  p.g.position.y = waveAt(x, p.z, t) * 0.3 - 0.2; p.g.rotation.x = Math.sin(t * 0.9 + p.ph) * 0.012;
+  p.g.position.y = waveAt(x, p.z, t) * 0.3 - 0.2; p.g.rotation.x = Math.sin(t * 0.9 + p.ph) * 0.03 + Math.sin(t * 2.3 + p.ph * 2) * 0.012; p.g.scale.y = 1 + Math.sin(t * 1.7 + p.ph) * 0.035; // dalga kabarıp iner, öne devrilir gibi salınır (düzensiz)
   if (Math.abs(p.z - gz) > 140) return;
   if ((p.spT -= dt) <= 0) {
     p.spT = rand(0.07, 0.4);
@@ -1132,7 +1133,7 @@ let horses = [], horseZ = -Infinity, truvaCam = 0;
 const BANDIRMA_SOON = QS.has('bandirma');
 function spawnBandirma() {
   const z0 = genZ, hz = z0 - 34, s = pick([-1, 1]), ry = s * Math.PI / 2 + pick([-1, 1]) * rand(0.05, 0.13), c = Math.cos(ry), sn = Math.sin(ry), sl = -c / sn;
-  const gapX = rand(-1.6, 1.6), hx = gapX - BANDIRMA_GAP * sn, gz = hz + BANDIRMA_GAP * c;
+  const gapX = sideX(0.8, 1.6), hx = gapX - BANDIRMA_GAP * sn, gz = hz + BANDIRMA_GAP * c;
   decor = decor.filter(d => (Math.abs(d.z - hz) < 14 && Math.abs(d.mesh.position.x) > 6 ? (scene.remove(d.mesh), false) : true)); // gövdenin içinde tekne kalmasın
   const { g, flag, throwers } = makeBandirma(-s); g.position.set(hx, 0, hz); g.rotation.y = ry; scene.add(g); // -s: atıcılar kameraya bakan küpeştede
   for (const [lz, hl, hb, top] of BANDIRMA_GATE) obstacles.push({ x: hx + lz * sn, z: hz + lz * c, hw: hl, hd: hb, top, kind: 'vapura', fix: true, passed: false });
@@ -1171,7 +1172,7 @@ function spawnKale() {
 function spawnHorse() {
   if (city.kale) { spawnKale(); return; }
   if (city.bandirma) { spawnBandirma(); return; }
-  const z0 = genZ, hz = z0 - 34, hx = rand(-0.7, 0.7), ry = pick([-1, 1]) * rand(0.22, 0.4), c = Math.cos(ry), sn = Math.sin(ry), tn = Math.tan(ry);
+  const z0 = genZ, hz = z0 - 34, hx = sideX(0.4, 0.9), ry = pick([-1, 1]) * rand(0.22, 0.4), c = Math.cos(ry), sn = Math.sin(ry), tn = Math.tan(ry);
   decor = decor.filter(d => (Math.abs(d.z - hz) < 12 && Math.abs(d.mesh.position.x) > 6 ? (scene.remove(d.mesh), false) : true)); // salın ve tekerleklerin içinde tekne kalmasın
   const g = new THREE.Mesh(truvaGeo(), vcMat); g.position.set(hx, 0, hz); g.rotation.y = ry; g.castShadow = true; scene.add(g);
   for (const [lx, lz] of TRUVA_LEGS) obstacles.push({ x: hx + lx * c + lz * sn, z: hz - lx * sn + lz * c, hw: TRUVA_LEG_R, hd: TRUVA_LEG_R, top: TRUVA_TOP, kind: 'truvaya', fix: true, passed: false });
@@ -1653,7 +1654,7 @@ function spawnParasail() {
   if (city.sutun) { spawnSutun(); return; }
   if (city.teleferik) { spawnTeleferik(); return; }
   if (city.vinc) { spawnVinc(); return; }
-  const z0 = genZ, pz = z0 - 34, side = pick([-1, 1]), rx = rand(-2.4, 2.4), k = rand(0.09, 0.12);
+  const z0 = genZ, pz = z0 - 34, side = pick([-1, 1]), rx = Math.random() < 0.6 ? rand(-0.8, 0.8) : rand(-2.4, 2.4), k = rand(0.09, 0.12); // ip çoğu kez ortayı keser
   if (THROW_ON) throwVolleys(z0, 16, false);
   decor = decor.filter(d => (Math.abs(d.z - pz) < 24 && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // kayarken yan teknelerin içinden geçmesin
   const g = new THREE.Group(); scene.add(g);
@@ -1679,7 +1680,7 @@ function spawnParasail() {
   genZ = z0 - 56;
 }
 function spawnTeleferik() {
-  const z0 = genZ, pz = z0 - 34, side = pick([-1, 1]), rx = rand(-2.4, 2.4), k = rand(0.09, 0.12);
+  const z0 = genZ, pz = z0 - 34, side = pick([-1, 1]), rx = Math.random() < 0.6 ? rand(-0.8, 0.8) : rand(-2.4, 2.4), k = rand(0.09, 0.12); // ip çoğu kez ortayı keser
   if (THROW_ON) throwVolleys(z0, 16, false);
   decor = decor.filter(d => (Math.abs(d.z - pz) < 24 && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // direklerin kayalığına düşen dekor
   const g = new THREE.Group(); scene.add(g);
@@ -1703,7 +1704,7 @@ function spawnTeleferik() {
   genZ = z0 - 56;
 }
 function spawnVinc() {
-  const z0 = genZ, pz = z0 - 34, side = pick([-1, 1]), rx = rand(-2.4, 2.4), k = rand(0.09, 0.12);
+  const z0 = genZ, pz = z0 - 34, side = pick([-1, 1]), rx = Math.random() < 0.6 ? rand(-0.8, 0.8) : rand(-2.4, 2.4), k = rand(0.09, 0.12); // ip çoğu kez ortayı keser
   if (THROW_ON) throwVolleys(z0, 16, false);
   decor = decor.filter(d => (Math.abs(d.z - pz) < 24 && Math.abs(d.mesh.position.x) > 7 ? (scene.remove(d.mesh), false) : true)); // dubanın ve bumun altına düşen dekor
   const g = new THREE.Group(); scene.add(g);
@@ -3835,10 +3836,12 @@ function updateHud() {
 }
 // çarpan yavaş dolar: x2 için 3, x3 için 12, x4 için 27, x5 için 48 simitlik seri
 // simit kaçırınca seri biter: kombo yalnızca art arda toplanan simitle büyür
-function missSimit() { if (combo > 0) { combo = 0; comboT = 0; } }
+function missSimit() { if (combo > 0) comboDrop(); }
 const COMBO_STEPS = [15, 36, 65, 100]; // x1.5, x2, x3, x4 için art arda simit (COMBO_MULT). v3.4: 12/30/55/85 ten bir tık daha zor (kombo + 2x ustaları metre başına ~2,5 kat puan alıyordu)
 // v3.8.8: her kademe bir tık düşük (eskiden x2/x3/x4/x5): x5'te tutulan kombo Mersin'de 500 m'de 16 bin puan veriyordu. Ekranda yazan çarpan gerçek çarpandır
-const COMBO_MULT = [1, 1.5, 2, 3, 4];
+// v3.9.5: ekranda x2..x5 yazar (kademe), puana giden gerçek çarpan daha düşük: kaçırınca kombo sıfırlanmaz, bir kademe iner (x2-x4 arası gidip gelir), puan şişmesin
+const COMBO_MULT = [1, 1.25, 1.5, 2, 2.5];
+function comboDrop() { const tr = comboTier(); combo = tr >= 2 ? COMBO_STEPS[tr - 2] : 0; comboT = combo > 0 ? comboT0() : 0; } // bir kademe aşağı (ilk kademeden sıfıra)
 const comboTier = () => COMBO_STEPS.filter(n => combo >= n).length; // 0..4: kuyruk izi, ses, zıplama bu kademeye bakar
 const mult = () => COMBO_MULT[comboTier()];
 function renderPowers() {
@@ -4529,7 +4532,7 @@ function frame() {
         if (!u.entered && g.z < u.z0) { u.entered = true; sfx.whoosh(); trauma = Math.min(1, trauma + 0.12); }
         if (!u.done && g.z < u.z1) { u.done = true; judgeTurn(u); }
       }
-      if (comboT > 0) { comboT -= dt * (pw.tea > 0 ? 0.5 : 1); if (comboT <= 0) combo = 0; } // Çay Molası: dünya %60'a iner, kombo halkası ayrıca yarı hızda boşalır (simitlerle aynı oranda yavaşlayınca fark edilmiyordu)
+      if (comboT > 0) { comboT -= dt * (pw.tea > 0 ? 0.5 : 1); if (comboT <= 0) comboDrop(); } // Çay Molası: dünya %60'a iner, kombo halkası ayrıca yarı hızda boşalır (simitlerle aynı oranda yavaşlayınca fark edilmiyordu)
       if ((cryT -= dt) < 0) { cryT = rand(6, 12); sfx.cry(0.08 + Math.random() * 0.05); }
       for (const k of Object.keys(pw)) if (pw[k] > 0) { pw[k] -= k === 'tea' ? dt / teaK : dt; if (pw[k] <= 0) { pw[k] = 0; renderPowers(); } } // çayın kendi süresi gerçek zamanla iner, diğer güçler yavaşlar
       if (invuln > 0) invuln -= dt;
@@ -4786,7 +4789,7 @@ function frame() {
     ui.combo.classList.toggle('on', on);
     if (on) {
       ui.comboRing.style.strokeDashoffset = 100 - (comboT / comboT0()) * 100;
-      if (m !== shownMult) { ui.mult.textContent = `x${m}`; if (m > shownMult && m > 1) bump(ui.combo, 'bump'); shownMult = m; }
+      if (m !== shownMult) { ui.mult.textContent = `x${1 + comboTier()}`; if (m > shownMult && m > 1) bump(ui.combo, 'bump'); shownMult = m; }
     } else if (shownMult !== 0) { shownMult = 0; }
     tickPowers();
   }
@@ -4815,6 +4818,15 @@ const SHOUTS = {
   cocuk: ["Annee martı!", "Bir daha yap!", "Martı abi bana da!", "Yaşasın martı!", "Ahaha!", "Ahahaha!", "Martı simidimi yedi!", "Babaa, bir simit daha!", "Martıyı eve götürelim!", "Ben de uçmak istiyorum!", "Adı ne bunun?", "Bir daha gel!"],
   genel: ["Simidim!", "Hoop!", "Yaa!", "Martıya bak!", "Bırak onu!", "Ah simidim…", "Hah, oh olsun!", "Bizimkini de alma ha!", "Tövbe tövbe…", "Martılar azdı!", "Aman simidini sakla!", "Ay gördün mü?", "Çektin mi onu?", "Hayırdır?", "Kaptan, martı var!", "Herkes simidine sahip çıksın!", "Bu kaçıncı?", "Simit hırsızı!", "Bu martı her gün burada!", "Martıya simit verilmez!", "Kim yaptı bunu?", "Susamlar uçuştu!", "Bir simit de bana!", "Gözümün önünde!", "Ne biçim martı bu?", "Martı da acıkır tabii.", "Simitçi, bir tane daha!", "Tutun şunu!"],
 };
+// yöresel ağız (yalnız Türkçede): o şehrin yolcuları sözlerinin çoğunu kendi şivesiyle söyler. Kısa (en çok 18 harf): uçarken bir bakışta okunsun
+const AGIZ = {
+  izmir: ["Naber la!", "Gız ne yaptın!", "Hee la!", "Gevreğim gitti la!", "Gız martıya bak!", "La bırak onu!", "Abo, uçtu gitti!", "Hacı bu ne la?", "Ne gevrekti ha!", "Çüş la!", "Gız gözüm kaldı!"],
+  mugla: ["Gine mi sen!", "Gız ne yapan!", "Hee ya!", "Napan sen la?", "Öyle mi deyon?", "Bakan mı la?", "Etme eyleme!", "Hindi naapcan?", "Abo, simidim!", "Gelemen mi la?", "Ay gızım!"],
+  trabzon: ["Ula ne yaptun!", "Uşağum!", "Ha bu ne martu!", "Simidumi aldi!", "Ula durasun!", "Hayde bakayum!", "Gel buraya ula!", "Ne yapaysun?", "Uy uşağum uy!", "Haçan oldi bu?", "Ula bu martu!"],
+  rize: ["Ula çayumu da!", "Uşağum dur!", "Ha bu martiya!", "Simidumi aldun!", "Uy anam uy!", "Ne yapaysun ha?", "Çaya bandum ama!", "Ula gel buraya!", "Hayde ula!", "Ah benum simidum!", "Demlenmişti ha!"],
+  mersin: ["Abo!", "Hacı napıyon?", "Gardaş simidim!", "Yeğen dur!", "Ula gardaş!", "Bak bak bak!", "Abo bu ne hız!", "Napıyon la?", "Cıvık martı!", "Gız gardaşım!"],
+};
+const agiz = () => (window.I18N.lang === 'tr' && AGIZ[city.id] && Math.random() < 0.6 ? AGIZ[city.id] : null);
 const saidRun = new Set();
 // İzmir'de simide gevrek denir: Türkçede yolcular "Gevreğim gitti!" der (ekler uyar: simidim → gevreğim, simitçi → gevrekçi). Antalya simit kalır
 const talk = s => (city.id === 'izmir' && window.I18N.lang === 'tr' ? s.replace(/simid/g, 'gevreğ').replace(/Simid/g, 'Gevreğ').replace(/simit/g, 'gevrek').replace(/Simit/g, 'Gevrek') : s);
@@ -4830,7 +4842,7 @@ let shoutAny = -1e9;
 function shout(p, s, cheer) {
   const now = performance.now(), side = Math.sign(s.x - gull.position.x) || (gull.position.x > 0 ? -1 : 1); // konuşanın tarafı
   if (now - shoutT[side] < 1400 || now - shoutAny < 700) return; // seyrek: ekran laf balonuyla dolmasın // yolu kapatmıyor (şerit dışında): sık çıkabilir
-  const say = cheer ? line(CHEERS) || line(SHOUTS.genel) : line(SHOUTS[p.kind] || SHOUTS.amca) || line(SHOUTS.genel);
+  const ag = cheer ? null : agiz(), say = cheer ? line(CHEERS) || line(SHOUTS.genel) : (ag && line(ag)) || line(SHOUTS[p.kind] || SHOUTS.amca) || line(SHOUTS.genel);
   if (!say) return; // bu uçuşta söylenecek söz kalmadı
   shoutT[side] = shoutAny = now;
   if (shoutEl[side]) shoutEl[side].remove();

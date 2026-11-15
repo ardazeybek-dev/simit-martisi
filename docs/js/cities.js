@@ -53,7 +53,7 @@ export const CITIES = [
       ['Dardanos', 8500, "Dardanos'a", 295], ['Kumkale', 10200, "Kumkale'ye", 360], ['Seddülbahir', 12600, "Seddülbahir'e", 460], ['Truva', 16000, "Truva'ya", 1700]],
   },
   {
-    id: 'trabzon', name: 'Trabzon', mult: 1.5, hard: 3.2, hunger: 5.1, rivK: 0.4, wx: [0.7, 2.6, 1, 0], opened: 'Tebrikler! Trabzon açıldı!', routeKey: 'simit-martisi-route-trabzon', bait: 'simit', hamsi: true, dalga: true, teleferik: true, horon: true, end: 'Trabzon kıyısını baştan sona uçtun!', after: "Çanakkale'yi bitirince açılır",
+    id: 'trabzon', name: 'Trabzon', mult: 1.5, hard: 3.2, hunger: 5.1, rivK: 0.4, wx: [0.45, 4, 0.9, 0], rainK: 1.2, opened: 'Tebrikler! Trabzon açıldı!', routeKey: 'simit-martisi-route-trabzon', bait: 'simit', hamsi: true, dalga: true, teleferik: true, horon: true, end: 'Trabzon kıyısını baştan sona uçtun!', after: "Çanakkale'yi bitirince açılır",
     stops: [['Akçaabat', 0, "Akçaabat'a", 0], ['Söğütlü', 700, "Söğütlü'ye", 60], ['Kaşüstü', 1500, "Kaşüstü'ne", 80], ['Ganita', 2400, "Ganita'ya", 105],
       ['Meydan', 3400, "Meydan'a", 135], ['Boztepe', 4600, "Boztepe'ye", 170], ['Değirmendere', 5800, "Değirmendere'ye", 210], ['Moloz', 7100, "Moloz'a", 255],
       ['Yomra', 8600, "Yomra'ya", 310], ['Arsin', 10300, "Arsin'e", 380], ['Araklı', 12800, "Araklı'ya", 480], ['Sürmene', 16500, "Sürmene'ye", 1800]],
@@ -65,7 +65,7 @@ export const CITIES = [
       ['Doğupark', 8700, "Doğupark'a", 320], ['Tekkeköy', 10500, "Tekkeköy'e", 395], ['Çarşamba', 13000, "Çarşamba'ya", 500], ['Terme', 17000, "Terme'ye", 1900]],
   },
   {
-    id: 'rize', name: 'Rize', mult: 1.7, hard: 4.0, hunger: 4.6, rivK: 1, wx: [0.4, 4, 0.7, 0], rainK: 1.4, opened: 'Tebrikler! Rize açıldı!', routeKey: 'simit-martisi-route-rize', bait: 'simit', mavna: true, ucak: true, kule: true, end: 'Rize kıyısını baştan sona uçtun!', after: "Samsun'u bitirince açılır",
+    id: 'rize', name: 'Rize', mult: 1.7, hard: 4.0, hunger: 4.6, rivK: 1, wx: [0.2, 6, 0.6, 0], rainK: 1.5, opened: 'Tebrikler! Rize açıldı!', routeKey: 'simit-martisi-route-rize', bait: 'simit', mavna: true, ucak: true, kule: true, end: 'Rize kıyısını baştan sona uçtun!', after: "Samsun'u bitirince açılır",
     stops: [['İyidere', 0, "İyidere'ye", 0], ['Derepazarı', 700, "Derepazarı'na", 65], ['Fener', 1500, "Fener'e", 90], ['Rize Kalesi', 2400, "Rize Kalesi'ne", 115],
       ['Ziraat', 3400, "Ziraat'e", 145], ['Gündoğdu', 4700, "Gündoğdu'ya", 180], ['Çayeli', 6000, "Çayeli'ne", 225], ['Madenli', 7400, "Madenli'ye", 270],
       ['Pazar', 9000, "Pazar'a", 330], ['Yeşilköy', 10800, "Yeşilköy'e", 405], ['Ardeşen', 13500, "Ardeşen'e", 510], ['Fındıklı', 17500, "Fındıklı'ya", 2000]],
