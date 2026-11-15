@@ -94,9 +94,9 @@ const SPD_TAB = (() => { const a = []; let t = 0, d = 0; while (d < 30000) { con
 // Engel aralıkları (spdAt) TABAN hızla kurulur: martı daha hızlı geldiği için tepki süresi gerçekten kısalır (aralık da büyüseydi fark sıfırlanıyordu).
 // Geçilebilirlik tests/passable.cjs ile ölçülür (orada martı şehir hızında). Günlük yarışta yok (herkese aynı). passable.cjs CITY_SPD ile aynı kalmalı
 const CITY_SPD = 0.08;
-// hız basamağı Çanakkale'ye kadar tam (+%32), sonra yarım: Trabzon +%36, Samsun +%40; Samsun'dan sonra üç çeyrek: Rize +%46 (açık su artık her yerde dolu:
+// hız basamağı Çanakkale'ye kadar tam (+%32), sonra yarım: Trabzon +%36, Samsun +%40; Samsun'dan sonra yine tam: Rize +%48 (açık su artık her yerde dolu:
 // kalabalık tavanda, yeni şehri zorlaştıran asıl kaldıraç hız); kalabalık (cityG) sırayla tam büyümeye devam eder
-const cityRank = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityIdx = () => Math.min(4, cityRank()) + 0.5 * Math.max(0, Math.min(6, cityRank()) - 4) + 0.75 * Math.max(0, cityRank() - 6),
+const cityRank = () => (daily ? 0 : Math.max(0, CITIES.indexOf(city))), cityIdx = () => Math.min(4, cityRank()) + 0.5 * Math.max(0, Math.min(6, cityRank()) - 4) + Math.max(0, cityRank() - 6),
   cityBand = m => clamp((m - 500) / 1000, 0, 1) * clamp((14000 - m) / 6000, 0, 1);
 const cityKAt = m => 1 + CITY_SPD * cityIdx() * clamp((m - 500) / 3500, 0, 1) * clamp((14000 - m) / 6000, 0, 1); // şehir hızı 4 km'ye yayılır (2. km'de Samsun İstanbul'un 8. km'si gibiydi); kalabalık (cityBand) 1,5 km'de tam
 // şehir baskısı: aynı bantta heat'e sıra başına ek (özel bölgeler seyrek kaldığı için İzmir zamanla bakınca İstanbul'dan kolaydı: daha çok rakip, kısa açık su, sık yelkenli)
@@ -727,7 +727,7 @@ function spawnUcak() {
   const sims = [], x = rand(-1.5, 1.5);
   for (const dz of [6, 9.4]) addSimit(x, FLY_Y, z0 - dz, false);
   for (let z = z0 - 18; z > zEnd + 4; z -= rand(5, 7.5)) { const s = addSimit(clamp(sd * rand(0.6, 3.2), -LANE + 0.6, LANE - 0.6), FLY_Y, z, goldRoll(0.06)); s.vx = dir; s.spin = dir * rand(3, 6); sims.push(s); }
-  if (difficulty() > 0.8) { addRival(srcZ + rand(30, 48), dir * rand(2.2, 3.2), rand(0.4, 0.9), undefined, z0 - 4); if (Math.random() < 0.6) addRival(srcZ + rand(-14, 6), rand(-2.6, 2.6), rand(0.6, 1.2), undefined, z0 - 4); } // rüzgâraltında bekleyen martı; çoğu kez jetin ardında bir rakip daha
+  if (difficulty() > 0.8) { addRival(srcZ + rand(30, 48), dir * rand(2.2, 3.2), rand(0.4, 0.9), undefined, z0 - 4); if (Math.random() < 0.6) addRival(srcZ + rand(-14, 6), rand(-2.6, 2.6), rand(0.6, 1.2), undefined, z0 - 4); addRival(z0 - rand(4, 10), rand(-2.4, 2.4), rand(0.6, 1.2), undefined, z0 - 2); } // rüzgâraltında bekleyen martı; çoğu kez jetin ardında bir rakip daha; yelpazeden önce girişte bir rakip
   imbats.push({ g, z0, z1: padZ - RUNWAY_LEN / 2, pz0: padZ + RUNWAY_LEN / 2, pz1: padZ - RUNWAY_LEN / 2, dir, streaks, sims, felt: false, mills: [], gust: null, zm: null, swirl: null, flipped: false, bank: null, plume: null, drifts: [],
     jet: { plane, glow, sd, a, x: cx, z: cz, y: 0.55, v: 0, vy: 0, roll: 0, phase: 0, srcZ, zEnd, spool: 0, puffT: 0, hit: false } });
   imbatZ = zEnd - rand(1300, 1700) * (city.oldK || 1); // ~0,65-0,85 km'de bir
@@ -2097,7 +2097,8 @@ function generateIn(limit) {
         spawnFerry();
         if (!convoy && difficulty() > 0.6 && Math.random() < 0.2 + heat() * 0.1 + endB() * 0.06 + cityG() * 0.1) { convoy = true; spawnGap(false, rand(18, 24), true); continue; } // konvoy: hemen ardından bir vapur daha
         convoy = false;
-      } else if (genZ < bridgeZ) spawnBridge(); else if (genZ < imbatZ) spRiv(spawnImbat); else if (genZ < pirateZ) spawnPirate(); else if (genZ < horseZ) spawnHorse(); else if (genZ < hamsiZ) spRiv(spawnHamsi); else if (genZ < fallsZ) spawnFalls(); else if (genZ < beachZ) spRiv(spawnBeach); else if (genZ < regattaZ) spRiv(spawnRegatta); else if (genZ < balloonZ) spRiv(spawnBalloons); else if (genZ < flamingoZ) spRiv(spawnFlamingos); else if (genZ < chuteZ) spawnParasail(); else if (genZ < turtleZ) spRiv(spawnTurtles); else if (genZ < gliderZ) spawnGlider(); else if (genZ < beeZ) spawnHives();
+      // Rize: jet bölgesi kendi rakiplerini koyar (spRiv yok: itişin içinde kalabalık olmasın)
+      } else if (genZ < bridgeZ) spawnBridge(); else if (genZ < imbatZ) { if (city.ucak) spawnImbat(); else spRiv(spawnImbat); } else if (genZ < pirateZ) spawnPirate(); else if (genZ < horseZ) spawnHorse(); else if (genZ < hamsiZ) spRiv(spawnHamsi); else if (genZ < fallsZ) spawnFalls(); else if (genZ < beachZ) spRiv(spawnBeach); else if (genZ < regattaZ) spRiv(spawnRegatta); else if (genZ < balloonZ) spRiv(spawnBalloons); else if (genZ < flamingoZ) spRiv(spawnFlamingos); else if (genZ < chuteZ) spawnParasail(); else if (genZ < turtleZ) spRiv(spawnTurtles); else if (genZ < gliderZ) spawnGlider(); else if (genZ < beeZ) spawnHives();
       else {
         spawnGap(segCount === 0);
         if (segCount > 2 && !longSea && Math.random() < Math.max(0.05, 0.22 - heat() * 0.06 - cityG() * 0.05)) { longSea = true; continue; } // uzun açık su: vapur bu sefer gecikir
