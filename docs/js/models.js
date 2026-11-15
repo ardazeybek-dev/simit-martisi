@@ -3621,5 +3621,53 @@ function colonnadeGeo_(pat) {
   return (colonCache[pat] = k.build());
 }
 
+// ---------------- narenciye teknesi (Mersin) ----------------
+// Plaj kalıbı (main.js spawnBeach, city.narenciye): şeridin yanında kasa kasa narenciye yüklü uzun yük teknesi (HORON_LEN boyu, güverte HORON_DECK, pruva -z).
+// Her atıcının yanında kendi renginde kasa yığını (portakal, limon, mandalina: NAR_COLS); atıcının önlüğü ve şapkası aynı renk. Atılan simit parçasının çevresinde
+// o rengin kabuk halkası (citrusRingGeo): renk havada da okunur. Mandalina kasalarında yeşil yaprak (portakaldan ayrılsın)
+export const NAR_COLS = [0xff9a1a, 0xf6d92c, 0xe4421b];
+const NAR_LEAF = 0x3f8a3a, CRATE = 0xb98a52, CRATE2 = 0x9a6f3e;
+let narBoatG = null;
+export function narBoatGeo() { return narBoatG ||= pureCall(narBoatGeo_, []); }
+function narBoatGeo_() {
+  const L = HORON_LEN, k = new Kit();
+  k.add(new THREE.BoxGeometry(3.8, 0.7, L), 0x23302c, 0, -0.3, 0)                     // su hattı
+    .add(new THREE.BoxGeometry(3.8, 0.55, L), 0xf2efe6, 0, 0.32, 0)                   // beyaz borda
+    .add(new THREE.BoxGeometry(3.86, 0.18, L + 0.06), 0x2e8a52, 0, 0.66, 0)           // yeşil bant
+    .add(new THREE.BoxGeometry(3.9, 0.14, L + 0.1), 0xff9a1a, 0, 0.84, 0)             // turuncu küpeşte şeridi
+    .add(new THREE.BoxGeometry(3.6, 0.1, L - 0.2), 0x9d7a52, 0, HORON_DECK - 0.05, 0)  // güverte
+    .add(new THREE.ConeGeometry(1.9, 5, 4).rotateX(-Math.PI / 2).rotateY(Math.PI / 4), 0xf2efe6, 0, 0.45, -L / 2 - 2.3, 0, 0, 0, 1, 0.6, 1) // pruva
+    .add(new THREE.BoxGeometry(3.8, 1.2, 0.3), 0xf2efe6, 0, 0.5, L / 2 + 0.1)          // kıç aynası
+    .add(new THREE.BoxGeometry(2.6, 2.2, 3.2), 0xf2efe6, 0.4, HORON_DECK + 1.1, L / 2 - 2.4) // kaptan köşkü
+    .add(new THREE.BoxGeometry(2.7, 0.5, 3.3), 0x2b4560, 0.4, HORON_DECK + 1.6, L / 2 - 2.4) // pencere bandı
+    .add(new THREE.BoxGeometry(3.0, 0.16, 3.6), 0x2e8a52, 0.4, HORON_DECK + 2.28, L / 2 - 2.4);
+  for (const s of [-1, 1]) k.add(new THREE.BoxGeometry(0.08, 0.08, L - 0.4), 0xf2efe6, s * 1.8, HORON_DECK + 0.5, 0);
+  for (const s of [-1, 1]) for (let z = -L / 2 + 0.6; z < L / 2; z += 1.4) k.add(new THREE.BoxGeometry(0.07, 0.5, 0.07), 0xf2efe6, s * 1.8, HORON_DECK + 0.25, z);
+  // güvertenin dış yarısında karışık kasa sıraları (yük)
+  for (let z = -L / 2 + 1.5; z < L / 2 - 5; z += 1.05) for (const x of [0.75, 1.4]) {
+    if (Math.random() < 0.15) continue;
+    const h = 1 + ((Math.random() * 3) | 0), c = NAR_COLS[(Math.random() * 3) | 0];
+    for (let i = 0; i < h; i++) k.add(new THREE.BoxGeometry(0.62, 0.42, 0.95), i % 2 ? CRATE : CRATE2, x, HORON_DECK + 0.21 + i * 0.44, z);
+    k.add(new THREE.BoxGeometry(0.54, 0.1, 0.86), c, x, HORON_DECK + h * 0.44 + 0.02, z);
+  }
+  return k.build();
+}
+// atıcının yanındaki kasa yığını: üç kasa, üstleri meyve dolu (küçük küreler), mandalinada yaprak
+const crateCache = {};
+export function crateStackGeo(ci) {
+  if (crateCache[ci]) return crateCache[ci];
+  const k = new Kit(), c = NAR_COLS[ci];
+  for (const [x, y, z] of [[0, 0, -0.5], [0, 0, 0.5], [0, 0.46, 0]]) {
+    k.add(new THREE.BoxGeometry(0.7, 0.44, 0.95), y ? CRATE : CRATE2, x, 0.22 + y, z);
+    for (const [fx, fz] of [[-0.17, -0.26], [0.17, -0.26], [-0.17, 0.02], [0.17, 0.02], [-0.17, 0.3], [0.17, 0.3]]) k.add(new THREE.SphereGeometry(0.15, 6, 4), c, x + fx, 0.47 + y, z + fz);
+    if (ci === 2) for (const fz of [-0.2, 0.25]) k.add(new THREE.BoxGeometry(0.22, 0.03, 0.1), NAR_LEAF, x + 0.05, 0.6 + y, z + fz, 0, 0.6, 0.3);
+  }
+  return (crateCache[ci] = k.build());
+}
+// atılan parçanın kabuk halkası
+const ringCacheN = {};
+export function citrusRingGeo(ci) { return (ringCacheN[ci] ||= new Kit().add(new THREE.TorusGeometry(0.42, 0.07, 6, 16), NAR_COLS[ci]).build()); }
+export const NAR_LOOKS = NAR_COLS.map((c, i) => ({ id: 'nar' + i, kind: 'amca', shirt: c, pants: 0x2f3b4c, skin: 0xc98f64, hair: 0, hat: 'kep', hatCol: c, must: 0x2e211a }));
+
 // dünya haritası dioramaları (mapsets.js) bu menü parçalarını kullanır
 export { tree as mapTree, ckClock, konakTower };
