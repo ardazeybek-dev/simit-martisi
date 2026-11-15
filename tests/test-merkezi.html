@@ -53,6 +53,12 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Öğretici · 15 Kasım', id: 'ilk-ders', t: '👆 İlk uçuşta elle gösterilen kaçış dersi + yeni mekanik kartları', look: [
+      'İlk uçuşta (?tut ile her seferinde) önce sağda bir rakip martı gelir: oyun yavaşlar, el sola kaydırır, altında "Sola kaydır". Sola geçince hız döner. Sonra soldaki rakip için "Sağa kaydır".',
+      'Hiç dokunmazsan ders takılmaz: ağır çekim en fazla ~3,5 sn sürer, rakip geçince ders biter. İkinci uçuşta ders yok.',
+      'Yeni mekaniği ilk görüşte iskele kartının yerinde bir kerelik kart: camlı salon "GEÇİTTEN GEÇ", imbat/jet "Rüzgâr seni yana iter · KARŞI KOY", ırmak "Akıntı…", sütun "SİMİTLERİ İZLE". Bir kez çıkar, iskele kartı/VİRAJ tabelası açıkken beklenir.',
+      'Bak: el ve yazı 360 px telefonda rahat okunuyor mu? Ağır çekim çok uzun/kısa mı? Kart, iskele kartının üstüne basıyor mu?'],
+    links: [['İlk ders', '/?tut'], ['Salon kartı', '/?tut&salon'], ['Rüzgâr kartı', '/?tut&city=izmir&imbat&hepsi'], ['Sütun kartı', '/?tut&city=mersin&sutun&hepsi']] },
   { g: 'Gemiler · 15 Kasım', id: 'uzak-gemiler', t: '🚢 Dış şeritteki ve ufuktaki gemiler düzeldi', look: [
       'Dış şeritte seyreden vapurlar artık burnu önde gidiyor (eskiden geri geri kayıyordu). Tankerin köprüüstü ve bacası kıçta, sivri burun önde.',
       'İskele yaklaşırken yakındaki gemi birden silinmiyor: iskele kurulacak yere baştan gemi konmuyor (ölçüm: 7 şehirde görünürken silinen büyük gemi 24 → 3, kalanlar sisin en dibinde).',

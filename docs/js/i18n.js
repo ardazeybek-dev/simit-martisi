@@ -5,6 +5,7 @@
 (function () {
   'use strict';
   var EN = {
+    "Sola kaydır": "Swipe left", "Sağa kaydır": "Swipe right", "Camlı salon": "Glass salon", "Geçitten geç": "Fly through the gap", "Rüzgâr seni yana iter": "The wind pushes you sideways", "Akıntı seni yana iter": "The current pushes you sideways", "Karşı koy": "Push back", "Sütunlar devriliyor": "The columns are falling", "Simitleri izle": "Follow the simits",
     "Yeni": "New",
     "Gör": "View",
     "Martılar kralı": "Gull king",
@@ -189,6 +190,7 @@
   };
   // DE / ES: aynı anahtarlar; {to} yalnız Türkçede (yönelme ekli iskele adı), diğer diller {s} kullanır
   var DE = {
+    "Sola kaydır": "Nach links wischen", "Sağa kaydır": "Nach rechts wischen", "Camlı salon": "Glassalon", "Geçitten geç": "Durch die Lücke", "Rüzgâr seni yana iter": "Der Wind drückt dich zur Seite", "Akıntı seni yana iter": "Die Strömung drückt dich zur Seite", "Karşı koy": "Halte dagegen", "Sütunlar devriliyor": "Die Säulen stürzen", "Simitleri izle": "Folge den Simits",
     "Yeni": "Neu",
     "Gör": "Ansehen",
     "Martılar kralı": "Möwenkönig",
@@ -539,6 +541,7 @@
     "Simit Martısı'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?": "Ich hab in Simit-Möwe {s} Punkte geholt und {n} Simits geschnappt! Schaffst du mehr?",
   };
   var ES = {
+    "Sola kaydır": "Desliza a la izquierda", "Sağa kaydır": "Desliza a la derecha", "Camlı salon": "Salón de cristal", "Geçitten geç": "Pasa por el hueco", "Rüzgâr seni yana iter": "El viento te empuja de lado", "Akıntı seni yana iter": "La corriente te empuja de lado", "Karşı koy": "Resiste", "Sütunlar devriliyor": "Las columnas caen", "Simitleri izle": "Sigue los simits",
     "Yeni": "Nuevo",
     "Gör": "Ver",
     "Martılar kralı": "Rey de las gaviotas",

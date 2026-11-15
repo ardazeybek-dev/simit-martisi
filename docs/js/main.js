@@ -59,6 +59,7 @@ if (QS.has('hediye')) { store.set('simit-martisi-gift', 3000); store.set('simit-
 const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → her uçuş sonunda rekor ekranı çıkar, gerçek rekora dokunmaz
 const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo; tekrar uçunca yine oradan)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
+let lessonOn = false, lessonK = 1, lessonDir = 0, lessonWait = 0, hintT = 0, arriveAt = -1e9; // ilk uçuş dersi ve yeni mekanik ipuçları
 let ferries = [], obstacles = [], simits = [], rivals = [], kites = [], powerups = [], people = [], decor = [], smokes = [], boats = [], crossers = [], dolphins = [], fishes = [], bridges = [], bins = [], cats = [], piers = [];
 let bridgeZ = 0;
 let convoy = false, longSea = false;
@@ -422,11 +423,19 @@ const pwFree = (k, z) => !(pw[k] > (gull.position.z - z) / Math.max(speed, 15)) 
 const SPECIAL_RIV = () => (difficulty() < 0.6 ? 0 : city.rivK || 0); // oran cities.js rivK
 function spawnGap(first, fixLen, quiet) {
   const d = difficulty();
-  let len = fixLen || (first ? (tutorialPending ? 70 : 50) : rand(32, Math.max(36, 56 - late() * 10 - heat() * 3 - overG() * 4 - cityG() * 8)));
+  let len = fixLen || (first ? (tutorialPending ? 130 : 50) : rand(32, Math.max(36, 56 - late() * 10 - heat() * 3 - overG() * 4 - cityG() * 8)));
   const z0 = genZ, kind = gapKind(first, quiet, z0, d);
   if (!fixLen && (kind === 'pod' || kind === 'rain')) len = Math.max(len, 46);
   const ph = Math.random() * 6, amp = rand(1.2, 3.4);
-  if (THROW_ON && !(first && tutorialPending)) throwVolleys(z0, len, first, kind === 'rain');
+  if (first && tutorialPending && !fixLen) { // ilk uçuşun dersi: önce sağda, sonra solda bir rakip; simitler kaçılacak tarafta. Rakip yaklaşınca el yönü gösterir (lessonTick)
+    for (let z = z0 - 7; z > z0 - 34; z -= 3.4) addSimit(0, FLY_Y, z, false);
+    for (const [rz, safe] of [[62, -1], [108, 1]]) {
+      for (let z = z0 - rz + 24; z > z0 - rz - 8; z -= 3.4) addSimit(safe * 2.4, FLY_Y, z, false);
+      const n = rivals.length; addRival(z0 - rz, -safe * 2.4, 0.15, 'grey');
+      if (rivals.length > n) { rivals[n].lesson = safe; lessonOn = true; }
+    }
+  }
+  else if (THROW_ON && !(first && tutorialPending)) throwVolleys(z0, len, first, kind === 'rain');
   else for (let z = z0 - 7; z > z0 - len + 5; z -= 3.4) {
     const x = clamp(Math.sin((z0 - z) * 0.09 + ph) * amp, -LANE + 0.5, LANE - 0.5);
     addSimit(x, FLY_Y, z, !first && goldRoll(0.035));
@@ -2198,6 +2207,7 @@ function clearWorld() {
   if (swarm) { scene.remove(swarm.g); swarm = null; }
   for (const p of piers) scene.remove(p.g);
   ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = []; crossers = []; dolphins = []; fishes = []; bridges = []; bins = []; cats = []; piers = [];
+  lessonOn = false; lessonK = 1; lessonHand(0);
   clearFx();
 }
 function generate(limit) {
@@ -2466,7 +2476,9 @@ if (location.hash.startsWith('#iller=') && window.crypto && crypto.subtle) {
     location.reload();
   }).catch(() => {});
 }
-let tutorialPending = !store.get(KEY_TUT, false);
+const KEY_HINT = 'simit-martisi-hints';
+const hintSeen = QS.has('tut') ? [] : store.get(KEY_HINT, []);
+let tutorialPending = QS.has('tut') || !store.get(KEY_TUT, false); // ?tut (yalnız yerelde) → öğretici, ders ve ipuçları baştan
 const keys = {};
 // tempo bölgeleri: hız eğrisi tek düze artmasın. Mesafeye bağlı, önceden planlanır (günün uçuşunda herkes için aynı).
 // sakin su: hız ~%13 düşer, rakip/uçurtma yok, bol simit ya da yunus sürüsü. Arka rüzgâr: ~%14 hız patlaması, rüzgâr çizgileri.
@@ -2626,6 +2638,7 @@ function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
 // hesaplanıyordu: her simitte uçuşun ortasında senkron reflow → telefonda takılma.)
 function bump(el, cls = 'bump') {
   if (!el) return;
+  if (cls === 'on' && el.id === 'arrive') arriveAt = performance.now();
   el.classList.remove(cls);
   if (el._bumpRaf) cancelAnimationFrame(el._bumpRaf);
   el._bumpRaf = requestAnimationFrame(() => { el._bumpRaf = 0; el.classList.add(cls); });
@@ -3879,9 +3892,42 @@ function tickPowers() {
 let tutT = 0, tutMoves = 0, tutLastSide = 0;
 function startTutorial() { tutT = 3.6; tutMoves = 0; tutLastSide = 0; show('tutorial'); }
 function hideTutorial() {
-  if ($('tutorial').classList.contains('hidden')) return;
+  if ($('tutorial').classList.contains('hidden') || lessonDir) return;
   show('tutorial', false);
   if (tutorialPending) { tutorialPending = false; store.set(KEY_TUT, true); }
+}
+// ders eli: dir -1 sola, 1 sağa kaydır; 0 kapalı
+function lessonHand(dir) {
+  if (dir === lessonDir) return;
+  const el = $('tutorial');
+  if (dir) { tutT = 0; hideTutorial(); $('tutGo').textContent = tr(dir < 0 ? 'Sola kaydır' : 'Sağa kaydır'); lessonWait = 0; }
+  lessonDir = dir;
+  el.classList.toggle('lesson', !!dir); el.classList.toggle('left', dir < 0);
+  show('tutorial', !!dir);
+}
+function lessonTick() {
+  const g = gull.position, r = rivals.find(r => r.lesson && !r.lessonDone);
+  if (!r) { lessonOn = false; lessonHand(0); return; }
+  const ahead = g.z - r.mesh.position.z, ok = g.x * r.lesson > 1;
+  if (r.hit || ahead < -1 || (ahead < 24 && ok)) { r.lessonDone = true; lessonHand(0); if (ok && !r.hit) sfx.click(); return; }
+  if (ahead < 24) lessonHand(r.lesson);
+}
+// yeni mekanik ipucu: ilk kez görünce iskele kartının yerinde bir kerelik kısa kart (kart veya viraj tabelası doluysa bekler)
+const HINTS = [
+  ['salon', g => ferries.some(f => f.salon && g.z - f.salon.z > 8 && g.z - f.salon.z < 46), () => 'Camlı salon', 'Geçitten geç'],
+  ['wind', g => imbats.some(b => g.z - b.z0 > -2 && g.z - b.z0 < 30), g => (imbats.find(b => g.z - b.z0 > -2 && g.z - b.z0 < 30) || {}).bank ? 'Akıntı seni yana iter' : 'Rüzgâr seni yana iter', 'Karşı koy'],
+  ['col', g => obstacles.some(o => o.kind === 'sütuna' && g.z - o.z > 0 && g.z - o.z < 42), () => 'Sütunlar devriliyor', 'Simitleri izle'],
+];
+function hintTick() {
+  if (state !== 'play' || shownSign || lessonDir || performance.now() - arriveAt < 2900) return;
+  const g = gull.position;
+  for (const [id, near, sub, name] of HINTS) {
+    if (hintSeen.includes(id) || !near(g)) continue;
+    hintSeen.push(id); if (!QS.has('tut')) store.set(KEY_HINT, hintSeen);
+    $('arriveSub').textContent = tr(sub(g)); $('arriveName').textContent = tr(name).toLocaleUpperCase(window.I18N.locale); $('arriveGain').textContent = '';
+    bump($('arrive'), 'on');
+    return;
+  }
 }
 
 // ---------------- duraklatma ----------------
@@ -4374,6 +4420,7 @@ function frame() {
   if (slowT > 0) { slowT -= realDt; dt *= 0.4; }
   // şimşek sahnenin pozlamasıyla çakar (tek uniform): tam ekran beyaz DOM katmanı telefonda her şimşekte takılma yapıyordu
   if (boltFx > 0) { boltFx = Math.max(0, boltFx - realDt * 2.4); renderer.toneMappingExposure = 1 + 1.5 * boltFx * boltFx; }
+  lessonK = damp(lessonK, lessonDir && lessonWait < 3.5 && state === 'play' ? 0.35 : 1, 5, realDt); if (lessonDir && state === 'play') lessonWait += realDt; else if (lessonDir && state !== 'paused' && state !== 'countdown') lessonHand(0); dt *= lessonK; // ilk uçuş dersi: el yönü gösterirken ağır çekim
   teaK = damp(teaK, pw.tea > 0 && state === 'play' ? 0.6 : 1, 3, realDt); dt *= teaK; // Çay Molası: her şey yavaşlar, engeller ve simitler kolay tutturulur
   if (state === 'countdown') {
     countdown -= realDt;
@@ -4565,6 +4612,8 @@ function frame() {
       if (smokeT > 0) smokeT -= dt;
       // öğretici
       if (tutT > 0) { tutT -= dt; if (tutT <= 0 || tutMoves >= 3) { tutT = 0; hideTutorial(); } }
+      if (lessonOn) lessonTick();
+      if ((hintT -= dt) < 0) { hintT = 0.25; hintTick(); }
     }
   }
 
@@ -5157,7 +5206,7 @@ window.__game = {
   get tempo() { return { k: +tempoK.toFixed(3), speed: +speed.toFixed(2), list: tempos.map(u => `${u.kind}${(-u.z0 / 2) | 0}-${(-u.z1 / 2) | 0}`) }; },
   get cam() { return camera.position.toArray().map(v => +v.toFixed(2)); }, get pirateZ() { return pirates.map(p => ({ z: p.z, x: +p.g.position.x.toFixed(2) })); }, get crashY() { return +gull.position.y.toFixed(2); }, get deadPose() { return { cam: [...camera.position.toArray(), camera.rotation.z].map(v => +v.toFixed(4)), wing: +gull.userData.wings[0].arm.rotation.z.toFixed(4), y: +gull.position.y.toFixed(3) }; }, get obsAll() { return obstacles.map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw, top: o.top, fix: !!o.fix })); }, get simAll() { return simits.filter(s => !s.person).map(s => ({ x: +(s.th ? s.th.cx : s.x).toFixed(2), y: +s.y.toFixed(2), z: +(s.th ? s.th.cz : s.z).toFixed(2), th: !!s.th })); }, get rivAll() { return rivals.map(r => ({ x: +r.mesh.position.x.toFixed(2), z: +r.mesh.position.z.toFixed(2) })); }, get kiteAll() { return kites.map(k => ({ x: +k.g.position.x.toFixed(2), z: +k.z.toFixed(2) })); }, get ferryAll() { return ferries.map(f => ({ zFront: f.zFront, zBack: f.zBack })); }, get decorIn() { return decor.filter(d => Math.abs(d.mesh.position.x) < 7).length; },
   get obs() { return obstacles.filter(o => o.top < 30 && o.z < gull.position.z && o.z > gull.position.z - 120).map(o => ({ kind: o.kind, x: +o.x.toFixed(2), z: +o.z.toFixed(2), hd: o.hd, hw: o.hw })); },
-  get city() { return city.id; }, get full() { return +full.toFixed(3); }, get starve() { return starve; }, get warmth() { return +warmth.toFixed(3); }, setFull: v => (full = v), get arriveText() { return $('arriveSub').textContent; }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
+  get city() { return city.id; }, get full() { return +full.toFixed(3); }, get starve() { return starve; }, get warmth() { return +warmth.toFixed(3); }, setFull: v => (full = v), get arriveText() { return $('arriveSub').textContent; }, get lesson() { return { on: lessonOn, dir: lessonDir, k: +lessonK.toFixed(2), rivals: rivals.filter(r => r.lesson).map(r => ({ x: +r.mesh.position.x.toFixed(2), ahead: +(gull.position.z - r.mesh.position.z).toFixed(1), safe: r.lesson, done: !!r.lessonDone })) }; }, get hints() { return hintSeen.slice(); }, get daily() { return daily && { rule: dayRule.id, seed: daySeed }; }, startDaily, openDayRun,
   get layout() { return simits.filter(s => !s.person).slice(0, 400).map(s => `${(s.th ? s.th.cx : s.x).toFixed(2)},${(s.th ? s.th.cz : s.z).toFixed(1)}`).join(' ') + '|' + obstacles.map(o => `${o.kind}${o.z.toFixed(1)}`).join(' '); },
   get imbats() { return { w: +imbatW.toFixed(2), gx: +gull.position.x.toFixed(2), list: imbats.map(b => ({ z0: b.z0, z1: b.z1, dir: b.dir, irmak: !!b.bank, ahead: +(gull.position.z - b.z0).toFixed(1), mills: b.mills.length, gust: b.gust ? +b.gust.k.toFixed(2) : null, zm: b.zm, flipped: b.flipped, xs: b.sims.map(s => +s.x.toFixed(1)), got: b.sims.filter(s => s.taken).length })) }; },
   bolt() { boltFx = 1; },
