@@ -10,6 +10,8 @@
 // hamsi/dalga/teleferik/horon: Trabzon'un hamsi sürüsü (zıplayan balık kalıbı), Karadeniz dalgası (korsan kalıbı), Boztepe teleferiği (paraşüt kalıbı) ve horon teknesi (plaj kalıbı)
 // mavna/ucak/kule: Rize'nin çay mavnası (korsan kalıbı, çuval yığınları), kalkan uçağın jet rüzgârı (imbat kalıbı, uçak şeride kuyruk verip gaz açar, sonra kalkar)
 // ve çay bardağı kule (Düden kalıbının yeni hâli: LED halkası bardağı tırmanınca buhar fışkırır ve martıyı kaldırır; ışık zamanlamayı söyler)
+// kale/sutun/narenciye: Mersin'in Kızkalesi (Truva kalıbı: iki kemerli kapı, avluda altın), devrilen Soli sütunları (paraşüt ipi kalıbı: devrilme martının varışına göre)
+// ve narenciye teknesi (plaj renk zinciri kalıbı: portakal, limon, mandalina)
 // rivK: özel parçalar açık suyun yerini aldığı için kalan açık suya eklenen rakip olasılığı (yoksa 0)
 // wx: hava çarpanları [açık, yağmur, sis, kar] (yoksa mevsim olasılığı aynen; 0 = o hava bu şehirde hiç çıkmaz)
 // rainK: yağmur yoğunluğu (damla sayısı ve sudaki halkalar; 1 = olağan, en çok 1,5)
@@ -69,7 +71,7 @@ export const CITIES = [
       ['Pazar', 9000, "Pazar'a", 330], ['Yeşilköy', 10800, "Yeşilköy'e", 405], ['Ardeşen', 13500, "Ardeşen'e", 510], ['Fındıklı', 17500, "Fındıklı'ya", 2000]],
   },
   {
-    id: 'mersin', name: 'Mersin', mult: 1.8, hard: 4.4, hunger: 4.4, rivK: 0.4, wx: [1.4, 0.6, 0.5, 0], soon: true, opened: 'Tebrikler! Mersin açıldı!', routeKey: 'simit-martisi-route-mersin', bait: 'simit', end: 'Mersin kıyısını baştan sona uçtun!', after: "Rize'yi bitirince açılır",
+    id: 'mersin', name: 'Mersin', mult: 1.8, hard: 4.4, hunger: 4.4, rivK: 0.4, wx: [1.4, 0.6, 0.5, 0], opened: 'Tebrikler! Mersin açıldı!', routeKey: 'simit-martisi-route-mersin', bait: 'simit', kale: true, end: 'Mersin kıyısını baştan sona uçtun!', after: "Rize'yi bitirince açılır",
     stops: [['Mersin Limanı', 0, "Mersin Limanı'na", 0], ['Kültür Parkı', 700, "Kültür Parkı'na", 70], ['Marina', 1500, "Marina'ya", 95], ['Yenişehir', 2400, "Yenişehir'e", 120],
       ['Mezitli', 3400, "Mezitli'ye", 150], ['Soli', 4700, "Soli'ye", 185], ['Tece', 6000, "Tece'ye", 230], ['Davultepe', 7400, "Davultepe'ye", 280],
       ['Tömük', 9000, "Tömük'e", 340], ['Erdemli', 10800, "Erdemli'ye", 415], ['Ayaş', 13500, "Ayaş'a", 520], ['Kızkalesi', 18000, "Kızkalesi'ne", 2100]],

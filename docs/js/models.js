@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Kit, vcMat, softMat, rand, pick, canvasTex, teaGlassProfile, teaGlassLedTex } from './util.js';
+import { Kit, vcMat, softMat, rand, pick, clamp, canvasTex, teaGlassProfile, teaGlassLedTex } from './util.js';
 // önbelleğe giren geometri kurulurken dünya tohumuna dokunulmaz: günün uçuşunda önbellek dolu ya da boş olsa da rota aynı kalır
 const RND0 = Math.random;
 function pureCall(fn, a) { const r = Math.random; Math.random = RND0; try { return fn(...a); } finally { Math.random = r; } }
@@ -3514,6 +3514,65 @@ export function gliderGeo(ci) {
   k.add(new THREE.BoxGeometry(0.9, 0.06, 0.06), 0x2b3a4c, 0, 0.1, 0);
   return (gliderG[ci] = k.build());
 }
+
+// ---------------- Kızkalesi (Mersin) ----------------
+// Truva kalıbı (main.js spawnKale, city.kale): denizdeki kale, kayalık adacığın üstünde köşeleri yuvarlak burçlu sur dörtgeni. Ön ve arka surun ortasında kemerli kapı;
+// martı ön kapıdan avluya girer, arka kapıdan çıkar. Yerel: ön sur z=+KALE_HZ (kapı x=0), arka sur z=-KALE_HZ (kapı x=off). Surlar KALE_TOP (mazgallar KALE_MERLON üstte),
+// kapı yarı genişliği KALE_GATE, kemer KALE_SPRING'de başlar (tepesi martı boyunun epey üstünde). Avluda yıkık şapel, sarnıç, çalı.
+export const KALE_HZ = 9, KALE_W = 10, KALE_TOP = 7.4, KALE_MERLON = 0.7, KALE_GATE = 1.5, KALE_SPRING = 5.4, KALE_T = 1.2, KALE_FLOOR = 0.9;
+const kaleCache = {};
+export function kaleGeo(...a) { return pureCall(kaleGeo_, a); }
+function kaleGeo_(off = 0, mini = false) {
+  const key = off + (mini ? 'm' : '');
+  if (kaleCache[key]) return kaleCache[key];
+  const k = new Kit(), S1 = 0xdcc8a2, S2 = 0xcdb78f, S3 = 0xb29a72, ROCK = 0x8a8276, ROCK2 = 0x6c665c, GRASS = 0x97a356, DARK = 0x2b2620, W = KALE_W, HZ = KALE_HZ, T = KALE_T, G = KALE_GATE, F = KALE_FLOOR;
+  const courses = (f, y) => (Math.floor(y * 1.7) % 2 ? S1 : S2);
+  // ön ve arka sur: tek parça duvar, kemerli kapı deliği (ExtrudeGeometry deliği), kemer taşları iki yüzde, mazgallar
+  const kw = { [HZ]: new Kit(), [-HZ]: new Kit() };
+  for (const [z, gx] of [[HZ, 0], [-HZ, off]]) {
+    const k = kw[z], s = new THREE.Shape(); s.moveTo(-W, 0); s.lineTo(W, 0); s.lineTo(W, KALE_TOP); s.lineTo(-W, KALE_TOP); s.closePath();
+    const h = new THREE.Path(); h.moveTo(gx - G, F); h.lineTo(gx + G, F); h.lineTo(gx + G, KALE_SPRING); h.absarc(gx, KALE_SPRING, G, 0, Math.PI, false); h.lineTo(gx - G, F); s.holes.push(h);
+    const wg = new THREE.ExtrudeGeometry(s, { depth: T, bevelEnabled: false, curveSegments: 10 }); wg.translate(0, 0, -T / 2);
+    k.add(wg, courses, 0, 0, z);
+    for (let i = 0; i <= 8; i++) { const a = (i / 8) * Math.PI; k.add(new THREE.BoxGeometry(0.34, 0.5, T + 0.14), i % 2 ? S3 : S2, gx + Math.cos(a) * (G + 0.2), KALE_SPRING + Math.sin(a) * (G + 0.2), z, 0, 0, a); } // kemer taşları
+    for (const sx of [-1, 1]) k.add(new THREE.BoxGeometry(0.36, KALE_SPRING - F, T + 0.12), S3, gx + sx * (G + 0.18), (KALE_SPRING + F) / 2, z); // söveler
+    for (let x = -W + 0.5; x <= W - 0.4; x += 1.15) k.add(new THREE.BoxGeometry(0.62, KALE_MERLON, T * 0.55), S1, x, KALE_TOP + KALE_MERLON / 2, z + (z > 0 ? 1 : -1) * T * 0.22);
+    k.add(new THREE.BoxGeometry(2 * W, 0.18, T + 0.2), S3, 0, KALE_TOP - 0.05, z); // mazgal altı silmesi
+  }
+  // yan surlar ve burçlar (şeridin dışında)
+  for (const sx of [-1, 1]) {
+    k.add(new THREE.BoxGeometry(T, KALE_TOP, 2 * HZ), courses, sx * W, KALE_TOP / 2, 0);
+    for (let z = -HZ + 0.6; z <= HZ - 0.5; z += 1.15) k.add(new THREE.BoxGeometry(T * 0.55, KALE_MERLON, 0.62), S1, sx * (W + T * 0.22), KALE_TOP + KALE_MERLON / 2, z);
+    for (const [tz, r, h] of [[HZ, 2.0, KALE_TOP + 2.6], [-HZ, 2.0, KALE_TOP + 2.6], [0, 1.6, KALE_TOP + 1.7]]) {
+      k.add(new THREE.CylinderGeometry(r, r + 0.25, h, 14), courses, sx * W, h / 2, tz);
+      k.add(new THREE.CylinderGeometry(r + 0.12, r + 0.12, 0.2, 14), S3, sx * W, h - 0.05, tz);
+      for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; k.add(new THREE.BoxGeometry(0.55, 0.65, 0.4), S1, sx * W + Math.cos(a) * (r - 0.1), h + 0.32, tz + Math.sin(a) * (r - 0.1), 0, -a, 0); }
+      for (const y of [h * 0.45, h * 0.72]) { const a = sx > 0 ? 0.5 : Math.PI - 0.5; k.add(new THREE.BoxGeometry(0.16, 0.9, 0.3), DARK, sx * W + Math.cos(a) * (r + 0.05), y, tz + Math.sin(a) * (r + 0.05), 0, -a, 0); } // mazgal pencereleri (kameraya dönük)
+    }
+  }
+  // adacık: kaya kaide, avlu taşlığı, çevrede dalgaya giren kayalar
+  k.add(new THREE.BoxGeometry(2 * W + 3.4, F + 0.7, 2 * HZ + 3.4), ROCK, 0, (F - 0.7) / 2, 0)
+    .add(new THREE.BoxGeometry(2 * W - T, 0.06, 2 * HZ - T), 0xc2ae88, 0, F + 0.03, 0);
+  if (!mini) for (let i = 0; i < 34; i++) {
+    const a = (i / 34) * Math.PI * 2 + rand(-0.05, 0.05), ex = Math.cos(a) * (W + 2.2), ez = Math.sin(a) * (HZ + 2.2), r = rand(0.8, 1.6);
+    k.add(new THREE.DodecahedronGeometry(r, 0), i % 3 ? ROCK : ROCK2, clamp(ex * 1.15, -W - 2.4, W + 2.4), rand(-0.2, 0.3), clamp(ez * 1.2, -HZ - 2.4, HZ + 2.4), rand(0, 3), rand(0, 3), 0, 1, rand(0.45, 0.7), 1);
+  }
+  // avlu: yıkık şapel (yarım apsis), sarnıç ağzı, yıkık iç duvar parçaları, çalı ve ot öbekleri (şeridin dışına yakın, simit yolunu kapatmaz)
+  const ax = -6.6;
+  k.add(new THREE.CylinderGeometry(1.8, 1.8, 2.6, 12, 1, true, 0, Math.PI), S2, ax, F + 1.3, -2.2)
+    .add(new THREE.BoxGeometry(0.5, 2.0, 3.4), S2, ax - 1.6, F + 1.0, 0)
+    .add(new THREE.BoxGeometry(0.5, 1.3, 3.4), S2, ax + 1.6, F + 0.65, 0)
+    .add(new THREE.BoxGeometry(1.8, 0.35, 1.8), S3, 6.4, F + 0.17, 3.5)
+    .add(new THREE.BoxGeometry(1.2, 0.08, 1.2), DARK, 6.4, F + 0.36, 3.5)
+    .add(new THREE.BoxGeometry(3.2, 1.4, 0.5), S2, 6.8, F + 0.7, -4.6)
+    .add(new THREE.BoxGeometry(0.5, 0.9, 2.2), S3, 8.2, F + 0.45, -3.4);
+  for (const [x, z, s] of [[-8.2, 6.5, 1], [7.8, 6.8, 0.8], [-8.4, -6.8, 0.9], [8.3, -1.2, 0.7], [-4.6, 4.2, 0.6], [4.8, -7.4, 0.7], [-3.8, -7.8, 0.5]])
+    k.add(new THREE.IcosahedronGeometry(0.7 * s, 0), GRASS, x, F + 0.35 * s, z, 0, 0, 0, 1.2, 0.7, 1.2);
+  for (const [x, z] of [[-1.5, 5.4], [2.6, -2.2], [-3.4, -0.8], [3.4, 6.2]]) k.add(new THREE.BoxGeometry(rand(1.2, 2.2), 0.03, rand(1, 1.8)), 0x8f9b52, x, F + 0.07, z, 0, rand(0, 3), 0);
+  return (kaleCache[key] = { body: k.build(), front: kw[HZ].build(), back: kw[-HZ].build() });
+}
+// sur kamerayla martının arasına girince saydamlaşır (avluda martı görünsün): ön ve arka sur ayrı malzeme, yalnız o sırada takılır
+export const kaleFadeMats = [0, 1].map(() => Object.assign(vcMat.clone(), { transparent: true, opacity: 1, depthWrite: false }));
 
 // dünya haritası dioramaları (mapsets.js) bu menü parçalarını kullanır
 export { tree as mapTree, ckClock, konakTower };
