@@ -285,7 +285,7 @@ export function mapState(st) {
     c.state = s;
     if (s === 'done' && !c.flag) {
       c.flag = new THREE.Mesh(flagGeo, vcMat); c.flag.castShadow = true;
-      c.flag.position.set(PAD_R * 0.9, 0, -PAD_R * 0.9); c.g.add(c.flag); // kaidenin arka sağında, çimde: geniş maketlerin (Muğla evleri) içine girmez
+      c.flag.position.set(PAD_R * 0.95, 0, -PAD_R * 0.95); c.flag.scale.setScalar(1.75); c.g.add(c.flag); // kaidenin arka sağında, çimde, iri: bitirilen şehir uzaktan seçilsin
     }
     if (c.flag) c.flag.visible = s === 'done';
     swapMat(c, locked);
@@ -296,6 +296,7 @@ export function mapState(st) {
     }
     if (c.cloud) { c.cloud.visible = locked; c.cloud.scale.setScalar(1); c.cloud.material.opacity = big ? 0.97 : 0.9; }
     c.label.classList.toggle('locked', locked);
+    c.label.classList.toggle('done', s === 'done');
   }
   const gold = new THREE.Color(0xffc93a), cream = new THREE.Color(0xfff4d6), dim = new THREE.Color(0xc9c6bb);
   if (stoneMesh) {
