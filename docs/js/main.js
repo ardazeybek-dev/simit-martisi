@@ -2297,6 +2297,10 @@ let hicT = 0, hicY = 0; // Hıçkıran martı: sonraki hıçkırığa kalan sür
 let scoreLen = -1;
 function fitScore() { const el = ui.score; el.style.fontSize = ''; const w = el.parentElement.clientWidth; if (w > 0 && el.scrollWidth > w) el.style.fontSize = Math.floor(parseFloat(getComputedStyle(el).fontSize) * w / el.scrollWidth) + 'px'; }
 addEventListener('resize', () => { scoreLen = -1; });
+// oynama süresi (gerçek saniye, duraklatma sayılmaz): uçuşun süresi duraklatma ekranında, toplamı ayarlarda
+let runReal = 0, lastEatD = 0, noEat = 0; // lastEatD: önceki karenin mesafesi, noEat: son simitten beri uçulan
+const clock2 = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, ss = s % 60; return h ? `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${m}:${String(ss).padStart(2, '0')}`; };
+const hoursTxt = s => { const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h} ${tr('sa')} ${m} ${tr('dk')}` : `${m} ${tr('dk')}`; };
 let windW0 = 0; // önceki karenin rüzgâr itişi (azalan pay hedefe aktarılır)
 let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
 const pw = { magnet: 0, shield: 0, double: 0, tea: 0 };
@@ -2470,7 +2474,7 @@ let full = 1, starve = false, shownFull = -1; // tokluk: simit yemeden uçan mar
 let boltFx = 0;
 let weather = 'clear', wind = 0, gustT = 0, gustDir = 1, gustNext = 8, boltNext = 10, hornNext = 12, warmth = 1, shownWarm = -1;
 const GUST = 6.5, COLD_S = 8; // GUST: esinti gücü, COLD_S: hiç simit yemeden kaç saniyede donarsın
-const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0 }; // görevler ve başarımlar için uçuş sayaçları
+const run = { near: 0, power: 0, steal: 0, turn: 0, dolphin: 0, bridge: 0, feed: 0, piece: 0, fish: 0, fast: 0 }; // görevler ve başarımlar için uçuş sayaçları
 
 function resetWorld(newWeather = true) {
   seedAt('w'); genN = 0; turnN = 0;
@@ -2491,7 +2495,7 @@ function resetWorld(newWeather = true) {
   beeZ = !city.ari ? -Infinity : BEE_SOON ? -90 : -rand(2050, 2250); // ilk kovanlar ~1,05 km
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0; windW0 = 0;
-  speed = 18; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
+  runReal = 0; lastEatD = 0; noEat = 0; speed = 18; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashObs = null; crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishTry = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; tempos = []; tempoZ = 0; tempoN = 0; tempoK = 1; tempoIn = null; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
@@ -3460,11 +3464,13 @@ function achVal(id) {
 const achTier = id => ACH.find(a => a.id === id).n.filter(n => achVal(id) >= n).length;
 const achReady = () => ACH.reduce((k, a) => k + Math.max(0, achTier(a.id) - (ach.got[a.id] || 0)), 0);
 function achRecord() { // uçuş sonu: farkı ekle, en iyileri güncelle
-  const now = { simit: Math.floor(simitCount), gold: Math.floor(goldCount), steal: run.steal, near: run.near, turn: run.turn, dolphin: run.dolphin, bridge: run.bridge, runs: 1, distTot: Math.floor(dist), fish: fishRun };
+  const now = { simit: Math.floor(simitCount), gold: Math.floor(goldCount), steal: run.steal, near: run.near, turn: run.turn, dolphin: run.dolphin, bridge: run.bridge, runs: 1, distTot: Math.floor(dist), fish: fishRun, playSec: Math.floor(runReal) };
   for (const k in now) { ach.st[k] = (ach.st[k] || 0) + now[k] - (achRun[k] || 0); achRun[k] = now[k]; }
   ach.st.maxScore = Math.max(ach.st.maxScore || 0, total());
   ach.st.maxDist = Math.max(ach.st.maxDist || 0, Math.floor(dist));
   ach.st.maxCombo = Math.max(ach.st.maxCombo || 0, bestCombo);
+  ach.st.fast = Math.max(ach.st.fast || 0, Math.floor(run.fast)); ach.st.nearRun = Math.max(ach.st.nearRun || 0, run.near); ach.st.goldRun = Math.max(ach.st.goldRun || 0, Math.floor(goldCount));
+  { const h = new Date().getHours(); if (h < 5 && dist >= 200) ach.st.night = 1; } // gece yarısından sonra uçan (gizli)
   if (weather !== 'clear') ach.st['wx_' + weather] = Math.max(ach.st['wx_' + weather] || 0, Math.floor(dist)); // rozet: o havada en uzun uçuş
   store.set(KEY_ACH, ach);
 }
@@ -3703,6 +3709,11 @@ const BADGES = [
   ...fam('fish', 'i-fish', [[100, 'Balıkçı'], [1000, 'Balık reisi']], 'Toplam {n} balık yakala', () => ach.st.fish || 0),
   ...fam('sim', 'i-simit', [[100000, 'Simit sevdalısı'], [1000000, 'Simit sarayı']], 'Toplam {n} simit kap', () => ach.st.simit || 0),
   ...CITIES.filter(c => !c.soon).map(c => ({ id: 'city-' + c.id, fam: 'city', icon: 'i-trophy', n: 1, name: c.name, text: c.end, lab: c.name, v: () => (routeOf(c) === c.stops.length - 1 ? 1 : 0) })),
+  ...fam('nefes', 'i-trophy', [[1, 'Tek nefes'], [3, 'Güçlü kanat'], [9, 'Türkiye turu']], '{n} şehri tek uçuşta, ikinci şans kullanmadan bitir', () => (ach.st.oneRun || []).length, n => `${n} ${tr('şehir')}`),
+  { id: 'fun-perhiz', fam: 'fun', icon: 'i-simit', n: 100, name: 'Perhizkâr', text: 'Simit yemeden {n} m uç', lab: '100 m', v: () => ach.st.fast || 0 },
+  { id: 'fun-kil', fam: 'fun', icon: 'i-near', n: 25, name: 'Kıl payı ustası', text: 'Bir uçuşta {n} kez kıl payı geç', lab: '25', v: () => ach.st.nearRun || 0 },
+  { id: 'fun-altin', fam: 'fun', icon: 'i-medal', n: 20, name: 'Altın yağmuru', text: 'Bir uçuşta {n} altın simit kap', lab: '20', v: () => ach.st.goldRun || 0 },
+  { id: 'fun-gece', fam: 'fun', icon: 'i-sun', n: 1, name: 'Gece martısı', text: 'Gece yarısından sonra uç', lab: '?', v: () => ach.st.night || 0 },
   ...[['rain', 'i-drop', 'Yağmur kuşu', 'Yağmurda bir uçuşta {n} m uç'], ['snow', 'i-snow', 'Kar tanesi', 'Karda bir uçuşta {n} m uç'], ['fog', 'i-fog', 'Sis kaptanı', 'Siste bir uçuşta {n} m uç']]
     .map(([w, icon, name, text]) => ({ id: 'wx-' + w, fam: 'wx', icon, n: 2000, name, text, lab: '2000 m', v: () => ach.st['wx_' + w] || 0 })),
 ];
@@ -3851,7 +3862,7 @@ function hideTutorial() {
 // ---------------- duraklatma ----------------
 function pause() {
   if (state !== 'play' && state !== 'countdown') return;
-  state = 'paused'; show('pause'); show('countdown', false);
+  state = 'paused'; show('pause'); show('countdown', false); $('pauseTime').textContent = clock2(runReal);
   $('pauseWallet').textContent = fmt(Math.floor(wallet)); $('pauseFish').textContent = fmt(fish); // cüzdan: elindeki simit ve balık
   { // kalan görevler: bu uçuşun ilerlemesiyle birlikte (nerede olduğun, kaç görev kaldığı)
     const left = missions.filter(m => !m.done && misProgress(m) < m.n).length;
@@ -4040,7 +4051,7 @@ onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
 // duraklatmadan çıkış uçuşu bitirir: skor sıralamaya gider, simitler cüzdana, görevler sayılır (eskiden hepsi kayboluyordu)
 onBtn('quitBtn', () => { audio.resume(); show('pause', false); for (const k of Object.keys(pw)) pw[k] = 0; smokeT = 0; invuln = 0; crashObs = null; renderPowers(); if (total() > 0 && !tutorialPending) { cause = 'quit'; showOver(); show('reviveBtn', false); show('fishBtn', false); } else showTitle(); });
-onBtn('settingsBtn', () => { show('settings'); syncToggles(); });
+onBtn('settingsBtn', () => { show('settings'); syncToggles(); $('setPlayTime').textContent = hoursTxt((ach.st.playSec || 0) + (state === 'play' || state === 'paused' ? runReal - (achRun.playSec || 0) : 0)); });
 onBtn('closeSettings', () => show('settings', false));
 // panelin dışına (karartılmış boşluğa) dokunmak paneli kapatır; kendi kapatma düğmesine basılmış gibi, oyun başlamaz
 for (const [panel, btn] of Object.entries({ roadPanel: 'closeRoad', missionsPanel: 'closeMissions', achPanel: 'closeAch', upPanel: 'closeUps', shopPanel: 'closeShop', boardPanel: 'closeBoard', profilePanel: 'skipName', dailyPanel: 'closeWheel', dayRunPanel: 'closeDayRun', settings: 'closeSettings' }))
@@ -4314,6 +4325,7 @@ function frame() {
   if (recS.on) recRestore();
   // FPS ölçümü + otomatik kalite
   fpsSmooth = fpsSmooth * 0.95 + (1 / Math.max(realDt, 1e-3)) * 0.05;
+  if (state === 'play') { runReal += realDt; const dd = Math.min(5, Math.max(0, dist - lastEatD)); lastEatD = dist; if (dist >= 50) { noEat += dd; run.fast = Math.max(run.fast, noEat); } } // simitsiz en uzun yol: kare kare birikir (ışınlanma sayılmaz), açlık 50 m'de başlar
   if (state === 'play' && (qWarm -= realDt) < 0) {
     qFrames++; qTime += realDt;
     if (qTime > 2.5) {
@@ -4844,7 +4856,7 @@ function takeSimit(s) {
   if (s.reg) s.reg.got++;
   if (s.th) thrownStat.caught++;
   if (weather === 'snow') warmth = Math.min(1, warmth + (s.gold ? 0.6 : 0.25) * (s.piece ? 0.5 : 1)); // sıcak simit ısıtır
-  full = Math.min(1, full + (s.gold ? 0.6 : 0.25) * (s.piece ? 0.5 : 1)); // simit doyurur
+  full = Math.min(1, full + (s.gold ? 0.6 : 0.25) * (s.piece ? 0.5 : 1)); noEat = 0; // simit doyurur
   if (s.person) run.steal++;
   if ((s.person && s.person.feeder) || (s.th && s.th.bt.ikram)) run.feed++;
   if (s.th) run.piece++;
@@ -4926,6 +4938,7 @@ function arrive() {
   $('arriveName').textContent = STOPS[i].name.toLocaleUpperCase('tr'); // iskele adları Türkçe kalır: her dilde BEŞİKTAŞ (i → İ)
   $('arriveSub').textContent = tr(i === STOPS.length - 1 ? city.end : 'İskeleye vardın');
   $('arriveGain').textContent = ''; // puan sessizce eklenir: kartta küçük puan yazısı yok
+  if (i === STOPS.length - 1 && !daily && !revives && AT_M <= 0) { const o = ach.st.oneRun || (ach.st.oneRun = []); if (!o.includes(city.id)) { o.push(city.id); store.set(KEY_ACH, ach); renderMenuBadges(); } } // rozet: şehri tek uçuşta, ikinci şanssız bitirdi
   if (i > farStop) { // ilk kez: iskele haritada açılır, cüzdana hediye
     farStop = newStop = i; store.set(city.routeKey, i);
     wallet += STOPS[i].gift; store.set(KEY_WALLET, wallet);
