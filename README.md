@@ -162,6 +162,8 @@ To set up a new project: run `supabase/schema.sql` in the SQL Editor (it can be 
 - A free project that gets no requests for about a week is paused by Supabase → `.github/workflows/keepalive.yml` calls `get_board` once a day. GitHub turns scheduled workflows off after 60 days without commits; if the board ever says "No connection" for everyone, restore the project from the dashboard and re-enable the workflow.
 - To remove a cheating or rude player: `delete from players where id = '...';` in the SQL Editor (their scores and runs go with it).
 
+Day-gated rewards (free wheel spin, daily limits, missions) read the day from `nowMs()` in `net.js`: the server time from the last response's `Date` header, advanced with `performance.now()`, so moving the phone's clock does nothing. A stored day that lies in the future counts as already used (a spin taken with the clock moved ahead is taken from that day, never added).
+
 ## Portal build (CrazyGames)
 
 `platform/build.py` writes a portal copy to `platform/crazygames/` without touching `docs/`:

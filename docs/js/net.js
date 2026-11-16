@@ -14,6 +14,10 @@ const LOCAL = (() => { try { return /^(localhost|127\.|\[::1\])/.test(location.h
 export const netOn = () => !LOCAL && !!(SB_URL && SB_KEY);
 // null: ağ yok / sunucu cevap vermedi (sonra yeniden denenir) · REJECT: sunucu reddetti (yeniden denemenin anlamı yok)
 const REJECT = { rejected: true };
+// güvenilir saat: sunucu cevabının Date başlığı + telefon saatinden bağımsız sayaç (performance.now). Telefonun saati ileri alınınca
+// günlük haklar (bedava çark, günlük sınırlar) yenilenmesin. Sunucuya hiç ulaşılamadıysa telefonun saati kullanılır
+let srvAt = 0, perfAt = 0;
+export const nowMs = () => (srvAt ? srvAt + (performance.now() - perfAt) : Date.now());
 async function rpc(fn, args) {
   if (!netOn()) return null;
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000);
@@ -23,6 +27,7 @@ async function rpc(fn, args) {
       headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify(args),
     });
+    const sd = Date.parse(res.headers.get('Date') || ''); if (sd) { srvAt = sd + 500; perfAt = performance.now(); } // başlık saniyeye yuvarlı: ortası
     if (!res.ok) return res.status >= 400 && res.status < 500 ? REJECT : null;
     return await res.json();
   } catch (e) { return null; } finally { clearTimeout(t); }
@@ -160,7 +165,7 @@ async function syncOnce() {
 }
 
 // istemci tarafı hafta anahtarı (yalnızca bekleyen skoru eskitmek için; asıl hafta sunucuda İstanbul saatiyle)
-const weekKey = (now = Date.now()) => { const d = new Date(now); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const weekKey = (now = nowMs()) => { const d = new Date(now); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
 // uçuş başı: sunucudan bilet. Skor bu biletin alındığı andan beri geçen süreye göre denetlenir;
 // bileti olmayan uçuş (ad yok, uçuş başında ağ yok) sıralamaya girmez, yalnızca yerel haftalık en iyiye yazılır.

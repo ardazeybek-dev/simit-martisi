@@ -53,6 +53,15 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Telefon hata turu · 16 Kasım', id: 'gecen-gemiler', t: '🚢 Geçen gemiler martının şeridinden geçmiyor', look: [
+      'Herhangi bir şehirde 1-2 km uç: yolcusuz, tek bacalı vapur, şilep ya da tanker artık martının şeridine girmiyor; hepsi uzakta, dış şeritte seyrediyor.',
+      'Martı bir geminin gövdesine girip kameranın gemi içinde kalması (koyu ekran) ve yelkenlinin vapurun içinden geçmesi olmamalı.'],
+    links: [['Samsun', '/?city=samsun'], ['Rize (yağmurlu)', '/?city=rize']] },
+  { g: 'Telefon hata turu · 16 Kasım', id: 'saat-hilesi', t: '⏰ Telefon saatini ileri almak bedava çark vermiyor', look: [
+      'Bugün bedava çarkı çevir. Telefonun tarihini 1 gün ileri al, oyunu aç (internet açık): çark yine ücretli, bedava hak yok.',
+      'Tarihi geri al: yine bedava hak yok. İnternetsizken ileri alıp çevirirsen o hak yarının hakkından düşer, birikmez.',
+      'Normal günde (gece 00:00 geçince) bedava çark eskisi gibi gelir.'],
+    links: [['Oyun', '/']] },
   { g: 'Hata turu · 16 Kasım', id: 'kucuk-ekran', t: '📱 Küçük ve yatay ekranda menüler', look: [
       'Mağaza: küçük telefonda (iPhone SE) ve telefon yatayken alttaki ürünler ve Tamam ekranın dışında kalıyordu, çıkılamıyordu. Şimdi ürünler kendi içinde kayıyor, Tamam hep görünür. Dik normal telefonda eskisi gibi kaymadan tamamı sığar.',
       'Oyun sonu (Rusça gibi uzun dilde): Paylaş butonu kartın kenarından taşıyordu; iki buton artık kartın içinde.',

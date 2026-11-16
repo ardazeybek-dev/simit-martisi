@@ -9,7 +9,7 @@ import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popT
 import { audio, sfx } from './audio.js';
 import { map, bindMapInput, mapDraw, mapHome, mapZoom, buildCities, mapSelect, mapState, mapReveal, buildFar } from './worldmap.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
-import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc, makeMoveCode, claimMoveCode, fmtCode } from './net.js';
+import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc, nowMs, makeMoveCode, claimMoveCode, fmtCode } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -169,8 +169,8 @@ const todayRule = () => RULE_Q || RULES[hash('rule', dayKey()) % RULES.length];
 function seedAt(...k) { Math.random = daily ? seeded(hash(daySeed, ...k)) : R0; } // günün uçuşunda üretim tohumdan
 const dayGift = n => 15 + 5 * Math.min(n - 1, 6); // gün serisi: 15 → 45 simit
 function dayRun() {
-  const d = store.get(KEY_DAYRUN, {}) || {}, today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
-  const done = d.day === today, streak = done ? d.streak || 1 : d.day === dayKey(y) ? (d.streak || 0) + 1 : 1;
+  const d = store.get(KEY_DAYRUN, {}) || {}, today = dayKey(), y = new Date(nowMs()); y.setDate(y.getDate() - 1);
+  const done = d.day === today || ahead(d.day), streak = done ? d.streak || 1 : d.day === dayKey(y) ? (d.streak || 0) + 1 : 1;
   return { done, best: done ? d.best || 0 : 0, streak, runs: done ? d.runs || 0 : 0, paid: done ? d.paid ?? true : false }; // paid: seri ödülü bugün verildi
 }
 const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
@@ -2137,7 +2137,8 @@ function spawnScenery(limit) {
         if (big) { const tank = Math.random() < 0.35; g.add(new THREE.Mesh(tank ? tankerGeo((Math.random() * 3) | 0) : cargoGeo((Math.random() * 3) | 0), vcMat)); addShipLights(g, tank ? 'tanker' : 'cargo'); }
         else { const ft = pickFerryType(), fl = pick(ft.lengths); g.add(new THREE.Mesh(ferryGeo(fl, ft.id), vcMat)); const c = new THREE.Mesh(ft.chim, vcMat); c.position.set(0, DECK, 0); g.add(c); addShipLights(g, 'ferry', { L: fl, type: ft.id }); }
         const toward = Math.random() < 0.6; // çoğu karşıdan gelir
-        g.rotation.y = toward === big ? 0 : Math.PI; // pruva gidiş yönüne: şilep/tanker pruvası +z, vapurunki −z (eskiden vapurlar geri geri gidiyordu) g.position.set(x, 0, sceneryZ);
+        g.rotation.y = toward === big ? 0 : Math.PI; // pruva gidiş yönüne: şilep/tanker pruvası +z, vapurunki −z (eskiden vapurlar geri geri gidiyordu)
+        g.position.set(x, 0, sceneryZ); // dış şeritte: bu satır yorumun içine kayınca gemiler martının şeridinin ortasından geçiyordu
         scene.add(g); decor.push({ mesh: g, z: sceneryZ, ph: Math.random() * 6, calm: true, vz: (toward ? 1 : -1) * rand(3, 6) });
       }
     }
@@ -2350,7 +2351,7 @@ function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 const FISH_MIN_M = 700, FISH_DAY = 2, KEY_FISHDAY = 'simit-martisi-fishday';
 // sayaç sunucuda da tutulur (oyuncu kimliği, İstanbul günü): site verisini silmek ya da cihaz saatini ileri almak sınırı aşmaz; ağ yoksa yerel sayaç
 let fishSrv = 0;
-const fishLocal = () => { const f = store.get(KEY_FISHDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
+const fishLocal = () => { const f = store.get(KEY_FISHDAY, {}) || {}; return f.day === dayKey() || ahead(f.day) ? f.n || 0 : 0; };
 const fishToday = () => Math.max(fishLocal(), fishSrv);
 const fishSync = take => fishDayRpc(take).then(n => { if (typeof n === 'number') fishSrv = n; });
 // martı rütbesi: her uçuşun simiti ve mesafesi XP olur (simit başına 1, 20 m başına 1); her seviye simit ödüller, belli seviyelerde unvan değişir.
@@ -3266,7 +3267,7 @@ function upgrade(k, lv) {
 // Balık → simit: toplu satışta balık başı artar (253, 259, 269, 281). Simit → balık: 501, günde SHOP_DAY kez. Fiyatlar bilerek yuvarlak değil (sonu 0 olmasın)
 // Alış (501) en iyi satıştan (281) pahalı: al-sat ile simit basılamaz. Çarkta 1 balık = 280 simit.
 const SHOP_SELL = [253, 518, 807, 1124], SHOP_FISH = 501, SHOP_DAY = 3, KEY_SHOPDAY = 'simit-martisi-shopday';
-const shopBought = () => { const f = store.get(KEY_SHOPDAY, {}) || {}; return f.day === dayKey() ? f.n || 0 : 0; };
+const shopBought = () => { const f = store.get(KEY_SHOPDAY, {}) || {}; return f.day === dayKey() || ahead(f.day) ? f.n || 0 : 0; };
 const SIM_ICO = '<svg class="ico"><use href="#i-simit"/></svg>', FISH_ICO = '<svg class="ico fish"><use href="#i-fish"/></svg>';
 let askFn = null; // onay penceresi: "Satın al" bunu çalıştırır (mağaza, kostüm, yükseltme, seri kurtarma)
 function askBuy(deal, fn) { askFn = fn; $('shopDeal').innerHTML = deal; show('shopAsk'); }
@@ -3348,7 +3349,7 @@ let misPending = false; // uçuştaki ilerleme henüz görevler panelinde göste
 function refillMissions() {
   if (misPending && misAllDone()) return; // biten set panelde görülmeden yenilenmesin
   const today = dayKey();
-  if (misLv.day !== today) { misLv.day = today; misLv.sets = 0; if (!misAllDone()) missions = []; }
+  if (misLv.day !== today && !ahead(misLv.day)) { misLv.day = today; misLv.sets = 0; if (!misAllDone()) missions = []; }
   if (misAllDone() && misLv.sets < MIS_SETS) { misLv.lv++; missions = []; }
   if (!missions.length) misLv.sets++;
   while (missions.length < 3) {
@@ -3545,21 +3546,26 @@ function openAch() { if (state !== 'title') return; renderAch(); achTab('ach'); 
 // ---------------- günlük ödül ----------------
 // Her gün bir kez; üst üste gelinen günler ödülü büyütür, bir gün kaçarsa seri baştan başlar.
 const DAILY = [10, 15, 20, 30, 40, 50, 80];
-const dayKey = (d = new Date()) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+const dayKey = (d = new Date(nowMs())) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 // seri kurtarma: en çok iki gün kaçırıldıysa kopan seri simitle geri alınır (STREAK_SAVE)
 const STREAK_SAVE = 50;
-const daysAgo = k => { const [a, b, c] = String(k).split('-').map(Number); return a ? Math.round((new Date().setHours(0, 0, 0, 0) - new Date(a, b - 1, c)) / 864e5) : 99; };
+const daysAgo = k => { const [a, b, c] = String(k).split('-').map(Number); return a ? Math.round((new Date(nowMs()).setHours(0, 0, 0, 0) - new Date(a, b - 1, c)) / 864e5) : 99; };
+// kayıtlı gün bugünden ileride: telefonun saati ileri alınıp geri çekilmiş. O günün hakkı kullanılmış sayılır (ileri alarak alınan hak sonraki günden düşer, birikmez)
+const ahead = k => !!k && daysAgo(k) < 0;
 // sunucu durumu (varsa) esastır: yerel kayıt silinip yeniden girilince ödül tekrar alınamasın, seri de kaybolmasın
 const srvOk = r => r && !r.rejected && typeof r.streak === 'number';
 function setSrvDaily(r) {
   srvDaily = { ready: !!r.ready, streak: r.streak, lost: r.lost || 0, day: dayKey() };
   if (!r.ready) store.set(KEY_DAILY, { last: dayKey(), streak: r.streak }); // yerel kayıt da sunucuya uysun
 }
-dailyRpc('peek').then(r => { if (srvOk(r)) { setSrvDaily(r); if (state === 'title') renderMenuBadges(); } });
+const peekDaily = () => dailyRpc('peek').then(r => { if (srvOk(r)) { setSrvDaily(r); if (state === 'title') renderMenuBadges(); } });
+peekDaily();
+// uygulamaya dönünce: sunucu saati tazelenir (uykuda sayaç durabilir), gün döndüyse günlük ödül de yenilenir
+document.addEventListener('visibilitychange', () => { if (!document.hidden) peekDaily(); });
 function dailyState() {
   if (srvDaily && srvDaily.day === dayKey()) return { ready: srvDaily.ready, streak: srvDaily.streak, lost: srvDaily.ready ? srvDaily.lost : 0 };
-  const s = store.get(KEY_DAILY, {}) || {}, today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
-  if (s.last === today) return { ready: false, streak: s.streak || 1 };
+  const s = store.get(KEY_DAILY, {}) || {}, today = dayKey(), y = new Date(nowMs()); y.setDate(y.getDate() - 1);
+  if (s.last === today || ahead(s.last)) return { ready: false, streak: s.streak || 1 };
   const streak = s.last === dayKey(y) ? (s.streak || 0) % DAILY.length + 1 : 1;
   // kopan seri: 1-2 gün kaçmış ve seri 2-6 gündeyse (7. günden sonra seri zaten 1. güne döner, kurtaracak bir şey yok)
   const ago = daysAgo(s.last), n = s.streak || 0;
@@ -3580,7 +3586,7 @@ async function saveStreak() {
     dailyBusy = true; const r = await dailyRpc('save'); dailyBusy = false;
     if (srvOk(r)) { setSrvDaily(r); if (!r.saved) return openDaily(); }
   }
-  const y = new Date(); y.setDate(y.getDate() - 1);
+  const y = new Date(nowMs()); y.setDate(y.getDate() - 1);
   wallet -= STREAK_SAVE; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(y), streak: d.lost }); srvDaily = null;
   sfx.power(); vibrate([20, 30, 20]); $('titleWallet').textContent = walletTxt();
   openDaily();
@@ -3639,7 +3645,7 @@ const spinWarn = () => { const n = spinWarnN(), L = SPIN_WARN.length; return SPI
 const SPIN_FISH = 1, SPIN_SIMIT = 280, WHEEL_COL = ['#f0a04b', '#fff4e2', '#3fb6a8', '#fff4e2', '#e5484d', '#fff4e2', '#6a5acd', '#ffc23a'];
 let wheelRot = 0, spinning = false, wheelBuilt = false;
 const KEY_FREESPIN = 'simit-martisi-freespin';
-const freeSpin = () => store.get(KEY_FREESPIN, '') !== dayKey(); // günde bir bedava çevirme
+const freeSpin = () => { const k = store.get(KEY_FREESPIN, ''); return k !== dayKey() && !ahead(k); }; // günde bir bedava çevirme
 const FREE_W = [97, 3]; // bedava çevirme yalnız iki dilimde durur: 100 simit (%97) ya da 1 balık (%3); ücretli çarkın ikramiyeleri bedavada yok
 function buildWheel() {
   if (wheelBuilt) return; wheelBuilt = true;
@@ -3727,8 +3733,8 @@ function spinWheel(pay) {
 const KEY_VISIT = 'simit-martisi-visit';
 const visit = Object.assign({ last: '', streak: 0, best: 0, days: 0 }, store.get(KEY_VISIT, {}) || {});
 { // bugünün girişi: dün de girildiyse seri uzar, yoksa 1'den başlar
-  const today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
-  if (visit.last !== today) { visit.streak = visit.last === dayKey(y) ? visit.streak + 1 : 1; visit.days++; visit.best = Math.max(visit.best, visit.streak); visit.last = today; store.set(KEY_VISIT, visit); }
+  const today = dayKey(), y = new Date(nowMs()); y.setDate(y.getDate() - 1);
+  if (visit.last !== today && !ahead(visit.last)) { visit.streak = visit.last === dayKey(y) ? visit.streak + 1 : 1; visit.days++; visit.best = Math.max(visit.best, visit.streak); visit.last = today; store.set(KEY_VISIT, visit); }
 }
 const kLab = n => (n >= 1e6 ? `${n / 1e6}M` : n >= 1000 ? `${n / 1000}k` : `${n}`);
 const fam = (f, icon, list, text, v, lab = kLab) => list.map(([n, name]) => ({ id: f + n, fam: f, icon, n, name, text, v, lab: lab(n) }));
@@ -5242,6 +5248,7 @@ window.__game = {
   get bridges() { return bridges.map(b => ({ ahead: +(gull.position.z - b.z).toFixed(1), done: b.done, kp: b.kp, path: b.path, gx: +gull.position.x.toFixed(2) })); },
   get dolphins() { return dolphins.map(f => ({ ax: +f.ax.toFixed(1), x: +f.mesh.position.x.toFixed(1), y: +f.mesh.position.y.toFixed(1), u: +f.u.toFixed(2), got: f.got, ahead: +(gull.position.z - f.z).toFixed(1) })); },
   get shed() { return { on: shedOn, hidden: decor.filter(d => d.shed && !d.mesh.visible).length, total: decor.filter(d => d.shed).length }; },
+  get freeSpin() { return freeSpin(); }, get today() { return dayKey(); }, get dailyReady() { return dailyState().ready; },
   get crossers() { return crossers.map(c => ({ x: +c.o.x.toFixed(1), ahead: +(gull.position.z - c.z).toFixed(1) })); },
   get endB() { return +endB().toFixed(2); }, get genM() { return Math.round(-genZ / 2); }, // deneme: son 3 iskele zorluğu
   get movAll() { return { sails: crossers.map(c => ({ xa: c.xa, side: c.side, k: c.k, z: c.z })), pirates: pirates.map(p => ({ xa: p.xa, side: p.side, k: p.k, z: p.z, os: p.os.map(q => ({ off: q.off, hw: q.o.hw, hd: q.o.hd, z: q.o.z, top: q.o.top, kind: q.o.kind })) })),

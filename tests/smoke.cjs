@@ -124,6 +124,9 @@ async function main() {
       await g(() => { clearInterval(window.__smokeAp); window.__game.setGod(false); });
       check(s.state === 'play', `${city}: state is ${s.state} after flying`);
       check(s.dist > 0, `${city}: dist is ${s.dist}`);
+      // passing ships (decor movers) keep to their outer lanes: none may sail down the gull's lane
+      const mv = await g(() => { window.__game.genTo(window.__game.z - 3000); return window.__game.movers; });
+      check(mv.length > 0 && mv.every(m => Math.abs(m.x) > 30), `${city}: passing ship inside the play lane (movers ${JSON.stringify(mv.slice(0, 4))})`);
       // crash() is ignored while a shield or the invulnerable window is on: keep calling it until the flight ends
       await g(() => { window.__smokeCr = setInterval(() => { if (window.__game.state === 'play') window.__game.crash(); }, 300); });
       await page.waitForFunction(() => window.__game.state === 'over', null, { timeout: 15000 }).catch(async () => { const st = await g(() => [window.__game.state, window.__game.dist]).catch(() => '?'); throw new Error(city + ': crash did not end the flight, state ' + JSON.stringify(st)); });
