@@ -130,7 +130,7 @@ declare r uuid;
 begin
   if not exists (select 1 from players where id = p_id and secret = p_secret) then raise exception 'unknown player'; end if;
   if exists (select 1 from runs where player_id = p_id and started_at > now() - interval '2 seconds') then raise exception 'too fast'; end if;
-  delete from runs where player_id = p_id and started_at < now() - interval '1 day';
+  delete from runs where player_id = p_id and started_at < now() - interval '2 days'; -- dünkü uçuşlar kalsın: daily() kaçan alımı onlarla doğrular (bilet yine 1 gün geçerli)
   insert into runs(player_id) values (p_id) returning id into r;
   return r;
 end $$;

@@ -1,16 +1,18 @@
 // Simit Martısı service worker: oyunu çevrimdışı da açılabilir yapar.
-const VERSION = 'simit-martisi-v3.13.1';
+const VERSION = 'simit-martisi-v3.13.2';
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const CORE = [
   './', 'index.html', 'style.css', 'manifest.webmanifest',
   'js/i18n.js', 'js/main.js', 'js/scene.js', 'js/models.js', 'js/fx.js', 'js/audio.js', 'js/util.js', 'js/weather.js', 'js/shiplights.js', 'js/board.js', 'js/net.js', 'js/cities.js', 'js/worldmap.js', 'js/mapsets.js',
-  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
+  // dil dosyaları da: çevrimdışı açılışta oyun Türkçeye düşmesin
+  'js/lang/az.js', 'js/lang/el.js', 'js/lang/fr.js', 'js/lang/hi.js', 'js/lang/id.js', 'js/lang/it.js', 'js/lang/ja.js', 'js/lang/ko.js', 'js/lang/nl.js', 'js/lang/pl.js', 'js/lang/pt.js', 'js/lang/ro.js', 'js/lang/ru.js', 'js/lang/uk.js', 'js/lang/vi.js', 'js/lang/zh.js',
 ];
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const c = await caches.open(VERSION);
-    await c.addAll(CORE);
+    await c.addAll(CORE.map(u => new Request(u, { cache: 'reload' }))); // tarayıcı önbelleğindeki eski sürüm yeni önbelleğe girmesin
     try { await c.add(new Request(THREE_URL, { mode: 'cors' })); } catch (err) {}
     await self.skipWaiting();
   })());

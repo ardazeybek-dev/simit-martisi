@@ -464,7 +464,8 @@ function spawnGap(first, fixLen, quiet) {
     if (sail) { // yelkenli koridoru yandan keser: martıya yaklaştıkça karşıya geçer, direği ve yelkeni engel
       const two = len > 44 && Math.random() < heat() * 0.25 + (len > 80 ? 0.6 : 0), s0 = pick([-1, 1]); // iskele öncesi uzun dolgu (80+) çoğunlukla iki yelkenli // geç oyunda uzun açıklıkta ikinci yelkenli karşı yönden
       for (let j = 0; j < (two ? 2 : 1); j++) {
-      const side = j ? -s0 : s0, z = two ? z0 - (j ? rand(len * 0.6, len - 10) : rand(12, len * 0.4)) : z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
+      let side = j ? -s0 : s0; const z = two ? z0 - (j ? rand(len * 0.6, len - 10) : rand(12, len * 0.4)) : z0 - rand(14, len - 12), xa = rand(-2.7, 2.7), k = rand(0.12, 0.18); // yavaş kayar: martı gelirken okunabilsin
+      if (imbats.some(m => m.bank && -m.dir === side && Math.abs(z - m.bank.position.z) < 66)) side = -side; // Samsun ırmak kıyısının içinde beklemesin: öbür yandan gelsin
       const b = makeSailboat(); b.rotation.y = -side * Math.PI / 2; scene.add(b); addShipLights(b, 'sail');
       const o = { x: xa + side * SAIL_OFF, z, hw: SAIL_HW, hd: 0.45, top: FLY_Y + 4, kind: 'yelkene', passed: false }; // martı boyunda yelkenler gövdenin bir yanına uzanır: kutu yelkenlerin üstünde
       obstacles.push(o); crossers.push({ mesh: b, o, xa, side, k, z, ph: Math.random() * 6 });
@@ -638,8 +639,9 @@ function spawnImbat() {
   const drifts = [];
   if (ir) { // ırmak kıyısı rüzgârüstünde (değirmenlerin yeri): delta kıyısı, ağızdan yayılan kızıl su, sürüklenen saz demetleri
     const sd = -dir;
-    decor = decor.filter(d => (d.z < z0 + 12 && d.z > z1 - 12 && d.mesh.position.x * sd > 5.5 ? (scene.remove(d.mesh), false) : true)); // delta kıyısının içine düşen kıyı dekoru
+    decor = decor.filter(d => (d.z < z0 + 26 && d.z > z1 - 26 && d.mesh.position.x * sd > 5.5 ? (scene.remove(d.mesh), false) : true)); // delta kıyısının içine düşen kıyı dekoru
     bank = new THREE.Mesh(riverBankGeo(), vcMat); bank.position.set(sd * (LANE + 5.4), 0, zm + rand(-6, 6)); if (sd < 0) bank.rotation.y = Math.PI; bank.receiveShadow = true; g.add(bank);
+    crossers = crossers.filter(c => c.side === sd && Math.abs(c.z - bank.position.z) < 66 ? (scene.remove(c.mesh), obstacles = obstacles.filter(o => o !== c.o), false) : true); // kıyı tarafında bekleyen yelkenli kumun içinden çıkmasın
     plume = new THREE.Mesh(PLUME, plumeMat); plume.position.set(sd * (LANE + 6 - PLUME_W / 2), 0, bank.position.z); if (sd < 0) plume.rotation.y = Math.PI; plume.renderOrder = 1; g.add(plume);
     for (let i = 0; i < 9; i++) { const m = new THREE.Mesh(driftGeo(), vcMat); m.position.set(rand(-10, 10), 0, rand(z1 + 6, z0 - 6)); m.rotation.y = rand(0, 6); g.add(m); drifts.push({ m, v: rand(2.2, 3.4), spin: rand(-0.6, 0.6) }); }
   }
@@ -2096,7 +2098,7 @@ function updateShed(dt, gz) {
 function pieceAt(z, side) {
   return bridges.some(b => Math.abs(b.z - z) < 16) || pirates.some(p => Math.abs(p.z - z) < 22) || horses.some(h => Math.abs(h.z - z) < (h.kale ? 24 : 16)) || hamsiSets.some(s => s.side === side && z < s.z0 + 6 && z > s.z1 - 6)
     || beaches.some(b => b.side === side && Math.abs(b.z - z) < BEACH_LEN / 2 + 8) || falls.some(f => f.dir === side && Math.abs(f.z - z) < 18)
-    || imbats.some(b => (b.mills.length || b.bank || b.jet) && -b.dir === side && z < b.z0 + 12 && z > b.z1 - 12)
+    || imbats.some(b => (b.mills.length || b.bank || b.jet) && -b.dir === side && z < b.z0 + (b.bank ? 26 : 12) && z > b.z1 - (b.bank ? 26 : 12)) // ırmak kıyısı parçanın ~25 m dışına taşar
     || chutes.some(c => Math.abs(c.z - z) < 24) || sutuns.some(s => z < s.z0 + 8 && z > s.z1 - 8) || flamFlocks.some(f => z < f.z0 + 6 && z > f.z1 - 6) || balloonSets.some(b => b.side === side && Math.abs(b.z - z) < 14);
 }
 // sıradaki iskelelerin yakını: oraya gemi konmaz (iskele kurulunca yakındaki gemiyi siliyordu: görünürdeki gemi birden yok oluyordu)
@@ -2218,7 +2220,7 @@ function clearWorld() {
   for (const b of beaches) scene.remove(b.g);
   beaches = []; beachRun = { id: -1, pair: -1, c: -1, n: 0 };
   for (const a of [...sutuns, ...regattas, ...balloonSets, ...flamFlocks, ...chutes, ...turtleSets, ...gliders, ...hiveSets]) scene.remove(a.g);
-  regattas = []; balloonSets = []; flamFlocks = []; chutes = []; turtleSets = []; gliders = []; hiveSets = [];
+  sutuns = []; regattas = []; balloonSets = []; flamFlocks = []; chutes = []; turtleSets = []; gliders = []; hiveSets = [];
   if (swarm) { scene.remove(swarm.g); swarm = null; }
   for (const p of piers) scene.remove(p.g);
   ferries = []; obstacles = []; simits = []; rivals = []; kites = []; powerups = []; people = []; decor = []; smokes = []; boats = []; crossers = []; dolphins = []; fishes = []; bridges = []; bins = []; cats = []; piers = [];
@@ -2702,7 +2704,8 @@ function showTitle() {
   state = 'title'; applyShadows(); bank(); resetWorld(); refillMissions(); gullSize();
   document.querySelector('.legend').classList.toggle('hidden', !tutorialPending);
   document.querySelectorAll('.menu-side').forEach(n => n.classList.toggle('hidden', tutorialPending));
-  show('profileBtn'); renderNameChip(); // yeni cihaz ilk uçuştan önce de hesabını taşıyabilsin renderMode();
+  show('profileBtn'); renderNameChip(); // yeni cihaz ilk uçuştan önce de hesabını taşıyabilsin
+  renderMode();
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap(); renderRank();
   show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false); show('shopPanel', false);
   ui.powers.textContent = '';
@@ -3136,6 +3139,7 @@ function closeMap() {
   if (state === 'title') { renderRouteMap(); renderMenuBadges(); show('title'); }
 }
 function closeWardrobe() {
+  closeShopAsk(); // Esc ile kapanınca "Emin misin?" menüde açık kalmasın
   seeTab(wardTab); dressing = false; show('wardrobe', false);
   if (window.__reloadOnTitle && state === 'title') return reloadKeep(); // bekleyen sürüm yenilemesi: menüye dönünce, hava aynı
   if (cosSel) { cosSel = null; applyLook(); } // satın alınmayan önizleme çıkarılır
@@ -3593,7 +3597,7 @@ let lastPeek = 0;
 const peekDaily = () => { lastPeek = Date.now(); return dailyRpc('peek').then(r => { if (srvOk(r)) { setSrvDaily(r); fixFuture(); if (state === 'title') renderMenuBadges(); } }); };
 peekDaily().finally(() => countVisit()); // giriş günü sunucu saati sorulduktan sonra sayılır
 // uygulamaya dönünce (10 dakikadan uzun aradan sonra): sunucu saati tazelenir, gün döndüyse günlük ödül de yenilenir
-document.addEventListener('visibilitychange', () => { if (!document.hidden && Math.abs(Date.now() - lastPeek) > 6e5) peekDaily(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && Math.abs(Date.now() - lastPeek) > 6e5) peekDaily().finally(() => countVisit()); }); // arka planda günlerce bekleyen uygulamada da giriş günü sayılsın
 // sunucu saati gelince: telefon saati ileri alınıp kaydedilmiş günler en çok yarına çekilir. Yanlış kurulmuş saat günlük hakları
 // (çark, görev, balık/mağaza sınırı, günün uçuşu, giriş) haftalarca kilitlemesin; ileri alarak alınan hak yine bugünden ve yarından düşer
 function fixFuture() {
@@ -3604,9 +3608,10 @@ function fixFuture() {
   if (far(visit.last)) { visit.last = tm; store.set(KEY_VISIT, visit); }
 }
 function dailyState() {
-  if (srvDaily && srvDaily.day === dayKey()) return { ready: srvDaily.ready, streak: srvDaily.streak, lost: srvDaily.ready ? srvDaily.lost : 0 };
   const s = store.get(KEY_DAILY, {}) || {}, today = dayKey(), y = new Date(nowMs()); y.setDate(y.getDate() - 1);
+  // bugün cihazda alındıysa (sunucuya ulaşamadan) sunucunun "hazır" demesi ikinci kez verdirmesin; ertesi gün sunucu bu alımı cihazdan öğrenir (schema.sql daily)
   if (s.last === today || ahead(s.last)) return { ready: false, streak: s.streak || 1 };
+  if (srvDaily && srvDaily.day === dayKey()) return { ready: srvDaily.ready, streak: srvDaily.streak, lost: srvDaily.ready ? srvDaily.lost : 0 };
   const streak = s.last === dayKey(y) ? (s.streak || 0) + 1 : 1;
   // kopan seri: 1-2 gün kaçmış ve seri en az 2 gündeyse simitle kurtarılır
   const ago = daysAgo(s.last), n = s.streak || 0;
@@ -3626,6 +3631,7 @@ async function saveStreak() {
   if (netOn()) {
     dailyBusy = true; const r = await dailyRpc('save'); dailyBusy = false;
     if (srvOk(r)) { setSrvDaily(r); if (!r.saved) return openDaily(); }
+    else { $('dailyNote').textContent = tr('Bağlantı yok'); return; } // sunucu kurtarmayı duymadan simit alınmasın: ertesi alımda seri yine 1'e düşerdi
   }
   const y = new Date(nowMs()); y.setDate(y.getDate() - 1);
   wallet -= STREAK_SAVE; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(y), streak: d.lost }); srvDaily = null;
@@ -3633,7 +3639,7 @@ async function saveStreak() {
   openDaily();
 }
 function openDaily() {
-  if (state !== 'title') return;
+  if (state !== 'title' || dressing || mapping) return; // await sonrası çağrılar gardırop/haritanın üstüne açılmasın
   const d = dailyState(), box = $('days'), pos = dayPos(d.streak) + 1, wk = d.streak - pos; box.textContent = ''; // wk: bu haftadan önceki gün sayısı (kart etiketleri 8-14, 15-21…)
   DAILY.forEach((r, i) => {
     const el = document.createElement('div');
@@ -3985,7 +3991,8 @@ function pause() {
   $('pauseWallet').textContent = fmt(Math.floor(wallet)); $('pauseFish').textContent = fmt(fish); // cüzdan: elindeki simit ve balık
   { // kalan görevler: bu uçuşun ilerlemesiyle birlikte (nerede olduğun, kaç görev kaldığı)
     const left = missions.filter(m => !m.done && misProgress(m) < m.n).length;
-    $('pauseMis').parentElement.classList.toggle('hidden', !missions.length || daily); // Günün Uçuşu görev ilerletmez: duraklatmada görev listesi yok renderMissions($('pauseMis'));
+    $('pauseMis').parentElement.classList.toggle('hidden', !missions.length || daily); // Günün Uçuşu görev ilerletmez: duraklatmada görev listesi yok
+    renderMissions($('pauseMis')); // bu çağrı yorumun içine kaymıştı: duraklatmada liste boş kalıyordu
     $('pauseMisH').textContent = `${tr('Görevler')} · ${left ? tr('{n} görev kaldı').replace('{n}', fmt(left)) : tr('Görevlerin hepsi bitti!')}`;
   }
   audio.suspend();
@@ -5200,7 +5207,7 @@ if (netOn()) refreshBoard();
 const giftWait = () => ({ n: Math.max(0, Math.floor(+store.get('simit-martisi-gift', 0) || 0)), f: Math.max(0, Math.floor(+store.get('simit-martisi-gift-fish', 0) || 0)), wk: +store.get('simit-martisi-gift-week', 0) || 0 });
 function giftOffer() {
   const g = giftWait();
-  if ((!g.n && !g.f) || state !== 'title' || document.querySelector('.screen.modal:not(.hidden)')) return;
+  if ((!g.n && !g.f) || state !== 'title' || mapping || dressing || document.querySelector('.screen.modal:not(.hidden)')) return; // harita/gardırop modal değil: hediye kartı altında kalıp basılamıyordu
   const sim = '<svg class="ico"><use href="#i-simit"/></svg>', fi = '<svg class="ico"><use href="#i-fish"/></svg>';
   $('giftIco').textContent = g.wk ? '🏆' : '🎁';
   $('giftTitle').textContent = tr(g.wk ? 'Haftalık ödül' : 'Hediye');
@@ -5228,7 +5235,7 @@ function giftTake() {
     $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish); // büyük cüzdan yine kısa yazılır
     if (g.n) bump($('titleWallet').parentNode); if (g.f) bump($('titleFish').parentNode); sfx.gold(); vibrate(30);
     // hediye ekranı açılıştaki günlük ödülü bekletmişse sırası şimdi gelir
-    if (!tutorialPending && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); setTimeout(() => { if (state === 'title' && !menuModal()) openDaily(); }, 500); }
+    if (!tutorialPending && dailyState().ready && store.get(KEY_DAILY_AUTO, '') !== dayKey()) { dailyAuto = true; store.set(KEY_DAILY_AUTO, dayKey()); setTimeout(() => { if (state === 'title' && !menuModal() && !dressing && !mapping) openDaily(); }, 500); }
   };
   requestAnimationFrame(step);
 }

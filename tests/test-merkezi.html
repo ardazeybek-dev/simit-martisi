@@ -53,6 +53,15 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Hata avı · 16 Kasım', id: 'hata-avi-3', t: '🐞 Genel hata avı: günlük ödül, menüler, Mersin sütunları, Samsun ırmağı', look: [
+      'Duraklat (uçuşta): "N görev kaldı" başlığının altında görev listesi artık görünüyor (boştu).',
+      'Mersin: sütun sırasına varmadan düşüp yeni uçuşa başla. Aynı mesafede görünmeyen sütunun yıkılma sesi/tozu artık yok.',
+      'Samsun ırmak ağzı: kıyının kumunun/sazlığının içinde bekleyen yelkenli, şamandıra ya da kıyı teknesi olmamalı.',
+      'Gardırop: kostüme dokun → Satın al → "Emin misin?" açıkken Esc. Onay da kapanır (eskiden menüde açık kalıyordu).',
+      'Dünya haritası açıkken hediye gelirse kart haritanın altında kalmaz; hediyeyi alıp hemen Kostümler açılırsa günlük ödül paneli gardırobun üstüne açılmaz.',
+      'İnternetsiz alınan günlük ödül internet gelince aynı gün ikinci kez alınamaz; bağlantı yokken "Seriyi kurtar" simit almaz, "Bağlantı yok" der.',
+      'Çevrimdışı açılışta seçili dil (İngilizce dışı, ör. Fransızca) korunur, Türkçeye düşmez.'],
+    links: [['Oyun', '/'], ['Mersin', '/?hepsi']] },
   { g: 'Yorum taraması · 16 Kasım', id: 'gemi-isik-yorum', t: '💡 Gemi ışıkları: yorumun içinde kalmış satır', look: [
       'Yağmurlu ya da sisli bir uçuşta yanından geçen gemilerin ışıkları martıyı geçince yumuşakça sönmeli, uzaktaki gemilerin ışıkları eksiksiz yanmalı.',
       'Bütün kod yorumların içinde kalmış ayar/satır için tarandı: başka bulunan yok (yelkenliler dahil).'],
