@@ -79,6 +79,17 @@ const up = () => new Promise(res => { const r = http.get(`http://localhost:${POR
     await page.waitForFunction(() => window.__game.state === 'play', null, { timeout: 15000 });
     await page.waitForTimeout(3000);
     console.log('- flew with ' + WEAR.join(', '));
+    // diving mask: reviving costs half the fish (1, 1, 2 instead of 1, 2, 4)
+    const costs = [];
+    await page.evaluate(() => window.__game.setFish(9));
+    for (let i = 0; i < 3; i++) {
+      // crash() is ignored while the revive shield is on, and the over card ignores revive for a moment: keep trying
+      await page.waitForFunction(() => { if (window.__game.state === 'play') window.__game.crash(); return window.__game.state === 'over'; }, null, { timeout: 20000, polling: 300 });
+      costs.push(await page.evaluate(() => window.__game.fishCost));
+      await page.waitForFunction(() => { if (window.__game.state === 'over') window.__game.fishRevive(); return window.__game.state === 'play'; }, null, { timeout: 20000, polling: 300 });
+    }
+    console.log('- revive fish costs with the mask: ' + costs.join(', '));
+    if (costs.join() !== '1,1,2') fail.push('diving mask revive costs ' + costs.join() + ', expected 1,1,2');
   } finally { await browser.close(); if (srv) srv.kill(); }
 })().catch(e => fail.push(String(e))).finally(() => {
   if (fail.length) { console.log('COSTUMES FAIL\n' + fail.join('\n')); process.exit(1); }

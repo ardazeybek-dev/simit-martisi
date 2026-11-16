@@ -179,7 +179,7 @@ const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 const PERKS = { crown: 'Altın simit %20 daha sık çıkar', simitcrown: 'Simit kapma alanı %6 daha geniş', tophat: 'Güçlendirmeler +%8 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %30 yavaş üşür', golden: 'Yakaladığın simitler cüzdana +%12', kurye: 'Görev ödülleri +%10', taksi: 'Kıl payı puanı x2',
   fes: 'Simit puanı +%4', beanie: 'Karda %15 yavaş üşür', chef: 'Çay molası +%12 süre', captain: 'Mıknatıs +%12 süre', tray: 'Görev ödülleri +%12', glasses: 'Kalkan +%10 süre', hearts: 'Kombo süresi +%8', bigglasses: 'Kıl payı alanı %15 daha geniş', mustache: 'Kıl payı puanı +%20', pacifier: 'Dirilince kalkan +%20 süre', bowtie: 'Yunus bonusu +%40', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %15 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%10', ice: 'Karda %50 yavaş üşür', durum: 'Açlık %25 yavaş bastırır',
   fisher: 'Balık yakalama şansı +%25', buoy: 'Açlık %20 yavaş bastırır', pirate: 'Altın simitler %33 daha değerli',
-  ari: 'Mıknatıs daha sık çıkar', snorkel: 'Balık %20 daha sık çıkar', medal: 'Rekorda cüzdan bonusu +%25', cini: '2x Puan +%12 süre' };
+  ari: 'Mıknatıs daha sık çıkar', snorkel: 'Dirilmek yarı balık ister', medal: 'Rekorda cüzdan bonusu +%25', cini: '2x Puan +%12 süre' };
 // aynı şeyi iyileştiren parçalar (açlık, üşüme, görev ödülü) toplanmaz: giyililerin en güçlüsü işler
 const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } };
 const comboT0 = () => COMBO_T * (perk('hearts') ? 1.08 : 1); // Kalpli gözlük: kombo süresi +%8
@@ -481,7 +481,7 @@ function spawnGap(first, fixLen, quiet) {
     }
     // zıplayan balık (nadir): önce suda çırpınır, martı gelince martının yüksekliğine sıçrar.
     // Değersen ya yakalarsın (balık cüzdana) ya da elinden kayar: "Kaçtı!"
-    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && (Math.random() < (fishSpawn + fishTry++ * 0.05) * (ruleOn('fish') ? 3 : 1) * (perk('snorkel') ? 1.2 : 1))) { // balık nadir: uçuş başına en çok bir balık zıplar; balıksız geçen her açık suda şans +%5 (kimine hiç çıkmamasın)
+    if (d > 0.15 && len > 30 && -z0 / 2 > FISH_MIN_M && !fishRun && !fishEarly && fishToday() < FISH_DAY && (Math.random() < (fishSpawn + fishTry++ * 0.05) * (ruleOn('fish') ? 3 : 1))) { // balık nadir: uçuş başına en çok bir balık zıplar; balıksız geçen her açık suda şans +%5 (kimine hiç çıkmamasın)
       fishEarly = true;
       const dir = pick([-1, 1]), m = new THREE.Mesh(FISH, vcMat); m.visible = false; m.scale.setScalar(1.35); scene.add(m);
       fishes.push({ mesh: m, dir, ax: rand(-LANE + 1.2, LANE - 1.2), z: z0 - rand(12, len - 8), w: rand(2.8, 3.8), T: rand(0.75, 0.95), lag: rand(-0.06, 0.1), u: -1, done: false, spin: 0, splT: 0 });
@@ -2348,7 +2348,7 @@ let carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0);
 // balık: ikinci para birimi (Subway'deki anahtar gibi). Zıplayan balıklardan nadiren gelir, yeniden doğmak için harcanır.
 // Bir uçuşta her yeniden doğuş bir öncekinin iki katı balık ister (1, 2, 4...).
 let fish = Math.max(0, +store.get(KEY_FISH, 0) || 0), fishRun = 0, fishTry = 0, fishSpawn = 0.12, fishCatch = 0.40, fishEarly = false;
-const fishCost = () => 2 ** fishRev;
+const fishCost = () => (perk('snorkel') ? Math.max(1, 2 ** fishRev / 2) : 2 ** fishRev); // Dalgıç maskesi: 1, 1, 2, 4... balık
 function setFish(n) { fish = Math.max(0, n); store.set(KEY_FISH, fish); }
 // balık farmı olmasın: uçuşun ilk FISH_MIN_M metresinde balık çıkmaz (aç-kap uçuşlar kazanmaz), uçuşlardan günde en çok FISH_DAY balık
 const FISH_MIN_M = 700, FISH_DAY = 2, KEY_FISHDAY = 'simit-martisi-fishday';
