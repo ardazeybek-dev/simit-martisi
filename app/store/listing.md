@@ -112,7 +112,7 @@ Grab your simit! 🥯
 - Kategori: Oyun.
 - Şiddet: **Hayır** (kuş engellere çarpar, kan ya da yaralanma yok; çizgi film tarzı çarpışma).
 - Korku, cinsellik, küfür, uyuşturucu, alkol, tütün, kumar: **Hayır**.
-- Kullanıcılar arası iletişim: **Hayır** (sohbet yok). Oyuncu adları sıralamada görünür → "Kullanıcılar içerik paylaşabilir mi?" sorusuna **Evet, yalnızca oyuncu adı**. Adlarda şu an küfür süzgeci yok.
+- Kullanıcılar arası iletişim: **Hayır** (sohbet yok). Oyuncu adları sıralamada görünür → "Kullanıcılar içerik paylaşabilir mi?" sorusuna **Evet, yalnızca oyuncu adı**. Adlar küfür süzgecinden geçer (sunucuda `sm_bad`, oyunda `net.js`).
 - Dijital ürün satın alma: **Hayır** (oyun içi simitler gerçek parayla alınmaz).
 - Konum paylaşımı: **Hayır**.
 - Beklenen sonuç: PEGI 3 / ESRB Everyone / USK 0. App Store yaş: 4+.
