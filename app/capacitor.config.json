@@ -3,5 +3,12 @@
   "appName": "Simit Martısı",
   "webDir": "www",
   "backgroundColor": "#1c1a3a",
-  "android": { "allowMixedContent": false }
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "initialViewportFitValueHint": "cover"
+    }
+  }
 }
