@@ -346,6 +346,12 @@ begin
     elsif l.k is not null then
       insert into daily_claims (k, last, streak) values (vk, l.last, l.streak) on conflict do nothing;
     end if;
+  elsif p_last = today - 1 then
+    -- dünkü alım sunucuya ulaşmadıysa (5 sn zaman aşımı, kopan bağlantı) istemci ödülü yalnız cihaza yazar; ertesi gün seri 1'e düşüyordu.
+    -- Cihaz "dün aldım, seri X" der, sunucu X-1'de ve evvelsi günde kalmışsa ve oyuncunun dün sunucuda uçuşu varsa dünkü alım sayılır
+    update daily_claims d set last = p_last, streak = p_streak
+     where d.k = vk and d.last = today - 2 and p_streak = d.streak + 1
+       and exists (select 1 from runs r where r.player_id = p_id and (r.started_at at time zone 'Europe/Istanbul')::date = today - 1);
   end if;
   return daily_k(vk, p_act);
 end $$;
