@@ -203,7 +203,7 @@ npx cap open ios                      # on the Mac: archive and upload from Xcod
 - `app/native.js`: Android back button (pause in flight, close the open panel, else send the app to the background) and pause when the app leaves the screen.
 - Release signing reads `app/android/keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`); it and the `.jks` are never committed.
 - Icons and splash: `app/assets/` (square, opaque 1024 icon; Android adaptive background scaled to 85% so the wing tips stay inside the mask), regenerate with `npx capacitor-assets generate --android --ios`.
-- Version: `versionCode`/`versionName` in `app/android/app/build.gradle`; raise `versionCode` on every Play upload.
+- Version: `build.py` copies the game's `app-version` into `versionName` (`build.gradle`) and `package.json`; raise `versionCode` in `app/android/app/build.gradle` by hand on every Play upload.
 - Privacy policy: `docs/gizlilik.html` (live at `/gizlilik.html`).
 
 ## Project structure

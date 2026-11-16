@@ -3562,10 +3562,20 @@ function setSrvDaily(r) {
   srvDaily = { ready: !!r.ready, streak: srvN(r), lost: r.lost || 0, day: dayKey() };
   if (!r.ready) store.set(KEY_DAILY, { last: dayKey(), streak: srvN(r) }); // yerel kayıt da sunucuya uysun
 }
-const peekDaily = () => dailyRpc('peek').then(r => { if (srvOk(r)) { setSrvDaily(r); if (state === 'title') renderMenuBadges(); } });
-peekDaily();
-// uygulamaya dönünce: sunucu saati tazelenir (uykuda sayaç durabilir), gün döndüyse günlük ödül de yenilenir
-document.addEventListener('visibilitychange', () => { if (!document.hidden) peekDaily(); });
+let lastPeek = 0;
+const peekDaily = () => { lastPeek = Date.now(); return dailyRpc('peek').then(r => { if (srvOk(r)) { setSrvDaily(r); fixFuture(); if (state === 'title') renderMenuBadges(); } }); };
+peekDaily().finally(() => countVisit()); // giriş günü sunucu saati sorulduktan sonra sayılır
+// uygulamaya dönünce (10 dakikadan uzun aradan sonra): sunucu saati tazelenir, gün döndüyse günlük ödül de yenilenir
+document.addEventListener('visibilitychange', () => { if (!document.hidden && Math.abs(Date.now() - lastPeek) > 6e5) peekDaily(); });
+// sunucu saati gelince: telefon saati ileri alınıp kaydedilmiş günler en çok yarına çekilir. Yanlış kurulmuş saat günlük hakları
+// (çark, görev, balık/mağaza sınırı, günün uçuşu, giriş) haftalarca kilitlemesin; ileri alarak alınan hak yine bugünden ve yarından düşer
+function fixFuture() {
+  const t = new Date(nowMs()); t.setDate(t.getDate() + 1); const tm = dayKey(t), far = k => !!k && daysAgo(k) < -1;
+  for (const [key, f] of [[KEY_DAYRUN, 'day'], [KEY_FISHDAY, 'day'], [KEY_SHOPDAY, 'day'], [KEY_DAILY, 'last']]) { const o = store.get(key, null); if (o && far(o[f])) { o[f] = tm; store.set(key, o); } }
+  if (far(store.get(KEY_FREESPIN, ''))) store.set(KEY_FREESPIN, tm);
+  if (far(misLv.day)) { misLv.day = tm; store.set(KEY_MISLV, misLv); }
+  if (far(visit.last)) { visit.last = tm; store.set(KEY_VISIT, visit); }
+}
 function dailyState() {
   if (srvDaily && srvDaily.day === dayKey()) return { ready: srvDaily.ready, streak: srvDaily.streak, lost: srvDaily.ready ? srvDaily.lost : 0 };
   const s = store.get(KEY_DAILY, {}) || {}, today = dayKey(), y = new Date(nowMs()); y.setDate(y.getDate() - 1);
@@ -3737,7 +3747,7 @@ function spinWheel(pay) {
 // Kazanılan rozet, Rozetler sekmesine bakılana dek menüde sayılır ve ızgarada parlar.
 const KEY_VISIT = 'simit-martisi-visit';
 const visit = Object.assign({ last: '', streak: 0, best: 0, days: 0 }, store.get(KEY_VISIT, {}) || {});
-{ // bugünün girişi: dün de girildiyse seri uzar, yoksa 1'den başlar
+function countVisit() { // bugünün girişi: dün de girildiyse seri uzar, yoksa 1'den başlar (peekDaily sonrası: sunucu saatiyle)
   const today = dayKey(), y = new Date(nowMs()); y.setDate(y.getDate() - 1);
   if (visit.last !== today && !ahead(visit.last)) { visit.streak = visit.last === dayKey(y) ? visit.streak + 1 : 1; visit.days++; visit.best = Math.max(visit.best, visit.streak); visit.last = today; store.set(KEY_VISIT, visit); }
 }

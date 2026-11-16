@@ -16,8 +16,9 @@ export const netOn = () => !LOCAL && !!(SB_URL && SB_KEY);
 const REJECT = { rejected: true };
 // güvenilir saat: sunucu cevabının Date başlığı + telefon saatinden bağımsız sayaç (performance.now). Telefonun saati ileri alınınca
 // günlük haklar (bedava çark, günlük sınırlar) yenilenmesin. Sunucuya hiç ulaşılamadıysa telefonun saati kullanılır
-let srvAt = 0, perfAt = 0;
-export const nowMs = () => (srvAt ? srvAt + (performance.now() - perfAt) : Date.now());
+// performance.now telefon uykudayken durur: geçen süre ikisinin büyüğü (uykudan sonra gün yine döner; saati ileri alıp geri çekmeyi main.js ahead() yakalar)
+let srvAt = 0, perfAt = 0, dateAt = 0;
+export const nowMs = () => (srvAt ? srvAt + Math.max(performance.now() - perfAt, Date.now() - dateAt) : Date.now());
 async function rpc(fn, args) {
   if (!netOn()) return null;
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000);
@@ -27,7 +28,7 @@ async function rpc(fn, args) {
       headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify(args),
     });
-    const sd = Date.parse(res.headers.get('Date') || ''); if (sd) { srvAt = sd + 500; perfAt = performance.now(); } // başlık saniyeye yuvarlı: ortası
+    const sd = Date.parse(res.headers.get('Date') || ''); if (sd) { srvAt = sd + 500; perfAt = performance.now(); dateAt = Date.now(); } // başlık saniyeye yuvarlı: ortası
     if (!res.ok) return res.status >= 400 && res.status < 500 ? REJECT : null;
     return await res.json();
   } catch (e) { return null; } finally { clearTimeout(t); }

@@ -1,11 +1,12 @@
 // ---------------- sıralama: yerel taraf ----------------
 // Asıl tablo sunucuda (net.js, supabase/schema.sql). Burada: bayrak çizimi ve cihazdaki haftalık en iyi kaydı.
 import { store } from './util.js';
+import { nowMs } from './net.js';
 
 const KEY = 'simit-martisi-week';
 const DAY = 864e5;
 // pazartesi 00:00 (yerel) başlayan hafta; anahtar o pazartesinin tarihi
-export function week(now = Date.now()) {
+export function week(now = nowMs()) { // sunucu saati (net.js weekKey ile aynı saat)
   const d = new Date(now); d.setHours(0, 0, 0, 0);
   const start = d.getTime() - ((d.getDay() + 6) % 7) * DAY, end = start + 7 * DAY;
   const s = new Date(start);

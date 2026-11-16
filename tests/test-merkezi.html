@@ -53,6 +53,15 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Hata turu 2 · 16 Kasım', id: 'yanlis-saat', t: '⏰ Yanlış ileri saat günlük hakları haftalarca kilitlemiyor', look: [
+      'Telefonun saatini 1 ay ileri al, oyunu aç, bedava çarkı çevir; saati düzelt, internet açıkken oyunu yeniden aç: çark bugün ve yarın kapalı, ertesi gün yine bedava (eskiden 1 ay kapalı kalıyordu).',
+      'Gece uygulama arka plandayken telefon uyusun; sabah internetsiz aç: günlük ödül ve çark yeni güne geçmiş olmalı.',
+      'Saati her gün 1 gün ileri alıp açmak artık "art arda gir" başarımını büyütmüyor (internet açıkken giriş günü sunucu saatiyle sayılır).'],
+    links: [['Oyun', '/']] },
+  { g: 'Hata turu 2 · 16 Kasım', id: 'geri-tusu-2', t: '📱 Uygulama: geri tuşu onay ve hediye penceresinde', look: [
+      'Mağazada bir şeye dokun, "Satın al" onayı açıkken geri tuşuna bas: yalnız onay kapanır, mağaza açık kalır.',
+      'Hediye/haftalık ödül penceresinde geri tuşu ödülü alıp pencereyi kapatır (eskiden hiçbir şey olmuyordu).'],
+    links: [] },
   { g: 'Günlük seri · 16 Kasım', id: 'seri-buyur', t: '🔥 Günlük seri 7. günden sonra da büyüyor', look: [
       'Ödüller → Günlük ödül: kartlar 8-14 diye yazar, üstte kırmızı "🔥 13 gün seri" görünür, 14. kart (80 simit + balık) seçili.',
       'Al de: 80 simit ve 1 balık gelir. Ertesi gün kartlar 15-21 olur, ödül yine 10 simitten başlar (ekonomi aynı).',

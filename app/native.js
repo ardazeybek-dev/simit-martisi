@@ -16,7 +16,8 @@
     if (g.state === 'play' || g.state === 'countdown') { esc(); return; }        // uçuşta: duraklat
     if (g.mapView && g.mapView.on) { esc(); return; }                            // harita
     if (g.busy) {                                                                // açık panel ya da gardırop
-      var open = document.querySelector('.modal:not(.hidden) [id^="close"], .modal:not(.hidden) #skipName');
+      var open = document.querySelector('#shopAsk:not(.hidden) #shopNo') ||      // satın alma onayı: önce o kapanır
+        document.querySelector('.modal:not(.hidden) [id^="close"], .modal:not(.hidden) #skipName, #giftPanel:not(.hidden) #giftTake'); // hediye: Al
       if (open) open.click(); else esc();
       return;
     }
