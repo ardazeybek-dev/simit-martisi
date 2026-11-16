@@ -1260,3 +1260,15 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
   #worldMap .map-card.pop { animation-name: mapPopL; }
 }
 @keyframes mapPopL { from { transform: scale(.94); } to { transform: scale(1); } }
+
+/* gardırop: arkadan/önden düğmesi ve set şeridi */
+.ward-turn { position: fixed; z-index: 3; top: calc(12px + env(safe-area-inset-top)); right: 12px; width: auto; height: 40px; padding: 0 12px; gap: 6px; grid-auto-flow: column; color: #fff; font: 700 14px/1 inherit; font-family: inherit; }
+.ward-turn svg { width: 18px; height: 18px; transition: transform .35s; }
+.ward-turn.back svg { transform: scaleX(-1); }
+.ward-set { position: fixed; z-index: 3; left: 12px; top: calc(16px + env(safe-area-inset-top)); max-width: calc(100vw - 150px); padding: 6px 14px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 700; font-size: 13.5px; color: #fff; background: rgba(30, 6, 18, .45); border: 1px solid rgba(255, 255, 255, .18); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.ward-set .n { opacity: .75; font-weight: 600; }
+.ward-set { transform-origin: left center; }
+.ward-set.done { color: #3a2208; background: linear-gradient(180deg, #ffe08a, #f2b437); border-color: #fff3c4; box-shadow: 0 4px 16px rgba(242, 180, 55, .45); }
+.ward-set.pop { animation: setPop .5s ease-out; }
+@keyframes setPop { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }

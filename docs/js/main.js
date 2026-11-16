@@ -5,7 +5,7 @@ import { CITIES, cityOf } from './cities.js';
 import { pickWeather, weatherOk, setWeatherFx, updateWeatherFx } from './weather.js';
 import { initShipLights, addShipLights, tickShipLights, tickLamps } from './shiplights.js';
 import { syncBatches, goldMat, makeGull, RIVAL_POP, setKiteGlow, flapGull, makeSimit, makePerson, ferryGeo, FERRY_TYPES, pickFerryType, MAST, FLAG, flagMat, makeKite, BUOY, makeChevron, makeSimitBoat, makeSimitPiece, makeFishingBoat, makeSailboat, makeYacht, makeCruise, cargoGeo, tankerGeo, animCrowd, makeMaiden, BENCH, DOLPHIN, BRIDGE, BRIDGE_Y, bridgeMat, ROD_TIP, FISHERS, FLINE, flineMat, BOBBER, FISH, BIN, BIN_LID, CRATES, ROPE, CAT, SALON_LEN, SALON_GAP, SALON_TOP, salonGeo, glassMat, makePowerUp, makeShieldOrb, POWER, ICON_SVG, DECK, GEO, COSTUMES, COSTUME_SVG, dressGull, paintGull, PIER, LIGHTHOUSE, makeStopGate, warmPeople, setBait, TITLE_SETS, SIMITCI_LOOK, makeSimitCart, makeSimitStand, makePirateShip, PIRATE_GATE, PIRATE_GAP, makeFalls, makeDiveSite, makeWindmill, CUP_JIB, fallsMat, BEACH_COLS, umbrellaGeo, SUNBED, makeBeach, makeRegattaBoat, REGATTA_COLS, REGATTA_BOX, MARK, BALLOONS, BALLOON_COLS, KORDON, MARINA, FLAMINGO, FLAMINGO_FLY, flamingoWing, shoalGeo, SPEEDBOAT, chuteGeo, ROPE_UNIT, ropeMat, PENNANT, makeCarFerry, FERRY_GATE, FERRY_GAP, bridge15Geo, cradleGeo, rope15Geo, BR15_RZ, CRADLE_HW, ROPE15_HW, truvaGeo, TRUVA_LEGS, TRUVA_LEG_R, TRUVA_TOP, WAVE_GATE, WAVE_GAP, makeWave, telLineGeo, cabinGeo, basketGeo, TEL_Y, TEL_SLOPE, TEL_HANG, TEL_PX, BASKET_Y, HORON_LEN, HORON_DECK, horonBoatGeo, horonDancerGeo, MENDIL_ARM, makeHoronThrower, makeKemenceci, KEMENCE, girgirGeo, GIRGIR_RING, hamsiGeo, BANDIRMA_GATE, BANDIRMA_GAP, BANDIRMA_DECK, makeBandirma, deltaBird, reedbedGeo, IRMAK_LEN, riverBankGeo, driftGeo, VINC_PX, VINC_Y, VINC_JIB, CONT_Y, CONT_HOOK, vincGeo, trolleyGeo, containerGeo, CONT_COLS, makeDocker, turtleGeo, TURTLE_FLIP, hivesGeo, HONEY, BEE, gliderGeo, MAVNA_DECK, MAVNA_GATE, MAVNA_GAP, makeMavna, makeKule, KULE_H, KULE_QR, KULE_RING_TEX, KULE_CHASE_TEX, kuleRingMat, kuleLedMat, runwayGeo, RUNWAY_LEN, RUNWAY_X, planeGeo, PLANE_LEN, PLANE_EXH, planeGlowMat, PLANE_GLOW, kaleGeo, kaleFadeMats, KALE_HZ, KALE_FLOOR, KALE_TOP, KALE_MERLON, KALE_GATE, KALE_T, colGeo, colonnadeGeo, COL_FALL, COL_SLOT, COL_SLOTS, COL_X, COL_R, COL_PIV, COL_FL, NAR_COLS, narBoatGeo, crateStackGeo, citrusRingGeo, NAR_LOOKS } from './models.js';
-import { chunks, flats, sparkle, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
+import { chunks, flats, sparkle, sparkPts, puff, updateSpeedLines, updateFx, clearFx, popText } from './fx.js';
 import { audio, sfx } from './audio.js';
 import { map, bindMapInput, mapDraw, mapHome, mapZoom, buildCities, mapSelect, mapState, mapReveal, buildFar } from './worldmap.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
@@ -181,6 +181,17 @@ const PERKS = { crown: 'Altın simit %20 daha sık çıkar', simitcrown: 'Simit 
   fisher: 'Balık yakalama şansı +%25', buoy: 'Açlık %20 yavaş bastırır', pirate: 'Altın simitler %33 daha değerli',
   ari: 'Mıknatıs daha sık çıkar', snorkel: 'Dirilmek yarı balık ister', medal: 'Rekorda cüzdan bonusu +%25', cini: '2x Puan +%12 süre' };
 // aynı şeyi iyileştiren parçalar (açlık, üşüme, görev ödülü) toplanmaz: giyililerin en güçlüsü işler
+// kostüm setleri: üç parçası birlikte giyilince simit puanı +%10. Her sette bir şapka var: aynı anda tek set tamamlanır
+const SETS = [
+  { name: 'Kış seti', ids: ['beanie', 'scarf', 'ice'] },
+  { name: 'Beyefendi seti', ids: ['tophat', 'bowtie', 'mustache'] },
+  { name: 'İstanbul seti', ids: ['fes', 'nazar', 'cini'] },
+  { name: 'Denizci seti', ids: ['captain', 'buoy', 'snorkel'] },
+  { name: 'Altın seti', ids: ['crown', 'medal', 'golden'] },
+];
+const SET_PERK = 'Simit puanı +%10';
+const setOf = ids => SETS.find(st => st.ids.every(id => ids.includes(id)));
+const setOn = () => { try { return !!setOf(look.on); } catch (e) { return false; } };
 const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } };
 const comboT0 = () => COMBO_T * (perk('hearts') ? 1.08 : 1); // Kalpli gözlük: kombo süresi +%8
 const PW_PERK = { magnet: 'captain', tea: 'chef', shield: 'glasses', double: 'cini' }; // bu kostümler o gücü +%12 uzatır (Güneş gözlüğü kalkanı +%10) // açılışta look henüz yoksa (dünya üretimi) özellik yok
@@ -2695,7 +2706,7 @@ function showTitle() {
   renderMissions($('titleMis')); renderMenuBadges(); renderRouteMap(); renderRank();
   show('missionsPanel', false); show('achPanel', false); show('dailyPanel', false); show('upPanel', false); show('boardPanel', false); show('profilePanel', false); show('dayRunPanel', false); show('roadPanel', false); show('shopPanel', false);
   ui.powers.textContent = '';
-  dressing = false; show('wardrobe', false); if (cosSel) { cosSel = null; applyLook(); }
+  dressing = false; show('wardrobe', false); show('wardSet', false); if (cosSel) { cosSel = null; applyLook(); }
   if (mapping) { mapping = false; map.on = false; show('worldMap', false); }
   $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish);
   show('title'); show('over', false); show('pause', false); show('hud', false); show('settings', false); show('countdown', false);
@@ -3033,6 +3044,20 @@ function bank() {
 function applyLook(ids = look.on) {
   for (const c of COSTUMES) if (outfit[c.id]) outfit[c.id].visible = ids.includes(c.id);
   paintGull(gull, COSTUMES.find(c => c.slot === 'body' && ids.includes(c.id))?.id || 'player');
+  try { if (dressing) renderSet(ids); } catch (e) {} // açılışta applyLook, dressing tanımlanmadan çalışır
+}
+// set şeridi: en az iki parçası takılı olan set; tamamsa altın, değilse eksik parçayı söyler
+let setShown = '';
+function renderSet(ids) {
+  const el = $('wardSet'), best = SETS.map(st => [st, st.ids.filter(id => ids.includes(id)).length]).sort((a, b) => b[1] - a[1])[0];
+  if (!best || best[1] < 2) { show('wardSet', false); setShown = ''; return; }
+  const [st, n] = best, done = n === st.ids.length, miss = st.ids.find(id => !ids.includes(id));
+  el.innerHTML = done ? `✨ ${esc(tr(st.name))} · ${esc(tr(SET_PERK))}`
+    : `${esc(tr(st.name))} ${fmt(n)}/${fmt(st.ids.length)} <span class="n">· ${esc(tr(COSTUMES.find(c => c.id === miss).name))}</span>`;
+  el.classList.toggle('done', done); show('wardSet');
+  const key = done ? st.name : '';
+  if (key && key !== setShown) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); sfx.setDone(); }
+  setShown = key;
 }
 const slotOf = id => COSTUMES.find(x => x.id === id).slot;
 const withItem = (ids, c) => ids.filter(id => slotOf(id) !== c.slot).concat(c.id); // aynı yuvada (baş, göz, boyun...) tek parça
@@ -3053,7 +3078,7 @@ function openWardrobe() {
   if (state !== 'title') return;
   dressing = true; cosSel = null; $('wardNote').textContent = '';
   for (const id of ['missionsPanel', 'achPanel', 'dailyPanel', 'upPanel', 'boardPanel', 'profilePanel', 'settings', 'dayRunPanel', 'roadPanel', 'shopPanel', 'giftPanel']) show(id, false);
-  renderWardrobe(); show('title', false); show('wardrobe'); podEnter();
+  renderWardrobe(); show('title', false); show('wardrobe'); podEnter(); setShown = setOf(look.on)?.name || ''; renderSet(look.on); // açılışta ses yok
 }
 function reloadKeep() { try { sessionStorage.setItem('simit-martisi-keepw', weather); } catch (e) {} location.reload(); }
 // dünya haritası (worldmap.js): başlıkta şehir adına dokununca açılır; şehir seçimi buradan
@@ -3198,8 +3223,8 @@ function pickCostume(c) {
   cosSel = c.id;
   if (look.fresh.includes(c.id)) { look.fresh = look.fresh.filter(x => x !== c.id); store.set(KEY_LOOK, look); }
   applyLook(look.on.includes(c.id) ? look.on : withItem(look.on, c));
-  sfx.click(); flapBurst = 1;
-  sparkle(gull.position, 12, 0xffe7a8, 3, 0.45, 0.25);
+  if (look.on.includes(c.id)) sfx.click(); else { sfx.wear(c.slot, c.id); podSpark(c, 16, 3); }
+  flapBurst = 1;
   const own = look.owned.includes(c.id);
   $('wardNote').textContent = PERKS[c.id] ? `★ ${tr(PERKS[c.id])}` : ''; // özellik varsa yazar
   renderWardrobe();
@@ -3217,8 +3242,8 @@ function costumeAction() {
   } else if (look.on.includes(c.id)) {
     look.on = look.on.filter(id => id !== c.id); sfx.click();
   } else {
-    look.on = withItem(look.on, c); sfx.power();
-    sparkle(gull.position, 24, 0xffe7a8, 4, 0.6, 0.3);
+    look.on = withItem(look.on, c); sfx.chime();
+    podSpark(c, 26, 4);
   }
   store.set(KEY_LOOK, look); applyLook(); flapBurst = 1;
   renderWardrobe();
@@ -3228,7 +3253,7 @@ function buyCostume(c) {
   if (look.owned.includes(c.id) || wallet < price) return;
   wallet -= price; look.owned.push(c.id); store.set(KEY_WALLET, wallet); sfx.record(); vibrate([20, 30, 20]); cosLock = performance.now() + 400; cosLockId = c.id;
   look.on = withItem(look.on, c);
-  sparkle(gull.position, 40, 0xffd35a, 6, 0.8, 0.35);
+  podSpark(c, 40, 5);
   $('wardNote').textContent = '';
   store.set(KEY_LOOK, look); applyLook(); flapBurst = 1;
   renderWardrobe(); $('titleWallet').textContent = walletTxt();
@@ -4141,6 +4166,7 @@ onBtn('saveStreak', () => askStreak());
 onBtn('closeWheel', () => { show('dailyPanel', false); $('titleWallet').textContent = walletTxt(); $('titleFish').textContent = fmt(fish); renderMenuBadges(); });
 onBtn('closeWardrobe', () => closeWardrobe());
 onBtn('cosAct', () => costumeAction());
+onBtn('wardTurn', () => { pod.goal = pod.goal === 0 ? Math.PI : 0; turnLabel(); }); // arkadan: uçuştaki gibi sırtı görünür
 onBtn('pauseBtn', () => pause());
 onBtn('resumeBtn', () => resume());
 // duraklatmadan çıkış uçuşu bitirir: skor sıralamaya gider, simitler cüzdana, görevler sayılır (eskiden hepsi kayboluyordu)
@@ -4270,7 +4296,7 @@ function padTick() {
 // Kostüm paneli açıkken dünya çizilmez: martı ayrı bir sahnede, gün batımında Boğaz'a bakan ahşap bir iskele babasının üstünde durur.
 // Kendi kendine yavaşça döner; parmak/fare ile sürüklenince elle çevrilir, bırakınca savrulup yavaşlar.
 // Oyun mantığı martıyı dünyadaki yerinde sürmeye devam eder; her karede o yer saklanır, çizimden sonra geri konur.
-const pod = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 0.1, 120), on: false, parent: null, yaw: 0.6, vel: 0.55, drag: -1, dx: 0, lx: 0, idle: 99, // idle: parmak kalkalı kaç sn oldu
+const pod = { scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, 1, 0.1, 120), on: false, parent: null, yaw: 0.6, vel: 0.55, drag: -1, dx: 0, lx: 0, idle: 99, goal: null, // goal: düğmeyle istenen yön (0 arkası, π önü) // idle: parmak kalkalı kaç sn oldu
  
   home: { p: new THREE.Vector3(), q: new THREE.Quaternion() }, box: new THREE.Box3(), size: new THREE.Vector3(), ctr: new THREE.Vector3(), f: { ok: false, cx: 0, cz: 0, my: 0 } };
 const _podB = new THREE.Box3(), _podS = new THREE.Vector3(), _podC = new THREE.Vector3();
@@ -4346,15 +4372,24 @@ pod.cam.layers.enable(1); // toplu çizime alınmış parçalar (models.js syncB
 // sürükleyerek döndürme: panelin dışında basılan parmak/fare martıyı çevirir
 {
   const el = $('wardrobe');
-  el.addEventListener('pointerdown', e => { if (!dressing || isUi(e) || pod.drag >= 0) return; pod.drag = e.pointerId; pod.lx = e.clientX; pod.dx = 0; pod.vel = 0; try { el.setPointerCapture(e.pointerId); } catch (_) {} });
+  el.addEventListener('pointerdown', e => { if (!dressing || isUi(e) || pod.drag >= 0) return; pod.goal = null; turnLabel(); pod.drag = e.pointerId; pod.lx = e.clientX; pod.dx = 0; pod.vel = 0; try { el.setPointerCapture(e.pointerId); } catch (_) {} });
   el.addEventListener('pointermove', e => { if (e.pointerId !== pod.drag) return; pod.dx += e.clientX - pod.lx; pod.lx = e.clientX; });
   const up = e => { if (e.pointerId === pod.drag) { pod.drag = -1; pod.idle = 0; } };
   el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
 }
 function podEnter() {
-  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6; pod.vel = 0.55; pod.drag = -1; pod.idle = 99; pod.f.ok = false;
+  pod.on = true; pod.parent = gull.parent; pod.yaw = 0.6; pod.vel = 0.55; pod.drag = -1; pod.idle = 99; pod.goal = null; turnLabel(); pod.f.ok = false;
   pod.home.p.copy(gull.position); pod.home.q.copy(gull.quaternion);
 }
+// martının dönmemiş hâline göre yuvanın yüksekliği: parıltı parçanın çıktığı yerden saçılır
+const POD_SPK_Y = { head: 0.86, eyes: 0.72, face: 0.6, neck: 0.5, body: 0.55 };
+const cosColor = id => parseInt((COSTUME_SVG[id].match(/fill="#([0-9a-f]{6})"/i) || [0, 'ffe7a8'])[1], 16); // simgenin ilk rengi
+function podSpark(c, n, speed) {
+  if (!pod.on) return sparkle(gull.position, n, cosColor(c.id), speed, 0.6, 0.3);
+  sparkle(new THREE.Vector3(0, pod.size.y * POD_SPK_Y[c.slot], 0), n, cosColor(c.id), speed, 0.65, 0.35);
+  sparkle(new THREE.Vector3(0, pod.size.y * POD_SPK_Y[c.slot], 0), Math.round(n / 3), 0xfff6d8, speed * 0.7, 0.5, 0.25);
+}
+function turnLabel() { const b = $('wardTurn'); if (!b) return; const back = pod.goal === 0; b.classList.toggle('back', back); $('wardTurnT').textContent = tr(back ? 'Önden' : 'Arkadan'); }
 function podRestore() { // karenin başında: martı dünyadaki yerine döner, oyun mantığı onu oradan sürer
   gull.position.copy(pod.home.p); gull.quaternion.copy(pod.home.q);
   if (gull.parent !== pod.parent && pod.parent) pod.parent.add(gull);
@@ -4370,9 +4405,14 @@ function podDraw(dt) {
     const k = 7 / Math.max(innerWidth, 1000), dy = pod.dx * k; pod.dx = 0; pod.yaw += dy;
     pod.vel = THREE.MathUtils.lerp(pod.vel, dt > 0 ? THREE.MathUtils.clamp(dy / dt, -5, 5) : 0, 0.25);
   } else { // bırakınca savrulma söner, martı durur; 3 sn dokunulmazsa yavaşça hızlanıp kendi dönüşüne geçer
-    pod.idle += dt;
-    pod.vel = pod.idle < 3 ? damp(pod.vel, 0, 2.5, dt) : damp(pod.vel, 0.55, 0.7, dt);
-    pod.yaw += pod.vel * dt;
+    if (pod.goal !== null) { // düğme: en kısa yoldan istenen yöne döner ve orada durur
+      const tg = pod.goal + Math.PI * 2 * Math.round((pod.yaw - pod.goal) / (Math.PI * 2));
+      pod.yaw = damp(pod.yaw, tg, 5, dt); pod.vel = 0; pod.idle = 0;
+    } else {
+      pod.idle += dt;
+      pod.vel = pod.idle < 3 ? damp(pod.vel, 0, 2.5, dt) : damp(pod.vel, 0.55, 0.7, dt);
+      pod.yaw += pod.vel * dt;
+    }
   }
   // çerçeve martının dönmemiş hâlinden ölçülür ve yumuşatılır: döndükçe kutu değişip ekran zıplamasın
   gull.position.set(0, 0, 0); gull.rotation.set(0, 0, 0);
@@ -4397,7 +4437,7 @@ function podDraw(dt) {
   cam.position.set(0, H * 0.55 + d * 0.1, d); cam.lookAt(0, H * 0.48, 0); // neredeyse yandan: ufuk ve karşı kıyı görünsün
   if (land) cam.setViewOffset(w, h, w * 0.24, 0, w, h); else cam.setViewOffset(w, h, 0, h * 0.4, w, h); // dikeyde martı yukarıda; podyum küçük olduğundan altındaki büyük kutular martıya yakın durur
   cam.updateProjectionMatrix();
-  renderer.render(pod.scene, cam);
+  pod.scene.add(sparkPts); renderer.render(pod.scene, cam); scene.add(sparkPts); // giyme parıltısı podyumda da görünsün
   // cam kutular martının ayağının altında (podyumun önünde); dikeyde alttaki panelin üstüne binmez
   const sl = $('wardSlots'), card = sl.nextElementSibling;
   _podC.set(0, -0.75, 1.15).project(cam); // podyumun ön alt kenarı: kutular onun altından başlar, podyuma değmez
@@ -4975,7 +5015,7 @@ function coinFly(gold, sel = '.sub .ico', icon = 'i-simit') {
 }
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = comboT0(); bestCombo = Math.max(bestCombo, combo);
-  const m = mult() * (pw.double > 0 ? 2 : 1) * (perk('fes') ? 1.04 : 1) * (perk('pink') ? 1.05 : 1); // Fes +%4, Pembe tüy +%5 simit puanı (mesafe puanına dokunmaz)
+  const m = mult() * (pw.double > 0 ? 2 : 1) * (perk('fes') ? 1.04 : 1) * (perk('pink') ? 1.05 : 1) * (setOn() ? 1.1 : 1); // Fes +%4, Pembe tüy +%5, tamam set +%10 simit puanı (mesafe puanına dokunmaz)
   // simit parçası (atılan, çöpten çıkan) çeyrek simittir: puanın ve cüzdana katkısının dörtte biri
   const q = (s.piece && !s.gold ? 0.25 : 1) * (ruleOn('giant') ? 2 : 1), base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
   points += gain; simitCount += q; countMission('simitTotal', q);

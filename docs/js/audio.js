@@ -146,6 +146,17 @@ export const sfx = {
   topple() { hiss(1.3, 0.22, 260, 'lowpass', 0, 0.8); tone('sine', 70, 1.1, 0.06, { f1: 40 }); }, // devrilen taşın uğultusu
   shiver() { for (let i = 0; i < 3; i++) tone('triangle', 520 - i * 40, 0.06, 0.04, { when: i * 0.07 }); },
   click() { tone('triangle', 1200, 0.05, 0.07); },
+  // kostüm giyme: parçanın türüne göre kısa ses (şapka "pop", gözlük parıltı, boyun/yüz zil, tüy ışıltı); birkaç parçanın kendi sesi var
+  wear(slot, id) {
+    if (id === 'ari') { tone('sawtooth', 205, 0.45, 0.035, { f1: 245, filter: 900 }); tone('sawtooth', 212, 0.4, 0.025, { f1: 236, filter: 800, when: 0.03 }); } // vızz
+    else if (id === 'medal') { tone('sine', 2637, 0.3, 0.05); tone('sine', 3951, 0.22, 0.025, { when: 0.01 }); } // madalya çınlaması
+    else if (id === 'crown' || id === 'golden' || id === 'simitcrown') { [0, 4, 7, 12].forEach((k, i) => tone('triangle', 880 * Math.pow(2, k / 12), 0.2, 0.07, { when: i * 0.05 })); hiss(0.25, 0.04, 6000, 'highpass', 0.05); }
+    else if (slot === 'head') { tone('sine', 520, 0.12, 0.1, { f1: 900 }); tone('triangle', 1320, 0.1, 0.04, { when: 0.07 }); }
+    else if (slot === 'eyes') { tone('sine', 2093, 0.16, 0.05); tone('sine', 2637, 0.14, 0.035, { when: 0.06 }); hiss(0.06, 0.03, 8000, 'highpass', 0.04); }
+    else if (slot === 'body') { sweep(0.55, 0.08, 900, 5200, 0, 1.6); [0, 5, 9, 12].forEach((k, i) => tone('sine', 660 * Math.pow(2, k / 12), 0.18, 0.05, { when: 0.05 + i * 0.06 })); }
+    else [0, 4, 7].forEach((k, i) => tone('triangle', 1046 * Math.pow(2, k / 12), 0.12, 0.05, { when: i * 0.045 })); // boyun, yüz
+  },
+  setDone() { [0, 4, 7, 12, 16, 19].forEach((k, i) => tone('triangle', 659 * Math.pow(2, k / 12), 0.24, 0.06, { when: i * 0.06 })); hiss(0.4, 0.05, 6500, 'highpass', 0.1); }, // set tamamlandı
   record() { [0, 4, 7, 12, 7, 12, 16].forEach((s, i) => tone('square', 523 * Math.pow(2, s / 12), 0.16, 0.05, { when: i * 0.09, filter: 2600 })); },
   count() { tone('triangle', 740, 0.08, 0.08); },
   go() { tone('triangle', 1110, 0.18, 0.1); },

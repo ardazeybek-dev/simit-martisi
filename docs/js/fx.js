@@ -69,7 +69,7 @@ const spGeo = new THREE.BufferGeometry();
 spGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(SPK * 3), 3).setUsage(THREE.DynamicDrawUsage));
 spGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(SPK * 3), 3).setUsage(THREE.DynamicDrawUsage));
 const spMat = new THREE.PointsMaterial({ size: 0.55, map: glowTex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: true }); // fog: true şart: viraj bükmesi USE_FOG ile derlenir, yoksa altın simidin kıvılcımları virajda simitten kopar
-const sparkPts = new THREE.Points(spGeo, spMat); sparkPts.frustumCulled = false; scene.add(sparkPts);
+export const sparkPts = new THREE.Points(spGeo, spMat); sparkPts.frustumCulled = false; scene.add(sparkPts);
 const sparks = [];
 const _sc = new THREE.Color();
 export function sparkle(pos, n, color = 0xffe08a, speed = 4, life = 0.7, spread = 0.2) {

@@ -13,7 +13,7 @@ for (const p of [path.join(NPM, '@playwright/cli/node_modules/playwright'), path
 const ROOT = path.join(__dirname, '..'), JS = path.join(ROOT, 'docs/js');
 const PORT = +process.env.PORT || 8765;
 const SHOT = process.argv[2] ? path.resolve(process.argv[2]) : '';
-const WEAR = ['ari', 'snorkel', 'medal', 'cini'];
+const WEAR = ['fes', 'nazar', 'cini', 'snorkel']; // the Istanbul set is complete, plus the diving mask
 const SUITS = ['durum', 'kurye', 'taksi']; // full-body suits are modelled at gull size, not grown
 const read = f => fs.readFileSync(path.join(JS, f), 'utf8');
 const fail = [];
@@ -73,6 +73,19 @@ const up = () => new Promise(res => { const r = http.get(`http://localhost:${POR
     const tiles = await page.evaluate(() => [...document.querySelectorAll('#costumes button')].map(b => ({ svg: !!b.querySelector('svg'), txt: b.textContent })));
     if (!tiles.length || tiles.some(t => !t.svg || /undefined/.test(t.txt))) fail.push('wardrobe tile without icon/name: ' + JSON.stringify(tiles.filter(t => !t.svg || /undefined/.test(t.txt))));
     console.log(`- wardrobe: ${tiles.length} tiles in the open tab`);
+    const set = await page.evaluate(() => { const e = document.getElementById('wardSet'); return { on: !e.classList.contains('hidden'), done: e.classList.contains('done'), t: e.textContent }; });
+    console.log('- set strip: ' + set.t);
+    if (!set.on || !set.done || !/İstanbul/.test(set.t)) fail.push('set strip wrong: ' + JSON.stringify(set));
+    // back view button: the gull turns its back to the camera (yaw 0) and the label switches
+    await page.click('#wardTurn'); await page.waitForTimeout(1800);
+    const turn = await page.evaluate(() => ({ yaw: window.__game.podYaw, t: document.getElementById('wardTurnT').textContent }));
+    const off = Math.abs(Math.atan2(Math.sin(turn.yaw), Math.cos(turn.yaw)));
+    console.log(`- back view: yaw off by ${off.toFixed(3)} rad, button says "${turn.t}"`);
+    if (off > 0.05 || turn.t !== 'Önden') fail.push('back view button: ' + JSON.stringify(turn));
+    // try on a piece: the sparkle must be drawn on the podium (it used to stay in the hidden world scene)
+    await page.evaluate(() => document.querySelector('#wardTabs button[data-tab="sapka"]').click()); await page.waitForTimeout(300);
+    await page.evaluate(() => [...document.querySelectorAll('#costumes button')].find(b => !b.classList.contains('on') && b.querySelector('svg')).click());
+    await page.waitForTimeout(120);
     if (SHOT) { await page.screenshot({ path: SHOT }); console.log('- screenshot ' + SHOT); }
     await page.evaluate(() => window.__game.closeWardrobe());
     await page.evaluate(() => window.__game.startGame());
