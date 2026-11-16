@@ -179,7 +179,8 @@ export function tickShipLights(dt, scene, camera, renderer, weather, gz) {
       if (l.ref) _p.copy(l.ref.position).applyMatrix4(_m); else _p.set(l.x, l.y, l.z).applyMatrix4(_m);
       const kk = l.k === 7 ? kLed : k; if (!kk) continue;
       // kameraya çok yaklaşan lamba (gemiden ayrılırken yanından geçenler) koca bir leke olup birden sönmesin: yaklaştıkça yumuşakça söner
-      const nf = Math.min(1, Math.max(0, (cam.z - _p.z - 1) / 5)); // martıyı geçtikten sonra da ~7 m yanık kalır if (nf <= 0) continue;
+      const nf = Math.min(1, Math.max(0, (cam.z - _p.z - 1) / 5)); // martıyı geçtikten sonra da ~7 m yanık kalır
+      if (nf <= 0) continue; // sönmüş lamba yer tutmasın (bu satır yorumun içine kaymıştı)
       const d = _p.distanceTo(cam), f = Math.min(1, Math.max(0, (far - d) / (far - near)));
       if (f <= 0) continue;
       const tt = time * l.r;
