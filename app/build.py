@@ -57,13 +57,18 @@ def main():
     (OUT / "style.css").write_text(FONT_CSS + (DOCS / "style.css").read_text("utf-8"), "utf-8")
     (OUT / "index.html").write_text(patch_html((DOCS / "index.html").read_text("utf-8")), "utf-8")
     check_urls(OUT)
-    # mağaza sürüm adı = oyunun sürümü (index.html app-version); versionCode elle artırılır
+    # mağaza sürüm adı = oyunun sürümü (index.html app-version); versionCode ondan türer (3.11.1 → 31101), her sürümde büyür
     ver = re.search(r'name="app-version" content="([^"]+)"', (DOCS / "index.html").read_text("utf-8")).group(1)
-    for f, pat, rep in ((ROOT / "app" / "android" / "app" / "build.gradle", r'versionName "[^"]*"', f'versionName "{ver}"'),
+    major, minor, patch = (int(x) for x in ver.split("."))
+    assert minor < 100 and patch < 100, ver
+    code = major * 10000 + minor * 100 + patch
+    gradle = ROOT / "app" / "android" / "app" / "build.gradle"
+    for f, pat, rep in ((gradle, r'versionName "[^"]*"', f'versionName "{ver}"'),
+                        (gradle, r'versionCode \d+', f'versionCode {code}'),
                         (ROOT / "app" / "package.json", r'"version": "[^"]*"', f'"version": "{ver}"')):
         s = f.read_text("utf-8"); n = re.sub(pat, rep, s, count=1)
         if n != s: f.write_text(n, "utf-8")
-    print(f"version {ver}")
+    print(f"version {ver} (versionCode {code})")
     files = [p for p in OUT.rglob("*") if p.is_file()]
     print(f"app/www: {len(files)} files, {sum(p.stat().st_size for p in files) / 1024:.0f} KB")
 
