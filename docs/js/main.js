@@ -1888,7 +1888,7 @@ function spawnFerry() {
     for (const [a, b] of [[-3.9, tx - SALON_EDGE_G], [tx + SALON_EDGE_G, 3.9]]) obstacle((a + b) / 2, sz, (b - a) / 2, SALON_LEN / 2, SALON_TOP, 'cama');
     for (let z = sz - SALON_LEN / 2 - 1; z < sz + SALON_LEN / 2 + 2; z += 2) blocked.push({ x: 0, z, r: 4.6 });
     for (let z = sz + SALON_LEN / 2 - 1.5; z > sz - SALON_LEN / 2; z -= 2.6) addSimit(x0 + tx, FLY_Y, zc + z, goldRoll(0.06));
-    salon = { tx, sz, noTail: Math.random() < 0.2 }; // 10 salonlu vapurdan 2'sinde salondan sonra (pruvaya doğru) baca yok
+    salon = { tx, sz, noTail: Math.random() < 0.4 }; // 10 salonlu vapurdan 4'ünde salondan sonra (pruvaya doğru) baca yok (Arda: 8/10 çok sıkıştırıyordu, 6/10)
   }
   // bacalar arası en az ~0,3 sn uçuş (hızla büyür): bir yandan öbür yana kıvrılacak zaman kalsın. Sığmayan baca konmaz;
   // rastgele kaydırma bu payı yemez (eskiden ±3 m kayınca bacalar 0,1 sn arayla, hatta üst üste geliyordu)
@@ -1914,10 +1914,10 @@ function spawnFerry() {
     const stuck = EDGE - (Math.abs(cx) + ft.hw) < 0.9; // küpeşteyle arası martı sığmayacak kadar dar: baca küpeşteye yapışık durur (görüntü kurala uysun)
     if (stuck) cx = (Math.sign(cx) || 1) * (EDGE - ft.hw);
     if (salon && Math.abs(cz - salon.sz) < SALON_LEN / 2 + 7) continue; // bacalar salondan uzak: geçide hizalanacak yer kalsın
-    if (salon && salon.noTail && cz < salon.sz) continue; // salondan çıkınca hemen baca: 10'da 2 vapurda olmaz
+    if (salon && salon.noTail && cz < salon.sz) continue; // salondan çıkınca hemen baca: 10'da 4 vapurda olmaz
     putChim(cx, cz, stuck);
   }
-  // salondan sonra baca: 10 salonlu vapurdan 8'inde (yer varsa). Rastgele dizilişte oraya baca düşmediyse geçidin yanına yapışık bir baca konur: çıkan martı ortaya kıvrılır
+  // salondan sonra baca: 10 salonlu vapurdan 6'sında (yer varsa). Rastgele dizilişte oraya baca düşmediyse geçidin yanına yapışık bir baca konur: çıkan martı ortaya kıvrılır
   if (salon && !salon.noTail && !chims.some(ch => ch.z - zc < salon.sz - SALON_LEN / 2 - 2)) {
     const cz = salon.sz - SALON_LEN / 2 - 7 - rand(0, 2);
     if (cz > -L / 2 + 6) putChim(Math.sign(salon.tx) * (EDGE - ft.hw), cz, true);
