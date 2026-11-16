@@ -53,6 +53,17 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Yeni kostümler · 16 Kasım', id: 'kostum-4', t: '🐝 4 yeni kostüm: Arıcı şapkası, Dalgıç maskesi, Altın madalya, Çini martı', look: [
+      'Gardırop → Şapka: Arıcı şapkası (1090), tepesinde arı, kenarından koyu tül sarkıyor. Özelliği: Muğla arılarında %40 geç sokulursun.',
+      'Gardırop → Kıyafet: Dalgıç maskesi (1180, zıplayan balık %20 sık) ve Altın madalya (1995, rekor kırınca cüzdan bonusu +%25).',
+      'Gardırop → Deri: Çini martı (3270): kobalt kanat, sırtta kırmızı laleler; 2x Puan gücü %12 uzun sürer.',
+      'Dili değiştir (ör. English, 日本語): adlar ve ★ özellik yazısı çevrilmiş olmalı.'],
+    links: [['Oyun', '/'], ['Muğla (arılar hemen)', '/?ari']] },
+  { g: 'Yeni kostümler · 16 Kasım', id: 'ozellik-duzen', t: '★ Kostüm özellikleri düzeltildi', look: [
+      'Korsan şapkası artık "Altın simitler %33 daha değerli" yazıyor (eskiden "+1 simit" diyordu, gerçekte çok daha azdı).',
+      'Balıkçı şapkası "Balık yakalama şansı +%25" (gerçek etkisi buydu, +%10 yazıyordu).',
+      'Aynı işi yapan parçalar toplanmıyor, en güçlüsü işliyor: Atkı + Bere + Buz martısı birlikte = %50 yavaş üşüme (eskiden %70); Can simidi + Dürüm = %25 yavaş acıkma (eskiden %40); Kurye + Simitçi tablası = görev ödülü +%12.'],
+    links: [['Oyun', '/']] },
   { g: 'Hata turu 2 · 16 Kasım', id: 'yanlis-saat', t: '⏰ Yanlış ileri saat günlük hakları haftalarca kilitlemiyor', look: [
       'Telefonun saatini 1 ay ileri al, oyunu aç, bedava çarkı çevir; saati düzelt, internet açıkken oyunu yeniden aç: çark bugün ve yarın kapalı, ertesi gün yine bedava (eskiden 1 ay kapalı kalıyordu).',
       'Gece uygulama arka plandayken telefon uyusun; sabah internetsiz aç: günlük ödül ve çark yeni güne geçmiş olmalı.',
