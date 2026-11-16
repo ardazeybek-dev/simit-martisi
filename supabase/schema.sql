@@ -261,7 +261,7 @@ alter table daily_claims enable row level security;
 -- günlük ödül: oyuncu kimliğine (players.id + secret) bağlı. Eskiden IP+tarayıcı anahtarıydı: telefonda IP değişince
 -- seri 1. güne düşüyordu, aynı ağdaki aynı model telefonlar da tek kişi sayılıyordu. Kimliği olmayan (kaydı henüz
 -- gitmemiş) istemci için eski anahtar sürer; kimlikle ilk gelişte eski kayıt kimliğe kopyalanır (seri kaybolmaz).
-create or replace function daily_k(vk text, p_act text) returns json
+create or replace function daily_k0(vk text, p_act text) returns json
 language plpgsql security definer set search_path = public as $$
 declare
   today date := (now() at time zone 'Europe/Istanbul')::date;
@@ -271,8 +271,8 @@ begin
   select * into r from daily_claims d where d.k = vk;
   if found then
     ago := today - r.last;
-    nxt := case when ago = 1 then r.streak % 7 + 1 else 1 end;
-    if ago between 2 and 3 and r.streak between 2 and 6 then lost := r.streak; end if;
+    nxt := case when ago = 1 then r.streak + 1 else 1 end; -- seri 7'den sonra da büyür; ödül istemcide haftalık döner
+    if ago between 2 and 3 and r.streak >= 2 then lost := r.streak; end if;
   else nxt := 1; end if;
 
   if p_act = 'claim' then
@@ -284,12 +284,26 @@ begin
   elsif p_act = 'save' then
     if lost > 0 then
       update daily_claims d set last = today - 1, streak = lost where d.k = vk;
-      return json_build_object('saved', true, 'ready', true, 'streak', lost % 7 + 1, 'lost', 0);
+      return json_build_object('saved', true, 'ready', true, 'streak', lost + 1, 'lost', 0);
     end if;
     return json_build_object('saved', false, 'ready', not found or r.last < today, 'streak', case when r.last = today then r.streak else nxt end, 'lost', 0);
   end if;
   if found and r.last = today then return json_build_object('ready', false, 'streak', r.streak); end if;
   return json_build_object('ready', true, 'streak', nxt, 'lost', lost);
+end $$;
+revoke all on function daily_k0(text, text) from public, anon, authenticated;
+
+-- seri 7'den sonra da büyür: gerçek sayı 'n' alanında. 'streak' eski istemciler için 1-7 arası döner
+-- (eski istemci ödülü DAILY[streak-1] diye okur; 8 gelirse cüzdanı bozulurdu)
+create or replace function daily_k(vk text, p_act text) returns json
+language plpgsql security definer set search_path = public as $$
+declare j jsonb := daily_k0(vk, p_act)::jsonb; n int;
+begin
+  if jsonb_typeof(j->'streak') = 'number' then
+    n := (j->>'streak')::int;
+    j := j || jsonb_build_object('n', n, 'streak', (greatest(n, 1) - 1) % 7 + 1);
+  end if;
+  return j::json;
 end $$;
 revoke all on function daily_k(text, text) from public, anon, authenticated;
 
@@ -314,7 +328,7 @@ grant execute on function daily(text) to anon, authenticated;
 
 -- kimliğe geçiş anı: kimlik satırı yoksa eski IP satırıyla cihazdaki kayıt (p_last, p_streak) kıyaslanır, daha yenisi taşınır.
 -- IP alımla geçiş arasında değiştiyse eski satır bulunamıyordu; cihaz kaydı seriyi kurtarır. Cihaz kaydı yalnız son 3 gün ve
--- 1-7 seri ise sayılır, yalnızca satır ilk açılırken bir kez (sahte kayıt için site verisi, yani cüzdan da silinmeli).
+-- 1-3660 seri ise sayılır, yalnızca satır ilk açılırken bir kez (sahte kayıt için site verisi, yani cüzdan da silinmeli).
 create or replace function daily(p_act text, p_id uuid, p_secret uuid, p_last date, p_streak int) returns json
 language plpgsql security definer set search_path = public as $$
 declare
@@ -326,7 +340,7 @@ begin
   if p_id is null or not exists (select 1 from players where id = p_id and secret = p_secret) then return daily_k(lk, p_act); end if;
   if not exists (select 1 from daily_claims where k = vk) then
     select * into l from daily_claims d where d.k = lk;
-    if p_last between today - 3 and today and p_streak between 1 and 7
+    if p_last between today - 3 and today and p_streak between 1 and 3660
        and (l.k is null or p_last > l.last or (p_last = l.last and p_streak > l.streak)) then
       insert into daily_claims (k, last, streak) values (vk, p_last, p_streak) on conflict do nothing;
     elsif l.k is not null then

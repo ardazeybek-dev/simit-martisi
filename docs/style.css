@@ -946,6 +946,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #dailyPanel .day.got b::after { content: none; }
 #dailyPanel .day.got::after { content: ""; position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%;
   background: var(--card-b, #4a1a12); box-shadow: inset 0 3px 3px rgba(0, 0, 0, .6), 0 0 0 2px rgba(75, 36, 22, .25); }
+#dailyPanel .streak-count { margin: 0 0 4px; text-align: center; font-weight: 800; font-size: 16px; color: #ffd36b; text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
 #dailyPanel .day.now { border: 2.5px dashed #c4302b; background: rgba(196, 48, 43, .07); animation: playpulse 1.6s ease-in-out infinite; }
 #dailyPanel .day.now span { color: #c4302b; }
 #dailyPanel .day:last-child { background: linear-gradient(100deg, rgba(207, 146, 19, .16), transparent 70%); }

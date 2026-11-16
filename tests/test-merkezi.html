@@ -53,6 +53,11 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Günlük seri · 16 Kasım', id: 'seri-buyur', t: '🔥 Günlük seri 7. günden sonra da büyüyor', look: [
+      'Ödüller → Günlük ödül: kartlar 8-14 diye yazar, üstte kırmızı "🔥 13 gün seri" görünür, 14. kart (80 simit + balık) seçili.',
+      'Al de: 80 simit ve 1 balık gelir. Ertesi gün kartlar 15-21 olur, ödül yine 10 simitten başlar (ekonomi aynı).',
+      'Kopuk seri linkinde "Seriyi kurtar: Gün 10 · 50" çıkar; kurtarıp alınca seri 10 olur, 20 simit gelir.'],
+    links: [['13 günlük seri', '/?seri=13'], ['7 günlük seri', '/?seri=7'], ['Kopuk 9 günlük seri', '/?kopuk=9']] },
   { g: 'Telefon hata turu · 16 Kasım', id: 'gecen-gemiler', t: '🚢 Geçen gemiler martının şeridinden geçmiyor', look: [
       'Herhangi bir şehirde 1-2 km uç: yolcusuz, tek bacalı vapur, şilep ya da tanker artık martının şeridine girmiyor; hepsi uzakta, dış şeritte seyrediyor.',
       'Martı bir geminin gövdesine girip kameranın gemi içinde kalması (koyu ekran) ve yelkenlinin vapurun içinden geçmesi olmamalı.'],

@@ -56,6 +56,7 @@ if (!store.get('simit-martisi-route-v2', false)) {
 }
 if (QS.has('hepsi')) for (const c of CITIES) store.set(c.routeKey, c.stops.length - 1); // deneme (yalnız yerelde, test merkezi): ?hepsi → bütün şehirler açık (cüzdana dokunmaz)
 if (QS.has('hediye')) { store.set('simit-martisi-gift', 3000); store.set('simit-martisi-gift-fish', 3); store.set('simit-martisi-gift-week', 1); } // deneme (yalnız yerelde): ?hediye → ödül toplama ekranı (1. sıra örneği)
+if (QS.has('seri') || QS.has('kopuk')) { const k = QS.has('kopuk'), d = new Date(); d.setDate(d.getDate() - (k ? 3 : 1)); store.set(KEY_DAILY, { last: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`, streak: Math.max(1, +QS.get(k ? 'kopuk' : 'seri') || 1) }); } // deneme (yalnız yerelde): ?seri=13 → dün 13. gün alınmış; ?kopuk=9 → 9 günlük seri 2 gün önce kopmuş
 const REC_TEST = QS.has('rekor'); // deneme (yalnız yerelde): ?rekor → her uçuş sonunda rekor ekranı çıkar, gerçek rekora dokunmaz
 const AT_M = Math.max(0, +QS.get('at') || 0); // deneme: ?at=10000 → uçuş o metreden başlar (warpTo; tekrar uçunca yine oradan)
 let srvDaily = null, dailyBusy = false; // günlük ödülün sunucu durumu (dailyState)
@@ -3546,6 +3547,8 @@ function openAch() { if (state !== 'title') return; renderAch(); achTab('ach'); 
 // ---------------- günlük ödül ----------------
 // Her gün bir kez; üst üste gelinen günler ödülü büyütür, bir gün kaçarsa seri baştan başlar.
 const DAILY = [10, 15, 20, 30, 40, 50, 80];
+// seri sayısı 7'den sonra da büyür (8, 9, 15…); ödül haftalık döner: n. günün ödülü DAILY[(n-1)%7], 7., 14., 21. gün balık
+const dayPos = n => (Math.max(1, n) - 1) % DAILY.length; // 0..6
 const dayKey = (d = new Date(nowMs())) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 // seri kurtarma: en çok iki gün kaçırıldıysa kopan seri simitle geri alınır (STREAK_SAVE)
 const STREAK_SAVE = 50;
@@ -3554,9 +3557,10 @@ const daysAgo = k => { const [a, b, c] = String(k).split('-').map(Number); retur
 const ahead = k => !!k && daysAgo(k) < 0;
 // sunucu durumu (varsa) esastır: yerel kayıt silinip yeniden girilince ödül tekrar alınamasın, seri de kaybolmasın
 const srvOk = r => r && !r.rejected && typeof r.streak === 'number';
+const srvN = r => Number.isInteger(r.n) && r.n > 0 ? r.n : r.streak; // n: 7'den sonra da büyüyen seri (streak eski istemciler için 1-7 döner)
 function setSrvDaily(r) {
-  srvDaily = { ready: !!r.ready, streak: r.streak, lost: r.lost || 0, day: dayKey() };
-  if (!r.ready) store.set(KEY_DAILY, { last: dayKey(), streak: r.streak }); // yerel kayıt da sunucuya uysun
+  srvDaily = { ready: !!r.ready, streak: srvN(r), lost: r.lost || 0, day: dayKey() };
+  if (!r.ready) store.set(KEY_DAILY, { last: dayKey(), streak: srvN(r) }); // yerel kayıt da sunucuya uysun
 }
 const peekDaily = () => dailyRpc('peek').then(r => { if (srvOk(r)) { setSrvDaily(r); if (state === 'title') renderMenuBadges(); } });
 peekDaily();
@@ -3566,10 +3570,10 @@ function dailyState() {
   if (srvDaily && srvDaily.day === dayKey()) return { ready: srvDaily.ready, streak: srvDaily.streak, lost: srvDaily.ready ? srvDaily.lost : 0 };
   const s = store.get(KEY_DAILY, {}) || {}, today = dayKey(), y = new Date(nowMs()); y.setDate(y.getDate() - 1);
   if (s.last === today || ahead(s.last)) return { ready: false, streak: s.streak || 1 };
-  const streak = s.last === dayKey(y) ? (s.streak || 0) % DAILY.length + 1 : 1;
-  // kopan seri: 1-2 gün kaçmış ve seri 2-6 gündeyse (7. günden sonra seri zaten 1. güne döner, kurtaracak bir şey yok)
+  const streak = s.last === dayKey(y) ? (s.streak || 0) + 1 : 1;
+  // kopan seri: 1-2 gün kaçmış ve seri en az 2 gündeyse simitle kurtarılır
   const ago = daysAgo(s.last), n = s.streak || 0;
-  return { ready: true, streak, lost: ago >= 2 && ago <= 3 && n >= 2 && n < DAILY.length ? n : 0 };
+  return { ready: true, streak, lost: ago >= 2 && ago <= 3 && n >= 2 ? n : 0 };
 }
 function askStreak() {
   const d = dailyState();
@@ -3593,18 +3597,19 @@ async function saveStreak() {
 }
 function openDaily() {
   if (state !== 'title') return;
-  const d = dailyState(), box = $('days'); box.textContent = '';
+  const d = dailyState(), box = $('days'), pos = dayPos(d.streak) + 1, wk = d.streak - pos; box.textContent = ''; // wk: bu haftadan önceki gün sayısı (kart etiketleri 8-14, 15-21…)
   DAILY.forEach((r, i) => {
     const el = document.createElement('div');
-    el.className = 'day' + (i + 1 < d.streak || (!d.ready && i + 1 === d.streak) ? ' got' : '') + (d.ready && i + 1 === d.streak ? ' now' : '');
+    el.className = 'day' + (i + 1 < pos || (!d.ready && i + 1 === pos) ? ' got' : '') + (d.ready && i + 1 === pos ? ' now' : '');
     el.innerHTML = `<span></span><b>${fmt(r)}<svg class="ico"><use href="#i-simit"/></svg></b>` + (i === DAILY.length - 1 ? '<b class="day-fish">+1<svg class="ico"><use href="#i-fish"/></svg></b>' : '');
-    el.querySelector('span').textContent = `${tr('Gün')} ${i + 1}`;
+    el.querySelector('span').textContent = `${tr('Gün')} ${fmt(wk + i + 1)}`;
     box.appendChild(el);
   });
-  $('dailyNote').textContent = '';
+  $('dailyNote').textContent = ''; const sc = d.ready ? d.streak - 1 : d.streak; // şu ana kadar alınmış ardışık gün
+  $('streakCount').textContent = sc >= 2 ? `🔥 ${tr('{n} gün seri').replace('{n}', fmt(sc))}` : ''; show('streakCount', sc >= 2);
   $('claimBtn').textContent = tr(d.ready ? 'Al' : 'Tamam');
   show('saveStreak', !!d.lost);
-  if (d.lost) $('saveStreak').innerHTML = `${tr('Seriyi kurtar')}: ${tr('Gün')} ${fmt(d.lost % DAILY.length + 1)} · <svg class="ico"><use href="#i-simit"/></svg>${fmt(STREAK_SAVE)}`;
+  if (d.lost) $('saveStreak').innerHTML = `${tr('Seriyi kurtar')}: ${tr('Gün')} ${fmt(d.lost + 1)} · <svg class="ico"><use href="#i-simit"/></svg>${fmt(STREAK_SAVE)}`;
   dailyTab(!d.ready && freeSpin() ? 'wheel' : 'daily'); $('dlWallet').textContent = fmt(wallet); $('dlFish').textContent = fmt(fish); // yalnız çark bekliyorsa doğrudan çarka
   show('dailyPanel');
 }
@@ -3616,15 +3621,15 @@ async function claimDaily() {
     const r = await dailyRpc('claim');
     dailyBusy = false; $('claimBtn').disabled = false;
     if (srvOk(r)) {
-      setSrvDaily({ ready: false, streak: r.streak });
+      setSrvDaily({ ready: false, streak: r.streak, n: r.n });
       if (!r.claimed) { openDaily(); $('dailyNote').textContent = tr('Bugünkü ödülü zaten aldın'); renderMenuBadges(); return; }
-      d.streak = r.streak;
+      d.streak = srvN(r);
     }
   }
   if (d.ready) {
-    const r = DAILY[d.streak - 1];
+    const r = DAILY[dayPos(d.streak)];
     wallet += r; store.set(KEY_WALLET, wallet); store.set(KEY_DAILY, { last: dayKey(), streak: d.streak }); srvDaily = null; // sunucuya ulaşılamadıysa eski 'hazır' bilgisi ödülü tekrar verdirmesin
-    if (d.streak === DAILY.length) { setFish(fish + 1); $('titleFish').textContent = fmt(fish); } // haftanın son günü bir balık
+    if (dayPos(d.streak) === DAILY.length - 1) { setFish(fish + 1); $('titleFish').textContent = fmt(fish); } // haftanın son günü bir balık
     $('titleWallet').textContent = walletTxt(); bump($('titleWallet').parentNode);
     sfx.gold(); vibrate([20, 30, 20]);
   }
