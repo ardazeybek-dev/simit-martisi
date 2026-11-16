@@ -2376,7 +2376,7 @@ function heartGeo(r) {
 // gözlük camının merkezi ve açısı: kafa yüzeyine teğet (normal yatayda −z'den 0.9 rad dışa), merkezden 0.36 uzakta
 const EYE_X = 0.27, EYE_Y = 0.31, EYE_Z = -0.93, EYE_RY = 0.9;
 // kostümler abartılı: martının kendi ölçüsüne göre büyütülür (dönme noktası yuvasına göre: şapka kafa tepesi, gözlük göz hizası...)
-const COS_GROW = { fes: 1.95, captain: 1.75, crown: 1.95, beanie: 1.45, tray: 1.45, chef: 1.65, tophat: 1.15, simitcrown: 1.4, glasses: 1.6, hearts: 1.8, bigglasses: 1.15, mustache: 1.85, pacifier: 1.35, scarf: 1.45, bowtie: 2.1, nazar: 1.8, fisher: 1.45, buoy: 1.25, pirate: 1.3, ari: 1.35, snorkel: 1.5, medal: 1.7,
+const COS_GROW = { fes: 1.95, captain: 1.75, crown: 1.95, beanie: 1.45, tray: 1.45, chef: 1.65, tophat: 1.15, simitcrown: 1.4, glasses: 1.6, hearts: 1.8, bigglasses: 1.15, mustache: 1.85, pacifier: 1.35, scarf: 1.45, bowtie: 2.1, nazar: 1.8, fisher: 1.45, buoy: 1.25, pirate: 1.3, ari: 1.3, snorkel: 1.5, medal: 1.7,
   pink: 1.2, night: 1.2, golden: 1.2, sunset: 1.2, mint: 1.2, ice: 1.2, cini: 1.2 }; // tüy süsleri sırtın ortasından büyür
 const COS_PIVOT = { head: [0, 0.5, -0.72], eyes: [0, 0.3, -0.95], face: [0, 0.13, -1.05], neck: [0, -0.05, -0.6], body: [0, 0.25, 0.4] };
 function costumeGeo(id) {
@@ -2561,15 +2561,24 @@ function costumeGeo_(id) {
     for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3;
       k.add(new THREE.ConeGeometry(0.05, 0.16, 10), 0xffcb45, Math.sin(a) * 0.36, 0.76, -0.72 + Math.cos(a) * 0.36);
       k.add(new THREE.SphereGeometry(0.028, 8, 6), 0xe5484d, Math.sin(a) * 0.36, 0.85, -0.72 + Math.cos(a) * 0.36); }
-  } else if (id === 'ari') { // arıcı şapkası: geniş kenarlı açık bej şapka, kenardan sarkan koyu tül (dikey şeritler), tepede bir arı
-    k.add(new THREE.CylinderGeometry(0.5, 0.5, 0.03, 40), 0xf2ead2, 0, 0.5, -0.72); // kenar
-    k.add(new THREE.CylinderGeometry(0.22, 0.27, 0.22, 32), 0xf7f1de, 0, 0.62, -0.72); // tepe
-    k.add(new THREE.CylinderGeometry(0.275, 0.275, 0.05, 32), 0xc9a64a, 0, 0.535, -0.72); // bant
-    for (let i = 0; i < 18; i++) { const a = (i / 18) * Math.PI * 2; // tül: kenardan aşağı ince şeritler
-      k.add(new THREE.BoxGeometry(0.025, 0.24, 0.012), 0x3a3f36, Math.cos(a) * 0.47, 0.37, -0.72 + Math.sin(a) * 0.47, 0, -a); }
-    k.add(new THREE.TorusGeometry(0.47, 0.014, 6, 40), 0x3a3f36, 0, 0.25, -0.72, Math.PI / 2); // tülün alt halkası
-    k.add(new THREE.SphereGeometry(0.075, 12, 8), (f, y) => (Math.floor((y - 0.78) * 60) % 2 ? 0x15151a : 0xffc21e), 0, 0.8, -0.72, 0, 0, 0, 1.3, 0.9, 0.9); // arı: sarı-siyah çizgili
-    for (const s of [-1, 1]) k.add(new THREE.SphereGeometry(0.06, 8, 5), 0xf4fbff, s * 0.03, 0.88, -0.72, 0, 0, s * 0.6, 0.4, 1, 0.15); // kanatlar
+  } else if (id === 'ari') { // arıcı şapkası: krem hasır şapka, bal sarısı bant ve ondan sızan bal damlaları, önde petek, etrafında üç tombul arı
+    k.add(new THREE.CylinderGeometry(0.5, 0.52, 0.035, 44), (f, y) => (f % 4 < 2 ? 0xf3e7c4 : 0xe8d8ad), 0, 0.5, -0.72); // hasır kenar
+    k.add(new THREE.TorusGeometry(0.51, 0.022, 6, 44), 0xd9c38c, 0, 0.5, -0.72, Math.PI / 2); // kenar bordürü
+    k.add(new THREE.CylinderGeometry(0.21, 0.27, 0.24, 32), 0xf7efd6, 0, 0.63, -0.72); // tepe
+    k.add(new THREE.SphereGeometry(0.21, 28, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0xf7efd6, 0, 0.75, -0.72, 0, 0, 0, 1, 0.3, 1);
+    k.add(new THREE.CylinderGeometry(0.272, 0.272, 0.07, 32), 0xf2a81d, 0, 0.545, -0.72); // bal bandı
+    for (let i = 0; i < 9; i++) { const ang = (i / 9) * Math.PI * 2 + 0.3, h = 0.05 + (i % 3) * 0.03; // banttan sızan damlalar
+      k.add(new THREE.CapsuleGeometry(0.022, h, 4, 8), 0xf2a81d, Math.cos(ang) * 0.272, 0.51 - h / 2, -0.72 + Math.sin(ang) * 0.272); }
+    for (const [dx, dy] of [[0, 0], [-0.07, 0.04], [0.07, 0.04], [-0.07, -0.04], [0.07, -0.04], [0, 0.08]]) // önde bal peteği
+      k.add(new THREE.CylinderGeometry(0.04, 0.04, 0.03, 6), (f) => (f < 6 ? 0xffc93a : 0xd88a10), dx, 0.65 + dy, -0.95, Math.PI / 2 - 0.15, 0, Math.PI / 2);
+    for (const [x, y, z, ry] of [[0, 0.86, -0.72, 0.4], [-0.42, 0.57, -0.5, 1.2], [0.4, 0.57, -0.92, -0.9]]) {
+      const cx = Math.cos(ry), sx = Math.sin(ry);
+      for (let j = 0; j < 4; j++) // gövde: arkadan öne dört dilim, sarı-siyah
+        k.add(new THREE.SphereGeometry(0.052 - Math.abs(j - 1.5) * 0.008, 12, 8), j % 2 ? 0x15151a : 0xffc21e, x + sx * (j - 1.5) * 0.04, y, z + cx * (j - 1.5) * 0.04);
+      k.add(new THREE.SphereGeometry(0.035, 10, 8), 0x15151a, x - sx * 0.1, y + 0.01, z - cx * 0.1); // kafa
+      k.add(new THREE.ConeGeometry(0.014, 0.05, 6), 0x15151a, x + sx * 0.1, y, z + cx * 0.1, Math.PI / 2, ry, 0); // iğne
+      for (const s2 of [-1, 1]) k.add(new THREE.SphereGeometry(0.05, 8, 5), 0xeef8ff, x + cx * s2 * 0.045, y + 0.06, z - sx * s2 * 0.045, 0, ry, s2 * 0.5, 0.45, 1, 0.12); // kanatlar
+    }
   } else if (id === 'snorkel') { // dalgıç maskesi: sarı çerçeveli açık mavi camlar, başı saran siyah kayış, yanda yukarı uzanan sarı şnorkel
     for (const s of [-1, 1]) {
       k.add(new THREE.BoxGeometry(0.21, 0.17, 0.04), 0xffc21e, s * EYE_X, EYE_Y, EYE_Z, 0, -s * EYE_RY); // çerçeve

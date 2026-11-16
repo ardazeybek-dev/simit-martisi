@@ -179,7 +179,7 @@ const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 const PERKS = { crown: 'Altın simit %20 daha sık çıkar', simitcrown: 'Simit kapma alanı %6 daha geniş', tophat: 'Güçlendirmeler +%8 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %30 yavaş üşür', golden: 'Yakaladığın simitler cüzdana +%12', kurye: 'Görev ödülleri +%10', taksi: 'Kıl payı puanı x2',
   fes: 'Simit puanı +%4', beanie: 'Karda %15 yavaş üşür', chef: 'Çay molası +%12 süre', captain: 'Mıknatıs +%12 süre', tray: 'Görev ödülleri +%12', glasses: 'Kalkan +%10 süre', hearts: 'Kombo süresi +%8', bigglasses: 'Kıl payı alanı %15 daha geniş', mustache: 'Kıl payı puanı +%20', pacifier: 'Dirilince kalkan +%20 süre', bowtie: 'Yunus bonusu +%40', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %15 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%10', ice: 'Karda %50 yavaş üşür', durum: 'Açlık %25 yavaş bastırır',
   fisher: 'Balık yakalama şansı +%25', buoy: 'Açlık %20 yavaş bastırır', pirate: 'Altın simitler %33 daha değerli',
-  ari: 'Arılar %40 geç sokar', snorkel: 'Zıplayan balık %20 sık çıkar', medal: 'Rekorda cüzdan bonusu +%25', cini: '2x Puan +%12 süre' };
+  ari: 'Mıknatıs daha sık çıkar', snorkel: 'Balık %20 daha sık çıkar', medal: 'Rekorda cüzdan bonusu +%25', cini: '2x Puan +%12 süre' };
 // aynı şeyi iyileştiren parçalar (açlık, üşüme, görev ödülü) toplanmaz: giyililerin en güçlüsü işler
 const perk = id => { try { return look.on.includes(id); } catch (e) { return false; } };
 const comboT0 = () => COMBO_T * (perk('hearts') ? 1.08 : 1); // Kalpli gözlük: kombo süresi +%8
@@ -489,7 +489,7 @@ function spawnGap(first, fixLen, quiet) {
     seedAt('gf', genN); // balık atılıp atılmamasından bağımsız: günün uçuşunda güç ve şamandıralar herkes için aynı
     if (segCount > 4 && Math.random() < 0.2) { // güçlendirme seyrek: açık suların ~%20'sinde, ilk birkaç açık suda yok (0,33 → 0,27 → 0,2: her yerde güçle dolaşılmasın)
       const z = z0 - len * 0.5;
-      const kind = pickPw(['magnet', 'double', 'shield', 'tea'].concat(perk('nazar') ? ['shield'] : [], city.id === 'rize' ? ['tea', 'tea'] : []).filter(k => pwFree(k, z) && (k !== 'shield' || -z / 2 > 1500))); // kalkan tek pay ve ilk 1,5 km'de yok (geç oyunda iki paydı) // Nazar: kalkan daha sık // Rize: çay üç pay
+      const kind = pickPw(['magnet', 'double', 'shield', 'tea'].concat(perk('nazar') ? ['shield'] : [], perk('ari') ? ['magnet'] : [], city.id === 'rize' ? ['tea', 'tea'] : []).filter(k => pwFree(k, z) && (k !== 'shield' || -z / 2 > 1500))); // kalkan tek pay ve ilk 1,5 km'de yok (geç oyunda iki paydı) // Nazar: kalkan daha sık // Rize: çay üç pay
       if (kind) {
       const x = clamp(Math.sin((z0 - z) * 0.09 + ph + 1.6) * amp, -LANE + 0.6, LANE - 0.6);
       const p = makePowerUp(kind); p.position.set(x, FLY_Y, z); scene.add(p);
@@ -1565,7 +1565,7 @@ function updateBees(dt, gz) {
     const dx = gp.x - s.x; s.x += clamp(dx, -ARI_V * dt, ARI_V * dt);
     s.y += (gp.y - s.y) * Math.min(1, dt * 3);
     if (state !== 'play') s.leave = 0.01;
-    else if ((s.c = s.dz < 0.6 && Math.abs(gp.x - s.x) < ARI_R ? s.c + dt : Math.max(0, s.c - dt * 0.5)) > ARI_C * (perk('ari') ? 1.4 : 1)) { // Arıcı şapkası: %40 geç sokar // sokar: ölüm yok, kombo biter, martı sarsılır
+    else if ((s.c = s.dz < 0.6 && Math.abs(gp.x - s.x) < ARI_R ? s.c + dt : Math.max(0, s.c - dt * 0.5)) > ARI_C) { // sokar: ölüm yok, kombo biter, martı sarsılır
       s.stung = true; s.leave = 0.01; combo = 0; comboT = 0; trauma = Math.min(1, trauma + 0.4); sfx.shiver(); vibrate(40);
       sparkle(tmp2.set(gp.x, gp.y + 0.3, gp.z), 10, 0xffc21a, 3, 0.4);
     } else if (s.t > ARI_T) { // kaçtın
