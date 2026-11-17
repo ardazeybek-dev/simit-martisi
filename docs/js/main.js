@@ -35,6 +35,34 @@ gull.scale.setScalar(0.95);
 scene.add(gull);
 const shieldOrb = makeShieldOrb(); shieldOrb.visible = false; gull.add(shieldOrb);
 const outfit = dressGull(gull);
+// sürpriz: Gece martısı giyiliyken saat gerçekten 03:xx ise gözler abartılı parlar: çekirdek, üç kat nabız atan hale, ileri ışın;
+// her biri tek InstancedMesh (gece 3 dışında görünmez, çizim çağrısı eklemez). Gövdeye bağlı: tombul kuralında da gözde kalır
+const eyeGlow = new THREE.Group(); eyeGlow.visible = false;
+{
+  const add = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false };
+  const core = new THREE.InstancedMesh(new THREE.SphereGeometry(0.07, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffe0, fog: false, toneMapped: false }), 2);
+  const halo = new THREE.InstancedMesh(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffd23a, opacity: 0.6, ...add }), 6);
+  // ışın: gözden ileri fışkıran, uca doğru genişleyen sarı hüzme (arkadan uçarken de görünsün)
+  const bg = new THREE.CylinderGeometry(0.03, 0.32, 4, 10, 1, true); bg.translate(0, 2, 0); bg.rotateX(-Math.PI / 2);
+  const beam = new THREE.InstancedMesh(bg, new THREE.MeshBasicMaterial({ color: 0xffe04a, opacity: 0.4, side: THREE.DoubleSide, ...add }), 2);
+  const m = new THREE.Matrix4(), sc = new THREE.Matrix4(), rot = new THREE.Matrix4();
+  for (const i of [0, 1]) {
+    const x = (i ? 1 : -1) * 0.19; m.makeTranslation(x, 0.28, -0.865);
+    core.setMatrixAt(i, m);
+    [1, 2.6, 4.8].forEach((k, n) => halo.setMatrixAt(i + n * 2, m.clone().multiply(sc.makeScale(k, k, k)))); // iç, orta, dev dış hale
+    beam.setMatrixAt(i, m.clone().multiply(rot.makeRotationY(-x * 0.9))); // ışınlar hafif dışa açılır
+  }
+  for (const o of [core, halo, beam]) o.frustumCulled = false;
+  halo.renderOrder = beam.renderOrder = 2;
+  eyeGlow.add(core, halo, beam); eyeGlow.userData.halo = halo; eyeGlow.userData.beam = beam; gull.userData.body.add(eyeGlow);
+}
+let eyeHourAt = -1e9, eyeHour = -1;
+function tickEyeGlow() {
+  const now = performance.now();
+  if (now - eyeHourAt > 5000) { eyeHourAt = now; eyeHour = window.__eggHour ?? new Date().getHours(); } // test: __eggHour = 3
+  eyeGlow.visible = eyeHour === 3 && gull.userData.paint === 'night';
+  if (eyeGlow.visible) { const p = Math.sin(now / 200); eyeGlow.userData.halo.material.opacity = 0.65 + 0.3 * p; eyeGlow.userData.beam.material.opacity = 0.32 + 0.2 * Math.sin(now / 90) + 0.1 * p; } // nabız + titreşen ışın
+}
 const blob = new THREE.Mesh(GEO.blob, new THREE.MeshBasicMaterial({ color: 0x0a1020, transparent: true, opacity: 0.3, depthWrite: false }));
 blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
 
@@ -3048,7 +3076,7 @@ function bank() {
 // ids: giyili olanlar; kostüm panelinde seçilen parça önizleme olarak üstüne giydirilir
 function applyLook(ids = look.on) {
   for (const c of COSTUMES) if (outfit[c.id]) outfit[c.id].visible = ids.includes(c.id);
-  paintGull(gull, COSTUMES.find(c => c.slot === 'body' && ids.includes(c.id))?.id || 'player');
+  paintGull(gull, gull.userData.paint = COSTUMES.find(c => c.slot === 'body' && ids.includes(c.id))?.id || 'player'); // paint: gece 3 gözleri (tickEyeGlow)
   try { if (dressing) renderSet(ids); } catch (e) {} // açılışta applyLook, dressing tanımlanmadan çalışır
 }
 // set şeridi: en az iki parçası takılı olan set; tamamsa altın, değilse eksik parçayı söyler
@@ -4972,6 +5000,7 @@ function frame() {
     tickPowers();
   }
 
+  tickEyeGlow();
   if (dressing) podDraw(realDt); // kostüm podyumu: dünya yerine
   else if (mapping) mapDraw(renderer, realDt, t); // dünya haritası
   else if (recS.on) recDraw(realDt); // maç sonu rekor ekranı
