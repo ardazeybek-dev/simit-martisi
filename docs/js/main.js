@@ -59,7 +59,7 @@ const eyeGlow = new THREE.Group(); eyeGlow.visible = false;
 let eyeHourAt = -1e9, eyeHour = -1;
 function tickEyeGlow() {
   const now = performance.now();
-  if (now - eyeHourAt > 5000) { eyeHourAt = now; eyeHour = window.__eggHour ?? new Date().getHours(); } // test: __eggHour = 3
+  if (now - eyeHourAt > 5000) { eyeHourAt = now; eyeHour = window.__eggHour ?? (QS.has('gece3') ? 3 : new Date().getHours()); } // test: __eggHour = 3
   eyeGlow.visible = eyeHour === 3 && gull.userData.paint === 'night';
   if (eyeGlow.visible) { const p = Math.sin(now / 200); eyeGlow.userData.halo.material.opacity = 0.65 + 0.3 * p; eyeGlow.userData.beam.material.opacity = 0.32 + 0.2 * Math.sin(now / 90) + 0.1 * p; } // nabız + titreşen ışın
 }
@@ -3076,6 +3076,7 @@ function bank() {
 // ids: giyili olanlar; kostüm panelinde seçilen parça önizleme olarak üstüne giydirilir
 function applyLook(ids = look.on) {
   for (const c of COSTUMES) if (outfit[c.id]) outfit[c.id].visible = ids.includes(c.id);
+  if (QS.has('gece3') && !ids.includes('night')) ids = withItem(ids, COSTUMES.find(c => c.id === 'night')); // deneme: kayda dokunmadan giydirir
   paintGull(gull, gull.userData.paint = COSTUMES.find(c => c.slot === 'body' && ids.includes(c.id))?.id || 'player'); // paint: gece 3 gözleri (tickEyeGlow)
   try { if (dressing) renderSet(ids); } catch (e) {} // açılışta applyLook, dressing tanımlanmadan çalışır
 }
@@ -5312,6 +5313,10 @@ setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gö
 }
 requestAnimationFrame(frame);
 
+// deneme (yalnız localhost): ?gece3 → Gece martısı giyili + saat 03 sayılır, gardırop açılır · ?amk → gardırop Deri sekmesinde açılır, A.M.K bir kez kendiliğinden fışkırır
+if (QS.has('gece3') || QS.has('amk')) {
+  const go = setInterval(() => { if (state !== 'title') return; clearInterval(go); openWardrobe(); if (QS.has('amk')) { setWardTab('deri'); setTimeout(amkBurst, 900); } }, 300);
+}
 window.__game = {
   get state() { return state; }, get podYaw() { return pod.yaw; }, get podCam() { return pod.cam.position.toArray().map(v => +v.toFixed(3)); }, get score() { return total(); }, get simits() { return simitCount; }, get z() { return gull.position.z; }, get x() { return gull.position.x; },
   get fps() { return Math.round(fpsSmooth); }, get quality() { return quality; }, get dist() { return dist; }, get combo() { return combo; }, get beachMiss() { return beachMiss; }, setCombo: n => { combo = n; comboT = comboT0(); }, get powers() { return { ...pw }; },
