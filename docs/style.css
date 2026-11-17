@@ -1272,3 +1272,11 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .ward-set.done { color: #3a2208; background: linear-gradient(180deg, #ffe08a, #f2b437); border-color: #fff3c4; box-shadow: 0 4px 16px rgba(242, 180, 55, .45); }
 .ward-set.pop { animation: setPop .5s ease-out; }
 @keyframes setPop { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+/* sürpriz: A.M.K fışkırması (gardıropta Dürüm'e 18 dokunuş) */
+.amk-egg { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; }
+.amk-egg span, .amk-egg b { position: absolute; left: 50%; top: 50%; font-weight: 800; color: #ffe14a; white-space: nowrap; text-shadow: 0 0 6px #ffd000, 0 0 18px #ffb800, 0 2px 0 #a86a00; }
+.amk-egg span { font-size: 26px; opacity: 0; animation: amkFly 2.2s cubic-bezier(.15,.7,.3,1) forwards; }
+.amk-egg b { font-size: 64px; letter-spacing: .04em; animation: amkBig 3s ease-out forwards; }
+@keyframes amkFly { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); } 12% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r)) scale(var(--s)); } }
+@keyframes amkBig { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1.25); } 25%, 70% { transform: translate(-50%, -50%) scale(1); filter: brightness(1.4); } 45% { filter: brightness(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); } }
