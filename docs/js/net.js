@@ -7,6 +7,7 @@ const SB_URL = 'https://sznwlsoyssseckgljulb.supabase.co';
 const SB_KEY = 'sb_publishable_9L0oBO1uWQKbNaGAfvBBOg_dO8bTWSS'; // publishable: istemcide durabilir
 export const KEY_PROFILE = 'simit-martisi-profile';
 const KEY_PENDING = 'simit-martisi-pending';
+const KEY_OFF = 'simit-martisi-off'; // hesabını silen cihaz: oyuncu yeniden ad girene kadar sunucuya kendiliğinden kaydolmaz
 const KEY_GIFT = 'simit-martisi-gift'; // sunucudan gelen, cüzdana henüz eklenmemiş hediye simit // gönderilemeyen skor: { week, run, score, dist, city }
 
 // yerel geliştirmede (localhost) canlı sıralamaya bağlanılmaz: test oturumları sahte oyuncu açmasın. Bağlanmak için adrese ?net=1 ekle.
@@ -78,7 +79,7 @@ export function setName(name) {
   if (!validName(n) || rudeName(n)) return false;
   if (p.name !== n) { p.name = n; p.dirty = true; edits++; }
   p.cc = p.cc || myCC();
-  store.set(KEY_PROFILE, p);
+  store.set(KEY_PROFILE, p); store.set(KEY_OFF, null); // ad girmek = sıralamaya yeniden katılmak
   sync();
   return true;
 }
@@ -110,6 +111,7 @@ async function syncOnce() {
     let p = profile();
     if (!netOn()) return false;
     if (!p.id) {
+      if (store.get(KEY_OFF, false)) return false; // silinmiş hesap açılışta/uçuş sonunda yeniden doğmasın
       const r = await rpc('register', { p_name: p.name || autoName(p), p_cc: p.cc || myCC() });
       if (r === REJECT) { save(p.name ? { name: '' } : { auto: '' }); return false; } // sunucu adı kabul etmedi: menüde yeniden sorulur
       if (!r || !r.id) return false;
@@ -254,7 +256,7 @@ export async function deleteAccount() {
     if (r === null) return 'net';
     if (r !== true && r !== false) return 'err'; // 4xx (ör. fonksiyon yok) → yereli silme, kayıt sunucuda kalır
   }
-  store.set(KEY_PROFILE, null); store.set(KEY_PENDING, null); edits++;
+  store.set(KEY_OFF, true); store.set(KEY_PROFILE, null); store.set(KEY_PENDING, null); edits++;
   return 'ok';
 }
 // dönen: 'ok' (yükleniyor) | 'net' | 'bad' (kod yanlış ya da süresi geçti)
