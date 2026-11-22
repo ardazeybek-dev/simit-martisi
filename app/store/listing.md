@@ -2,7 +2,7 @@
 
 Sınırlar: Play başlık 30, kısa açıklama 80, uzun açıklama 4000 karakter. App Store alt başlık 30, tanıtım metni 170, anahtar kelimeler 100 karakter (virgülle, boşluksuz).
 
-Kimlik `com.simitmartisi.game` · Kategori: Oyun → Arcade (App Store: Games → Arcade, ikincil Casual) · Gizlilik: https://ardazeybek-dev.github.io/simit-martisi/gizlilik.html
+Kimlik `com.simitmartisi.game` · Geliştirici: Tech Talent Space Bilgi Teknolojileri A.Ş. · Destek e-postası: ardazybk18@gmail.com · Kategori: Oyun → Arcade (App Store: Games → Arcade, ikincil Casual) · Gizlilik: https://ardazeybek-dev.github.io/simit-martisi/gizlilik.html
 
 ---
 
@@ -94,7 +94,7 @@ Grab your simit! 🥯
 
 - Kullanıcı verisi topluyor ya da paylaşıyor mu? **Evet** (topluyor; paylaşmıyor).
 - Aktarılan tüm veriler şifreleniyor mu? **Evet** (HTTPS).
-- Kullanıcılar veri silme isteğinde bulunabilir mi? **Evet**: oyun içinde Ayarlar → Profil → Hesabımı sil (anında); web bağlantısı: gizlilik sayfasının "Silme ve iletişim" bölümü (Play'in "hesap silme URL'si" alanına gizlilik sayfası adresi + `#en` yazılabilir).
+- Kullanıcılar veri silme isteğinde bulunabilir mi? **Evet**: oyun içinde Ayarlar → Profil → Hesabımı sil (anında) ya da ardazybk18@gmail.com; web bağlantısı: gizlilik sayfasının "Silme ve iletişim" bölümü (Play'in "hesap silme URL'si" alanına gizlilik sayfası adresi + `#en` yazılabilir).
 - Toplanan veri türleri:
   - **Kişisel bilgiler → Kullanıcı kimlikleri:** rastgele oyuncu kimliği ve oyuncu adı. Amaç: Uygulama işlevselliği. Zorunlu (otomatik ad verilir). Üçüncü tarafla paylaşılmaz.
   - **Uygulama etkinliği → Diğer uygulama içi işlemler:** skor, mesafe, şehir, seviye, günlük ödül serisi. Amaç: Uygulama işlevselliği. Paylaşılmaz.
