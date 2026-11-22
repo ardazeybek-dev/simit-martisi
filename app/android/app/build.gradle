@@ -7,8 +7,8 @@ android {
         applicationId "com.simitmartisi.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 31311
-        versionName "3.13.11"
+        versionCode 31312
+        versionName "3.13.12"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

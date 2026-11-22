@@ -86,6 +86,30 @@ async function main() {
     const b2 = calls.length;
     await page.evaluate(async () => { const n = await import('/js/net.js'); n.setName('Yeniden'); await n.sync(); });
     if (!fail && !calls.slice(b2).includes('register')) fail = 'saving a name did not rejoin the leaderboard';
+
+    // stale id (Android backup restored a pre-delete profile, or the write never hit the disk): the server says
+    // "unknown player" → the device forgets that id and does not re-register by itself
+    if (!fail) {
+      const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+      const c2 = [];
+      await ctx2.route(/supabase/, r => r.abort());
+      await ctx2.route('**/rest/v1/rpc/**', r => {
+        const fn = r.request().url().split('/rpc/')[1]; c2.push(fn);
+        if (fn === 'claim_gifts2') return r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'P0001', message: 'unknown player' }) });
+        r.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+      });
+      await ctx2.addInitScript(seed => { if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1'); localStorage.clear(); for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v); }, SEED);
+      const p2 = await ctx2.newPage();
+      await p2.goto(URL);
+      await p2.waitForFunction(() => window.__game, null, { timeout: 20000 });
+      await wait(3000);
+      await p2.evaluate(async () => { const n = await import('/js/net.js'); await n.sync(); await n.sync(); });
+      const st = await p2.evaluate(() => localStorage.getItem('simit-martisi-profile') + ' off=' + localStorage.getItem('simit-martisi-off'));
+      if (!c2.includes('claim_gifts2')) fail = 'stale case: claim_gifts2 never called';
+      else if (st !== 'null off=true') fail = 'stale id was kept: ' + st;
+      else if (c2.includes('register')) fail = 'stale id case re-registered: ' + c2.join(',');
+      await ctx2.close();
+    }
   } finally {
     await browser.close();
     if (server) try { execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' }); } catch (e) {}

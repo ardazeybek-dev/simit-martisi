@@ -15,6 +15,7 @@ const LOCAL = (() => { try { return /^(localhost|127\.|\[::1\])/.test(location.h
 export const netOn = () => !LOCAL && !!(SB_URL && SB_KEY);
 // null: ağ yok / sunucu cevap vermedi (sonra yeniden denenir) · REJECT: sunucu reddetti (yeniden denemenin anlamı yok)
 const REJECT = { rejected: true };
+let gone = false; // sunucu "unknown player" dedi: cihazdaki kimlik sunucuda yok (hesap silinmiş; Android yedeği ya da diske yetişmeyen kayıt eskisini geri getirmiş)
 // güvenilir saat: sunucu cevabının Date başlığı + telefon saatinden bağımsız sayaç (performance.now). Telefonun saati ileri alınınca
 // günlük haklar (bedava çark, günlük sınırlar) yenilenmesin. Sunucuya hiç ulaşılamadıysa telefonun saati kullanılır
 // performance.now telefon uykudayken durur: geçen süre ikisinin büyüğü (uykudan sonra gün yine döner; saati ileri alıp geri çekmeyi main.js ahead() yakalar)
@@ -30,7 +31,11 @@ async function rpc(fn, args) {
       body: JSON.stringify(args),
     });
     const sd = Date.parse(res.headers.get('Date') || ''); if (sd) { srvAt = sd + 500; perfAt = performance.now(); dateAt = Date.now(); } // başlık saniyeye yuvarlı: ortası
-    if (!res.ok) return res.status >= 400 && res.status < 500 ? REJECT : null;
+    if (!res.ok) {
+      if (res.status < 400 || res.status >= 500) return null;
+      try { if (/unknown player/.test((await res.json()).message || '')) gone = true; } catch (e) {}
+      return REJECT;
+    }
     return await res.json();
   } catch (e) { return null; } finally { clearTimeout(t); }
 }
@@ -145,7 +150,10 @@ async function syncOnce() {
     }
     if (!giftDone) {
       // claim_gifts2: { simit, fish, notes: ['week:N', ...] } (haftalık ödülde N = sıra)
+      gone = false;
       const g = await rpc('claim_gifts2', { p_id: p.id, p_secret: p.secret });
+      // silinmiş hesabın kimliği geri geldiyse: yerel kimlik unutulur, silinmiş sayılır (ad girince yeniden katılır); ilerleme cihazda kalır
+      if (g === REJECT && gone) { store.set(KEY_OFF, true); store.set(KEY_PROFILE, null); store.set(KEY_PENDING, null); edits++; return false; }
       if (g !== null && g !== REJECT) {
         giftDone = true;
         const s = Math.max(0, +(g && g.simit) || 0), f = Math.max(0, +(g && g.fish) || 0);
