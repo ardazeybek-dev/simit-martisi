@@ -6,7 +6,7 @@ while dodging funnels, flag masts, kites and rival gulls.
 
 **Play:** https://ardazeybek-dev.github.io/simit-martisi/ (installable, works offline after the first visit)
 
-![Title, gameplay and game-over screens](docs/preview.png)
+![Flying through Istanbul, Antalya and Rize](docs/preview.png)
 
 ## Controls
 
