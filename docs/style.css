@@ -1280,7 +1280,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .ward-set.pop { animation: setPop .5s ease-out; }
 @keyframes setPop { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
 
-/* sürpriz: A.M.K fışkırması (gardıropta Dürüm'e 18 dokunuş) */
+/* sürpriz: Ar.Me.Ka fışkırması (gardıropta Dürüm'e 18 dokunuş) */
 .amk-egg { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; }
 .amk-egg span, .amk-egg b { position: absolute; left: 50%; top: 50%; font-weight: 800; color: #ffe14a; white-space: nowrap; text-shadow: 0 0 6px #ffd000, 0 0 18px #ffb800, 0 2px 0 #a86a00; }
 .amk-egg span { font-size: 26px; opacity: 0; animation: amkFly 2.2s cubic-bezier(.15,.7,.3,1) forwards; }

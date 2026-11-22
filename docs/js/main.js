@@ -3265,7 +3265,7 @@ function pickCostume(c) {
   renderWardrobe();
   eggTap(c.id);
 }
-// sürpriz: Dürüm (çiğ köfte) kartına art arda 18 dokunuş → ekrandan sarı A.M.K yazıları fışkırır (ArdaMertKayabası).
+// sürpriz: Dürüm (çiğ köfte) kartına art arda 18 dokunuş → ekrandan sarı Ar.Me.Ka yazıları fışkırır (Arda Mert Kayabaşı; A.M.K küfür sanılırdı).
 // Başka karta dokunmak ya da 1,5 sn beklemek sayacı sıfırlar
 let eggN = 0, eggT = 0;
 function eggTap(id) {
@@ -3278,11 +3278,11 @@ function amkBurst() {
   const box = document.createElement('div'); box.id = 'amkEgg'; box.className = 'amk-egg';
   for (let i = 0; i < 34; i++) {
     const s = document.createElement('span'), a = rand(0, Math.PI * 2), d = rand(30, 62);
-    s.textContent = 'A.M.K';
+    s.textContent = 'Ar.Me.Ka';
     s.style.cssText = `--dx:${(Math.cos(a) * d).toFixed(1)}vmax;--dy:${(Math.sin(a) * d - 8).toFixed(1)}vmax;--r:${rand(-40, 40).toFixed(0)}deg;--s:${rand(0.7, 1.7).toFixed(2)};animation-delay:${rand(0, 0.5).toFixed(2)}s`;
     box.appendChild(s);
   }
-  const big = document.createElement('b'); big.textContent = 'A.M.K'; box.appendChild(big);
+  const big = document.createElement('b'); big.textContent = 'Ar.Me.Ka'; box.appendChild(big);
   $('amkEgg')?.remove(); document.body.appendChild(box);
   sfx.record(); setTimeout(() => sfx.record(), 300); vibrate([40, 30, 40, 30, 90]);
   setTimeout(() => box.remove(), 3200);
@@ -5326,7 +5326,7 @@ setTimeout(() => sync(), 1500); // açılışta bekleyen skor (yarıda kalan gö
 }
 requestAnimationFrame(frame);
 
-// deneme (yalnız localhost): ?gece3 → Gece martısı giyili + saat 03 sayılır, gardırop açılır · ?amk → gardırop Deri sekmesinde açılır, A.M.K bir kez kendiliğinden fışkırır
+// deneme (yalnız localhost): ?gece3 → Gece martısı giyili + saat 03 sayılır, gardırop açılır · ?amk → gardırop Deri sekmesinde açılır, Ar.Me.Ka bir kez kendiliğinden fışkırır
 if (QS.has('gece3') || QS.has('amk')) {
   const go = setInterval(() => { if (state !== 'title') return; clearInterval(go); openWardrobe(); if (QS.has('amk')) { setWardTab('deri'); setTimeout(amkBurst, 900); } }, 300);
 }
