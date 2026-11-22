@@ -53,6 +53,12 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Rize · 22 Kasım', id: 'ucak-itis', t: '✈️ Uçağın jet rüzgârı biraz daha güçlü iter (1,85 → 2,8)', look: [
+      'Rize'de uçak gaz açıp martı yelpazeye girince martı hissedilir ama sürüklemeden yana kaymalı (şeridin üçte biri kadar). Çok sert gelirse söyle, kısarız.'],
+    links: [['Hazır: Rize + uçak hemen', '/?city=rize&ucak&hepsi'], ['Oyun', '/']] },
+  { g: 'Mağaza hazırlığı · 22 Kasım', id: 'ayar-gizlilik', t: '🔒 Ayarlar'da da Gizlilik politikası linki', look: [
+      'Ayarlar'da Toplam oyun süresi'nin altında küçük, okunur bir link; Tamam düğmesi yerinde kalmalı (360px'te taşma yok).'],
+    links: [['Oyun (Ayarlar)', '/']] },
   { g: 'Mağaza hazırlığı · 22 Kasım', id: 'hesap-sil', t: '🗑️ Profil → Hesabımı sil + Gizlilik politikası linki', look: [
       'Ayarlar → Profil: Kapat'ın üstünde küçük "Hesabımı sil" ve "Gizlilik politikası". Hesabımı sil → açıklama + kırmızı "Evet, sil". Gizlilik linki yeni sekmede gizlilik sayfasını açar.',
       'Yerelde sunucu kapalı: kayıtlı profil varsa "Bağlantı yok" yazmalı ve hiçbir şey silinmemeli. Küçük ekranda kutu açıkken kart üstten kesilmeden kaydırılmalı.'],

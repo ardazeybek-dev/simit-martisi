@@ -1226,6 +1226,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #profilePanel .move-note { margin: 8px 0 0; font-size: 12.5px; line-height: 1.35; opacity: .75; }
 #profilePanel { justify-content: flex-start; } /* uzun kart (silme kutusu açık, küçük ekran) üstten kesilmesin, kaydırılsın */
 #profilePanel > .card { margin-block: auto; }
+#settings .set-priv { display: block; margin: 0 auto 6px; font-size: 13px; opacity: .6; color: inherit; text-align: center; }
 #profilePanel .prof-foot { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
 #profilePanel .prof-foot .link { margin-top: 2px; font-size: 13px; opacity: .6; color: inherit; }
 #profilePanel #delBox .move-note { margin: 0 0 8px; }

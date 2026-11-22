@@ -772,7 +772,7 @@ function updateSteam(dt) {
 // (jetAt; yelpazenin çizgisi şeridi verevine keser, karşı kenara doğru uzaklaşır). Simitler yelpazenin değdiği yerde karşıya savrulur. Martı kuyruğun hizasına
 // gelince frenler bırakılır: uçak pistte hızlanır, pistle hizalanır, kalkar ve denizin üstüne dönerek martının önünde tırmanır; yelpaze onunla gidip söner.
 // Ayar: JET_PUSH (en çok itiş), JET_LEN (yelpaze boyu), JET_A (bekleyişteki açı), UCAK_ACC (kalkış ivmesi), imbatZ aralığı. ?ucak → hemen gelir
-const UCAK_SOON = QS.has('ucak'), JET_PUSH = 1.85, JET_LEN = 70, JET_A = 0.35, JET_SPOOL = 1.6, UCAK_ACC = 44, UCAK_RISE = 52, PLANE_S = 1.5, JET_EXH = 1.3 * PLANE_S; // PLANE_S: uçağın ölçeği (martının yanında dev görünsün)
+const UCAK_SOON = QS.has('ucak'), JET_PUSH = 2.8, JET_LEN = 70, JET_A = 0.35, JET_SPOOL = 1.6, UCAK_ACC = 44, UCAK_RISE = 52, PLANE_S = 1.5, JET_EXH = 1.3 * PLANE_S; // PLANE_S: uçağın ölçeği (martının yanında dev görünsün)
 const _jn = new THREE.Vector3();
 function spawnUcak() {
   if (turnAhead(120)) { spawnGap(false); return; } // jet yelpazesi ve kalkış virajın içine taşmasın: uçak virajdan sonra

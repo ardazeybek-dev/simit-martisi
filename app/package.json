@@ -1,7 +1,7 @@
 {
   "name": "simit-martisi-app",
   "private": true,
-  "version": "3.13.7",
+  "version": "3.13.9",
   "description": "Store app wrapper for Simit Martısı (game files from ../docs, built by build.py)",
   "scripts": {
     "build": "python build.py",
@@ -11,6 +11,7 @@
     "@capacitor/android": "^8.6.2",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.2",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.6.2"
   },
   "devDependencies": {
