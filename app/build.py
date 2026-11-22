@@ -55,6 +55,16 @@ def main():
     shutil.copy2(VENDOR / "three.module.min.js", OUT / "js" / "three.module.min.js")
     shutil.copy2(ROOT / "app" / "native.js", OUT / "js" / "native.js")
     (OUT / "style.css").write_text(FONT_CSS + (DOCS / "style.css").read_text("utf-8"), "utf-8")
+    # uygulamanın adresi https://localhost (iOS: capacitor://localhost): oyun kendini yerel test sanmasın,
+    # yoksa sıralama/hediye/sunucu saati kapanır ve yalnız-localhost test bağlantıları açılır
+    for name, old, label in (("net.js", r"/^(localhost|127\.|\[::1\])/.test(location.hostname)", "net LOCAL"),
+                             ("main.js", r"/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)", "main QS"),
+                             ("weather.js", r"/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)", "weather FORCE")):
+        f = OUT / "js" / name
+        f.write_text(sub1(f.read_text("utf-8"), old, "false", label), "utf-8")
+    left = [p.name for p in (OUT / "js").glob("*.js") if "location.hostname" in p.read_text("utf-8")]
+    if left:
+        raise SystemExit(f"localhost check left in app copy: {left}")
     (OUT / "index.html").write_text(patch_html((DOCS / "index.html").read_text("utf-8")), "utf-8")
     check_urls(OUT)
     # mağaza sürüm adı = oyunun sürümü (index.html app-version); versionCode ondan türer (3.11.1 → 31101), her sürümde büyür
@@ -68,6 +78,12 @@ def main():
                         (ROOT / "app" / "package.json", r'"version": "[^"]*"', f'"version": "{ver}"')):
         s = f.read_text("utf-8"); n = re.sub(pat, rep, s, count=1)
         if n != s: f.write_text(n, "utf-8")
+    # iOS: aynı sürüm adı ve derleme numarası (Debug ve Release ayarlarının ikisi de)
+    pbx = ROOT / "app" / "ios" / "App" / "App.xcodeproj" / "project.pbxproj"
+    s = pbx.read_text("utf-8")
+    n = re.sub(r"MARKETING_VERSION = [^;]+;", f"MARKETING_VERSION = {ver};", s)
+    n = re.sub(r"CURRENT_PROJECT_VERSION = [^;]+;", f"CURRENT_PROJECT_VERSION = {code};", n)
+    if n != s: pbx.write_text(n, "utf-8")
     print(f"version {ver} (versionCode {code})")
     files = [p for p in OUT.rglob("*") if p.is_file()]
     print(f"app/www: {len(files)} files, {sum(p.stat().st_size for p in files) / 1024:.0f} KB")

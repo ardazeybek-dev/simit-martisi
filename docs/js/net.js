@@ -243,6 +243,20 @@ export async function makeMoveCode() {
   const r = await rpc('transfer_make', { p_id: p.id, p_secret: p.secret, p_data: data });
   return typeof r === 'string' ? r : r === null ? 'net' : 'err';
 }
+// Profil → Hesabımı sil: sunucudaki oyuncu kaydı (ad, skorlar) silinir; cihazdaki ilerleme kalır.
+// dönen: 'ok' | 'net' (bağlantı yok) | 'err'. Sunucu false derse kayıt zaten yok: yerel profil yine silinir.
+export async function deleteAccount() {
+  if (syncing) await syncing.catch(() => {});
+  const p = profile();
+  if (p.id) {
+    if (!netOn()) return 'net';
+    const r = await rpc('delete_player', { p_id: p.id, p_secret: p.secret });
+    if (r === null) return 'net';
+    if (r !== true && r !== false) return 'err'; // 4xx (ör. fonksiyon yok) → yereli silme, kayıt sunucuda kalır
+  }
+  store.set(KEY_PROFILE, null); store.set(KEY_PENDING, null); edits++;
+  return 'ok';
+}
 // dönen: 'ok' (yükleniyor) | 'net' | 'bad' (kod yanlış ya da süresi geçti)
 export async function claimMoveCode(code) {
   if (!netOn()) return 'net';

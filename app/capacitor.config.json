@@ -8,7 +8,8 @@
   },
   "plugins": {
     "SystemBars": {
-      "initialViewportFitValueHint": "cover"
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
     }
   }
 }

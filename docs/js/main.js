@@ -9,7 +9,7 @@ import { chunks, flats, sparkle, sparkPts, puff, updateSpeedLines, updateFx, cle
 import { audio, sfx } from './audio.js';
 import { map, bindMapInput, mapDraw, mapHome, mapZoom, buildCities, mapSelect, mapState, mapReveal, buildFar } from './worldmap.js';
 import { flag, recordRun, COUNTRIES } from './board.js';
-import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc, nowMs, makeMoveCode, claimMoveCode, fmtCode } from './net.js';
+import { netOn, myName, shownName, setName, setCountry, validName, rudeName, oddName, ccOf, onGift, sync, startRun, markRun, submitScore, stashScore, fetchBoard, dailyRpc, fishDayRpc, nowMs, makeMoveCode, claimMoveCode, fmtCode, deleteAccount } from './net.js';
 
 const $ = id => document.getElementById(id);
 // çeviri: js/i18n.js (window.I18N); portal kopyasında reklam köprüsü window.PF ayrıca gelir
@@ -3047,7 +3047,7 @@ function fillCountries() {
 function openProfile() {
   backTo.profilePanel = null;
   const inp = $('nameInput');
-  inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false); fillCountries(); moveReset();
+  inp.value = myName(); inp.placeholder = tr('Adını yaz'); show('nameErr', false); fillCountries(); moveReset(); delReset();
   show('profilePanel');
   setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
 }
@@ -4209,6 +4209,19 @@ async function moveGo() {
   moveNote(r === 'net' ? MOVE_NET : 'Kod yanlış ya da süresi dolmuş. Eski cihazında yeni kod al.', true); vibrate(40);
 }
 onBtn('moveGo', () => moveGo());
+const DEL_INFO = 'Sıralamadaki kaydın, skorların ve oyuncu adın sunucudan silinir. Simitlerin, kostümlerin ve ilerlemen bu cihazda kalır. Geri alınamaz.';
+let delBusy = false;
+function delNote(t, err = false) { const n = $('delNote'); n.textContent = tr(t); n.classList.toggle('err', err); }
+function delReset() { show('delBox', false); show('delGo'); $('delGo').disabled = false; delNote(DEL_INFO); }
+onBtn('delOpen', () => { const open = $('delBox').classList.contains('hidden'); delReset(); show('delBox', open); });
+onBtn('delGo', async () => {
+  if (delBusy) return;
+  delBusy = true; $('delGo').disabled = true;
+  const r = await deleteAccount();
+  delBusy = false; $('delGo').disabled = false;
+  if (r !== 'ok') { delNote(r === 'net' ? MOVE_NET : 'Silinemedi, biraz sonra yeniden dene.', true); vibrate(40); return; }
+  show('delGo', false); delNote('Hesabın silindi.'); $('nameInput').value = '';
+});
 onBtn('overNameSave', () => saveName($('overNameInput'), $('overNameErr')));
 onBtn('inviteBtn', async () => {
   const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];

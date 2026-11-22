@@ -534,3 +534,17 @@ begin
 end $$;
 revoke all on function transfer_make(uuid, uuid, jsonb), transfer_claim(text, uuid, uuid) from public;
 grant execute on function transfer_make(uuid, uuid, jsonb), transfer_claim(text, uuid, uuid) to anon, authenticated;
+
+-- Profil → Hesabımı sil (Apple 5.1.1(v), Play hesap silme politikası): oyuncu satırı gider, skorlar/haftalık skorlar/
+-- koşular/hediyeler/taşıma kodları on delete cascade ile birlikte gider; günlük seri anahtarı ayrıca silinir.
+-- Yanlış kimlik/gizli anahtar false döner (istemci yereldeki profili yine siler); hata yalnız ağ/sunucu sorunudur.
+create or replace function delete_player(p_id uuid, p_secret uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from players where id = p_id and secret = p_secret;
+  if not found then return false; end if;
+  delete from daily_claims where k = 'p:' || p_id::text;
+  return true;
+end $$;
+revoke all on function delete_player(uuid, uuid) from public;
+grant execute on function delete_player(uuid, uuid) to anon, authenticated;

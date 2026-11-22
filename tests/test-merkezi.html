@@ -53,6 +53,13 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Mağaza hazırlığı · 22 Kasım', id: 'hesap-sil', t: '🗑️ Profil → Hesabımı sil + Gizlilik politikası linki', look: [
+      'Ayarlar → Profil: Kapat'ın üstünde küçük "Hesabımı sil" ve "Gizlilik politikası". Hesabımı sil → açıklama + kırmızı "Evet, sil". Gizlilik linki yeni sekmede gizlilik sayfasını açar.',
+      'Yerelde sunucu kapalı: kayıtlı profil varsa "Bağlantı yok" yazmalı ve hiçbir şey silinmemeli. Küçük ekranda kutu açıkken kart üstten kesilmeden kaydırılmalı.'],
+    links: [['Oyun (Ayarlar → Profil)', '/']] },
+  { g: 'Mağaza hazırlığı · 22 Kasım', id: 'kivilcim-bos', t: '✨ Kıvılcım yokken boş çizim yapılmıyor (telefon için küçük kazanç)', look: [
+      'Altın simit alınca kıvılcımlar eskisi gibi çıkmalı; podyumda giyme parıltısı da görünmeli.'],
+    links: [['Oyun', '/']] },
   { g: 'Sürpriz · 17 Kasım', id: 'gece3-goz', t: '👀 Gizli sürpriz: Gece martısı + saat 03:xx → gözler abartılı parlar', look: [
       'Gece martısını giy, cihaz saati 03:00–03:59 iken gardırobu aç ya da uç: gözlerde nabız atan dev sarı hale ve öne fışkıran iki ışın. Saat 04:00 olunca en geç 5 sn içinde söner.',
       'Saati beklemeden denemek için tarayıcı konsolunda: __eggHour = 3 (5 sn içinde yanar), __eggHour = 4 ile söner. Başka deri giyince hiç görünmemeli.'],

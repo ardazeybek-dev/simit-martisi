@@ -93,7 +93,7 @@ function updateSparks(dt) {
     C[n * 3] = s.r * k; C[n * 3 + 1] = s.g * k; C[n * 3 + 2] = s.b * k;
     n++;
   }
-  spGeo.setDrawRange(0, n);
+  spGeo.setDrawRange(0, n); sparkPts.visible = n > 0; // 0 noktalı çizim her karede WebGL uyarısı basar
   spGeo.attributes.position.needsUpdate = true; spGeo.attributes.color.needsUpdate = true;
 }
 
@@ -174,7 +174,7 @@ export function popText(text, worldPos, cls = '', edge = null) { // edge: { p: d
 }
 export function clearFx() {
   popLayer.textContent = '';
-  chunks.clear(); flats.clear(); sparks.length = 0; spGeo.setDrawRange(0, 0);
+  chunks.clear(); flats.clear(); sparks.length = 0; spGeo.setDrawRange(0, 0); sparkPts.visible = false;
   for (const p of puffs) { scene.remove(p.s); puffPool.push(p.s); }
   puffs.length = 0;
 }
