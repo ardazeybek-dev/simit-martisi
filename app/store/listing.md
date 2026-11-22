@@ -126,4 +126,5 @@ Grab your simit! 🥯
 
 - `icon-512.png` — Play simgesi 512×512.
 - `feature-1024x500.png` — Play tanıtım görseli.
-- `phone-*.png` — telefon ekran görüntüleri 1080×1920 (Play 2–8 adet; App Store 6.7" için 1290×2796 ayrıca gerekir).
+- `phone-*.png` — Play telefon ekran görüntüleri 1080×1920 (2–8 adet).
+- `ios69-*.png` — App Store 6,9" ekran görüntüleri 1290×2796 (`W=430 H=932 PREFIX=ios69 node app/store/shots.cjs`). Uygulama yalnız iPhone olduğu için iPad görüntüsü gerekmez.

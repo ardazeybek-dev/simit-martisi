@@ -1,5 +1,6 @@
 // Mağaza ekran görüntüleri: node app/store/shots.cjs   (serve.py çalışıyor olmalı; PORT=8777 varsayılan)
 // 360x640 @3 = 1080x1920 telefon görüntüleri app/store/phone-*.png olarak yazılır. Sunucu istekleri engellenir.
+// App Store 6.9": W=430 H=932 PREFIX=ios69 → 1290x2796 (ios69-*.png).
 'use strict';
 const path = require('path');
 const NPM = path.join(process.env.APPDATA || '', 'npm/node_modules');
@@ -15,7 +16,7 @@ const FLIGHTS = (process.env.CITIES || 'istanbul,izmir,antalya,mersin').split(',
 
 (async () => {
   const browser = await playwright.chromium.launch({ headless: true, args: ['--mute-audio', '--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
-  const ctx = await browser.newContext({ viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3, locale: process.env.LANG_CODE || 'tr-TR' });
+  const ctx = await browser.newContext({ viewport: { width: +process.env.W || 360, height: +process.env.H || 640 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3, locale: process.env.LANG_CODE || 'tr-TR' });
   await ctx.route(/supabase/, r => r.abort());
   await ctx.addInitScript(seed => {
     if (sessionStorage.getItem('shots-seeded')) return; sessionStorage.setItem('shots-seeded', '1');
@@ -37,7 +38,7 @@ const FLIGHTS = (process.env.CITIES || 'istanbul,izmir,antalya,mersin').split(',
   };
   await clearCity('istanbul'); await page.waitForTimeout(2500); await calm();
   let n = 1;
-  const shot = async name => { const f = path.join(OUT, `phone-${n++}-${name}.png`); await page.screenshot({ path: f }); console.log(f); };
+  const shot = async name => { const f = path.join(OUT, `${process.env.PREFIX || 'phone'}-${n++}-${name}.png`); await page.screenshot({ path: f }); console.log(f); };
   await shot('title');
   for (const city of FLIGHTS) {
     for (let i = 0; i < 15; i++) {
