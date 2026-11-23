@@ -1039,6 +1039,14 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #boardPanel .board li.gap { background: none; color: #f2c94c; }
 #boardPanel .board li.msg { color: #f3ecdc; }
 #boardPanel .board::-webkit-scrollbar-track { background: #22272d; }
+/* başkasının şeridine dokununca altında açılan şikâyet / engelle şeridi */
+#boardPanel .board li[data-n] { cursor: pointer; }
+#boardPanel .board li.acts { grid-template-columns: 1fr auto auto; align-items: center; gap: 6px; padding: 6px 8px; background: #2c2419; }
+#boardPanel .board li.acts .acts-msg { color: #f3ecdc; font-size: 12px; -webkit-line-clamp: 2; }
+#boardPanel .board li.acts button { padding: 6px 10px; border: 0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 800; color: #2a1d00; background: #f2c94c; cursor: pointer; }
+#boardPanel .board li.acts button[data-act="block"] { color: #fff; background: #c2453d; }
+#boardPanel .board-ugc { margin: 6px 0 0; font-size: 12px; opacity: .8; text-align: center; }
+#boardPanel .board-ugc .link { font-size: 12px; }
 
 /* Güçlendir = makine dairesi: her güç perçinli çelik bir panel, simgesi lombozun içinde; seviye = gücün renginde yanan ampul sırası (sönük olan soğuk cam);
    satın alma pirinç basma düğme (simit yetmezse cereyansız gri), son seviyede "Tam" yeşil yanan çalışıyor lambası */
