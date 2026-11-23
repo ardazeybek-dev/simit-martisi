@@ -3,3 +3,4 @@ www/
 *.keystore
 *.jks
 keystore.properties
+ota/

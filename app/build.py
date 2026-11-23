@@ -47,7 +47,7 @@ def main():
     if OUT.exists():  # only the contents: a test server running inside www holds the folder itself on Windows
         for p in OUT.iterdir():
             shutil.rmtree(p) if p.is_dir() else p.unlink()
-    shutil.copytree(DOCS, OUT, dirs_exist_ok=True, ignore=shutil.ignore_patterns("sw.js", "manifest.webmanifest", "_mock", "og.png", "preview.png", "*.map"))
+    shutil.copytree(DOCS, OUT, dirs_exist_ok=True, ignore=shutil.ignore_patterns("sw.js", "manifest.webmanifest", "app-update.json", "_mock", "og.png", "preview.png", "*.map"))
     (OUT / "fonts").mkdir(exist_ok=True)
     for f in VENDOR.glob("*.woff2"):
         shutil.copy2(f, OUT / "fonts" / f.name)

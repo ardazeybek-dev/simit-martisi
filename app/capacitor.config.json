@@ -10,6 +10,14 @@
     "SystemBars": {
       "initialViewportFitValueHint": "cover",
       "style": "DARK"
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "statsUrl": "",
+      "updateUrl": "",
+      "channelUrl": "",
+      "appReadyTimeout": 30000,
+      "resetWhenUpdate": true
     }
   }
 }

@@ -53,6 +53,12 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Uygulama · 23 Kasım', id: 'app-ota', t: '⬆️ Uygulama içi güncelleme: oyun düzeltmeleri mağazasız gelir', look: [
+      'Toplu mağaza sürümünden sonra: python app/ota.py → docs/app-update.json push. Telefondaki uygulama menüde yeni sürümü arka planda indirir; uygulamadan çıkıp girince (ya da yeniden açınca) yeni sürüm gelir, uçuş kesilmez.',
+      'Simit, kostüm, rekor, profil olduğu gibi kalır (emülatörde 22 kayıt anahtarı birebir karşılaştırıldı). Açılmayan bozuk paket 30 sn içinde kendiliğinden eski sürüme döner ve bir daha inmez.',
+      'Yerel eklenti gerektiren sürümde (ota.py MIN_NATIVE artırılır) eski uygulamada menünün altında sarı "Yeni sürüm var · Güncelle" → Play Store. Uçuşta görünmez.',
+      'Otomatik test: python app/ota.py --test 3.13.99 ve --test 3.13.100 --broken → OTA_GOOD/OTA_BAD ile node tests/android-ota.cjs → ANDROID OTA OK.'],
+    links: [['Oyun (web)', '/']] },
   { g: 'Uygulama · 23 Kasım', id: 'app-paylas', t: '📤 Uygulamada Paylaş artık paylaşım menüsünü açıyor (panoya kopyalamıyor)', look: [
       'Telefondaki uygulamada (yeni mağaza sürümüyle): uç, bitir, Paylaş → WhatsApp/Instagram seçici açılmalı, puan kartı resim olarak gitmeli.',
       'Giden mesajdaki link https://ardazeybek-dev.github.io/simit-martisi/#c=… olmalı (eskiden localhost çıkıyordu). Sıralamadaki "Davet et" de aynı linki verir.',
