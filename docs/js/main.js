@@ -4158,8 +4158,17 @@ function warmMap() {
   if (mapping || !renderer.compileAsync) return;
   if (state !== 'title' || !kitIdle() || document.hidden) { setTimeout(warmMap, 3000); return; }
   try { mapHome(); renderer.compileAsync(map.scene, map.cam).catch(() => {}); } catch (e) {}
+  setTimeout(warmPanels, 2500);
 }
 setTimeout(warmMap, 5000);
+// gardırop ve ayarlar da ilk açılışta takılıyordu (telefonda ~0,3 sn): podyum sahnesinin gölgelendiricileri martıyla birlikte
+// arka planda derlenir, iki panel görünmez açılıp aynı anda kapanır (ilk stil/yerleşim işi önceden yapılır). Yalnız menüde, boşken, bir kez.
+function warmPanels() {
+  if (state !== 'title' || dressing || mapping || menuModal() || document.hidden) { setTimeout(warmPanels, 3000); return; }
+  try { const par = gull.parent; pod.scene.add(gull); renderer.compileAsync(pod.scene, pod.cam).catch(() => {}); if (par) par.add(gull); } catch (e) {}
+  const els = ['settings', 'wardrobe'].map($).filter(e => e && e.classList.contains('hidden'));
+  for (const e of els) { e.style.visibility = 'hidden'; e.classList.remove('hidden'); void e.offsetHeight; e.classList.add('hidden'); e.style.visibility = ''; } // aynı adımda geri: oyuncunun açtığı paneli kapatma riski yok
+}
 if (!store.get(KEY_MAPSEEN, null)) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).map(c => c.id)); // bundan sonra açılan şehir 'yeni' sayılır
 if (QS.has('yenisehir')) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).slice(0, -1).map(c => c.id)); // deneme: son açılan şehir haritada henüz görülmemiş sayılır (bulut dağılır)
 if (QS.has('harita')) setTimeout(openMap, 1500); // deneme: harita açılışta açılır

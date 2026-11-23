@@ -53,6 +53,10 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Donma · 23 Kasım', id: 'gardirop-ayar', t: '👕 Gardırop ve Ayarlar ilk açılışta takılmıyor', look: [
+      'Oyunu aç, menüde 5-10 sn bekle, sonra Ayarlar’a ve Gardırop’a bas: takılmadan açılmalı.',
+      'Ölçüm (4 kat yavaş işlemci): Ayarlar 265 → 36 ms, Gardırop 326-453 → 167 ms (kalan kısım gardırobun tam çözünürlüğe geçmesi, bilerek).'],
+    links: [['Oyun', '/']] },
   { g: 'Geri geldi · 23 Kasım', id: 'mavi-parlama', t: '💙 Sıyırma ve yunus bonusunda skorun mavi parlaması geri geldi', look: [
       'Bacanın/rakibin hemen yanından sıyırarak geç ya da yunusun tam üstünden geç: sol üstteki skor mavi parlayıp büyümeli (16 Kasım 3.10.3’ten beri oynamıyordu, puan yine geliyordu).',
       'Otomatik: PORT=8777 node tests/score-flash.cjs → SCORE FLASH OK.'],
