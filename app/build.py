@@ -19,7 +19,7 @@ from build import FONT_CSS, THREE_CDN, VENDOR, sub1  # noqa: E402  (same vendor 
 DOCS = ROOT / "docs"
 OUT = ROOT / "app" / "www"
 # outside addresses the app may still contain: leaderboard server, share/invite links to the web version, SVG namespaces
-ALLOWED = ("https://sznwlsoyssseckgljulb.supabase.co", "https://ardazeybek-dev.github.io/", "http://www.w3.org/", "https://www.w3.org/", "https://github.com/ardazeybek-dev/")
+ALLOWED = ("https://sznwlsoyssseckgljulb.supabase.co", "https://ardazeybek-dev.github.io/", "http://www.w3.org/", "https://www.w3.org/", "https://github.com/ardazeybek-dev/", "https://play.google.com/store/apps/details?id=com.simitmartisi.game")
 
 
 def patch_html(html):

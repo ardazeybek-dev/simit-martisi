@@ -53,6 +53,20 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Denge · 23 Kasım', id: 'iskele-kisa', t: '⚓ İskele aralıkları bir tık kısa (×0,875), başta biraz daha çabuk hızlanır', look: [
+      'Menüde Hedef: Karaköy · 350 m (eskiden 400). Şehir sonları: İstanbul 8,15 km (9,3), İzmir 10,5 (12), Antalya 13,15 (15), Mersin 15,75 (18).',
+      'Uçuşun ilk 1-2 dakikası biraz daha çabuk hızlanmalı (zaman sabiti 75 → 65 sn); geç oyun hızı ve zorluk aynı. Kayıtlı iskele ilerlemen korunur.'],
+    links: [['Oyun', '/'], ['Hazır: Antalya', '/?city=antalya&hepsi']] },
+  { g: 'Donma · 23 Kasım', id: 'harita-ilk', t: '🗺️ Haritanın ilk açılışı daha akıcı', look: [
+      'Menüde birkaç saniye dur, sonra şehir adına dokun: harita takılmadan açılmalı (yavaş telefonda 0,58 → 0,21 sn).'],
+    links: [['Oyun', '/']] },
+  { g: 'Sunucu · 23 Kasım', id: 'skor-sinir', t: '🛡️ Skor sınırları sıkılaştı: 35 m/sn, metre başı 25 puan', look: [
+      'Normal oyna, skorun sıralamaya düşmeli. Gerçek oyuncular 16-18 m/sn ve en çok 14,4 puan/m yapıyor; formülün en kötü durumu Mersin 36,5 m/sn tepe (kontrol noktası payı karşılar).',
+      'Reddedilen skor kaybolmaz, score_rejects tablosuna yazılır.'],
+    links: [['Oyun', '/']] },
+  { g: 'Uygulama · 23 Kasım', id: 'paylas-play', t: '▶️ Android uygulamasından paylaşınca Google Play linki gider', look: [
+      'Yeni mağaza sürümünde: Paylaş ya da Davet et → mesajdaki link Google Play sayfası (arkadaş basınca indirir). iPhone’da (App Store linki gelene kadar) ve web’de site linki.'],
+    links: [['Oyun (web)', '/']] },
   { g: 'Donma · 23 Kasım', id: 'ucus-basi-donma', t: '🛫 Haritadan yeni şehir seçip hemen Oyna’ya basınca uçuş başı donması bitti', look: [
       'Haritada daha önce seçmediğin bir şehre (Trabzon, Rize) dokun → Seç → hemen Oyna: 3-2-1 akıcı saymalı, müzik kesilmemeli. Telefon yavaşsa “1” yarım saniye kadar uzun kalabilir, bu bilerek.',
       'Ölçüm (4 kat yavaş işlemci): Trabzon 1,3 sn ve Rize 0,75 sn donuyordu, şimdi uçuş başında 200 ms üstü takılma yok. Otomatik: PORT=8777 node tests/jank.cjs'],

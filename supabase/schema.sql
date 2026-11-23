@@ -136,8 +136,8 @@ begin
 end $$;
 
 -- skor haftanın satırına yazılır (yalnızca büyükse); dönen değer oyuncunun kalıcı sıralamadaki yeri.
--- Akla yatkınlık (biletten beri geçen t saniyeye göre): mesafe ≤ 40·t + 100, skor = (puan + mesafe/10) × şehir çarpanı
--- (İstanbul 1, İzmir 1.1, Antalya 1.2). Çarpansız puan ≤ 1500·t + 3000 ve ≤ 40·mesafe + 3000 (2026-11-12: gerçek bir 12,8 km'lik
+-- Akla yatkınlık (biletten beri geçen t saniyeye göre): mesafe ≤ 35·t + 100 (2026-11-23: formülden en kötü durum, hep arka rüzgâr, Mersin 36,5 m/sn tepe; gerçek oyuncular 16-18), skor = (puan + mesafe/10) × şehir çarpanı
+-- (İstanbul 1, İzmir 1.1, Antalya 1.2). Çarpansız puan ≤ 1500·t + 3000 ve ≤ 25·mesafe + 3000 (2026-11-23: 40 → 25, gerçek en yüksek 14,4 puan/m; 2026-11-12: gerçek bir 12,8 km'lik
 -- uçuş metre başı 13,9 puan yaptı, eski 12 sınırı onu reddetti). Akla yatkın olmayan skor hata vermez, score_rejects'e yazılır:
 -- sonradan bakılıp elle eklenebilsin (oyuncu sessizce emeğini kaybetmesin).
 create table if not exists score_rejects (
@@ -156,10 +156,10 @@ begin
   if not found then raise exception 'unknown run'; end if;
   t := extract(epoch from now() - r.started_at);
   pts := p_score / cm - d / 10;
-  if p_score is null or p_score < d / 10 then bad := 'score<dist'; elsif d > 40 * t + 100 then bad := 'dist>time'; elsif pts > 1500 * t + 3000 then bad := 'pts>time';
-  elsif pts > 40 * d + 3000 then bad := 'pts>dist';
-  -- kontrol noktası: son onaylı noktadan (run_mark) bu yana en çok 3000 m ve 40 m/sn
-  elsif d - r.md > 3000 or d - r.md > 40 * extract(epoch from now() - coalesce(r.mt, r.started_at)) + 100 then bad := 'checkpoint'; end if;
+  if p_score is null or p_score < d / 10 then bad := 'score<dist'; elsif d > 35 * t + 100 then bad := 'dist>time'; elsif pts > 1500 * t + 3000 then bad := 'pts>time';
+  elsif pts > 25 * d + 3000 then bad := 'pts>dist';
+  -- kontrol noktası: son onaylı noktadan (run_mark) bu yana en çok 3000 m ve 35 m/sn
+  elsif d - r.md > 3000 or d - r.md > 35 * extract(epoch from now() - coalesce(r.mt, r.started_at)) + 100 then bad := 'checkpoint'; end if;
   if bad is not null then
     insert into score_rejects(player_id, run, score, dist, city, t, reason) values (p_id, p_run, p_score, d, left(p_city, 16), t, bad);
   else
@@ -175,8 +175,8 @@ begin
   return (select count(*) + 1 from (select max(s.score) m from scores s join players p on p.id = s.player_id where not p.hidden group by s.player_id) x where x.m > best);
 end $$;
 
--- uçuş kontrol noktası: istemci her 400 m'de çağırır. Bir öncekinden bu yana en çok 40·Δt + 40 m ilerlenebilir, 10 sn'den sık
--- gelen nokta yok sayılır. submit_score son noktadan bu yana 3000 m'den fazlasını ya da 40 m/sn üstünü reddeder.
+-- uçuş kontrol noktası: istemci her 400 m'de çağırır. Bir öncekinden bu yana en çok 35·Δt + 40 m ilerlenebilir, 10 sn'den sık
+-- gelen nokta yok sayılır. submit_score son noktadan bu yana 3000 m'den fazlasını ya da 35 m/sn üstünü reddeder.
 create or replace function run_mark(p_id uuid, p_secret uuid, p_run uuid, p_dist int) returns void
 language plpgsql security definer set search_path = public as $$
 declare r runs; d int := greatest(0, coalesce(p_dist, 0));
@@ -185,7 +185,7 @@ begin
   select * into r from runs where id = p_run and player_id = p_id and started_at > now() - interval '1 day';
   if not found then raise exception 'unknown run'; end if;
   if r.mt is not null and now() - r.mt < interval '10 seconds' then return; end if;
-  if d < r.md or d - r.md > 40 * extract(epoch from now() - coalesce(r.mt, r.started_at)) + 40 then raise exception 'implausible mark'; end if;
+  if d < r.md or d - r.md > 35 * extract(epoch from now() - coalesce(r.mt, r.started_at)) + 40 then raise exception 'implausible mark'; end if;
   update runs set md = d, mt = now() where id = p_run;
 end $$;
 revoke all on function run_mark(uuid, uuid, uuid, int) from public;

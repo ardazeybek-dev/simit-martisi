@@ -4153,6 +4153,13 @@ bindMapInput($('worldMap'), isUi);
 buildCities(CITIES.map(c => ({ id: c.id, name: c.name })), $('mapLabels'));
 const FAR_NAMES = { canada: 'Kanada', america: 'Amerika', mexico: 'Meksika', brazil: 'Brezilya', argentina: 'Arjantin', uk: 'İngiltere', spain: 'İspanya', france: 'Fransa', germany: 'Almanya', italy: 'İtalya', greece: 'Yunanistan', russia: 'Rusya', azerbaijan: 'Azerbaycan', china: 'Çin', korea: 'Kore', japan: 'Japonya', india: 'Hindistan', saudi: 'Arabistan', egypt: 'Mısır', africa: 'Afrika', indonesia: 'Endonezya', australia: 'Avustralya', nz: 'Yeni Zelanda' }; // haritadaki gelecek ülkeler (worldmap.js FAR)
 buildFar(Object.entries(FAR_NAMES).map(([id, n]) => ({ id, name: tr(n), sub: tr('Yakında') }))); // uzaklaşınca görünen, henüz açılmayan ülkeler
+// haritanın gölgelendiricileri menüde boşken arka planda derlenir (compileAsync): ilk açılış telefonda yarım saniye donmasın
+function warmMap() {
+  if (mapping || !renderer.compileAsync) return;
+  if (state !== 'title' || !kitIdle() || document.hidden) { setTimeout(warmMap, 3000); return; }
+  try { mapHome(); renderer.compileAsync(map.scene, map.cam).catch(() => {}); } catch (e) {}
+}
+setTimeout(warmMap, 5000);
 if (!store.get(KEY_MAPSEEN, null)) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).map(c => c.id)); // bundan sonra açılan şehir 'yeni' sayılır
 if (QS.has('yenisehir')) store.set(KEY_MAPSEEN, mapCities().filter(cityOpen).slice(0, -1).map(c => c.id)); // deneme: son açılan şehir haritada henüz görülmemiş sayılır (bulut dağılır)
 if (QS.has('harita')) setTimeout(openMap, 1500); // deneme: harita açılışta açılır
@@ -4241,7 +4248,9 @@ onBtn('delGo', async () => {
 });
 onBtn('overNameSave', () => saveName($('overNameInput'), $('overNameErr')));
 // uygulamada sayfa adresi yerel sunucudur (localhost): paylaşılan link her zaman sitenin kendisi
-const shareBase = () => (window.Capacitor?.isNativePlatform?.() ? 'https://ardazeybek-dev.github.io/simit-martisi/' : location.href.split('#')[0].split('?')[0]);
+// Android uygulamasından paylaşılan link Google Play sayfası (arkadaş basınca indirsin); iOS'ta (App Store linki gelene kadar) site
+const appOS = () => (window.Capacitor?.isNativePlatform?.() ? window.Capacitor.getPlatform() : '');
+const shareBase = () => (appOS() === 'android' ? 'https://play.google.com/store/apps/details?id=com.simitmartisi.game' : appOS() ? 'https://ardazeybek-dev.github.io/simit-martisi/' : location.href.split('#')[0].split('?')[0]);
 onBtn('inviteBtn', async () => {
   const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = shareBase();
   try {
@@ -4290,7 +4299,7 @@ function scoreCard() {
 let shareLbl = '', shareWon = false;
 onBtn('shareBtn', async () => {
   const text = tr(shareWon ? 'Simit Martısı\'nda seni {s} puanla geçtim! Rövanş?' : 'Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?').replace('{s}', fmt(total())).replace('{n}', fmt(Math.floor(simitCount)));
-  const url = shareBase() + (daily ? '' : `#c=${total()}-${Math.floor(dist)}-${city.id}`); // günün uçuşu meydan okuma linki taşımaz
+  const url = shareBase() + (daily || appOS() === 'android' ? '' : `#c=${total()}-${Math.floor(dist)}-${city.id}`); // günün uçuşu meydan okuma linki taşımaz
   try {
     let files = null;
     if (navigator.share && navigator.canShare) { const b = await scoreCard(); const f = b && new File([b], 'simit-martisi.png', { type: 'image/png' }); if (f && navigator.canShare({ files: [f] })) files = [f]; }
@@ -4601,8 +4610,8 @@ function frame() {
       const tz = tempoAt(gull.position.z);
       if (tz !== tempoIn) { tempoIn = tz; if (tz && tz.kind === 'tail') gearUp(); } // efekt yalnız gerçek hız sıçramasında
       tempoK = damp(tempoK, tz ? (tz.kind === 'tail' ? 1 + (TEMPO_K.tail - 1) * (1 - 0.6 * Math.min(1, overAt(dist))) : TEMPO_K[tz.kind]) : 1, 0.9, dt); // arka rüzgâr geç oyunda yumuşar (×1,14 → ×1,06) // ~2,5 sn'de oturur
-      // başlangıç 18 m/sn (eskiden 15, sıkıcıydı); 11'lik tırmanış 2,5 dk'da eski eğriye (15 + 14) oturur: geç oyun hızı ve zorluk aynı
-      const base = Math.min(spdCap(dist) * (ruleOn('fast') ? 1.1 : 1), (18 + 11 * (1 - Math.exp(-playT / 75)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1));
+      // başlangıç 18 m/sn (eskiden 15, sıkıcıydı); 11'lik tırmanış (zaman sabiti 75 → 65 sn: başta biraz daha çabuk hızlanır) 2,5 dk'da eski eğriye (15 + 14) oturur: geç oyun hızı ve zorluk aynı
+      const base = Math.min(spdCap(dist) * (ruleOn('fast') ? 1.1 : 1), (18 + 11 * (1 - Math.exp(-playT / 65)) + playT * 0.032) * (ruleOn('fast') ? 1.15 : 1));
       speed = base * cityKAt(dist) * tempoK * (1 + END_SPD * endBm(dist)) * (1 + TIER_SPD * tierAt(dist));
       { const tn = Math.floor(tierAt(dist) + 1e-6); if (tn > tierN) { tierN = tn; gearUp(); } } // basamağa girerken vites // virajdan fırlama (slingV) yalnız görüntü: görüş açısı ve hız çizgileri. Gerçek hız eklenince viraj çıkışındaki baca geçilmez oluyordu // Hızlı vapurlar: %15 hızlı
       if (stopI < STOPS.length && dist >= stopM[stopI]) arrive();

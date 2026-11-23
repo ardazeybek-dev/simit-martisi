@@ -48,7 +48,7 @@ const back = async () => { adb('shell input keyevent 4'); await sleep(900); };
   console.log('     ', JSON.stringify(a).slice(0, 220));
   ok(open, 'Paylaş: Android paylaşım seçicisi açıldı');
   ok(a.files && /^file:.*\.png$/.test(a.files[0]), 'puan kartı PNG dosya olarak gitti');
-  ok(/https:\/\/ardazeybek-dev\.github\.io\/simit-martisi\/(#c=\d+-\d+-\w+)?/.test(a.text || '') && !/localhost/.test(JSON.stringify(a)), 'link sitenin adresi (localhost değil)');
+  ok(/https:\/\/play\.google\.com\/store\/apps\/details\?id=com\.simitmartisi\.game$/.test(a.text || '') && !/localhost/.test(JSON.stringify(a)), 'link Google Play sayfası (localhost değil)');
   await back(); await sleep(800);
   ok(!chooser() && /simitmartisi/.test(adb('shell dumpsys window | grep mCurrentFocus')), 'seçiciden geri: oyuna dönüldü, hata yok');
   // 2) sıralama daveti: metin + link
@@ -56,7 +56,7 @@ const back = async () => { adb('shell input keyevent 4'); await sleep(900); };
   open = false; for (let i = 0; i < 12 && !(open = chooser()); i++) await sleep(500);
   const b = (await page.evaluate(() => window.__shares))[1] || {};
   console.log('     ', JSON.stringify(b).slice(0, 220));
-  ok(open && b.url === 'https://ardazeybek-dev.github.io/simit-martisi/', 'Davet: seçici açıldı, link site adresi');
+  ok(open && b.url === 'https://play.google.com/store/apps/details?id=com.simitmartisi.game', 'Davet: seçici açıldı, link Google Play');
   await back();
   ws.close(); console.log(fails ? `${fails} FAIL` : 'ANDROID SHARE OK'); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
