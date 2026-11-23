@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex, seeded, hash } from './util.js';
+import { rand, pick, clamp, damp, store, vcMat, softMat, canvasTex, seeded, hash, kitLazy, kitStep, kitJob, kitIdle } from './util.js';
 import { MOBILE, renderer, scene, camera, sky, far, farShips, FAR_SHIP_W, updateWater, waveAt, placeSun, sunLight, BEND, BEND2, LEVEL, setHeading, applyWeather, setCityLook, tickFar } from './scene.js';
 import { CITIES, cityOf } from './cities.js';
 import { pickWeather, weatherOk, setWeatherFx, updateWeatherFx } from './weather.js';
@@ -139,10 +139,11 @@ const routeOf = c => clamp(+store.get(c.routeKey, 0) || 0, 0, c.stops.length - 1
 const cityOpen = c => { const i = CITIES.indexOf(c); return !c.soon && (i <= 0 || routeOf(CITIES[i - 1]) === CITIES[i - 1].stops.length - 1); };
 const KALE_OFF_ALL = [-2.4, -1.8, 1.8, 2.4]; // Kızkalesi arka kapısının kayması (çeşit başına bir maket)
 let city, STOPS, farStop;
-function useCity(c) {
+function useCity(c, lazy = false) { // lazy: haritadan seçim, ufuk silüeti kare kare kurulur (kitStep)
   city = c; farStop = routeOf(c);
   STOPS = c.stops.map(([name, m, to, gift]) => ({ name, m: Math.round(m * STOP_K), to, gift }));
-  setCityLook(c.id); setBait(c.bait);
+  const job = setCityLook(c.id, lazy); if (job) kitJob(job);
+  setBait(c.bait);
   if (c.sutun || c.kale) preBuild([...COL_FALL.map((_, i) => () => colonnadeGeo(i)), ...KALE_OFF_ALL.map(o => () => kaleGeo(o))]);
 }
 // şehre özgü maket çeşitleri uçuşta ilk çıktıklarında kurulursa telefonda 60-90 ms takılır: şehir seçilince boş anlarda birer birer önceden kurulur (önbellekte kalır)
@@ -2636,18 +2637,16 @@ function hideWorldShips(on) {
   for (const l of land) l.mesh.visible = !on;
   for (const d of decor) if (d.calm) d.mesh.visible = !on;
 }
+// şehrin vitrini ilk görüldüğünde kurulur. İlki (açılış) tek seferde; sonrakiler (haritada şehir değişince) tembel: kare başına birkaç ms
+// kurulup hazır olunca görünür. Tek seferde kurmak telefonda 1-3 sn donduruyor, müzik de kesiliyordu.
 function updateTitleSet(gz) {
   for (const id in titleSets) titleSets[id].visible = false;
-  hideWorldShips(state === 'title' && !!TITLE_SETS[city.id]);
-  if (state !== 'title' || !TITLE_SETS[city.id]) return;
-  let set = titleSets[city.id];
-  if (!set) {
-    const geos = TITLE_SETS[city.id]();
-    set = titleSets[city.id] = new THREE.Group(); scene.add(set);
-    for (const k in TITLE_LAYERS) { const m = new THREE.Mesh(geos[k], softMat); m.scale.setScalar(TITLE_SCALE); m.userData.follow = TITLE_LAYERS[k]; set.add(m); set.userData[k] = m; }
-    if (geos.led) { const m = new THREE.Mesh(geos.led.geo, kuleLedMat); m.position.set(geos.led.x, geos.led.y, geos.led.z); set.userData[geos.led.layer].add(m); } // Rize: LED'li çay bardağı kule (kendi malzemesi)
-    if (city.maiden) { const k = makeMaiden(); k.position.set(46, 0, -34); k.rotation.y = -Math.PI / 2 - 0.35; set.userData.near.add(k); set.userData.crowd = k; } // İstanbul: önde Kız Kulesi, terastakiler el sallar
-  }
+  const want = state === 'title' && !!TITLE_SETS[city.id];
+  let set = want && titleSets[city.id];
+  if (want && !set) set = makeTitleSet();
+  const ready = !!set && (set.userData.ready ||= kitIdle());
+  hideWorldShips(ready); // vitrin hazır olana dek dünyanın gemileri ve kıyısı görünür kalır, boş deniz kalmaz
+  if (!ready) return;
   if (set.userData.crowd) animCrowd(set.userData.crowd, t);
   // vitrin kamerası martıya önden bakar ve yavaşça salınır: her katman kameranın doğrultusunda martının arkasına oturur,
   // salınımın yalnız bir kısmını izler: uzak manzara gibi kayar, kameranın peşinden gelmez
@@ -2656,6 +2655,23 @@ function updateTitleSet(gz) {
     const a = TITLE_A + (titleCamA - TITLE_A) * m.userData.follow;
     m.rotation.y = a - Math.PI; m.position.set(-Math.sin(a) * TITLE_D, 0, gz - Math.cos(a) * TITLE_D);
   }
+}
+function makeTitleSet() {
+  const first = !Object.keys(titleSets).length, c = city; // açılışta ses henüz başlamadı: beklemeden kur
+  const set = titleSets[c.id] = new THREE.Group(); scene.add(set); set.visible = false;
+  const job = titleJob(set, c, !first);
+  if (first) while (!job.next().done); else kitJob(job);
+  set.userData.ready = first;
+  return set;
+}
+function* titleJob(set, c, lazy) { // kurucu (models.js TITLE_SETS) büyük adımlar arasında durur; tembelken parçaları da kuyruğa atar
+  const it = TITLE_SETS[c.id]();
+  let r;
+  for (;;) { kitLazy(lazy); try { r = it.next(); } finally { kitLazy(false); } if (r.done) break; yield; }
+  const geos = r.value;
+  for (const k in TITLE_LAYERS) { const m = new THREE.Mesh(geos[k], softMat); m.scale.setScalar(TITLE_SCALE); m.userData.follow = TITLE_LAYERS[k]; set.add(m); set.userData[k] = m; }
+  if (geos.led) { const m = new THREE.Mesh(geos.led.geo, kuleLedMat); m.position.set(geos.led.x, geos.led.y, geos.led.z); set.userData[geos.led.layer].add(m); } // Rize: LED'li çay bardağı kule (kendi malzemesi)
+  if (c.maiden) { const k = makeMaiden(); k.position.set(46, 0, -34); k.rotation.y = -Math.PI / 2 - 0.35; set.userData.near.add(k); set.userData.crowd = k; } // İstanbul: önde Kız Kulesi, terastakiler el sallar
 }
 const TITLE_A = Math.PI - 0.5, TITLE_D = 88, TITLE_SCALE = 0.4;
 let titleCamA = TITLE_A;
@@ -2760,6 +2776,7 @@ function cityWeather() { // menüde şehir değişince o şehirde olmayan hava (
 function startGame() {
   recShowClose();
   if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
+  kitStep(1e9); // haritada yeni seçilen şehrin yarım kalan ufku/vitrini: uçuşta eksik kalmasın
   show('giftPill', false);
   audio.unlock();
   sfx.click();
@@ -3143,7 +3160,7 @@ let mapSel = null;
 function mapPick(id, quiet) {
   const c = id && CITIES.find(q => q.id === id); if (!c) return;
   mapSel = c; mapSelect(id);
-  if (c !== city && cityOpen(c)) { useCity(c); store.set(KEY_CITY, c.id); cityWeather(); applyWeather(weather); resetWorld(false); } // açık şehre dokunmak onu seçer (haritayı kapatınca da seçili kalır)
+  if (c !== city && cityOpen(c)) { useCity(c, true); store.set(KEY_CITY, c.id); cityWeather(); applyWeather(weather); resetWorld(false); } // açık şehre dokunmak onu seçer (haritayı kapatınca da seçili kalır)
   renderMapCard();
   if (!quiet) { sfx.click(); const el = $('mapCard'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
 }
@@ -4529,6 +4546,7 @@ const _frustum = new THREE.Frustum(), _fw = new THREE.Vector3(), _up = new THREE
 let firstFrame = true;
 function frame() {
   requestAnimationFrame(frame);
+  kitStep(25); // haritadan seçilen şehrin ufku ve vitrini: kare başına en çok ~25 ms kurulur (kuyruk boşsa iş yok; müzik 0,5 sn ileriye planlı, kesilmez)
   const realDt = Math.min(0.05, clock.getDelta());
   if (pod.on) podRestore();
   if (recS.on) recRestore();

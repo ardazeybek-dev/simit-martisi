@@ -50,46 +50,89 @@ try {
 // Kit: birçok parçayı tek bir vertex-renkli geometriye birleştirir → tek draw call
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
 const _c = new THREE.Color();
+// sRGB kanal (0-255) → çalışma rengi (lineer): Color.setHex'in her köşede üç kez pow hesabı yerine tablo (sonuç birebir aynı)
+export const LIN = new Float64Array(256);
+for (let i = 0; i < 256; i++) LIN[i] = _c.setHex(i).b;
+const setHexFast = (c, h) => { c.r = LIN[(h >> 16) & 255]; c.g = LIN[(h >> 8) & 255]; c.b = LIN[h & 255]; return c; };
+// tembel kurulum: kitLazy(true) iken add() kopyalamaz, build() boş geometri döndürür; asıl iş kitJobs kuyruğuna girer ve kitStep(ms)
+// her karede birkaç ms çalışarak bitirir. Menü manzarası telefonda tek seferde 1-3 sn donduruyordu (müzik de kesiliyordu).
+let lazy = false;
+const jobs = [];
+export const kitLazy = on => { lazy = on; };
+export const kitIdle = () => !jobs.length;
+export const kitJob = it => { jobs.push(it); }; // dışarıdan iş: kuyrukta sırayla, kendi içinde yield ile bölünür
+const jobRand = seeded(0x51a7); // kuyruktaki renk fonksiyonları zar atarsa uçuşun (günün uçuşu tohumlu) zarına dokunmasın
+export function kitStep(ms) { // kuyruk bittiyse true
+  const end = performance.now() + ms, R = Math.random;
+  Math.random = jobRand;
+  try {
+    while (jobs.length) {
+      if (jobs[0].next().done) jobs.shift();
+      if (performance.now() > end) break;
+    }
+  } finally { Math.random = R; }
+  return !jobs.length;
+}
+const partOf = p => { // tembel parça: geometri (make), kopya ve dönüşüm şimdi yapılır
+  const geo = p.make ? p.make() : p.geo, g = geo.index ? geo.toNonIndexed() : p.make ? geo : geo.clone();
+  return p.m ? g.applyMatrix4(p.m) : g;
+};
 export class Kit {
   constructor() { this.parts = []; }
   // color: sayı ya da (yüzİndeksi, yüzMerkeziY) => sayı; fonksiyonda .vert varsa köşe başına çağrılır: (yüz, y, x, z) => sayı;
   // null: geometrinin kendi köşe renkleri (hazır bir Kit gövdesi başka bir Kit'e eklenir, ör. oyundaki feribot menü sahnesinde)
   add(geo, color, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) {
-    const g = geo.index ? geo.toNonIndexed() : geo.clone();
     _m.compose(_p.set(x, y, z), _q.setFromEuler(_e.set(rx, ry, rz)), _s.set(sx, sy, sz));
+    if (lazy) { this.parts.push({ geo, m: _m.clone(), color }); return this; }
+    const g = geo.index ? geo.toNonIndexed() : geo.clone();
     g.applyMatrix4(_m);
     this.parts.push({ g, color });
     return this;
   }
+  // make(): geometriyi kuran fonksiyon (arazi gibi pahalı olanlar): tembel kurulumda o da kuyrukta çalışır. Dönüşüm uygulanmaz.
+  addMade(make, color) {
+    if (lazy) { this.parts.push({ make, color }); return this; }
+    const g = make();
+    this.parts.push({ g: g.index ? g.toNonIndexed() : g, color });
+    return this;
+  }
   // smooth: parçaların kendi normalleri korunur (küre, silindir yumuşak; kutu köşeli kalır). Yoksa her yüz düz gölgelenir.
-  build({ smooth = false } = {}) {
+  build(opts) {
+    const out = new THREE.BufferGeometry(), it = this.steps(out, opts);
+    if (lazy && opts && opts.lazy) { jobs.push(it); return out; } // yalnız kendini tembel diye işaretleyen (TSOFT): önbelleğe giren yardımcı modeller boş kalmasın
+    while (!it.next().done);
+    return out;
+  }
+  *steps(out, { smooth = false } = {}) { // her parçadan ve her ~1500 köşeden sonra durulabilir
+    for (const p of this.parts) if (!p.g) { p.g = partOf(p); yield; } // eskisi gibi parça Kit'te kalır (aynı Kit yeniden build edilebilir)
     let n = 0;
     for (const p of this.parts) n += p.g.attributes.position.count;
     const pos = new Float32Array(n * 3), col = new Float32Array(n * 3), nor = smooth ? new Float32Array(n * 3) : null;
     let o = 0;
-    for (const { g, color } of this.parts) {
+    for (const p of this.parts) {
+      const { g, color } = p;
       const a = g.attributes.position.array, cnt = g.attributes.position.count;
       pos.set(a, o * 3);
       if (nor) nor.set(g.attributes.normal.array, o * 3);
-      if (color === null) { col.set(g.attributes.color.array, o * 3); o += cnt; g.dispose(); continue; }
+      if (color === null) { col.set(g.attributes.color.array, o * 3); o += cnt; g.dispose(); yield; continue; }
       for (let v = 0; v < cnt; v += 3) {
+        if (v && v % 1500 === 0) yield;
         const face = v / 3, cy = (a[v * 3 + 1] + a[v * 3 + 4] + a[v * 3 + 7]) / 3;
         if (color.vert) {
-          for (let k = 0; k < 3; k++) { const j = (v + k) * 3, i = (o + v + k) * 3; _c.setHex(color(face, a[j + 1], a[j], a[j + 2])); col[i] = _c.r; col[i + 1] = _c.g; col[i + 2] = _c.b; }
+          for (let k = 0; k < 3; k++) { const j = (v + k) * 3, i = (o + v + k) * 3; setHexFast(_c, color(face, a[j + 1], a[j], a[j + 2])); col[i] = _c.r; col[i + 1] = _c.g; col[i + 2] = _c.b; }
           continue;
         }
-        _c.setHex(typeof color === 'function' ? color(face, cy) : color);
+        setHexFast(_c, typeof color === 'function' ? color(face, cy) : color);
         for (let k = 0; k < 3; k++) { const i = (o + v + k) * 3; col[i] = _c.r; col[i + 1] = _c.g; col[i + 2] = _c.b; }
       }
       o += cnt;
       g.dispose();
+      yield;
     }
-    const out = new THREE.BufferGeometry();
     out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     out.setAttribute('color', new THREE.BufferAttribute(col, 3));
     if (nor) out.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); else out.computeVertexNormals();
     out.computeBoundingSphere();
-    return out;
   }
 }
 

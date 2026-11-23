@@ -53,6 +53,11 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Donma · 23 Kasım', id: 'harita-donma', t: '🗺️ Haritada şehre ilk dokunuşta donma ve müzik kesilmesi bitti', look: [
+      'Müzik açıkken menüden şehir adına dokun → haritada daha önce seçmediğin bir şehre (ör. Rize, Trabzon) dokun: oyun donmamalı, müzik kesilmemeli.',
+      'Menüye dönünce o şehrin arka manzarası (Rize: çay yamacı ve bardak kule) birkaç saniye içinde belirir; o arada normal deniz ve gemiler görünür, boş ekran olmaz.',
+      'Hemen Oyna dersen uçuşta ufuk eksiksiz olmalı. Ölçüm: 4 kat yavaş işlemcide Rize 3,1 sn donuyordu, şimdi en uzun takılma 0,2 sn.'],
+    links: [['Oyun', '/']] },
   { g: 'Play canlı · 23 Kasım', id: 'hesap-sil-kalici', t: '🗑️ Hesabımı sil artık kalıcı: silinen hesap kendiliğinden geri gelmiyor', look: [
       'Profil → Hesabımı sil → Evet, sil. Uygulamayı kapatıp aç, sıralamayı aç: adın "Ad seç" kalmalı, sıralamada yeni "Martı ####" olarak belirmemelisin.',
       'Profil’de yeniden ad yazıp kaydedersen sıralamaya yeni hesapla girersin (bilerek). Otomatik test: PORT=8777 node tests/delete-account.cjs → DELETE OK.',
