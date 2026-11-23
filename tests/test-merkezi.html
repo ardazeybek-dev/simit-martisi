@@ -53,6 +53,10 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Uygulama · 23 Kasım', id: 'app-testlab', t: '🤖 Google Play test robotları artık sıralamaya hesap açmıyor', look: [
+      'Play’in yayın öncesi raporu oyunu Google’ın test cihazlarında robotla oynatıyordu → sıralamada ABD’den “Martı ####” hesapları (83 puan = 5 sn uçup çıkmak). Yeni mağaza sürümünde bu cihazlar sunucuya hiç bağlanmaz.',
+      'Normal telefonda hiçbir şey değişmez. Otomatik test: node tests/android-testlab.cjs → ANDROID TESTLAB OK.'],
+    links: [['Oyun (web)', '/']] },
   { g: 'Uygulama · 23 Kasım', id: 'app-ota', t: '⬆️ Uygulama içi güncelleme: oyun düzeltmeleri mağazasız gelir', look: [
       'Toplu mağaza sürümünden sonra: python app/ota.py → docs/app-update.json push. Telefondaki uygulama menüde yeni sürümü arka planda indirir; uygulamadan çıkıp girince (ya da yeniden açınca) yeni sürüm gelir, uçuş kesilmez.',
       'Simit, kostüm, rekor, profil olduğu gibi kalır (emülatörde 22 kayıt anahtarı birebir karşılaştırıldı). Açılmayan bozuk paket 30 sn içinde kendiliğinden eski sürüme döner ve bir daha inmez.',

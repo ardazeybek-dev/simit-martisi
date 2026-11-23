@@ -53,6 +53,18 @@
       } });
     } catch (e) {}
   }
+  // Google Play yayın öncesi test robotları (Firebase Test Lab) sıralamaya "Martı ####" hesabı açıyordu:
+  // o cihazda sıralama sunucusuna giden her istek, sanki bağlantı yokmuş gibi düşer. Eski kabukta eklenti yoksa dokunmaz.
+  var TL = C.Plugins && C.Plugins.TestLab;
+  if (TL && TL.get) {
+    var lab = TL.get().then(function (r) { return !!(r && r.lab); }, function () { return false; });
+    var f0 = window.fetch.bind(window);
+    window.fetch = function (u, o) {
+      if (!/supabase\.co\//.test(String(u && u.url || u))) return f0(u, o);
+      return lab.then(function (isLab) { return isLab ? Promise.reject(new TypeError('test lab: offline')) : f0(u, o); });
+    };
+    lab.then(function (isLab) { if (isLab) window.__testLab = true; });
+  }
   ota(reg('CapacitorUpdater'), reg('App'), C.getPlatform && C.getPlatform());
   var App = (C.Plugins && C.Plugins.App) || (C.registerPlugin && C.registerPlugin('App')); // paketsiz sayfada native köprünün vekili
   if (!App) return;

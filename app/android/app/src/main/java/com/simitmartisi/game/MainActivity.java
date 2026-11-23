@@ -11,6 +11,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(TestLabPlugin.class); // yerel eklenti: super.onCreate'ten önce kaydedilmeli
         super.onCreate(savedInstanceState);
         immersive();
     }
