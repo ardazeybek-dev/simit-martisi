@@ -125,7 +125,7 @@ async function main() {
       check(s.state === 'play', `${city}: state is ${s.state} after flying`);
       check(s.dist > 0, `${city}: dist is ${s.dist}`);
       // passing ships (decor movers) keep to their outer lanes: none may sail down the gull's lane
-      const mv = await g(() => { window.__game.genTo(window.__game.z - 3000); return window.__game.movers; });
+      const mv = await g(() => { const G = window.__game; G.genTo(G.z - 3000); if (!G.movers.length) G.genTo(G.z - 6000); return G.movers; }); // 1500 m'de gemi çıkmaması nadir rastlantı: bir kez daha ileri bak
       check(mv.length > 0 && mv.every(m => Math.abs(m.x) > 30), `${city}: passing ship inside the play lane (movers ${JSON.stringify(mv.slice(0, 4))})`);
       // crash() is ignored while a shield or the invulnerable window is on: keep calling it until the flight ends
       await g(() => { window.__smokeCr = setInterval(() => { if (window.__game.state === 'play') window.__game.crash(); }, 300); });
