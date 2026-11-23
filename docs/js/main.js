@@ -4240,8 +4240,10 @@ onBtn('delGo', async () => {
   show('delGo', false); delNote('Hesabın silindi.'); $('nameInput').value = '';
 });
 onBtn('overNameSave', () => saveName($('overNameInput'), $('overNameErr')));
+// uygulamada sayfa adresi yerel sunucudur (localhost): paylaşılan link her zaman sitenin kendisi
+const shareBase = () => (window.Capacitor?.isNativePlatform?.() ? 'https://ardazeybek-dev.github.io/simit-martisi/' : location.href.split('#')[0].split('?')[0]);
 onBtn('inviteBtn', async () => {
-  const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = location.href.split('#')[0].split('?')[0];
+  const text = tr('Simit Martısı sıralamasında benimle yarış!'), url = shareBase();
   try {
     if (navigator.share) await navigator.share({ title: document.title, text, url });
     else { await navigator.clipboard.writeText(`${text} ${url}`); const b = $('inviteBtn'), l = b.textContent; b.textContent = tr('Kopyalandı'); setTimeout(() => (b.textContent = l), 1800); }
@@ -4288,7 +4290,7 @@ function scoreCard() {
 let shareLbl = '', shareWon = false;
 onBtn('shareBtn', async () => {
   const text = tr(shareWon ? 'Simit Martısı\'nda seni {s} puanla geçtim! Rövanş?' : 'Simit Martısı\'nda {s} puan yaptım, {n} simit kaptım! Sen kaç yaparsın?').replace('{s}', fmt(total())).replace('{n}', fmt(Math.floor(simitCount)));
-  const url = location.href.split('#')[0].split('?')[0] + (daily ? '' : `#c=${total()}-${Math.floor(dist)}-${city.id}`); // günün uçuşu meydan okuma linki taşımaz
+  const url = shareBase() + (daily ? '' : `#c=${total()}-${Math.floor(dist)}-${city.id}`); // günün uçuşu meydan okuma linki taşımaz
   try {
     let files = null;
     if (navigator.share && navigator.canShare) { const b = await scoreCard(); const f = b && new File([b], 'simit-martisi.png', { type: 'image/png' }); if (f && navigator.canShare({ files: [f] })) files = [f]; }

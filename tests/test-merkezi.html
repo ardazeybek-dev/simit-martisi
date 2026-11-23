@@ -53,6 +53,11 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Uygulama · 23 Kasım', id: 'app-paylas', t: '📤 Uygulamada Paylaş artık paylaşım menüsünü açıyor (panoya kopyalamıyor)', look: [
+      'Telefondaki uygulamada (yeni mağaza sürümüyle): uç, bitir, Paylaş → WhatsApp/Instagram seçici açılmalı, puan kartı resim olarak gitmeli.',
+      'Giden mesajdaki link https://ardazeybek-dev.github.io/simit-martisi/#c=… olmalı (eskiden localhost çıkıyordu). Sıralamadaki "Davet et" de aynı linki verir.',
+      'Otomatik test (emülatör açık, debug APK kurulu): node tests/android-share.cjs → ANDROID SHARE OK. Web’de Paylaş eskisi gibi.'],
+    links: [['Oyun (web)', '/']] },
   { g: 'Donma · 23 Kasım', id: 'harita-donma', t: '🗺️ Haritada şehre ilk dokunuşta donma ve müzik kesilmesi bitti', look: [
       'Müzik açıkken menüden şehir adına dokun → haritada daha önce seçmediğin bir şehre (ör. Rize, Trabzon) dokun: oyun donmamalı, müzik kesilmemeli.',
       'Menüye dönünce o şehrin arka manzarası (Rize: çay yamacı ve bardak kule) birkaç saniye içinde belirir; o arada normal deniz ve gemiler görünür, boş ekran olmaz.',

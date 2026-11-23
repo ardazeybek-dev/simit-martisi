@@ -26,6 +26,33 @@
       } });
     } catch (e) {}
   }
+  // Paylaş: Android WebView'de navigator.share yok (oyun panoya kopyalıyordu). Share eklentisine yönlendirilir;
+  // puan kartı PNG'si önce Filesystem ile önbelleğe yazılır, sonra dosya olarak paylaşılır. İptal/hata oyunda sessizce yutulur.
+  var reg = function (n) { return (C.Plugins && C.Plugins[n]) || (C.registerPlugin && C.registerPlugin(n)); };
+  var Sh = reg('Share'), FS = reg('Filesystem');
+  if (Sh) {
+    var b64 = function (blob) {
+      return new Promise(function (ok, no) {
+        var r = new FileReader();
+        r.onload = function () { ok(String(r.result).split(',')[1] || ''); };
+        r.onerror = no; r.readAsDataURL(blob);
+      });
+    };
+    try {
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: function (d) { return !d || !d.files || !!FS; } });
+      Object.defineProperty(navigator, 'share', { configurable: true, value: function (d) {
+        d = d || {};
+        var f = d.files && d.files[0];
+        var plain = function () { return Sh.share({ title: d.title, text: d.text, url: d.url, dialogTitle: d.title }); };
+        if (!f || !FS) return plain();
+        return b64(f).then(function (data) {
+          return FS.writeFile({ path: f.name || 'paylas.png', data: data, directory: 'CACHE' });
+        }).then(function (w) {
+          return Sh.share({ files: [w.uri], text: d.text, dialogTitle: d.title });
+        }, function () { return plain(); }); // dosya yazılamazsa: metin + link
+      } });
+    } catch (e) {}
+  }
   var App = (C.Plugins && C.Plugins.App) || (C.registerPlugin && C.registerPlugin('App')); // paketsiz sayfada native köprünün vekili
   if (!App) return;
   var G = function () { return window.__game; };
