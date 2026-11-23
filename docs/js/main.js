@@ -2373,7 +2373,7 @@ let runReal = 0, lastEatD = 0, noEat = 0; // lastEatD: önceki karenin mesafesi,
 const clock2 = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, ss = s % 60; return h ? `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${m}:${String(ss).padStart(2, '0')}`; };
 const hoursTxt = s => { const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h} ${tr('sa')} ${m} ${tr('dk')}` : `${m} ${tr('dk')}`; };
 let windW0 = 0; // önceki karenin rüzgâr itişi (azalan pay hedefe aktarılır)
-let tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
+let cdHold = 0, tx = 0, vx = 0, cryT = 4, invuln = 0, smokeT = 0, overLock = 0, countdown = 0, god = false, splashed = false, revives = 0, fishRev = 0, adRevived = false;
 const pw = { magnet: 0, shield: 0, double: 0, tea: 0 };
 let teaK = 1; // Çay Molası: simülasyon bu oranla akar (yumuşak geçiş)
 // güçlendirme yükseltmeleri: simitle alınır, her seviye süreyi tabanın %25'i kadar uzatır (Subway Surfers usulü)
@@ -2776,7 +2776,7 @@ function cityWeather() { // menüde şehir değişince o şehirde olmayan hava (
 function startGame() {
   recShowClose();
   if (!cityOpen(city)) { bump($('cityPick'), 'shake'); vibrate(30); return; }
-  kitStep(1e9); // haritada yeni seçilen şehrin yarım kalan ufku/vitrini: uçuşta eksik kalmasın
+  cdHold = 0; // haritada yeni seçilen şehrin yarım kalan ufku/vitrini geri sayımda kare kare biter (eskiden burada tek seferde: telefonda 1+ sn donma)
   show('giftPill', false);
   audio.unlock();
   sfx.click();
@@ -4580,7 +4580,9 @@ function frame() {
   lessonK = damp(lessonK, lessonDir && lessonWait < 3.5 && state === 'play' ? 0.35 : 1, 5, realDt); if (lessonDir && state === 'play') lessonWait += realDt; else if (lessonDir && state !== 'paused' && state !== 'countdown') lessonHand(0); dt *= lessonK; // ilk uçuş dersi: el yönü gösterirken ağır çekim
   teaK = damp(teaK, pw.tea > 0 && state === 'play' ? 0.6 : 1, 3, realDt); dt *= teaK; // Çay Molası: her şey yavaşlar, engeller ve simitler kolay tutturulur
   if (state === 'countdown') {
+    if (!kitIdle()) { kitStep(35); cdHold += realDt; if (cdHold > 4) kitStep(1e9); } // ufuk bitmeden kalkış yok: gerekirse "1" biraz uzar
     countdown -= realDt;
+    if (countdown <= 0 && !kitIdle()) countdown = 0.001;
     const n = Math.ceil(countdown / 0.5);
     if (n !== cdShown && n > 0) { cdShown = n; $('countdown').textContent = Math.min(3, n); bump($('countdown')); sfx.count(); }
     if (countdown <= 0) { state = 'play'; show('countdown', false); sfx.go(); }

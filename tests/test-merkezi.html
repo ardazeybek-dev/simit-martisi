@@ -53,6 +53,10 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Donma · 23 Kasım', id: 'ucus-basi-donma', t: '🛫 Haritadan yeni şehir seçip hemen Oyna’ya basınca uçuş başı donması bitti', look: [
+      'Haritada daha önce seçmediğin bir şehre (Trabzon, Rize) dokun → Seç → hemen Oyna: 3-2-1 akıcı saymalı, müzik kesilmemeli. Telefon yavaşsa “1” yarım saniye kadar uzun kalabilir, bu bilerek.',
+      'Ölçüm (4 kat yavaş işlemci): Trabzon 1,3 sn ve Rize 0,75 sn donuyordu, şimdi uçuş başında 200 ms üstü takılma yok. Otomatik: PORT=8777 node tests/jank.cjs'],
+    links: [['Oyun', '/']] },
   { g: 'Uygulama · 23 Kasım', id: 'app-testlab', t: '🤖 Google Play test robotları artık sıralamaya hesap açmıyor', look: [
       'Play’in yayın öncesi raporu oyunu Google’ın test cihazlarında robotla oynatıyordu → sıralamada ABD’den “Martı ####” hesapları (83 puan = 5 sn uçup çıkmak). Yeni mağaza sürümünde bu cihazlar sunucuya hiç bağlanmaz.',
       'Normal telefonda hiçbir şey değişmez. Otomatik test: node tests/android-testlab.cjs → ANDROID TESTLAB OK.'],
