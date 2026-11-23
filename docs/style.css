@@ -63,7 +63,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .score { white-space: nowrap; font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -.5px; transform-origin: left center; font-variant-numeric: tabular-nums; }
 .score.bump { animation: bump .28s cubic-bezier(.3, 1.8, .5, 1); }
 @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
-.score.fit.bump { animation-name: bumpS; } /* sütuna sığdırılmış uzun skor: zıplayınca halkaya binmesin */
+.score.fit.bump:not(.near):not(.dolph) { animation-name: bumpS; } /* sütuna sığdırılmış uzun skor: zıplayınca halkaya binmesin. Sıyırma/yunus parlamasını EZMESİN (3.10.3-3.13.15 arası mavi parlama hiç oynamadı) */
 @keyframes bumpS { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
 .score.dolph { animation: dolph .6s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes dolph { 0% { transform: scale(1); } 30% { transform: scale(1.34) rotate(-4deg); color: #8fe3ff; text-shadow: 0 0 14px #3fb8ff, 0 0 28px rgba(63, 184, 255, .7), 0 2px 0 rgba(27, 24, 56, .45); } 70% { color: #bff0ff; } 100% { transform: scale(1); } }
