@@ -1043,6 +1043,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 #boardPanel .board li[data-n] { cursor: pointer; }
 #boardPanel .board li.acts { grid-template-columns: 1fr auto auto; align-items: center; gap: 6px; padding: 6px 8px; background: #2c2419; }
 #boardPanel .board li.acts .acts-msg { color: #f3ecdc; font-size: 12px; -webkit-line-clamp: 2; }
+#boardPanel .board li.acts.sent .acts-msg { grid-column: 1 / -1; order: 3; display: block; -webkit-line-clamp: unset; } /* teşekkür + adres düğmelerin altında tam genişlik, kesilmez */
 #boardPanel .board li.acts button { padding: 6px 10px; border: 0; border-radius: 6px; font: inherit; font-size: 13px; font-weight: 800; color: #2a1d00; background: #f2c94c; cursor: pointer; }
 #boardPanel .board li.acts button[data-act="block"] { color: #fff; background: #c2453d; }
 #boardPanel .board-ugc { margin: 6px 0 0; font-size: 12px; opacity: .8; text-align: center; }

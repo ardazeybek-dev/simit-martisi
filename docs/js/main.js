@@ -3002,7 +3002,7 @@ function boardRowTap(e) {
   const btn = e.target.closest('button[data-act]'), list = $('boardList');
   if (btn) {
     const row = btn.closest('li.acts'), name = row.dataset.n;
-    if (btn.dataset.act === 'report') { reportName(name, row.dataset.cc, row.dataset.r); row.querySelector('.acts-msg').textContent = tr('Teşekkürler! E-posta açılmadıysa {m} adresine yaz.').replace('{m}', REPORT_MAIL); }
+    if (btn.dataset.act === 'report') { reportName(name, row.dataset.cc, row.dataset.r); row.classList.add('sent'); row.querySelector('.acts-msg').textContent = tr('Teşekkürler! E-posta açılmadıysa {m} adresine yaz.').replace('{m}', REPORT_MAIL); }
     else if (btn.dataset.act === 'block') { const s = new Set(blocked); s.add(name); setBlocked(s); sfx.tick && sfx.tick(); renderBoard(); }
     return;
   }
