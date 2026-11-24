@@ -1,7 +1,7 @@
 {
   "name": "simit-martisi-app",
   "private": true,
-  "version": "3.13.16",
+  "version": "3.13.18",
   "description": "Store app wrapper for Simit Martısı (game files from ../docs, built by build.py)",
   "scripts": {
     "build": "python build.py",
