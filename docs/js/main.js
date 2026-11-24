@@ -3005,6 +3005,33 @@ let boardCache = null, boardSeq = 0, overSeq = 0, myRank = 0, nameAsked = false;
 let boardTab = store.get('simit-martisi-board-tab', 'all') === 'wk' ? 'wk' : 'all';
 const esc = v => String(v).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const refreshBoard = () => fetchBoard().then(b => { if (b) { boardCache = b; if (b.me) myRank = b.me.rank; } return b; });
+// şikâyet et / engelle (App Store 1.2: kullanıcı içeriği = sıralamadaki oyuncu adı). Başka birinin şeridine dokununca altında iki düğme açılır.
+// Şikâyet: hazır e-posta (ad, ülke, sıra, liste). Engelle: o ad bu cihazda sıralamadan gizlenir (sunucuda kimlik gösterilmediği için ada göre).
+const REPORT_MAIL = 'info@techtalentspace.com', KEY_BLOCKED = 'simit-martisi-blocked';
+let blocked = new Set(store.get(KEY_BLOCKED, []));
+const setBlocked = s => { blocked = s; store.set(KEY_BLOCKED, [...s].slice(-200)); };
+function reportName(name, cc, r) {
+  const subj = tr('Simit Martısı: oyuncu adı şikâyeti'), body = `${tr('Şikâyet edilen ad')}: ${name}\n${tr('Ülke')}: ${cc}\n${tr('Sıra')}: #${r} (${boardTab === 'wk' ? tr('Haftalık') : tr('Genel')})\n${tr('Senin adın')}: ${shownName() || '-'}\n\n`;
+  const a = document.createElement('a'); a.href = `mailto:${REPORT_MAIL}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function boardRowTap(e) {
+  const btn = e.target.closest('button[data-act]'), list = $('boardList');
+  if (btn) {
+    const row = btn.closest('li.acts'), name = row.dataset.n;
+    if (btn.dataset.act === 'report') { reportName(name, row.dataset.cc, row.dataset.r); row.classList.add('sent'); row.querySelector('.acts-msg').textContent = tr('Teşekkürler! E-posta açılmadıysa {m} adresine yaz.').replace('{m}', REPORT_MAIL); }
+    else if (btn.dataset.act === 'block') { const s = new Set(blocked); s.add(name); setBlocked(s); sfx.tick && sfx.tick(); renderBoard(); }
+    return;
+  }
+  if (e.target.closest('#boardUnblock')) { setBlocked(new Set()); renderBoard(); return; }
+  const li = e.target.closest('li[data-n]:not(.acts)'); if (!li) return;
+  const open = list.querySelector('li.acts'), same = open && open.previousElementSibling === li;
+  if (open) open.remove();
+  if (same) return;
+  const n = li.dataset.n;
+  li.insertAdjacentHTML('afterend', `<li class="acts" data-n="${esc(n)}" data-cc="${esc(li.dataset.cc)}" data-r="${esc(li.dataset.r)}"><span class="acts-msg">${esc(n)}</span><button data-act="report">${esc(tr('Şikâyet et'))}</button><button data-act="block">${esc(tr('Engelle'))}</button></li>`);
+  sfx.tick && sfx.tick();
+}
 function boardMsg(info, line, tier = '') {
   $('boardInfo').textContent = info;
   $('boardList').innerHTML = line ? `<li class="gap msg">${line}</li>` : '';
@@ -3040,15 +3067,16 @@ async function renderBoard() {
     return boardMsg('', esc(tr('Haftalık sıralama {t} itibarıyla başlıyor. Ondan sonra uçanlar burada görünür.').replace('{t}', when)));
   }
   $('boardInfo').textContent = tr('{n} oyuncu').replace('{n}', fmt(src.total));
-  const li = (r, cc, name, score, cls = '', lv = 0) => `<li class="${cls}${r >= 1 && r <= 3 ? ' rk' + r : ''}"><b>${r ? '#' + fmt(r) : '—'}</b><i class="blv">${lv > 0 ? fmt(lv) : ''}</i><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`; // seviye bayrağın solunda
-  const top = src.top || [], me = src.me;
+  const li = (r, cc, name, score, cls = '', lv = 0) => `<li class="${cls}${r >= 1 && r <= 3 ? ' rk' + r : ''}"${/\bme\b/.test(cls) ? '' : ` data-n="${esc(name)}" data-cc="${esc(cc || '')}" data-r="${r}"`}><b>${r ? '#' + fmt(r) : '—'}</b><i class="blv">${lv > 0 ? fmt(lv) : ''}</i><img src="${flag(cc)}" alt=""><span>${esc(name)}</span><em>${score}</em></li>`; // seviye bayrağın solunda; başkasının şeridi dokununca şikâyet/engelle açar
+  const me = src.me, all = src.top || [], top = all.filter(t => t.me || !blocked.has(t.name)); // engellenen adlar bu cihazda görünmez (sıra numaraları sunucununki)
   let html = top.map(t => li(t.rank, t.me ? ccOf() : t.cc, t.name, fmt(t.score), t.me ? 'me' : t.rank <= 3 ? 'top' : '', t.me ? rank.lv : t.lv)).join('');
   if (!top.length) html = `<li class="gap msg">${tr('Henüz kimse uçmadı. İlk sen ol!')}</li>`;
   if (me && !top.some(t => t.me)) html += `<li class="gap">⋮</li>` + li(me.rank, ccOf(), shownName(), fmt(me.score), 'me', rank.lv);
   if (!me) html += li(0, ccOf(), shownName() || tr('Sen'), tr('Henüz uçmadın'), 'me', rank.lv);
   const list = $('boardList'); list.innerHTML = html;
   const meEl = list.querySelector('.me'); if (meEl) setTimeout(() => meEl.scrollIntoView({ block: 'nearest' }), 0);
-  $('boardTier').innerHTML = '';
+  $('boardTier').innerHTML = `<p class="board-ugc">${esc(tr('Uygunsuz bir ada dokun: şikâyet et ya da engelle.'))}` +
+    (blocked.size ? ` <button class="link" id="boardUnblock">${esc(tr('{n} engelli oyuncu · engelleri kaldır').replace('{n}', fmt(blocked.size)))}</button>` : '') + '</p>';
 }
 // ---------------- profil: ad ----------------
 function renderNameChip() { $('profileName').textContent = myName() || shownName() || tr('Ad seç'); $('profileFlag').src = flag(ccOf()); $('profLv').textContent = fmt(rank.lv); }
@@ -4194,6 +4222,7 @@ onBtn('modeClassic', () => pickMode('classic'));
 onBtn('modeDaily', () => pickMode('daily'));
 onBtn('closeDayRun', () => show('dayRunPanel', false));
 onBtn('boardBtn', () => { renderBoard(); show('boardPanel'); });
+$('boardList').addEventListener('click', boardRowTap); $('boardTier').addEventListener('click', boardRowTap);
 for (const el of $('boardTabs').children) el.addEventListener('click', () => { if (boardTab === el.dataset.t) return; boardTab = el.dataset.t; store.set('simit-martisi-board-tab', boardTab); sfx.tick && sfx.tick(); renderBoard(); });
 onBtn('closeBoard', () => show('boardPanel', false));
 // geri zinciri: alt panelin Tamam/Kapat'ı bir adım geri götürür (Martı Yolu → Profil → Ayarlar); karartılmış boşluğa dokunmak hepsini kapatır
