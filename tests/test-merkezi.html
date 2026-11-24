@@ -53,6 +53,11 @@ textarea { width: 100%; margin-top: 8px; min-height: 44px; border: 1px solid var
 <script>
 // En yeni üstte. g: grup başlığı, links: [etiket, adres]
 const ITEMS = [
+  { g: 'Mağaza kuralı · 24 Kasım', id: 'sikayet-engelle', t: '🚩 Sıralamada Şikâyet et / Engelle (TTS, App Store 1.2)', look: [
+      'Sıralamayı aç, başka bir oyuncunun satırına dokun: altında Şikâyet et / Engelle açılmalı; aynı satıra tekrar dokununca kapanmalı.',
+      'Şikâyet et: info@techtalentspace.com adresine hazır e-posta açılır, satırda teşekkür + adres yazar.',
+      'Engelle: ad listeden kalkar, altta “1 engelli oyuncu · engelleri kaldır” çıkar; ona basınca ad geri gelir. Kendi satırına dokununca hiçbir şey olmamalı.'],
+    links: [['Oyun', '/']] },
   { g: 'Donma · 23 Kasım', id: 'gardirop-ayar', t: '👕 Gardırop ve Ayarlar ilk açılışta takılmıyor', look: [
       'Oyunu aç, menüde 5-10 sn bekle, sonra Ayarlar’a ve Gardırop’a bas: takılmadan açılmalı.',
       'Ölçüm (4 kat yavaş işlemci): Ayarlar 265 → 36 ms, Gardırop 326-453 → 167 ms (kalan kısım gardırobun tam çözünürlüğe geçmesi, bilerek).'],
