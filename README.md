@@ -209,6 +209,8 @@ cd android && gradlew bundleRelease   # signed .aab for Play (app/build/outputs/
 npx cap open ios                      # on the Mac: archive and upload from Xcode
 ```
 
+iOS without a Mac: GitHub Actions → **iOS build** → Run workflow (`.github/workflows/ios.yml`) builds the app on a macOS runner and uploads it to TestFlight. Secrets: `ASC_KEY_P8`, `ASC_KEY_ID`, `ASC_ISSUER_ID` (App Store Connect Team API key) and `APPLE_TEAM_ID`. The archive is unsigned and the export signs for App Store distribution: archiving with automatic signing asks for a development profile, which fails with "Your team has no devices".
+
 - `app/native.js`: Android back button (pause in flight, close the open panel, else send the app to the background) and pause when the app leaves the screen.
 - Release signing reads `app/android/keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`); it and the `.jks` are never committed.
 - Icons and splash: `app/assets/` (square, opaque 1024 icon; Android adaptive background scaled to 85% so the wing tips stay inside the mask), regenerate with `npx capacitor-assets generate --android --ios`.

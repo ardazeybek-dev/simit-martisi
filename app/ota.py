@@ -28,7 +28,7 @@ _spec.loader.exec_module(build)
 
 REPO = "ardazeybek-dev/simit-martisi"
 MIN_NATIVE = 31314
-STORE = {"android": "https://play.google.com/store/apps/details?id=com.simitmartisi.game", "ios": ""}
+STORE = {"android": "https://play.google.com/store/apps/details?id=com.simitmartisi.game", "ios": "https://apps.apple.com/app/id6838064190"}
 OUT = ROOT / "app" / "ota"
 
 
