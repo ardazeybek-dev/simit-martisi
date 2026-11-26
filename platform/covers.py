@@ -25,7 +25,7 @@ COVERS = {  # name: (width, height, extra css)
     "crazygames-square-800x800": (800, 800, ".logo-badge { display: none; } .logo h1 span { font-size: 112px; } #title { padding-top: 26px; }"),
 }
 CSS = """
-#title .top-actions, #title .spacer, #title .tagline, #title .title-bottom, #hud, #powers, #tutorial { display: none !important; }
+#title .top-actions, #title .menu-top, #title .menu-side, #title .spacer, #title .tagline, #title .title-bottom, #hud, #powers, #tutorial { display: none !important; }
 #title { justify-content: flex-start; background: linear-gradient(rgba(28, 36, 86, .55), transparent 45%); }
 .logo, .logo-badge { animation: none !important; margin-top: 0; }
 """

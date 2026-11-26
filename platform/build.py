@@ -64,8 +64,8 @@ def patch_main(js):
     js = sub1(js, "  resetWorld(daily || state !== 'title'); state = 'play';\n", "  resetWorld(daily || state !== 'title'); state = 'play'; PF.gameplayStart();\n", "start event")
     js = sub1(js, "  state = 'dead'; cause = why;", "  PF.gameplayStop();\n  state = 'dead'; cause = why;", "stop event")
     # CrazyGames: no gameplayStop when the tab is hidden, only for a real pause
-    js = sub1(js, "  state = 'paused'; show('pause'); show('countdown', false);\n",
-              "  state = 'paused'; show('pause'); show('countdown', false);\n"
+    js = sub1(js, "function pause() {\n  if (state !== 'play' && state !== 'countdown') return;\n",
+              "function pause() {\n  if (state !== 'play' && state !== 'countdown') return;\n"
               "  if (!document.hidden && document.hasFocus()) PF.gameplayStop();\n", "pause event")
     js = sub1(js, "if (countdown <= 0) { state = 'play'; show('countdown', false); sfx.go(); }",
               "if (countdown <= 0) { state = 'play'; show('countdown', false); sfx.go(); PF.gameplayStart(); }", "resume event")
@@ -75,10 +75,13 @@ def patch_main(js):
 
     # ad break only on "play again" after game over: CrazyGames forbids ads on menu buttons.
     # startGame is blocked while the ad runs
-    js = sub1(js, "else if (state === 'over' && overLock <= 0) { e.preventDefault(); replay(); }",
-              "else if (state === 'over' && overLock <= 0) { e.preventDefault(); PF.adBreak(replay); }", "key ad")
-    js = sub1(js, "onBtn('againBtn', () => replay());",
-              "onBtn('againBtn', () => { if (overLock <= 0) PF.adBreak(replay); });", "again ad")
+    # leaveOver may first play the record celebration; the ad comes after it, right before the new flight
+    js = sub1(js, "else if (state === 'over' && overLock <= 0) { e.preventDefault(); leaveOver(replay); }",
+              "else if (state === 'over' && overLock <= 0) { e.preventDefault(); leaveOver(() => PF.adBreak(replay)); }", "key ad")
+    js = sub1(js, "onBtn('againBtn', () => leaveOver(replay));",
+              "onBtn('againBtn', () => leaveOver(() => PF.adBreak(replay)));", "again ad")
+    # share link (the share button is hidden on the portal): no store or site URL in the portal copy
+    js = re.sub(r"^const shareBase = \(\) => .*$", "const shareBase = () => location.href.split('#')[0].split('?')[0];", js, count=1, flags=re.M)
     return js
 
 
@@ -108,6 +111,10 @@ def patch_html(html, target):
                 SDK_TAG[target] + '\n<script src="platform.js"></script>\n<script type="module" src="js/main.js"></script>\n', "scripts")
     html = sub1(html, '<button class="side-btn m-board" id="boardBtn">', '<button class="side-btn m-board" id="boardBtn" style="display:none">', "board")
     html = sub1(html, '<button class="btn ghost" id="shareBtn">', '<button class="btn ghost" id="shareBtn" style="display:none">', "share")
+    # no leaderboard account on the portal, so nothing to delete; the privacy page is an outside link
+    html = sub1(html, '<div class="prof-foot">', '<div class="prof-foot" style="display:none">', "account foot")
+    html = re.sub(r'<a class="link set-priv" href="https://[^"]*"', '<a class="link set-priv" style="display:none"', html, count=1)
+    html = re.sub(r'(id="privLink" )href="https://[^"]*"', r'\1', html, count=1)
     sw = re.search(r"<script>\n  // modül yüklenemezse.*?</script>\n", html, re.S)
     if not sw:
         raise SystemExit("patch 'service worker': not found")

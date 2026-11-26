@@ -10,3 +10,4 @@ platform/crazygames/
 platform/covers/
 *.zip
 __pycache__/
+platform/upload/
