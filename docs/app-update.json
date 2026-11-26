@@ -1,0 +1,10 @@
+{
+  "version": "3.13.22",
+  "url": "https://github.com/ardazeybek-dev/simit-martisi/releases/download/ota-3.13.22/bundle-3.13.22.zip",
+  "checksum": "36bd982367489ffa03e72ef3f446024a7d2159790f1f8812ccdee447117e1cb0",
+  "minNative": 31314,
+  "store": {
+    "android": "https://play.google.com/store/apps/details?id=com.simitmartisi.game",
+    "ios": ""
+  }
+}

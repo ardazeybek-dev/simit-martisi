@@ -64,7 +64,8 @@ const homeAndBack = async () => { adb('shell input keyevent 3'); await sleep(300
   ok(p === GOOD.version, `yeni sürüm indi ve sıraya girdi (otaPending=${p})`);
   ok((await ver()) === v0, 'indirme sırasında oyun yeniden yüklenmedi (sürüm hâlâ ' + v0 + ')');
   await homeAndBack();
-  let v1 = await until(() => window.__game && document.querySelector('meta[name="app-version"]').content, 30000);
+  // arka planda yeniden yükleme birkaç saniye sürer: eski sayfayı okuyup erken dönmemek için sürüm değişene kadar bekle
+  let v1 = await until(v => { const m = document.querySelector('meta[name="app-version"]'); return window.__game && m && m.content !== v && m.content; }, 30000, v0) || await ver();
   ok(v1 === GOOD.version, `arka plandan dönünce yeni sürüm çalışıyor (${v1})`);
   const after = await snap();
   const lost = Object.keys(before).filter(k => after[k] !== before[k]);
