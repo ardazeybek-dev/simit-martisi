@@ -11,3 +11,4 @@ platform/covers/
 *.zip
 __pycache__/
 platform/upload/
+*.p8
