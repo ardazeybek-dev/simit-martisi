@@ -5,6 +5,8 @@
 (function () {
   'use strict';
   var TARGET = '__TARGET__';          // 'crazygames'
+  // CrazyGames allows no ads in Basic launch: build without --ads hides the rewarded button and skips ad breaks
+  var ADS = '__ADS__' === 'on';
   var MIN_PLAY_BEFORE_AD = 60;        // seconds of real gameplay before the first ad break
   var AD_TIMEOUT = 8000;              // never leave the player stuck if the SDK hangs
   try { var mp = /[?&]pf_minplay=(\d+)/.exec(location.search); if (mp) MIN_PLAY_BEFORE_AD = +mp[1]; } catch (e) {}  // testing only
@@ -50,6 +52,7 @@
   }
   function adBreak(then) {
     then = then || function () {};
+    if (!ADS) { then(); return; }
     if (adDone || rwDone) return;                         // already waiting for one
     // a rewarded "continue" was offered on this game-over screen: no midgame ad on top of it
     if (offered) { offered = false; then(); return; }
@@ -72,7 +75,7 @@
   // ---------------------------------------------------------------- rewarded ad
   // The reward is granted only when the ad was watched to the end (adFinished).
   // Errors, no fill and timeouts give nothing.
-  function canReward() { return TARGET === 'crazygames' && !!(cg && cg.environment !== 'disabled'); }
+  function canReward() { return ADS && TARGET === 'crazygames' && !!(cg && cg.environment !== 'disabled'); }
   function finishReward() {
     clearTimeout(adTimer);
     if (game) game.pauseInput(false);

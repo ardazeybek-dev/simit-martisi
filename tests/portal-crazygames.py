@@ -34,6 +34,10 @@ with sync_playwright() as p:
     hidden = pg.evaluate("['boardBtn', 'shareBtn'].map(i => getComputedStyle(document.getElementById(i)).display)")
     ok(hidden == ["none", "none"], f"leaderboard and share buttons hidden {hidden}")
     ok(pg.evaluate("!!window.PF && typeof PF.adBreak === 'function'"), "portal bridge (PF) loaded")
+    ads_on = "'on' === 'on'" in (GAME / "platform.js").read_text("utf-8")
+    print(f"     build: ads {'on (Full launch)' if ads_on else 'off (Basic launch)'}")
+    if not ads_on:
+        ok(pg.evaluate("PF.canReward() === false"), "ads off: no rewarded 'watch ad' button")
     pg.evaluate("__game.startGame()")
     pg.wait_for_function("__game.state === 'play'", timeout=15000)
     time.sleep(4)

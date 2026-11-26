@@ -175,7 +175,8 @@ Day-gated rewards (free wheel spin, daily limits, missions) read the day from `n
 
 ```
 python platform/build.py                 # platform/crazygames/
-python platform/build.py --zip <out_dir> # also simit-seagull-crazygames.zip, index.html at the zip root
+python platform/build.py --zip <out_dir> # also simit-seagull-crazygames.zip, index.html at the zip root (the portal wants the folder, not the zip)
+python platform/build.py --ads           # ads on: only after CrazyGames moves the game to Full launch (Basic launch allows no ads)
 python platform/covers.py <out_dir>      # 1920x1080, 800x1200 and 800x800 covers (needs Playwright)
 python tests/portal-crazygames.py        # plays the portal copy: one ad break on "play again", no outside requests
 ```

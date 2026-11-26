@@ -20,6 +20,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 SRC = ROOT / "platform" / "src"
 VENDOR = ROOT / "platform" / "vendor"
+ADS_ON = False
 THREE_CDN = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
 
 SDK_TAG = {
@@ -175,7 +176,7 @@ def build(target, zip_dir):
         js = {"main.js": patch_main, "audio.js": patch_audio, "net.js": patch_net, "util.js": patch_util}.get(f.name, lambda s: s)(js)
         (out / "js" / f.name).write_text(js, "utf-8")
     (out / "index.html").write_text(patch_html((DOCS / "index.html").read_text("utf-8"), target), "utf-8")
-    (out / "platform.js").write_text((SRC / "platform.js").read_text("utf-8").replace("__TARGET__", target), "utf-8")
+    (out / "platform.js").write_text((SRC / "platform.js").read_text("utf-8").replace("__TARGET__", target).replace("__ADS__", "on" if ADS_ON else "off"), "utf-8")
     check_urls(out)
     files = sorted(p for p in out.rglob("*") if p.is_file())
     size = sum(p.stat().st_size for p in files)
@@ -193,6 +194,8 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("targets", nargs="*", default=list(SDK_TAG))
     ap.add_argument("--zip", default="")
+    ap.add_argument("--ads", action="store_true", help="ads on (CrazyGames Full launch; Basic launch allows no ads)")
     a = ap.parse_args()
+    ADS_ON = a.ads
     for t in a.targets:
         build(t, a.zip)
