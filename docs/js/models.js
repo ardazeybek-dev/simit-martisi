@@ -2350,7 +2350,7 @@ export const COSTUMES = [
   { id: 'chef', name: 'Aşçı şapkası', slot: 'head', price: 1270 },
   { id: 'tophat', name: 'Dev silindir', slot: 'head', price: 1635 },
   { id: 'simitcrown', name: 'Simit tacı', slot: 'head', price: 2720 },
-  { id: 'durum', name: 'Dürüm martı', slot: 'body', price: 3265 },
+  { id: 'durum', name: 'Dürüm martı', slot: 'body', price: 3418 },
   { id: 'kurye', name: 'Kurye martı', slot: 'body', price: 2905 },
   { id: 'taksi', name: 'Taksi martı', slot: 'body', price: 2905 },
   // her biri başka bir mekaniği iyileştirir (arı, zıplayan balık, rekor, 2x puan)

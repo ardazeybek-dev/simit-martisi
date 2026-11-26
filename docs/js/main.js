@@ -206,7 +206,7 @@ function dayRun() {
 const dayLeft = () => Math.max(0, DAY_RUNS - dayRun().runs);
 // kostüm özellikleri: yalnızca giyili parça işler (panelde önizleme işlemez). Küçük tutuldu: cüzdana etkisi uçuş başı 1-2 simit
 const PERKS = { crown: 'Altın simit %20 daha sık çıkar', simitcrown: 'Simit kapma alanı %6 daha geniş', tophat: 'Güçlendirmeler +%8 süre', nazar: 'Kalkan daha sık çıkar', scarf: 'Karda %30 yavaş üşür', golden: 'Yakaladığın simitler cüzdana +%12', kurye: 'Görev ödülleri +%10', taksi: 'Kıl payı puanı x2',
-  fes: 'Simit puanı +%4', beanie: 'Karda %15 yavaş üşür', chef: 'Çay molası +%12 süre', captain: 'Mıknatıs +%12 süre', tray: 'Görev ödülleri +%12', glasses: 'Kalkan +%10 süre', hearts: 'Kombo süresi +%8', bigglasses: 'Kıl payı alanı %15 daha geniş', mustache: 'Kıl payı puanı +%20', pacifier: 'Dirilince kalkan +%20 süre', bowtie: 'Yunus bonusu +%40', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %15 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%10', ice: 'Karda %50 yavaş üşür', durum: 'Açlık %25 yavaş bastırır',
+  fes: 'Simit puanı +%4', beanie: 'Karda %15 yavaş üşür', chef: 'Çay molası +%12 süre', captain: 'Mıknatıs +%12 süre', tray: 'Görev ödülleri +%12', glasses: 'Kalkan +%10 süre', hearts: 'Kombo süresi +%8', bigglasses: 'Kıl payı alanı %15 daha geniş', mustache: 'Kıl payı puanı +%20', pacifier: 'Dirilince kalkan +%20 süre', bowtie: 'Yunus bonusu +%40', pink: 'Simit puanı +%5', night: 'Yağmurda rüzgâr %15 az iter', mint: 'Baca dumanı öksürtmez', sunset: 'Mesafeden cüzdana +%10', ice: 'Karda %50 yavaş üşür', durum: 'Açlık %18 yavaş bastırır',
   fisher: 'Balık yakalama şansı +%25', buoy: 'Açlık %20 yavaş bastırır', pirate: 'Altın simitler %33 daha değerli',
   ari: 'Mıknatıs daha sık çıkar', snorkel: 'Dirilmek yarı balık ister', medal: 'Rekorda cüzdan bonusu +%25', cini: '2x Puan +%12 süre' };
 // aynı şeyi iyileştiren parçalar (açlık, üşüme, görev ödülü) toplanmaz: giyililerin en güçlüsü işler
@@ -2568,7 +2568,7 @@ function resetWorld(newWeather = true) {
   beeZ = !city.ari ? -Infinity : BEE_SOON ? -90 : -rand(2050, 2250); // ilk kovanlar ~1,05 km
   turns = []; turnZ = 0; planYaw = 0; heading = 0; lean = 0; push = 0; sling = 0; slingV = 0;
   gull.position.set(0, FLY_Y, 0); gull.rotation.set(0, 0, 0); tx = 0; vx = 0; windW0 = 0;
-  runReal = 0; lastEatD = 0; noEat = 0; speed = 18; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; recBase = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
+  runReal = 0; lastEatD = 0; noEat = 0; egg1818 = false; speed = 18; playT = 0; points = 0; simitCount = 0; goldCount = 0; banked = 0; recPaid = 0; recBase = 0; carry0 = Math.max(0, +store.get(KEY_CARRY, 0) || 0); combo = 0; bestCombo = 0; comboT = 0; dist = 0;
   crashObs = null; crashT = 0; vy = 0; trauma = 0; hitStop = 0; timeScale = 1; invuln = 0; smokeT = 0; splashed = false; revives = 0; fishRev = 0; adRevived = false; fishRun = 0; fishTry = 0; fishEarly = false; xpGot = 0;
   pw.magnet = pw.shield = pw.double = pw.tea = 0; teaK = 1;
   for (const k in run) run[k] = 0; tempos = []; tempoZ = 0; tempoN = 0; tempoK = 1; tempoIn = null; stopI = 1; pierI = 1; stopM = STOPS.map(s => s.m); shownStop = -1; newStop = 0; slowT = 0;
@@ -2896,7 +2896,7 @@ function showOver() {
       const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
       el.textContent = fmt(Math.round(final * e));
       if (k < 1) requestAnimationFrame(step);
-      else { bump(el); if (isBest) { bump($('newRecord'), 'popin'); sfx.record(); confetti(); vibrate([30, 40, 30]); } }
+      else { bump(el); if (isBest) { bump($('newRecord'), 'popin'); sfx.record(); confetti(); vibrate([30, 40, 30]); } if (final % 100 === 18) setTimeout(() => state === 'over' && amkBurst({ big: fmt(final) }), isBest ? 900 : 200); }
     };
     el.textContent = '0';
     requestAnimationFrame(step);
@@ -3319,18 +3319,39 @@ function eggTap(id) {
   if (eggN < 18) return;
   eggN = 0; amkBurst();
 }
-function amkBurst() {
-  const box = document.createElement('div'); box.id = 'amkEgg'; box.className = 'amk-egg';
-  for (let i = 0; i < 34; i++) {
+// 18 sürprizleri (hepsi Dürüm / Ar.Me.Ka teması): skor …18 ile biterse bitiş ekranında, uçuşta tam 1818 m'de çiğ köfte yağmuru + 18 simit,
+// saat 18:18'de menüde (Dürüm giyiliyse günde bir 18 simit), Dürüm giyiliyken kombo 18'de kısa parlama
+function amkBurst(o = {}) {
+  const n = o.n || 34, txt = o.txt || 'Ar.Me.Ka', life = o.life || 3200;
+  const box = document.createElement('div'); box.id = 'amkEgg'; box.className = 'amk-egg' + (o.rain ? ' rain' : '');
+  for (let i = 0; i < n; i++) {
     const s = document.createElement('span'), a = rand(0, Math.PI * 2), d = rand(30, 62);
-    s.textContent = 'Ar.Me.Ka';
+    s.textContent = txt;
+    if (o.rain) { s.style.cssText = `left:${rand(2, 98).toFixed(1)}%;--r:${rand(-200, 200).toFixed(0)}deg;--s:${rand(0.8, 1.5).toFixed(2)};animation-delay:${rand(0, 1.2).toFixed(2)}s;animation-duration:${rand(1.6, 2.6).toFixed(2)}s`; box.appendChild(s); continue; }
     s.style.cssText = `--dx:${(Math.cos(a) * d).toFixed(1)}vmax;--dy:${(Math.sin(a) * d - 8).toFixed(1)}vmax;--r:${rand(-40, 40).toFixed(0)}deg;--s:${rand(0.7, 1.7).toFixed(2)};animation-delay:${rand(0, 0.5).toFixed(2)}s`;
     box.appendChild(s);
   }
-  const big = document.createElement('b'); big.textContent = 'Ar.Me.Ka'; box.appendChild(big);
+  if (o.big !== '') { const big = document.createElement('b'); big.textContent = o.big || 'Ar.Me.Ka'; box.appendChild(big); }
   $('amkEgg')?.remove(); document.body.appendChild(box);
-  sfx.record(); setTimeout(() => sfx.record(), 300); vibrate([40, 30, 40, 30, 90]);
-  setTimeout(() => box.remove(), 3200);
+  if (o.quiet) sfx.click(); else { sfx.record(); setTimeout(() => sfx.record(), 300); vibrate([40, 30, 40, 30, 90]); }
+  setTimeout(() => box.remove(), life);
+}
+const EGG_SIMIT = 18;
+function eggGift() { wallet += EGG_SIMIT; store.set(KEY_WALLET, wallet); }
+let egg1818 = false; // uçuş başına bir kez
+function egg1818Tick() {
+  if (egg1818 || dist < 1818) return;
+  egg1818 = true; eggGift();
+  amkBurst({ rain: true, txt: '🌯', n: 26, big: '1818 m · +' + EGG_SIMIT + ' 🌯', life: 3600 });
+}
+const KEY_EGG_CLOCK = 'simit-martisi-egg-1818';
+let eggClockT = 0;
+function eggClockTick(dt) { // menüdeyken saniyede bir saate bakar; 18:18'de günde bir kez
+  if ((eggClockT -= dt) > 0) return; eggClockT = 1;
+  const d = new Date(); if (d.getHours() !== 18 || d.getMinutes() !== 18 || store.get(KEY_EGG_CLOCK, '') === dayKey()) return;
+  store.set(KEY_EGG_CLOCK, dayKey());
+  const gift = perk('durum'); if (gift) { eggGift(); $('titleWallet').textContent = walletTxt(); }
+  amkBurst({ big: gift ? '18:18 · +' + EGG_SIMIT + ' 🌯' : '18:18 🌯' });
 }
 let cosLock = 0, cosLockId = null; // satın alınca düğme "Çıkar"a döner: hızlı ikinci dokunuş yeni alınanı çıkarmasın
 function costumeAction() {
@@ -4659,7 +4680,7 @@ function frame() {
     lean = damp(lean, cur ? cur.dir : 0, 3, dt);
     push = Math.abs(lean) * (0.9 + speed * 0.045) * PUSH * (MOBILE ? 0.4 : 1); // telefonda savrulma hafif: başparmakla düzeltmek zor
     // savrulma, viraj içine yaslandıkça söner: içe tam yaslanan martı tepe noktasındaki simitlere ulaşır
-    if (state === 'play') { weatherTick(dt); hungerTick(dt); }
+    if (state === 'play') { weatherTick(dt); hungerTick(dt); egg1818Tick(); } else if (state === 'title') eggClockTick(dt);
     if (state === 'play') { const sd = Math.abs(g.x) > 2.6 ? Math.sign(g.x) : 0; if (sd && sd === campSide) campT += dt; else { campSide = sd; campT = 0; } }
     const txl = EDGE; // martı vapur küpeştesinin içinde kalır: kapalı salonun dışından dolaşılamaz
     if (keys.ArrowLeft || keys.KeyA) tx = clamp(tx - 17 * dt, -txl, txl);
@@ -5159,6 +5180,7 @@ function coinFly(gold, sel = '.sub .ico', icon = 'i-simit') {
 }
 function takeSimit(s) {
   combo = comboT > 0 ? combo + 1 : 1; comboT = comboT0(); bestCombo = Math.max(bestCombo, combo);
+  if (combo === 18 && perk('durum')) amkBurst({ n: 12, life: 1600, big: '', quiet: true });
   const m = mult() * (pw.double > 0 ? 2 : 1) * (perk('fes') ? 1.04 : 1) * (perk('pink') ? 1.05 : 1) * (setOn() ? 1.1 : 1); // Fes +%4, Pembe tüy +%5, tamam set +%10 simit puanı (mesafe puanına dokunmaz)
   // simit parçası (atılan, çöpten çıkan) çeyrek simittir: puanın ve cüzdana katkısının dörtte biri
   const q = (s.piece && !s.gold ? 0.25 : 1) * (ruleOn('giant') ? 2 : 1), base = s.gold ? 50 : 10, gain = Math.max(1, Math.round(base * m * q));
@@ -5205,7 +5227,7 @@ function judgeTurn(u) {
 function hungerTick(dt) {
   if (weather === 'snow' || tutorialPending) { if (shownFull >= 0) { show('hungry', false); shownFull = -1; } return; }
   const was = full;
-  if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 8) * (perk('durum') ? 0.75 : perk('buoy') ? 0.8 : 1)); // Can simidi %20, Dürüm martı %25 yavaş acıkır
+  if (dist >= 50) full = Math.max(0, full - dt / (city.hunger || 8) * (perk('buoy') ? 0.8 : perk('durum') ? 0.82 : 1)); // Can simidi %20, Dürüm martı %18 yavaş acıkır (en güçlüsü işler)
   if (was >= 0.25 && full < 0.25) { sfx.shiver(); vibrate(20); } // titreme başladı: 2 sn sonra düşer
   starve = full < 0.25; // son çeyrek (8 sn'lik barda son 2 sn): martı titrer, başı düşer
   if (full <= 0) { crash('açlıktan'); if (state === 'play') full = 0.35; } // açlıktan düşer (kalkan yutarsa biraz doyar)
