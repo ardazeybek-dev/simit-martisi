@@ -56,10 +56,12 @@ const fold = s => Array.from(String(s).normalize('NFKD').replace(/[\u0300-\u036f
   .replace(/[^a-z]+/g, ' ').replace(/(.)\1+/g, '$1').trim(); // kelimeler boşlukla ayrık, tekrar eden harf teke iner
 // ad yalnızca Latin/Türkçe harf, rakam, boşluk, . _ - ve emoji içerebilir (Kiril, Yunan, süslü/tam genişlik harfler yasak)
 export const oddName = s => /[^A-Za-z0-9 ._çğıöşüÇĞİÖŞÜâîûÂÎÛäëïÿÄËÏßñÑáéíóúÁÉÍÓÚàèìòùÀÈÌÒÙêôÊÔãõÃÕ\u2600-\u27bf\u2b00-\u2bff\u{1f000}-\u{1f0ff}\u{1f200}-\u{1faff}\ufe0f\u200d-]/u.test(String(s).normalize('NFC'));
+// sik… türevleri g/q → k sayılarak aranır (sigen, sıgen, sikq...); önünde i varsa sayılmaz (Işıkım, Işıkken, İskender), z'li hâlde müzik/fizik temiz kalsın diye ek listesi dar
+const SIK = /(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici|en|ecek|ecem|mek|mis|tim|ti)|(^|[^i])zik(tir|erim|eyim|is(?!ev)|en|ecek)|(^|[^ia])sken/;
 export const rudeName = s => {
   // harf harf yazılan ("s.i.k", "g ö t") tek harflik parçalar birleşir
   const f = fold(s).replace(/(?<=\b[a-z]) (?=[a-z]\b)/g, '').replace(/(.)\1+/g, '$1'), n = f.replace(/ /g, '').replace(/(.)\1+/g, '$1');
-  return oddName(s) || BAD.some(w => n.includes(w)) || f.split(' ').some(w => WORDS.has(w)) || /(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici|en)/.test(f) || /(^|[^i])zik(tir|erim|eyim|is|en)/.test(f);
+  return oddName(s) || BAD.some(w => n.includes(w)) || f.split(' ').some(w => WORDS.has(w)) || SIK.test(f.replace(/[gq]/g, 'k').replace(/(.)\1+/g, '$1'));
 };
 
 export const profile = () => store.get(KEY_PROFILE, null) || {};

@@ -90,8 +90,8 @@ language sql immutable as $$
   -- yalnızca Latin/Türkçe harf, rakam, boşluk, . _ - ve emoji (Kiril, Yunan, süslü harfler yasak); net.js oddName ile aynı
   or normalize(coalesce(p, ''), NFC) ~ '[^A-Za-z0-9 ._çğıöşüÇĞİÖŞÜâîûÂÎÛäëïÿÄËÏßñÑáéíóúÁÉÍÓÚàèìòùÀÈÌÒÙêôÊÔãõÃÕ\u2600-\u27bf\u2b00-\u2bff\U0001f000-\U0001f0ff\U0001f200-\U0001faff\ufe0f\u200d-]'
   -- sik… kökleri önünde i varsa sayılmaz: "Işıkım", "Işıktır" (isikim, isiktir) temiz kalsın
-  or sm_words(p) ~ '(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici|en)'
-  or sm_words(p) ~ '(^|[^i])zik(tir|erim|eyim|is|en)'
+  -- g/q → k sayılır (sigen, sıgen); z'li hâlde müzik/fizik temiz kalsın diye ek listesi dar; "sken" önünde i/a varsa sayılmaz (İskender, maske)
+  or regexp_replace(translate(sm_words(p), 'gq', 'kk'), '(.)\1+', '\1', 'g') ~ '(^|[^i])sik(tir|erim|eyim|iyim|ik|is|im|ici|en|ecek|ecem|mek|mis|tim|ti)|(^|[^i])zik(tir|erim|eyim|is(?!ev)|en|ecek)|(^|[^ia])sken'
 $$;
 
 create or replace function register(p_name text, p_cc text default 'TR') returns json
