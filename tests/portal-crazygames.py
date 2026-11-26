@@ -49,6 +49,42 @@ with sync_playwright() as p:
     pg.wait_for_function("__game.state === 'play' || __game.state === 'countdown'", timeout=20000)
     time.sleep(2)
     ok(pg.evaluate("window.__ads") == 1, f"play again asks for one ad break, then flies (adBreak={pg.evaluate('window.__ads')})")
+
+    # Data module (progress save): a stand-in SDK whose save survives reloads (kept in sessionStorage)
+    FAKE_SDK = """window.CrazyGames = { SDK: {
+      init: () => new Promise(r => setTimeout(r, 300)),
+      environment: 'local',
+      game: { gameplayStart() {}, gameplayStop() {}, happytime() {}, loadingStart() {}, loadingStop() {}, settings: {}, addSettingsChangeListener() {} },
+      ad: { requestAd(t, cb) { cb.adFinished && cb.adFinished(); } },
+      data: (() => { const S = 'fakeCG', o = () => JSON.parse(sessionStorage.getItem(S) || '{}'), w = d => sessionStorage.setItem(S, JSON.stringify(d));
+        return { getItem: k => (k in o() ? o()[k] : null), setItem: (k, v) => { const d = o(); d[k] = String(v); w(d); },
+                 removeItem: k => { const d = o(); delete d[k]; w(d); }, clear: () => w({}) }; })()
+    } };"""
+    ctx = b.new_context(viewport={"width": 1280, "height": 720})
+    ctx.route("https://sdk.crazygames.com/**", lambda r: r.fulfill(status=200, content_type="text/javascript", body=FAKE_SDK))
+    pg = ctx.new_page()
+    pg.on("pageerror", lambda e: errors.append(str(e)))
+    # a returning player: this browser already has a save from before the Data module
+    # (a same-origin page that is not the game, so nothing is in the Data module yet; with the one-time marks a real save has)
+    marks = re.findall(r"_MARK = '([^']+)'", (ROOT / "docs" / "js" / "util.js").read_text("utf-8"))
+    pg.goto("http://127.0.0.1:8791/fonts/OFL-Baloo2.txt")
+    pg.evaluate("m => { for (const k of m) localStorage.setItem(k, '1'); localStorage.setItem('simit-martisi-best', '4321'); }", marks)
+    pg.goto("http://127.0.0.1:8791/index.html")
+    pg.wait_for_function("window.__game && __game.state === 'title'", timeout=60000)
+    ok(pg.evaluate("!!(PF.storage && PF.storage.sdk)"), "save goes through the Data module (PF.storage)")
+    fake = lambda: pg.evaluate("JSON.parse(sessionStorage.getItem('fakeCG') || '{}')")
+    ok(fake().get("simit-martisi-best") == "4321", "an older local save is copied into the Data module")
+    pg.evaluate("__game.startGame()")
+    pg.wait_for_function("(__game.state === 'play' && __game.crash(), __game.state === 'over')", timeout=30000, polling=300)
+    time.sleep(1)
+    keys = [k for k in fake() if k.startswith("simit-martisi")]
+    ok(len(keys) >= 3, f"a flight writes the save into the Data module ({len(keys)} keys)")
+    pg.evaluate("PF.storage.setItem('simit-martisi-wallet', '777'); localStorage.removeItem('simit-martisi-wallet')")
+    pg.reload()
+    pg.wait_for_function("window.__game && __game.state === 'title'", timeout=60000)
+    ok(pg.evaluate("__game.wallet") == 777, f"after a reload the save comes back from the Data module (wallet {pg.evaluate('__game.wallet')})")
+    ok(pg.evaluate("localStorage.getItem('simit-martisi-wallet')") is None, "the wallet is not written to plain localStorage")
+    ctx.close()
     b.close()
 srv.shutdown()
 

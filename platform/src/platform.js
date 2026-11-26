@@ -106,12 +106,55 @@
   }
   function happy() { try { if (cg) cg.game.happytime(); } catch (e) {} }
 
-  var ready = TARGET === 'crazygames' ? initCrazy() : Promise.resolve();
+  // ---------------------------------------------------------------- progress save
+  // docs.crazygames.com/sdk/data/ : the save lives in the SDK Data module (guests: the SDK keeps it locally,
+  // logged-in players: on their CrazyGames account). Same calls as localStorage; the module has no key list,
+  // so the adapter keeps one (util.js walks the keys for its one-time save clean-ups).
+  var LANG_KEY = 'simit-martisi-settings';   // i18n.js reads the language from localStorage before the SDK is up
+  var storage = null;
+  function dataStore(d) {
+    var IDX = '__pfKeys', keys = [];
+    try { keys = JSON.parse(d.getItem(IDX) || '[]') || []; } catch (e) { keys = []; }
+    function saveKeys() { d.setItem(IDX, JSON.stringify(keys)); }
+    var s = {
+      getItem: function (k) { var v = d.getItem(k); return v === undefined ? null : v; },
+      setItem: function (k, v) {
+        v = String(v); d.setItem(k, v);
+        if (keys.indexOf(k) < 0) { keys.push(k); saveKeys(); }
+        if (k === LANG_KEY) try { localStorage.setItem(k, v); } catch (e) {}
+      },
+      removeItem: function (k) { d.removeItem(k); var i = keys.indexOf(k); if (i >= 0) { keys.splice(i, 1); saveKeys(); } },
+      key: function (i) { return i >= 0 && i < keys.length ? keys[i] : null; },
+      clear: function () { d.clear(); keys = []; },
+      get length() { return keys.length; },
+      sdk: true
+    };
+    // first run with the Data module: bring over a save this browser already has (docs: copy existing localStorage keys)
+    if (!keys.length) {
+      try {
+        for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf('simit-martisi') === 0) s.setItem(k, localStorage.getItem(k)); }
+      } catch (e) {}
+    }
+    return s;
+  }
+  function pickStorage() {
+    try {
+      var d = cg && cg.data;
+      if (d && typeof d.getItem === 'function') { d.getItem('__pfKeys'); storage = dataStore(d); return; }
+    } catch (e) { console.warn('[portal] Data module unavailable, saving locally', e); }
+    storage = null;   // util.js falls back to localStorage
+  }
+
+  // the game waits for this before loading (index.html): the SDK preloads the save during init.
+  // A hung SDK must not keep the player on the loading screen.
+  var ready = (TARGET === 'crazygames' ? Promise.race([initCrazy(), new Promise(function (r) { setTimeout(r, 8000); })]) : Promise.resolve())
+    .then(pickStorage);
   ready.then(function () { try { if (cg) cg.game.loadingStart(); } catch (e) {} });
 
   window.PF = {
     target: TARGET, t: t, get lang() { return I18N.lang; }, get inAd() { return inAd; }, get playing() { return playing; },
     get sdkMuted() { return sdkMuted; }, get playSeconds() { return playSeconds; },
+    ready: ready, get storage() { return storage; },
     bind: function (g) { game = g; if (sdkMuted) g.mute(true); },
     loaded: function () { ready.then(function () { try { if (cg) cg.game.loadingStop(); } catch (e) {} }); },
     gameplayStart: gameplayStart, gameplayStop: gameplayStop, adBreak: adBreak, happy: happy,

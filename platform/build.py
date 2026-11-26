@@ -108,7 +108,10 @@ def patch_html(html, target):
     html = sub1(html, THREE_CDN, "./js/three.module.min.js", "import map")
     # end of body: the SDK appends to document.body during init
     html = sub1(html, '<script type="module" src="js/main.js"></script>\n',
-                SDK_TAG[target] + '\n<script src="platform.js"></script>\n<script type="module" src="js/main.js"></script>\n', "scripts")
+                SDK_TAG[target] + '\n<script src="platform.js"></script>\n'
+                # main.js waits for the SDK: it preloads the save, which util.js reads on import
+                "<script>PF.ready.then(function () { var s = document.createElement('script'); s.type = 'module'; s.src = 'js/main.js';"
+                " document.body.appendChild(s); });</script>\n", "scripts")
     html = sub1(html, '<button class="side-btn m-board" id="boardBtn">', '<button class="side-btn m-board" id="boardBtn" style="display:none">', "board")
     html = sub1(html, '<button class="btn ghost" id="shareBtn">', '<button class="btn ghost" id="shareBtn" style="display:none">', "share")
     # no leaderboard account on the portal, so nothing to delete; the privacy page is an outside link
@@ -125,6 +128,14 @@ def patch_html(html, target):
         " m.textContent = PF.t('Oyun yüklenemedi. Bağlantını kontrol edip sayfayı yenile.'); }, 15000);\n"
         "</script>\n"))  # classic script: runs before the deferred main.js module
     return html
+
+
+def patch_util(js):
+    # the save goes through the portal's Data module (PF.storage, set before main.js loads); localStorage without the SDK
+    n = js.count("localStorage")
+    if n < 3:
+        raise SystemExit(f"patch 'storage': expected localStorage calls in util.js, found {n}")
+    return "const LS = (window.PF && window.PF.storage) || localStorage;\n" + re.sub(r"\blocalStorage\b", "LS", js)
 
 
 def patch_net(js):
@@ -161,7 +172,7 @@ def build(target, zip_dir):
         shutil.copy2(f, out / "js" / "lang" / f.name)
     for f in (DOCS / "js").glob("*.js"):
         js = f.read_text("utf-8")
-        js = {"main.js": patch_main, "audio.js": patch_audio, "net.js": patch_net}.get(f.name, lambda s: s)(js)
+        js = {"main.js": patch_main, "audio.js": patch_audio, "net.js": patch_net, "util.js": patch_util}.get(f.name, lambda s: s)(js)
         (out / "js" / f.name).write_text(js, "utf-8")
     (out / "index.html").write_text(patch_html((DOCS / "index.html").read_text("utf-8"), target), "utf-8")
     (out / "platform.js").write_text((SRC / "platform.js").read_text("utf-8").replace("__TARGET__", target), "utf-8")

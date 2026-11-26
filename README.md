@@ -185,7 +185,9 @@ The portal copy:
 - drops the service worker, manifest, social meta tags, the share button and the leaderboard (no outside requests: `net.js` gets an empty backend address, the board button is hidden),
 - calls the CrazyGames SDK v3: loading and gameplay events, `happytime` on a new best, a rewarded ad for the second chance (granted only on `adFinished`; on error the player sees "No ad available"), a midgame ad on "play again" after 60 s of play (never on the title screen: no ads behind menu buttons; skipped when a second chance was just offered), audio muted during ads and when the portal asks for it.
 
-Without the SDK (ad blocker, local run) every portal call is a no-op and the game plays normally.
+- saves progress through the SDK Data module (`PF.storage`; `util.js` uses it instead of `localStorage`, `main.js` loads after the SDK init so the save is there; a save already in the browser is copied over once). In the submission form pick "Yes, using the Data Module", otherwise the module stays off.
+
+Without the SDK (ad blocker, local run) every portal call is a no-op, the save stays in `localStorage` and the game plays normally.
 `?pf_minplay=0` shows the ad break on the first restart, for testing.
 
 The build patches `docs/` source by exact string match and stops with `patch '<name>': expected 1 match` when the game code changed. Update the matching line in `build.py` then.
