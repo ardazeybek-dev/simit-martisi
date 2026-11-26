@@ -491,8 +491,9 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .vols { margin: 16px 0 0; display: grid; gap: 8px; }
 .vol { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 14px;
   background: rgba(255, 255, 255, .06); border: 1px solid var(--line); font-size: 17px; font-weight: 700; }
-.vol input { flex: none; width: 46%; accent-color: var(--teal); height: 26px; cursor: pointer; }
-.vol span { flex: 1; text-align: left; }
+.vol input { flex: 1 1 0; width: auto; min-width: 84px; max-width: 46%; accent-color: var(--teal); height: 26px; cursor: pointer; }
+.vol span { flex: 0 1 auto; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 400px) { .vol { gap: 10px; padding: 10px 12px; } }
 .vol-ico { flex: none; display: grid; place-items: center; width: 38px; height: 38px; margin: -4px 0 -4px -6px; border: 0; border-radius: 12px;
   background: rgba(255, 255, 255, .1); color: var(--cream); cursor: pointer; }
 .vol-ico svg { width: 22px; height: 22px; }
@@ -1281,7 +1282,7 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; backg
 .ward-turn { position: fixed; z-index: 3; top: calc(12px + env(safe-area-inset-top)); right: 12px; width: auto; height: 40px; padding: 0 12px; gap: 6px; grid-auto-flow: column; color: #fff; font: 700 14px/1 inherit; font-family: inherit; }
 .ward-turn svg { width: 18px; height: 18px; transition: transform .35s; }
 .ward-turn.back svg { transform: scaleX(-1); }
-.ward-set { position: fixed; z-index: 3; left: 12px; top: calc(16px + env(safe-area-inset-top)); max-width: calc(100vw - 150px); padding: 6px 14px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.ward-set { position: fixed; z-index: 3; left: 12px; top: calc(16px + env(safe-area-inset-top)); max-width: calc(100vw - 150px); padding: 6px 14px; border-radius: 16px; line-height: 1.3; white-space: normal; overflow-wrap: anywhere;
   font-weight: 700; font-size: 13.5px; color: #fff; background: rgba(30, 6, 18, .45); border: 1px solid rgba(255, 255, 255, .18); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .ward-set .n { opacity: .75; font-weight: 600; }
 .ward-set { transform-origin: left center; }
