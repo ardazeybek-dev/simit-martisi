@@ -90,6 +90,150 @@ Grab your simit! 🥯
 
 ---
 
+## Deutsch (de-DE)
+
+**Titel:** Simit-Möwe
+
+**Kurzbeschreibung (Play):** Gleite über Istanbuls Fähren und schnapp dir Simits! 3D-Flug mit einem Finger.
+
+**Vollständige Beschreibung:**
+
+Werde zur Möwe über dem Bosporus! Gleite zwischen Fähren, Ufervillen und Brücken hindurch, schnapp den Passagieren die Simits (türkische Sesamkringel) direkt aus der Hand und weiche Schornsteinen und Drachen aus.
+
+🕊️ MIT EINEM FINGER SPIELEN
+Wische nach links und rechts, und die Möwe folgt dir. In Sekunden gelernt, in Wochen gemeistert.
+
+🗺️ NEUN STÄDTE
+Starte am Bosporus; erreichst du das Schwarze Meer, öffnet sich İzmir. Danach Antalya, Muğla, Çanakkale, Trabzon, Samsun, Rize und Mersin. Jede Stadt hat eigene Anleger, eigene Gefahren und eigene Aussichten – und jede neue ist schwieriger als die vorige und bringt mehr Punkte.
+
+🎩 KOSTÜME
+Kleide deine Möwe mit den gesammelten Simits ein: Hüte, Brillen, Schals, Medaillen … Jedes Teil hat einen Vorteil, der im Flug zählt. Vervollständige ein dreiteiliges Set für Bonuspunkte.
+
+🎁 JEDEN TAG ETWAS NEUES
+Tägliche Belohnungsserie, ein täglicher Flug, Missionen und eine Wochenrangliste. Die Besten der Woche erhalten einen Preis.
+
+🏆 RANGLISTE
+Tritt gegen Möwen aus aller Welt an und fordere deine Freunde heraus.
+
+✨ HIGHLIGHTS
+• Keine Werbung, keine Käufe mit echtem Geld
+• Auch offline spielbar (für die Rangliste ist eine Verbindung nötig)
+• 20 Sprachen
+• Übertragungscode, um deinen Spielstand auf ein anderes Gerät mitzunehmen
+• Keine E-Mail, kein Standort, keine persönlichen Daten nötig
+
+Schnapp dir deinen Simit! 🥯
+
+---
+
+## Русский (ru-RU)
+
+**Название:** Симит-чайка
+
+**Краткое описание (Play):** Пари над паромами Стамбула и хватай симиты! 3D-полёт одним пальцем.
+
+**Полное описание:**
+
+Стань чайкой над Босфором! Пари между паромами, особняками на берегу и мостами, выхватывай симиты (турецкие бублики с кунжутом) прямо из рук пассажиров и уворачивайся от труб и воздушных змеев.
+
+🕊️ ИГРА ОДНИМ ПАЛЬЦЕМ
+Веди пальцем влево и вправо — чайка полетит следом. Научиться можно за секунды, стать мастером — за недели.
+
+🗺️ ДЕВЯТЬ ГОРОДОВ
+Начни на Босфоре; доберёшься до Чёрного моря — откроется Измир. Затем Анталья, Мугла, Чанаккале, Трабзон, Самсун, Ризе и Мерсин. У каждого города свои причалы, свои опасности и свои виды, а каждый новый сложнее предыдущего и приносит больше очков.
+
+🎩 КОСТЮМЫ
+Наряжай чайку за собранные симиты: шляпы, очки, шарфы, медали… У каждой вещи есть свойство, которое помогает в полёте. Собери комплект из трёх предметов и получи бонусные очки.
+
+🎁 КАЖДЫЙ ДЕНЬ ЧТО-ТО НОВОЕ
+Серия ежедневных наград, ежедневный полёт, задания и еженедельный рейтинг. Лучшие игроки недели получают приз.
+
+🏆 РЕЙТИНГ
+Соревнуйся с чайками со всего мира и бросай вызов друзьям.
+
+✨ ОСОБЕННОСТИ
+• Без рекламы и без покупок за реальные деньги
+• Можно играть без интернета (для рейтинга нужно подключение)
+• 20 языков
+• Код переноса, чтобы перенести сохранение на другое устройство
+• Не нужны e-mail, местоположение и личные данные
+
+Хватай свой симит! 🥯
+
+---
+
+## Español (es-ES y es-419)
+
+**Título:** Gaviota Simit
+
+**Descripción breve (Play):** ¡Planea sobre los ferris de Estambul y atrapa simits! Vuelo 3D con un solo dedo.
+
+**Descripción completa:**
+
+¡Conviértete en una gaviota sobre el Bósforo! Planea entre ferris, mansiones junto al agua y puentes, arrebata los simits (roscas turcas de sésamo) de las manos de los pasajeros y esquiva chimeneas y cometas.
+
+🕊️ JUEGA CON UN SOLO DEDO
+Desliza el dedo a izquierda y derecha y la gaviota te sigue. Se aprende en segundos y se domina en semanas.
+
+🗺️ NUEVE CIUDADES
+Empieza en el Bósforo; al llegar al mar Negro se desbloquea İzmir. Después vienen Antalya, Muğla, Çanakkale, Trabzon, Samsun, Rize y Mersin. Cada ciudad tiene sus propios muelles, peligros y paisajes, y cada nueva es más difícil que la anterior y da más puntos.
+
+🎩 DISFRACES
+Viste a tu gaviota con los simits que recojas: sombreros, gafas, bufandas, medallas… Cada prenda tiene una ventaja que cuenta en pleno vuelo. Completa un conjunto de tres piezas para ganar puntos extra.
+
+🎁 ALGO NUEVO CADA DÍA
+Racha de recompensas diarias, un vuelo diario, misiones y una clasificación semanal. Los mejores de la semana se llevan un premio.
+
+🏆 CLASIFICACIÓN
+Compite con gaviotas de todo el mundo y reta a tus amigos.
+
+✨ CARACTERÍSTICAS
+• Sin anuncios ni compras con dinero real
+• Se puede jugar sin conexión (la clasificación necesita internet)
+• 20 idiomas
+• Código de transferencia para llevar tu partida a otro dispositivo
+• No pide correo electrónico, ubicación ni datos personales
+
+¡Atrapa tu simit! 🥯
+
+---
+
+## Português (pt-BR)
+
+**Título:** Gaivota do Simit
+
+**Descrição breve (Play):** Plane sobre as balsas de Istambul e pegue simits! Voo 3D com um dedo só.
+
+**Descrição completa:**
+
+Seja uma gaivota sobre o Bósforo! Plane entre balsas, mansões à beira d'água e pontes, pegue os simits (roscas turcas de gergelim) das mãos dos passageiros e desvie de chaminés e pipas.
+
+🕊️ JOGUE COM UM DEDO SÓ
+Deslize o dedo para a esquerda e para a direita e a gaivota segue você. Leva segundos para aprender e semanas para dominar.
+
+🗺️ NOVE CIDADES
+Comece no Bósforo; ao chegar ao Mar Negro, İzmir é liberada. Depois vêm Antalya, Muğla, Çanakkale, Trabzon, Samsun, Rize e Mersin. Cada cidade tem seus próprios píeres, perigos e paisagens, e cada nova é mais difícil que a anterior e vale mais pontos.
+
+🎩 FANTASIAS
+Vista sua gaivota com os simits que você coletar: chapéus, óculos, cachecóis, medalhas… Cada peça tem uma vantagem que faz diferença no voo. Complete um conjunto de três peças para ganhar pontos extras.
+
+🎁 ALGO NOVO TODO DIA
+Sequência de recompensas diárias, um voo diário, missões e um ranking semanal. Os melhores da semana ganham um prêmio.
+
+🏆 RANKING
+Dispute com gaivotas do mundo todo e desafie seus amigos.
+
+✨ RECURSOS
+• Sem anúncios e sem compras com dinheiro real
+• Dá para jogar off-line (o ranking precisa de conexão)
+• 20 idiomas
+• Código de transferência para levar seu progresso para outro aparelho
+• Não pede e-mail, localização nem dados pessoais
+
+Pegue seu simit! 🥯
+
+---
+
 ## Veri güvenliği (Play Console → Uygulama içeriği → Veri güvenliği)
 
 - Kullanıcı verisi topluyor ya da paylaşıyor mu? **Evet** (topluyor; paylaşmıyor).
