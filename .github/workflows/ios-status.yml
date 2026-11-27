@@ -1,0 +1,43 @@
+# iOS status (read only): App Store review state of Simit Martısı and the latest App Store reviews.
+# Uses the same App Store Connect API key secrets as ios.yml; it only reads, it changes nothing.
+name: iOS status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: pip install --quiet "pyjwt[crypto]" requests
+      - name: Read state
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        shell: python
+        run: |
+          import os, time, jwt, requests
+          APP = "6838064190"
+          now = int(time.time())
+          tok = jwt.encode({"iss": os.environ["ASC_ISSUER_ID"], "iat": now, "exp": now + 600,
+                            "aud": "appstoreconnect-v1"}, os.environ["ASC_KEY_P8"], algorithm="ES256",
+                           headers={"kid": os.environ["ASC_KEY_ID"]})
+          H = {"Authorization": f"Bearer {tok}"}
+          def get(path, **params):
+              r = requests.get("https://api.appstoreconnect.apple.com" + path, headers=H, params=params, timeout=30)
+              r.raise_for_status()
+              return r.json()["data"]
+          print("== Versions ==")
+          for v in get(f"/v1/apps/{APP}/appStoreVersions", limit=5):
+              a = v["attributes"]
+              print(a.get("versionString"), a.get("appStoreState"), a.get("appVersionState"),
+                    "release:", a.get("releaseType"), "created:", a.get("createdDate"))
+          print("== Reviews ==")
+          rs = get(f"/v1/apps/{APP}/customerReviews", limit=20, sort="-createdDate")
+          print("count (latest page):", len(rs))
+          for r in rs:
+              a = r["attributes"]
+              print(a.get("createdDate", "")[:10], a.get("rating"), "*", a.get("territory"), "|",
+                    (a.get("title") or "")[:60], "|", (a.get("body") or "")[:120].replace("\n", " "))
