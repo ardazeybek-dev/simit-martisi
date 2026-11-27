@@ -1,6 +1,6 @@
 # Mağaza girişi — Simit Martısı
 
-Sınırlar: Play başlık 30, kısa açıklama 80, uzun açıklama 4000 karakter. App Store alt başlık 30, tanıtım metni 170, anahtar kelimeler 100 karakter (virgülle, boşluksuz).
+Sınırlar: Play başlık 30, kısa açıklama 80, uzun açıklama 4000 karakter. App Store alt başlık 30, tanıtım metni 170, anahtar kelimeler 100 karakter (virgülle, boşluksuz). App Store açıklama ve "Yenilikler" alanı emoji kabul etmez ("invalid characters"): oraya bu metinler emojisiz girilir.
 
 Kimlik `com.simitmartisi.game` · Geliştirici: Tech Talent Space Bilgi Teknolojileri A.Ş. · Destek e-postası: ardazybk18@gmail.com · Kategori: Oyun → Arcade (App Store: Games → Arcade, ikincil Casual) · Gizlilik: https://ardazeybek-dev.github.io/simit-martisi/gizlilik.html
 
@@ -58,7 +58,7 @@ Simidini kap, martım! 🥯
 
 **Promotional text (App Store):** Nine cities from Istanbul to Mersin, dozens of outfits and a new reward every day. Glide with one finger, grab the simits and top the weekly board!
 
-**Keywords (App Store):** seagull,bird,flying,istanbul,ferry,bosphorus,arcade,endless,runner,one finger,turkey,bagel,casual
+**Keywords (App Store):** bird,flying,istanbul,bosphorus,arcade,endless,runner,turkey,bagel,casual,flight,gull,3d,offline
 
 **Full description:**
 
@@ -93,6 +93,12 @@ Grab your simit! 🥯
 ## Deutsch (de-DE)
 
 **Titel:** Simit-Möwe
+
+**App Store Untertitel:** Schnapp Simits über den Fähren
+
+**Werbetext (App Store):** Neun Städte von Istanbul bis Mersin, Dutzende Kostüme und jeden Tag eine neue Belohnung. Gleite mit einem Finger, schnapp dir die Simits und erobere die Wochenrangliste!
+
+**Keywords (App Store):** vogel,fliegen,istanbul,bosporus,arcade,endlos,runner,türkei,möwen,flug,casual,offline,sesamkringel
 
 **Kurzbeschreibung (Play):** Gleite über Istanbuls Fähren und schnapp dir Simits! 3D-Flug mit einem Finger.
 
@@ -130,6 +136,12 @@ Schnapp dir deinen Simit! 🥯
 
 **Название:** Симит-чайка
 
+**Подзаголовок (App Store):** Хватай симиты над паромами
+
+**Рекламный текст (App Store):** Девять городов от Стамбула до Мерсина, десятки костюмов и новая награда каждый день. Пари одним пальцем, хватай симиты и поднимайся на вершину недельного рейтинга!
+
+**Ключевые слова (App Store):** птица,полёт,стамбул,босфор,аркада,бесконечный,раннер,турция,бублик,офлайн,чайки,3д,казуальная
+
 **Краткое описание (Play):** Пари над паромами Стамбула и хватай симиты! 3D-полёт одним пальцем.
 
 **Полное описание:**
@@ -166,6 +178,12 @@ Schnapp dir deinen Simit! 🥯
 
 **Título:** Gaviota Simit
 
+**Subtítulo (App Store, es-ES y es-MX):** Atrapa simits sobre los ferris
+
+**Texto promocional (App Store):** Nueve ciudades de Estambul a Mersin, decenas de disfraces y un premio nuevo cada día. Planea con un dedo, atrapa los simits y gana la clasificación semanal.
+
+**Palabras clave (App Store):** pájaro,volar,estambul,bósforo,arcade,infinito,runner,turquía,rosca,vuelo,offline,3d,casual,aves
+
 **Descripción breve (Play):** ¡Planea sobre los ferris de Estambul y atrapa simits! Vuelo 3D con un solo dedo.
 
 **Descripción completa:**
@@ -201,6 +219,12 @@ Compite con gaviotas de todo el mundo y reta a tus amigos.
 ## Português (pt-BR)
 
 **Título:** Gaivota do Simit
+
+**Subtítulo (App Store):** Pegue simits sobre as balsas
+
+**Texto promocional (App Store):** Nove cidades de Istambul a Mersin, dezenas de fantasias e uma recompensa nova todo dia. Plane com um dedo, pegue os simits e chegue ao topo do ranking semanal!
+
+**Palavras-chave (App Store):** pássaro,voar,istambul,bósforo,arcade,infinito,runner,turquia,rosca,voo,offline,3d,casual,aves
 
 **Descrição breve (Play):** Plane sobre as balsas de Istambul e pegue simits! Voo 3D com um dedo só.
 
